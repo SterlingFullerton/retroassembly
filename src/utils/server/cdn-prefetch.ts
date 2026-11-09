@@ -7,7 +7,11 @@ import { getCompanyLogoUrls } from '#@/pages/library/platform/components/company
 import { getCDNUrl, isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
 import { getCoreUrl, getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts'
 import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
-import { getRomLibretroThumbnail, type LibretroThumbnailType } from '#@/utils/isomorphic/libretro-thumbnail.ts'
+import {
+  getLibretroThumbnail,
+  getRomLibretroThumbnail,
+  type LibretroThumbnailType,
+} from '#@/utils/isomorphic/libretro-thumbnail.ts'
 import { getCachedFile, resolveCDNCacheTarget } from './cdn-cache.ts'
 import { createDrizzle } from './drizzle.ts'
 
@@ -63,12 +67,17 @@ async function getPrefetchUrls(selected: Set<Category>) {
     // The same URLs the library and game pages request, for every ROM of every user
     const { library } = createDrizzle()
     const roms = await library
-      .select({ platform: romTable.platform, rawGameMetadata: romTable.rawGameMetadata })
+      .select({ fileName: romTable.fileName, platform: romTable.platform, rawGameMetadata: romTable.rawGameMetadata })
       .from(romTable)
       .where(eq(romTable.status, statusEnum.normal))
     for (const rom of roms) {
       for (const type of thumbnailTypes) {
         urls.add(getRomLibretroThumbnail(rom, type, 'libretro'))
+      }
+      // The pages also look up art by file name, which is how games without metadata get theirs
+      const name = rom.fileName.split('.')[0]
+      for (const type of ['boxart', 'title', 'snap'] as const) {
+        urls.add(getLibretroThumbnail({ host: 'libretro', name, platform: rom.platform, type }))
       }
     }
   }

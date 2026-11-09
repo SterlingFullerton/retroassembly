@@ -27,7 +27,8 @@ export function cdnCache() {
       throw new HTTPException(502, { cause: error, message: 'Failed to fetch the file from the CDN.' })
     }
     if (!cached || cached.status === 404) {
-      throw new HTTPException(404, { message: 'Not found' })
+      // Lets the browser skip files it already knows are missing, such as box art for games that have none
+      return c.body(null, 404, { 'Cache-Control': 'public, max-age=86400' })
     }
 
     c.header('Cache-Control', 'public, max-age=31536000, immutable')

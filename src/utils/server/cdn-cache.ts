@@ -5,12 +5,17 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { attemptAsync } from 'es-toolkit'
 import { getDirectories } from '#@/constants/env.ts'
-import { cdnCacheHosts, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
+import { cdnCacheHosts, cdnHost, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
 import { fonts } from '#@/utils/isomorphic/fonts.ts'
 import { nanoid } from './nanoid.ts'
 
 const fetchTimeout = 120_000
-const notFoundTtl = 24 * 60 * 60 * 1000
+// A host that doesn't answer within this long is treated as unreachable
+const headersTimeout = 10_000
+// Files that don't exist upstream are remembered for this long, or forever for pinned versions
+const notFoundTtl = 30 * 24 * 60 * 60 * 1000
+// After a host fails to answer, requests to it are skipped for this long, so pages load quickly while offline
+const unreachableBackoff = 5 * 60 * 1000
 
 // Pinned repositories, plus the ones whose URLs are built elsewhere (emulator cores and shaders)
 const pinnedRepositories: Record<string, string> = {
@@ -85,6 +90,10 @@ function getCachePaths(url: string) {
   return { file: path.join(directory, key), meta: path.join(directory, `${key}.json`) }
 }
 
+function isPinned(url: string) {
+  return url.startsWith(cdnHost) && /@(?!latest\/)[^/]+\//u.test(new URL(url).pathname)
+}
+
 async function readCacheEntry(url: string) {
   const paths = getCachePaths(url)
   const [, text] = await attemptAsync(() => fs.promises.readFile(paths.meta, 'utf8'))
@@ -93,45 +102,56 @@ async function readCacheEntry(url: string) {
   }
   const entry: CacheEntry = JSON.parse(text)
   if (entry.status === 404) {
-    return Date.now() - entry.time < notFoundTtl ? { ...entry, path: paths.file, size: 0 } : undefined
+    const stale = !isPinned(url) && Date.now() - entry.time >= notFoundTtl
+    return { ...entry, path: paths.file, size: 0, stale }
   }
   const [, stats] = await attemptAsync(() => fs.promises.stat(paths.file))
-  return stats?.isFile() ? { ...entry, path: paths.file, size: stats.size } : undefined
+  return stats?.isFile() ? { ...entry, path: paths.file, size: stats.size, stale: false } : undefined
+}
+
+/** An error response from the CDN, as opposed to the CDN being unreachable */
+class UpstreamError extends Error {
+  override name = 'UpstreamError'
 }
 
 async function download(url: string) {
   const paths = getCachePaths(url)
   await fs.promises.mkdir(path.dirname(paths.file), { recursive: true })
-  const response = await fetch(url, { signal: AbortSignal.timeout(fetchTimeout) })
-  if (response.status >= 400 && response.status < 500) {
-    const entry: CacheEntry = { contentType: '', status: 404, time: Date.now() }
-    await fs.promises.writeFile(paths.meta, JSON.stringify(entry))
-    return
-  }
-  if (!response.ok || !response.body) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
-  }
-  const partialFile = `${paths.file}.${nanoid()}.partial`
+  const controller = new AbortController()
+  const headersTimer = setTimeout(() => controller.abort(new Error(`No response from ${url}`)), headersTimeout)
+  const totalTimer = setTimeout(() => controller.abort(new Error(`Timed out fetching ${url}`)), fetchTimeout)
   try {
-    // @ts-expect-error -- the DOM ReadableStream type differs from Node's, but they are the same at runtime
-    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(partialFile))
-    await fs.promises.rename(partialFile, paths.file)
+    const response = await fetch(url, { signal: controller.signal })
+    clearTimeout(headersTimer)
+    if (response.status >= 400 && response.status < 500) {
+      const entry: CacheEntry = { contentType: '', status: 404, time: Date.now() }
+      await fs.promises.writeFile(paths.meta, JSON.stringify(entry))
+      return
+    }
+    if (!response.ok || !response.body) {
+      throw new UpstreamError(`Failed to fetch ${url}: ${response.status}`)
+    }
+    const partialFile = `${paths.file}.${nanoid()}.partial`
+    try {
+      // @ts-expect-error -- the DOM ReadableStream type differs from Node's, but they are the same at runtime
+      await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(partialFile))
+      await fs.promises.rename(partialFile, paths.file)
+    } finally {
+      await fs.promises.rm(partialFile, { force: true })
+    }
+    const contentType = response.headers.get('Content-Type') || 'application/octet-stream'
+    const entry: CacheEntry = { contentType, status: 200, time: Date.now() }
+    await fs.promises.writeFile(paths.meta, JSON.stringify(entry))
   } finally {
-    await fs.promises.rm(partialFile, { force: true })
+    clearTimeout(headersTimer)
+    clearTimeout(totalTimer)
   }
-  const contentType = response.headers.get('Content-Type') || 'application/octet-stream'
-  const entry: CacheEntry = { contentType, status: 200, time: Date.now() }
-  await fs.promises.writeFile(paths.meta, JSON.stringify(entry))
 }
 
 const downloads = new Map<string, Promise<void>>()
+const unreachableUntil = new Map<string, number>()
 
-/** Returns the cached file for `url`, downloading it first if needed. Concurrent requests share one download. */
-export async function getCachedFile(url: string) {
-  const cached = await readCacheEntry(url)
-  if (cached) {
-    return cached
-  }
+async function downloadOnce(url: string) {
   let pending = downloads.get(url)
   if (!pending) {
     pending = download(url)
@@ -142,6 +162,35 @@ export async function getCachedFile(url: string) {
   } finally {
     downloads.delete(url)
   }
+}
+
+/**
+ * Returns the cached file for `url`, downloading it first if needed. Concurrent requests share one download. When
+ * the CDN can't be reached, a file that was known not to exist is still reported as missing instead of failing.
+ */
+export async function getCachedFile(url: string) {
+  const cached = await readCacheEntry(url)
+  if (cached && !cached.stale) {
+    return cached
+  }
+  const { host } = new URL(url)
+  if ((unreachableUntil.get(host) ?? 0) > Date.now()) {
+    if (cached) {
+      return cached
+    }
+    throw new Error(`${host} is unreachable`)
+  }
+  const [error] = await attemptAsync(() => downloadOnce(url))
+  if (error) {
+    if (!(error instanceof UpstreamError)) {
+      unreachableUntil.set(host, Date.now() + unreachableBackoff)
+    }
+    if (cached) {
+      return cached
+    }
+    throw error
+  }
+  unreachableUntil.delete(host)
   return await readCacheEntry(url)
 }
 
