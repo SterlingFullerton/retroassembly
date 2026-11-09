@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { after, before, describe, it } from 'node:test'
+import { after, before, describe, it, type TestContext } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { Hono } from 'hono'
 import { cdnCache } from '#@/middlewares/cdn-cache.ts'
@@ -12,6 +13,17 @@ import { getCachedFile, resolveCDNCacheTarget } from '#@/utils/server/cdn-cache.
 
 const dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'retroassembly-cdn-cache-'))
 const assetsPath = 'jsdelivr/gh/arianrhodsandlot/retroassembly-assets@feab5bc8061c36cf9ad01c35b36ab721c3929ca3'
+
+function ageMissingEntry(url: string) {
+  const key = createHash('sha256').update(url).digest('hex')
+  const metaPath = path.join(dataDirectory, 'cache', 'cdn', `${key}.json`)
+  fs.writeFileSync(metaPath, JSON.stringify({ contentType: '', status: 404, time: 0 }))
+}
+
+// Moves the clock past the time unreachable hosts are skipped, which other tests trigger
+function skipUnreachableBackoff(t: TestContext) {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 10 * 60 * 1000 })
+}
 
 async function getStatus(app: Hono, url: string) {
   const response = await app.request(url)
@@ -162,6 +174,38 @@ await describe('CDN cache', async () => {
 
     fetchMock.mock.mockImplementation(() => Promise.reject(new Error('offline')))
     assert.equal(await getStatus(createApp(), `/cdn/${assetsPath}/platforms/icons/gba.png`), 502)
+  })
+
+  await it('keeps knowing a file is missing, even when the CDN is unreachable', async (t) => {
+    skipUnreachableBackoff(t)
+    const fetchMock = t.mock.method(globalThis, 'fetch', () => Promise.resolve(new Response('', { status: 404 })))
+
+    // Pinned versions never change, so a miss is remembered for good
+    const pinned = 'https://cdn.jsdelivr.net/gh/libretro-thumbnails/Sega_-_32X@abc/Named_Boxarts/none.png'
+    await getCachedStatus(pinned)
+    ageMissingEntry(pinned)
+    assert.equal(await getCachedStatus(pinned), 404)
+    assert.equal(fetchMock.mock.callCount(), 1)
+
+    // Other misses are rechecked after a while, but still count as missing when the CDN can't be reached
+    const unpinned = 'https://thumbnails.libretro.com/Sega%20-%2032X/Named_Boxarts/none.png'
+    await getCachedStatus(unpinned)
+    ageMissingEntry(unpinned)
+    fetchMock.mock.mockImplementation(() => Promise.reject(new TypeError('fetch failed')))
+    assert.equal(await getCachedStatus(unpinned), 404)
+    assert.equal(fetchMock.mock.callCount(), 3)
+
+    // While the host is unreachable, other requests to it fail straight away instead of waiting
+    await assert.rejects(getCachedFile('https://thumbnails.libretro.com/Sega%20-%2032X/Named_Boxarts/other.png'))
+    assert.equal(fetchMock.mock.callCount(), 3)
+  })
+
+  await it('lets the browser cache the answer for missing files', async (t) => {
+    skipUnreachableBackoff(t)
+    t.mock.method(globalThis, 'fetch', () => Promise.resolve(new Response('', { status: 404 })))
+    const response = await createApp().request(`/cdn/${assetsPath}/platforms/icons/missing.png`)
+    assert.equal(response.status, 404)
+    assert.equal(response.headers.get('Cache-Control'), 'public, max-age=86400')
   })
 
   await it('leaves /cdn/ to the rest of the app when disabled', async () => {

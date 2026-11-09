@@ -8,6 +8,7 @@ import {
   getPlatformGameIcon,
   getRomLibretroThumbnail,
 } from '#@/utils/client/library.ts'
+import { isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
 import { getFileUrl } from '../utils/file.ts'
 import { useIsDemo } from './use-demo.ts'
 
@@ -18,13 +19,23 @@ export function useRomCover(rom: Rom) {
     ? [getDemoRomThumbnail(rom)]
     : [
         ...libretroThumbnailTypes.map((type) => getRomLibretroThumbnail(rom, type, 'libretro')),
-        ...libretroThumbnailTypes.map((type) => getRomLibretroThumbnail(rom, type, 'jsdelivr')),
+        // jsDelivr mirrors the same images, so it's skipped when the server caches them
+        ...(isCDNCacheEnabled()
+          ? []
+          : libretroThumbnailTypes.map((type) => getRomLibretroThumbnail(rom, type, 'jsdelivr'))),
         ...libretroThumbnailTypes.map((type) =>
           getLibretroThumbnail({ host: 'libretro', name: rom.fileName.split('.')[0], platform: rom.platform, type }),
         ),
-        ...libretroThumbnailTypes.map((type) =>
-          getLibretroThumbnail({ host: 'jsdelivr', name: rom.fileName.split('.')[0], platform: rom.platform, type }),
-        ),
+        ...(isCDNCacheEnabled()
+          ? []
+          : libretroThumbnailTypes.map((type) =>
+              getLibretroThumbnail({
+                host: 'jsdelivr',
+                name: rom.fileName.split('.')[0],
+                platform: rom.platform,
+                type,
+              }),
+            )),
       ]
   if (rom.gameBoxartFileIds) {
     romCovers.unshift(...rom.gameBoxartFileIds.split(',').map((fileId) => getFileUrl(fileId)))
