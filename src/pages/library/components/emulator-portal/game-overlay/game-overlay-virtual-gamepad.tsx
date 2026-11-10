@@ -75,7 +75,9 @@ function VirtualGamepadCommandButton({
   )
 }
 
-// Shrinks the game to the space above the on-screen controls, so they don't cover the DS touchscreen
+// Sizes the game to the space above the on-screen controls, so they don't cover the DS touchscreen, or to the whole
+// screen while they're hidden. Only the element's CSS height is set: RetroArch sizes the picture from it in device
+// pixels, and resizing the picture here as well leaves the two out of step, which zooms the game in.
 function useFitGameAboveControls(
   enabled: boolean,
   leftControls: RefObject<HTMLDivElement | null>,
@@ -97,17 +99,20 @@ function useFitGameAboveControls(
         .map((control) => control.current?.getBoundingClientRect())
         .filter((rect) => rect && rect.height > 0)
         .map((rect) => rect?.top ?? globalThis.innerHeight)
-      const height = Math.floor(Math.min(globalThis.innerHeight, ...tops))
-      if (canvas.offsetHeight !== height || canvas.height !== height) {
+      const viewportHeight = globalThis.visualViewport?.height ?? globalThis.innerHeight
+      const height = Math.floor(Math.min(viewportHeight, ...tops))
+      if (canvas.offsetHeight !== height) {
         canvas.style.height = `${height}px`
-        emulator.resize({ height, width: canvas.offsetWidth })
       }
     }
 
     fit()
+    // The emulator's startup resize leaves RetroArch drawing for a different canvas size; a resize event makes it measure again
+    globalThis.dispatchEvent(new Event('resize'))
     const abortController = new AbortController()
     globalThis.addEventListener('resize', fit, { signal: abortController.signal })
-    // The emulator resets the canvas size while starting, so fit again whenever it changes
+    globalThis.visualViewport?.addEventListener('resize', fit, { signal: abortController.signal })
+    // Fit again whenever the canvas or the controls change size
     const resizeObserver = new ResizeObserver(fit)
     for (const element of [canvas, leftControls.current, rightControls.current]) {
       if (element) {
@@ -118,7 +123,6 @@ function useFitGameAboveControls(
       abortController.abort()
       resizeObserver.disconnect()
       canvas.style.height = '100%'
-      emulator.resize({ height: globalThis.innerHeight, width: canvas.offsetWidth })
     }
   }, [enabled, emulator, leftControls, rightControls])
 }
@@ -134,7 +138,7 @@ export function GameOverlayVirtualGamepad() {
   const leftControls = useRef<HTMLDivElement>(null)
   const rightControls = useRef<HTMLDivElement>(null)
   const isDS = rom?.platform === 'nds'
-  useFitGameAboveControls(launched && gamepadVisible && isDS, leftControls, rightControls)
+  useFitGameAboveControls(launched && isDS, leftControls, rightControls)
 
   if (!launched) {
     return
