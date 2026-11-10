@@ -275,6 +275,18 @@ const basePlatformMap = {
     },
     libretroName: 'Nintendo - Nintendo 64',
   },
+  nds: {
+    cores: ['desmume2015'],
+    displayNameI18nKey: 'platform.nds',
+    fileExtensions: ['.nds', '.zip'],
+    info: {
+      developer: 'Nintendo',
+      manufacturer: 'Nintendo Co., Ltd.',
+      notesI18nKey: 'platform.ndsNote',
+      releaseDate: '2004-11-21T00:00:00-08:00',
+    },
+    libretroName: 'Nintendo - Nintendo DS',
+  },
   nes: {
     cores: ['fceumm', 'nestopia', 'quicknes'],
     displayNameI18nKey: 'platform.nes',

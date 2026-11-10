@@ -13,28 +13,38 @@ export function getDemoRomThumbnail(rom) {
   return getCDNUrl(repo, `${path.parse(rom.fileName).name}.png`)
 }
 
+// Platforms added in this fork, whose artwork ships with the app in public/assets/platforms
+const bundledPlatformAssets = new Set(['nds'])
+
+function getPlatformAsset(platform: string, file: string) {
+  if (bundledPlatformAssets.has(platform)) {
+    return `/assets/platforms/${file}`
+  }
+  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/${file}`)
+}
+
 export function getPlatformIcon(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/icons/${platform}.png`)
+  return getPlatformAsset(platform, `icons/${platform}.png`)
 }
 
 export function getPlatformGameIcon(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/contents/${platform}.svg`)
+  return getPlatformAsset(platform, `contents/${platform}.svg`)
 }
 
 export function getPlatformBanner(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/logos/${platform}.svg`)
+  return getPlatformAsset(platform, `logos/${platform}.svg`)
 }
 
 export function getPlatformDevicePhoto(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/photos/${platform}.png`)
+  return getPlatformAsset(platform, `photos/${platform}.png`)
 }
 
 export function getPlatformDeviceBackground(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/backgrounds/${platform}.png`)
+  return getPlatformAsset(platform, `backgrounds/${platform}.png`)
 }
 
 export function getPlatformBluredBackground(platform: string) {
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/blured-backgrounds/${platform}.jpg`)
+  return getPlatformAsset(platform, `blured-backgrounds/${platform}.jpg`)
 }
 
 export function getRomGoodcodes(rom: { fileName?: string; rawGameMetadata?: any; name?: string; platform?: string }) {

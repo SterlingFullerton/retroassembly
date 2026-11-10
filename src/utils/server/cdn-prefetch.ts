@@ -32,7 +32,10 @@ async function getPrefetchUrls(selected: Set<Category>) {
   if (selected.has('cores')) {
     for (const { cores } of Object.values(platformMap)) {
       for (const core of cores) {
-        urls.add(getCoreUrl(core))
+        // Cores bundled with the app are served locally and need no caching
+        if (getCoreUrl(core).startsWith('https://')) {
+          urls.add(getCoreUrl(core))
+        }
       }
     }
   }

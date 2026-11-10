@@ -121,6 +121,10 @@ export const defaultPreference: ResolvedPreference = {
   emulator: {
     autoSaveInterval: 0,
     core: {
+      desmume2015: {
+        // Follow the mouse or finger position, instead of moving the stylus by the mouse's movement
+        desmume_pointer_type: 'touch',
+      },
       fceumm: {
         fceumm_turbo_enable: 'Both',
       },

@@ -89,7 +89,13 @@ export function GameOverlayVirtualGamepad() {
   }
 
   return (
-    <div className='fixed inset-0 block touch-none lg:hidden'>
+    <div
+      className={twMerge(
+        'fixed inset-0 block touch-none lg:hidden',
+        // The DS bottom screen is a touchscreen, so touches outside the buttons must reach the game
+        clsx({ 'pointer-events-none! *:pointer-events-auto': rom?.platform === 'nds' }),
+      )}
+    >
       <div className='top-safe p-x-2 absolute inset-x-0 flex'>
         <VirtualGamepadButton
           className={twMerge('left-safe absolute rounded p-2', clsx({ hidden: !gamepadVisible }))}

@@ -2,7 +2,13 @@ import { cdnHost } from './cdn.ts'
 
 const customCores = new Set(['a5200', 'mupen64plus_next', 'prosystem', 'stella2014'])
 
+// Cores built for this fork and shipped with the app, in public/cores
+const bundledCores = new Set(['desmume2015'])
+
 export function getCoreUrl(core: string) {
+  if (bundledCores.has(core)) {
+    return `/cores/${core}_libretro.zip`
+  }
   const segments = customCores.has(core)
     ? [
         'npm',
