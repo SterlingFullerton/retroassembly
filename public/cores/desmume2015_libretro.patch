@@ -1,0 +1,81 @@
+diff --git a/desmume/src/rasterize.cpp b/desmume/src/rasterize.cpp
+index 8c14793..bf1d012 100644
+--- a/desmume/src/rasterize.cpp
++++ b/desmume/src/rasterize.cpp
+@@ -1874,6 +1874,46 @@ Render3DError SoftRasterizerRenderer::Reset()
+ 	return RENDER3DERROR_NOERR;
+ }
+ 
++// Polygons that should meet exactly (map tiles, for one) can leave single pixels between them that no polygon covers,
++// and the clear color shows through as specks. Fill each such pixel from a neighbour when it has drawn pixels on both
++// sides, before edge marking and fog run.
++void SoftRasterizerRenderer::FillPolygonCracks()
++{
++	if (this->currentRenderState->enableClearImage)
++		return;
++
++	const u32 clearDepth = this->currentRenderState->clearDepth;
++	const size_t w = this->_framebufferWidth;
++	const size_t h = this->_framebufferHeight;
++	FragmentAttributesBuffer &attr = *this->_framebufferAttributes;
++
++	for (size_t y = 1; y + 1 < h; y++)
++	{
++		for (size_t x = 1; x + 1 < w; x++)
++		{
++			const size_t i = y * w + x;
++			if (attr.depth[i] != clearDepth)
++				continue;
++
++			size_t src;
++			if (attr.depth[i - 1] != clearDepth && attr.depth[i + 1] != clearDepth)
++				src = i - 1;
++			else if (attr.depth[i - w] != clearDepth && attr.depth[i + w] != clearDepth)
++				src = i - w;
++			else
++				continue;
++
++			this->_framebufferColor[i] = this->_framebufferColor[src];
++			attr.depth[i] = attr.depth[src];
++			attr.opaquePolyID[i] = attr.opaquePolyID[src];
++			attr.translucentPolyID[i] = attr.translucentPolyID[src];
++			attr.stencil[i] = attr.stencil[src];
++			attr.isFogged[i] = attr.isFogged[src];
++			attr.isTranslucentPoly[i] = attr.isTranslucentPoly[src];
++		}
++	}
++}
++
+ Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
+ {
+ 	Render3DError error = RENDER3DERROR_NOERR;
+@@ -1893,6 +1933,8 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
+ 	// If we're not multithreaded, then just do the post-processing steps now.
+ 	if (!this->_renderGeometryNeedsFinish)
+ 	{
++		this->FillPolygonCracks();
++
+ 		if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
+ 		{
+ 			this->postprocessParam[0].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
+@@ -1922,6 +1964,8 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
+ 	
+ 	// Now that geometry rendering is finished on all threads, check the texture cache.
+ 	TexCache_EvictFrame();
++
++	this->FillPolygonCracks();
+ 	
+ 	// Do multithreaded post-processing.
+ 	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
+diff --git a/desmume/src/rasterize.h b/desmume/src/rasterize.h
+index 5d9ff90..dbc5a3c 100644
+--- a/desmume/src/rasterize.h
++++ b/desmume/src/rasterize.h
+@@ -92,6 +92,7 @@ public:
+ 	void setupTextures();
+ 	Render3DError UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
+ 	Render3DError UpdateFogTable(const u8 *fogDensityTable);
++	void FillPolygonCracks();
+ 	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
+ 	
+ 	// Base rendering methods
