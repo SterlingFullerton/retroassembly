@@ -80,9 +80,9 @@ export function useEmulator() {
         // this might be a bug of retroarch's emscripten build, y plus and y minus are swapped
         input_player1_l_y_minus: preference.input.keyboardMapping.input_player1_l_y_plus,
         input_player1_l_y_plus: preference.input.keyboardMapping.input_player1_l_y_minus,
-        rewind_buffer_size: ['mupen64plus_next', 'pcsx_rearmed'].includes(core) ? 100 : 20,
+        rewind_buffer_size: ['desmume2015', 'mupen64plus_next', 'pcsx_rearmed'].includes(core) ? 100 : 20,
         rewind_enable: preference.emulator.platform[rom.platform].rewindEnabled,
-        run_ahead_enabled: !['mupen64plus_next', 'pcsx_rearmed'].includes(core),
+        run_ahead_enabled: !['desmume2015', 'mupen64plus_next', 'pcsx_rearmed'].includes(core),
         video_smooth: preference.emulator.videoSmooth,
       },
       retroarchCoreConfig: preference.emulator.core[core],

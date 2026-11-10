@@ -31,7 +31,7 @@ export function GameButtons() {
     <EmulatorSessionProvider>
       <div>
         <GameButtonsContent />
-        {['psx', 'n64'].includes(rom.platform) ? (
+        {['psx', 'n64', 'nds'].includes(rom.platform) ? (
           <div className='mt-1 text-sm opacity-60'>
             {t('platform.emulationExperimental', { platform: platformName })}
           </div>

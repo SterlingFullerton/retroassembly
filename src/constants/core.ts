@@ -2,6 +2,7 @@ export { coreOptionsMap } from './core-options/index.ts'
 
 export const cores = {
   a5200: { displayName: 'a5200' },
+  desmume2015: { displayName: 'DeSmuME 2015' },
   fbneo: { displayName: 'FinalBurn Neo' },
   fceumm: { displayName: 'FCEUmm' },
   freechaf: { displayName: 'FreeChaF' },
