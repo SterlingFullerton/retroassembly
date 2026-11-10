@@ -21,14 +21,14 @@ const isAppleMobileDesktopMode =
   !isChromeLike && isMacLike && /safari/iu.test(navigator.userAgent) && screen.height <= 1366
 const mayNeedsUserInteraction = isAppleMobile || isAppleMobileDesktopMode
 
-export function GameButtons() {
+export function GameButtons({ lazy = false }: Readonly<{ lazy?: boolean }>) {
   const { rom } = useLoaderData()
   const { t } = useTranslation()
 
   const platformName = t(platformMap[rom.platform].displayNameI18nKey)
 
   return (
-    <EmulatorSessionProvider>
+    <EmulatorSessionProvider lazy={lazy}>
       <div>
         <GameButtonsContent />
         {['psx', 'n64', 'nds'].includes(rom.platform) ? (

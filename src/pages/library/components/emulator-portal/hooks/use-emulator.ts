@@ -21,7 +21,7 @@ import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getCDNUrl } from '#@/utils/isomorphic/cdn.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
 import { usePreference } from '../../../hooks/use-preference.ts'
-import { useEmulatorGamepadMapping } from '../emulator-session-provider.tsx'
+import { useEmulatorGamepadMapping, useEmulatorLazy } from '../emulator-session-provider.tsx'
 
 type NostalgistOption = Parameters<typeof Nostalgist.prepare>[0]
 type RetroarchConfig = Partial<NostalgistOption['retroarchConfig']>
@@ -47,6 +47,7 @@ export function useEmulator() {
   const { state } = useLoaderData<typeof loader>()
   const { preference } = usePreference()
   const emulatorGamepadMapping = useEmulatorGamepadMapping()
+  const lazy = useEmulatorLazy()
   const [launched, setLaunched] = useEmulatorLaunched()
   const isDemo = useIsDemo()
   const { reload } = useRouter()
@@ -96,15 +97,18 @@ export function useEmulator() {
   )
 
   const {
-    data: emulator,
+    data,
     error,
     isValidating,
     mutate: prepare,
-  } = useSWRImmutable(options, () => Nostalgist.prepare(options))
+  } = useSWRImmutable(options, () => Nostalgist.prepare(options), { revalidateOnMount: !lazy })
 
+  const emulator = data
   const isPreparing = !rom || isValidating
 
   async function launch({ withState }: { withState?: boolean } = {}) {
+    // In a lazy session nothing is downloaded until now
+    const emulator = data ?? (lazy ? await prepare() : undefined)
     if (!emulator || !rom) {
       return
     }

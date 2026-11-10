@@ -58,7 +58,8 @@ export function JumpBackInSection() {
               {t(platformMap[rom.platform].displayNameI18nKey)}
             </div>
 
-            <GameButtons />
+            {/* Download the game only when it's launched, so opening the library stays quick */}
+            <GameButtons lazy />
           </div>
         </div>
       </div>
