@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -75,6 +75,50 @@ function VirtualGamepadCommandButton({
   )
 }
 
+// Shrinks the game to the space above the on-screen controls, so they don't cover the DS touchscreen
+function useFitGameAboveControls(
+  enabled: boolean,
+  leftControls: RefObject<HTMLDivElement | null>,
+  rightControls: RefObject<HTMLDivElement | null>,
+) {
+  const { emulator } = useEmulator()
+
+  useEffect(() => {
+    const canvas = emulator?.getCanvas()
+    if (!enabled || !emulator || !canvas) {
+      return
+    }
+
+    function fit() {
+      if (!emulator || !canvas) {
+        return
+      }
+      const tops = [leftControls, rightControls]
+        .map((control) => control.current?.getBoundingClientRect())
+        .filter((rect) => rect && rect.height > 0)
+        .map((rect) => rect?.top ?? globalThis.innerHeight)
+      const height = Math.floor(Math.min(globalThis.innerHeight, ...tops))
+      if (canvas.offsetHeight !== height || canvas.height !== height) {
+        canvas.style.height = `${height}px`
+        emulator.resize({ height, width: canvas.offsetWidth })
+      }
+    }
+
+    fit()
+    const abortController = new AbortController()
+    globalThis.addEventListener('resize', fit, { signal: abortController.signal })
+    // The emulator resets the canvas size while starting, so fit again whenever it changes
+    const resizeObserver = new ResizeObserver(fit)
+    resizeObserver.observe(canvas)
+    return () => {
+      abortController.abort()
+      resizeObserver.disconnect()
+      canvas.style.height = '100%'
+      emulator.resize({ height: globalThis.innerHeight, width: canvas.offsetWidth })
+    }
+  }, [enabled, emulator, leftControls, rightControls])
+}
+
 export function GameOverlayVirtualGamepad() {
   const { connected } = useGamepads()
   const [gamepadVisible, setGamepadVisible] = useState(!connected)
@@ -83,6 +127,9 @@ export function GameOverlayVirtualGamepad() {
   const rom = useRom()
   const { preference } = usePreference()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
+  const leftControls = useRef<HTMLDivElement>(null)
+  const rightControls = useRef<HTMLDivElement>(null)
+  useFitGameAboveControls(launched && gamepadVisible && rom?.platform === 'nds', leftControls, rightControls)
 
   if (!launched) {
     return
@@ -115,6 +162,7 @@ export function GameOverlayVirtualGamepad() {
 
       <div
         className={twMerge('bottom-safe left-safe absolute flex flex-col gap-2 p-2', clsx({ hidden: !gamepadVisible }))}
+        ref={leftControls}
       >
         {rewindEnabled ? (
           <VirtualGamepadCommandButton className='rounded px-2 py-1 ring ring-white/20' command='REWIND' title='Rewind'>
@@ -206,6 +254,8 @@ export function GameOverlayVirtualGamepad() {
           'bottom-safe right-safe absolute flex flex-col gap-2 p-2',
           clsx({ hidden: !gamepadVisible }),
         )}
+
+        ref={rightControls}
       >
         <VirtualGamepadCommandButton
           command='FAST_FORWARD_HOLD'

@@ -137,10 +137,11 @@ export const defaultPreference: ResolvedPreference = {
       },
     },
     fullscreen: false,
-    platform: mapValues(platformMap, ({ cores: [core] }) => ({
+    platform: mapValues(platformMap, ({ cores: [core] }, name) => ({
       bioses: [],
       core,
-      rewindEnabled: true,
+      // Rewinding saves the DS's large state every few frames, which slows weaker devices down
+      rewindEnabled: name !== 'nds',
       shader: 'inherit',
     })),
     shader: '',

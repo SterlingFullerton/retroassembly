@@ -84,6 +84,8 @@ export function useEmulator() {
         rewind_enable: preference.emulator.platform[rom.platform].rewindEnabled,
         run_ahead_enabled: !['desmume2015', 'mupen64plus_next', 'pcsx_rearmed'].includes(core),
         video_smooth: preference.emulator.videoSmooth,
+        // A larger audio buffer keeps sound from crackling when a frame takes too long
+        ...(core === 'desmume2015' ? { audio_latency: 160 } : {}),
       },
       retroarchCoreConfig: preference.emulator.core[core],
       rom: romObject,
