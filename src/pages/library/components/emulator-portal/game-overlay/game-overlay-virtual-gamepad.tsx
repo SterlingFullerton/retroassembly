@@ -109,7 +109,11 @@ function useFitGameAboveControls(
     globalThis.addEventListener('resize', fit, { signal: abortController.signal })
     // The emulator resets the canvas size while starting, so fit again whenever it changes
     const resizeObserver = new ResizeObserver(fit)
-    resizeObserver.observe(canvas)
+    for (const element of [canvas, leftControls.current, rightControls.current]) {
+      if (element) {
+        resizeObserver.observe(element)
+      }
+    }
     return () => {
       abortController.abort()
       resizeObserver.disconnect()
@@ -129,7 +133,8 @@ export function GameOverlayVirtualGamepad() {
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
   const leftControls = useRef<HTMLDivElement>(null)
   const rightControls = useRef<HTMLDivElement>(null)
-  useFitGameAboveControls(launched && gamepadVisible && rom?.platform === 'nds', leftControls, rightControls)
+  const isDS = rom?.platform === 'nds'
+  useFitGameAboveControls(launched && gamepadVisible && isDS, leftControls, rightControls)
 
   if (!launched) {
     return
@@ -140,7 +145,7 @@ export function GameOverlayVirtualGamepad() {
       className={twMerge(
         'fixed inset-0 block touch-none lg:hidden',
         // The DS bottom screen is a touchscreen, so touches outside the buttons must reach the game
-        clsx({ 'pointer-events-none! *:pointer-events-auto': rom?.platform === 'nds' }),
+        clsx({ 'pointer-events-none! *:pointer-events-auto': isDS }),
       )}
     >
       <div className='top-safe p-x-2 absolute inset-x-0 flex'>
@@ -161,7 +166,11 @@ export function GameOverlayVirtualGamepad() {
       </div>
 
       <div
-        className={twMerge('bottom-safe left-safe absolute flex flex-col gap-2 p-2', clsx({ hidden: !gamepadVisible }))}
+        className={twMerge(
+          'bottom-safe left-safe absolute flex flex-col gap-2 p-2',
+          // Smaller controls leave more room for the DS's two screens
+          clsx({ hidden: !gamepadVisible, 'origin-bottom-left scale-85': isDS }),
+        )}
         ref={leftControls}
       >
         {rewindEnabled ? (
@@ -171,11 +180,13 @@ export function GameOverlayVirtualGamepad() {
         ) : null}
         <div className='flex w-full gap-2'>
           <VirtualGamepadButton buttonName='l' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-            L1
+            {isDS ? 'L' : 'L1'}
           </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='l2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-            L2
-          </VirtualGamepadButton>
+          {isDS ? null : (
+            <VirtualGamepadButton buttonName='l2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              L2
+            </VirtualGamepadButton>
+          )}
         </div>
         <div className='relative size-42 overflow-hidden rounded-xl ring ring-white/20'>
           <VirtualGamepadButton
@@ -252,7 +263,7 @@ export function GameOverlayVirtualGamepad() {
       <div
         className={twMerge(
           'bottom-safe right-safe absolute flex flex-col gap-2 p-2',
-          clsx({ hidden: !gamepadVisible }),
+          clsx({ hidden: !gamepadVisible, 'origin-bottom-right scale-85': isDS }),
         )}
 
         ref={rightControls}
@@ -265,11 +276,13 @@ export function GameOverlayVirtualGamepad() {
           <span className='icon-[mdi--fast-forward] size-6' />
         </VirtualGamepadCommandButton>
         <div className='flex w-full gap-2'>
-          <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-            R2
-          </VirtualGamepadButton>
+          {isDS ? null : (
+            <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              R2
+            </VirtualGamepadButton>
+          )}
           <VirtualGamepadButton buttonName='r' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-            R1
+            {isDS ? 'R' : 'R1'}
           </VirtualGamepadButton>
         </div>
         <div className='grid grid-cols-3 grid-rows-3 *:size-14 *:rounded-full'>
