@@ -169,6 +169,38 @@ export function GameOverlayVirtualGamepad() {
         </VirtualGamepadButton>
       </div>
 
+      {isDS ? (
+        // Select and Start sit between L and R. An invisible copy of the L button lines their tops up with it, and they
+        // hang down into the empty space between the d-pad and the face buttons
+        <div
+          className={twMerge(
+            'bottom-safe pointer-events-none! absolute left-1/2 flex origin-bottom -translate-x-1/2 scale-85 flex-col gap-2 p-2',
+            clsx({ hidden: !gamepadVisible }),
+          )}
+        >
+          <div className='relative'>
+            <span aria-hidden='true' className='invisible inline-flex rounded px-2 py-1'>
+              L
+            </span>
+            <div className='absolute top-0 left-1/2 flex -translate-x-1/2 gap-2'>
+              <VirtualGamepadButton
+                buttonName='select'
+                className='pointer-events-auto size-11 rounded text-[10px] ring ring-white/20'
+              >
+                Select
+              </VirtualGamepadButton>
+              <VirtualGamepadButton
+                buttonName='start'
+                className='pointer-events-auto size-11 rounded text-[10px] ring ring-white/20'
+              >
+                Start
+              </VirtualGamepadButton>
+            </div>
+          </div>
+          <div className='h-42' />
+        </div>
+      ) : null}
+
       <div
         className={twMerge(
           'bottom-safe left-safe absolute flex flex-col gap-2 p-2',
@@ -306,29 +338,15 @@ export function GameOverlayVirtualGamepad() {
           <VirtualGamepadButton buttonName='b' className='col-start-2 row-start-3 ring ring-white/20'>
             B
           </VirtualGamepadButton>
-          {/* On DS, fast forward, Select and Start fill the corners, so the game gets the rows they took */}
+          {/* On DS, fast forward fills a corner, so the game gets the row it took */}
           {isDS ? (
-            <>
-              <VirtualGamepadCommandButton
-                command='FAST_FORWARD_HOLD'
-                className='col-start-3 row-start-1 size-10! place-self-center ring ring-white/20'
-                title='Fast forward'
-              >
-                <span className='icon-[mdi--fast-forward] size-5' />
-              </VirtualGamepadCommandButton>
-              <VirtualGamepadButton
-                buttonName='select'
-                className='col-start-1 row-start-3 size-10! place-self-center text-[10px] ring ring-white/20'
-              >
-                Select
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='start'
-                className='col-start-3 row-start-3 size-10! place-self-center text-[10px] ring ring-white/20'
-              >
-                Start
-              </VirtualGamepadButton>
-            </>
+            <VirtualGamepadCommandButton
+              command='FAST_FORWARD_HOLD'
+              className='col-start-3 row-start-1 size-10! place-self-center ring ring-white/20'
+              title='Fast forward'
+            >
+              <span className='icon-[mdi--fast-forward] size-5' />
+            </VirtualGamepadCommandButton>
           ) : null}
         </div>
         {isDS ? null : (
