@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "기록에서 삭제",
   "game.deleteRom": "ROM 삭제",
   "game.deleteSelectedItems": "선택한 {{count}}개의 {{items}} 삭제",
+  "game.downloadRom": "ROM 다운로드",
   "game.removeFromFavorites": "즐겨찾기에서 삭제",
   "game.resume": "계속하기",
   "game.rom": "ROM",

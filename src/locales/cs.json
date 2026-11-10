@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "Smazat z historie",
   "game.deleteRom": "Smazat ROM",
   "game.deleteSelectedItems": "Smazat vybrané položky: {{count}}",
+  "game.downloadRom": "Stáhnout ROM",
   "game.removeFromFavorites": "Odstranit z oblíbených",
   "game.resume": "Pokračovat",
   "game.rom": "ROM",

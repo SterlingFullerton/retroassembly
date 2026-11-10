@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "Elimina dalla cronologia",
   "game.deleteRom": "Elimina la ROM",
   "game.deleteSelectedItems": "Elimina {{count}} {{items}} selezionati",
+  "game.downloadRom": "Scarica ROM",
   "game.removeFromFavorites": "Rimuovi dai preferiti",
   "game.resume": "Riprendi",
   "game.rom": "ROM",

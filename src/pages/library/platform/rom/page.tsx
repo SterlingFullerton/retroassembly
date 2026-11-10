@@ -8,6 +8,7 @@ import LibraryLayout from '../../components/library-layout/library-layout.tsx'
 import { PageBreadcrumb } from '../../components/page-breadcrumb.tsx'
 import { RomBackground } from '../../components/rom-background.tsx'
 import { useViewport } from '../../hooks/use-viewport.ts'
+import { DownloadButton } from './components/download-button.tsx'
 import { GameCover } from './components/game-cover.tsx'
 import { GameInfoDialog } from './components/game-info-dialog/game-info-dialog.tsx'
 import { GameInfo } from './components/game-info.tsx'
@@ -44,6 +45,7 @@ export default function RomPage() {
             <div className='flex items-center gap-3 pt-4 lg:px-8'>
               <h1 className='text-3xl font-bold'>{goodcodes.rom}</h1>
               <FavoriteButton rom={rom} variant='inline' />
+              <DownloadButton rom={rom} />
             </div>
 
             <div className='flex flex-col gap-8 lg:flex-col-reverse'>

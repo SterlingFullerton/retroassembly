@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "Aus dem Verlauf löschen",
   "game.deleteRom": "ROM löschen",
   "game.deleteSelectedItems": "Ausgewählte {{count}} {{items}} löschen",
+  "game.downloadRom": "ROM herunterladen",
   "game.removeFromFavorites": "Aus Favoriten entfernen",
   "game.resume": "Fortsetzen",
   "game.rom": "ROM",

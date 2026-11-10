@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "履歴から削除",
   "game.deleteRom": "ROMを削除",
   "game.deleteSelectedItems": "選択した{{count}}個の{{items}}を削除",
+  "game.downloadRom": "ROMをダウンロード",
   "game.removeFromFavorites": "お気に入りから削除",
   "game.resume": "再開",
   "game.rom": "ROM",

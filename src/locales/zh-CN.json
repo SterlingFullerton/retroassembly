@@ -195,6 +195,7 @@
   "game.deleteFromHistory": "从历史记录中删除",
   "game.deleteRom": "删除ROM",
   "game.deleteSelectedItems": "删除已选择的{{count}}个{{items}}",
+  "game.downloadRom": "下载 ROM",
   "game.removeFromFavorites": "从收藏中移除",
   "game.resume": "继续",
   "game.rom": "ROM",
