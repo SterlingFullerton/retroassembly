@@ -258,10 +258,12 @@ export function GameOverlayVirtualGamepad() {
             <span className='icon-[mdi--arrow-bottom-right-thick]' />
           </VirtualGamepadButton>
         </div>
-        <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
-          <span className='icon-[mdi--menu]' />
-          Select
-        </VirtualGamepadButton>
+        {isDS ? null : (
+          <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
+            <span className='icon-[mdi--menu]' />
+            Select
+          </VirtualGamepadButton>
+        )}
       </div>
 
       <div
@@ -272,13 +274,15 @@ export function GameOverlayVirtualGamepad() {
 
         ref={rightControls}
       >
-        <VirtualGamepadCommandButton
-          command='FAST_FORWARD_HOLD'
-          className='rounded px-2 py-1 ring ring-white/20'
-          title='Fast forward'
-        >
-          <span className='icon-[mdi--fast-forward] size-6' />
-        </VirtualGamepadCommandButton>
+        {isDS ? null : (
+          <VirtualGamepadCommandButton
+            command='FAST_FORWARD_HOLD'
+            className='rounded px-2 py-1 ring ring-white/20'
+            title='Fast forward'
+          >
+            <span className='icon-[mdi--fast-forward] size-6' />
+          </VirtualGamepadCommandButton>
+        )}
         <div className='flex w-full gap-2'>
           {isDS ? null : (
             <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
@@ -302,10 +306,36 @@ export function GameOverlayVirtualGamepad() {
           <VirtualGamepadButton buttonName='b' className='col-start-2 row-start-3 ring ring-white/20'>
             B
           </VirtualGamepadButton>
+          {/* On DS, fast forward, Select and Start fill the corners, so the game gets the rows they took */}
+          {isDS ? (
+            <>
+              <VirtualGamepadCommandButton
+                command='FAST_FORWARD_HOLD'
+                className='col-start-3 row-start-1 size-10! place-self-center ring ring-white/20'
+                title='Fast forward'
+              >
+                <span className='icon-[mdi--fast-forward] size-5' />
+              </VirtualGamepadCommandButton>
+              <VirtualGamepadButton
+                buttonName='select'
+                className='col-start-1 row-start-3 size-10! place-self-center text-[10px] ring ring-white/20'
+              >
+                Select
+              </VirtualGamepadButton>
+              <VirtualGamepadButton
+                buttonName='start'
+                className='col-start-3 row-start-3 size-10! place-self-center text-[10px] ring ring-white/20'
+              >
+                Start
+              </VirtualGamepadButton>
+            </>
+          ) : null}
         </div>
-        <VirtualGamepadButton buttonName='start' className='rounded py-1 text-xs ring ring-white/20'>
-          <span className='icon-[mdi--play]' /> Start
-        </VirtualGamepadButton>
+        {isDS ? null : (
+          <VirtualGamepadButton buttonName='start' className='rounded py-1 text-xs ring ring-white/20'>
+            <span className='icon-[mdi--play]' /> Start
+          </VirtualGamepadButton>
+        )}
       </div>
     </div>
   )
