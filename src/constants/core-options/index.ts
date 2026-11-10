@@ -1,4 +1,5 @@
 import { a5200Options } from './a5200.ts'
+import { desmume2015Options } from './desmume2015.ts'
 import { fbneoOptions } from './fbneo.ts'
 import { fceummOptions } from './fceumm.ts'
 import { gambatteOptions } from './gambatte.ts'
@@ -23,6 +24,7 @@ import { vbaNextOptions } from './vba-next.ts'
 
 export const coreOptionsMap = {
   a5200: a5200Options,
+  desmume2015: desmume2015Options,
   fbneo: fbneoOptions,
   fceumm: fceummOptions,
   gambatte: gambatteOptions,
