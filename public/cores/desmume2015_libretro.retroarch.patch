@@ -1,0 +1,86 @@
+diff --git a/emscripten/library_platform_emscripten.js b/emscripten/library_platform_emscripten.js
+index 79c69fd9..bccddc3d 100644
+--- a/emscripten/library_platform_emscripten.js
++++ b/emscripten/library_platform_emscripten.js
+@@ -75,10 +75,19 @@ var LibraryPlatformEmscripten = {
+       if (document.visibilityState != "hidden") PlatformEmscriptenRefreshWakeLock();
+    },
+ 
+-   PlatformEmscriptenWatchWindowVisibility__deps: ["$PlatformEmscriptenOnVisibilityChange"],
++   PlatformEmscriptenWatchWindowVisibility__deps: ["$PlatformEmscriptenOnVisibilityChange", "$MainLoop"],
+    PlatformEmscriptenWatchWindowVisibility__proxy: "sync",
+    PlatformEmscriptenWatchWindowVisibility: function() {
+       document.addEventListener("visibilitychange", PlatformEmscriptenOnVisibilityChange, false);
++      // Lets the page run the main loop itself, for example to finish saving a state in the moment the page is being
++      // hidden, after which the browser stops the animation frames that normally drive it
++      Module["runMainLoopIterations"] = function(count) {
++         for (var i = 0; i < count; i++) {
++            if (!MainLoop.func) return false;
++            MainLoop.runIter(MainLoop.func);
++         }
++         return true;
++      };
+    },
+ 
+    $PlatformEmscriptenOnPowerStateChange__deps: ["platform_emscripten_update_power_state_cb"],
+diff --git a/input/drivers/rwebinput_input.c b/input/drivers/rwebinput_input.c
+index 3e3a1624..42c6c418 100644
+--- a/input/drivers/rwebinput_input.c
++++ b/input/drivers/rwebinput_input.c
+@@ -27,6 +27,28 @@
+ #include <emscripten/html5.h>
+ #include "../../frontend/drivers/platform_emscripten.h"
+ 
++/* Scale from the canvas's size on the page to the size RetroArch draws at. The page can resize the canvas without
++ * RetroArch hearing about it, and then the device pixel ratio alone puts clicks and touches in the wrong place. */
++static void rwebinput_get_canvas_scale(double *scale_x, double *scale_y)
++{
++   int width      = 0;
++   int height     = 0;
++   double css_w   = 0;
++   double css_h   = 0;
++
++   platform_emscripten_get_canvas_size(&width, &height);
++   if (width > 0 && height > 0
++         && emscripten_get_element_css_size("#canvas", &css_w, &css_h) == EMSCRIPTEN_RESULT_SUCCESS
++         && css_w > 0 && css_h > 0)
++   {
++      *scale_x = width / css_w;
++      *scale_y = height / css_h;
++      return;
++   }
++
++   *scale_x = *scale_y = platform_emscripten_get_dpr();
++}
++
+ #include "../input_driver.h"
+ #include "../input_types.h"
+ #include "../input_keymaps.h"
+@@ -333,9 +355,10 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
+    }
+    else
+    {
+-      double dpr = platform_emscripten_get_dpr();
+-      rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
+-      rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
++      double scale_x, scale_y;
++      rwebinput_get_canvas_scale(&scale_x, &scale_y);
++      rwebinput->mouse.x = (int)(mouse_event->targetX * scale_x);
++      rwebinput->mouse.y = (int)(mouse_event->targetY * scale_y);
+    }
+ 
+    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
+@@ -375,9 +398,10 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
+             if (!(touch_event->touches[touch].isChanged) && rwebinput->pointer[touch].id == touch_event->touches[touch].identifier)
+                continue;
+ 
+-            double dpr = platform_emscripten_get_dpr();
+-            rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].targetX * dpr);
+-            rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].targetY * dpr);
++            double scale_x, scale_y;
++            rwebinput_get_canvas_scale(&scale_x, &scale_y);
++            rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].targetX * scale_x);
++            rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].targetY * scale_y);
+             rwebinput->pointer[touch].id = touch_event->touches[touch].identifier;
+          }
+          break;
