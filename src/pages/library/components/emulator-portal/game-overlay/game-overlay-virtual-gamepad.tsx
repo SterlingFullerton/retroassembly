@@ -120,8 +120,8 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
   }, [enabled, emulator, controls])
 }
 
-// On DS the controls fill one strip under the game: L and R in its top corners, fast forward between them, the d-pad
-// and the face buttons on either side, and Select and Start stacked in the middle. Flat, translucent buttons turn
+// On DS the controls fill one strip under the game: L and R in its top corners with Select and Start between them,
+// the d-pad and the face buttons on either side, and fast forward low in the middle. Flat, translucent buttons turn
 // white while pressed.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 const dsDiagonal = 'bg-transparent data-[touching=true]:bg-white/20'
@@ -151,22 +151,12 @@ function DSControls({
       </VirtualGamepadButton>
 
       <div className='absolute top-0.75 left-1/2 flex -translate-x-1/2 gap-1.5'>
-        {rewindEnabled ? (
-          <VirtualGamepadCommandButton
-            className={twMerge(dsButton, 'h-6 w-11 rounded-full')}
-            command='REWIND'
-            title='Rewind'
-          >
-            <span className='icon-[mdi--rewind] size-4' />
-          </VirtualGamepadCommandButton>
-        ) : null}
-        <VirtualGamepadCommandButton
-          className={twMerge(dsButton, 'h-6 w-11 rounded-full')}
-          command='FAST_FORWARD_HOLD'
-          title='Fast forward'
-        >
-          <span className='icon-[mdi--fast-forward] size-4' />
-        </VirtualGamepadCommandButton>
+        <VirtualGamepadButton buttonName='select' className={twMerge(dsButton, 'h-6 w-13 rounded-full text-[11px]')}>
+          Select
+        </VirtualGamepadButton>
+        <VirtualGamepadButton buttonName='start' className={twMerge(dsButton, 'h-6 w-13 rounded-full text-[11px]')}>
+          Start
+        </VirtualGamepadButton>
       </div>
 
       {/* A cross of four arms around a centre; the empty corners press two directions at once */}
@@ -217,16 +207,23 @@ function DSControls({
         />
       </div>
 
-      <div className='absolute top-21.5 left-1/2 flex -translate-x-1/2 flex-col gap-2.5'>
-        <VirtualGamepadButton
-          buttonName='select'
-          className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full text-[11px]')}
+      <div className='absolute bottom-3.5 left-1/2 flex -translate-x-1/2 flex-col gap-2.5'>
+        {rewindEnabled ? (
+          <VirtualGamepadCommandButton
+            className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full')}
+            command='REWIND'
+            title='Rewind'
+          >
+            <span className='icon-[mdi--rewind] size-4' />
+          </VirtualGamepadCommandButton>
+        ) : null}
+        <VirtualGamepadCommandButton
+          className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full')}
+          command='FAST_FORWARD_HOLD'
+          title='Fast forward'
         >
-          Select
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='start' className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full text-[11px]')}>
-          Start
-        </VirtualGamepadButton>
+          <span className='icon-[mdi--fast-forward] size-4' />
+        </VirtualGamepadCommandButton>
       </div>
 
       <div className='absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full'>
