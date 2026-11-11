@@ -24,7 +24,12 @@ export async function loader() {
   const { recentlyLaunchedRoms } = libraryLoaderData
   const rom = recentlySavedRoms[0] || recentlyLaunchedRoms[0] || newAddedRoms[0]
   if (rom) {
-    const [state] = await getStates({ core: preference.emulator.platform[rom.platform].core, limit: 1, rom: rom?.id })
+    const [state] = await getStates({
+      core: preference.emulator.platform[rom.platform].core,
+      limit: 1,
+      rom: rom?.id,
+      type: 'any',
+    })
     data.rom = rom
     if (state) {
       data.state = state

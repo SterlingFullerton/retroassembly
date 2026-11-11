@@ -32,6 +32,8 @@ const defaultRetroarchConfig: RetroarchConfig = {
   input_player2_analog_dpad_mode: 1,
   input_player3_analog_dpad_mode: 1,
   input_player4_analog_dpad_mode: 1,
+  // RetroArch would otherwise freeze while the page is hidden, before the game can be saved. The page pauses it then
+  pause_nonactive: false,
   rewind_granularity: 4,
   rgui_menu_color_theme: 1,
   run_ahead_frames: 1,

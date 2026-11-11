@@ -14,7 +14,8 @@ export async function getStates({
   core?: string
   limit?: number
   rom: string
-  type?: 'auto' | 'manual'
+  // 'any' includes both, for picking the newest state to continue from
+  type?: 'any' | 'auto' | 'manual'
 }) {
   const { currentUser, db } = getContext().var
 

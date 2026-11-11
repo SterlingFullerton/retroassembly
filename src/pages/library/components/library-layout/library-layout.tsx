@@ -8,6 +8,7 @@ import { getHomePath } from '#@/utils/isomorphic/misc.ts'
 import type { getLibraryLoaderData } from '#@/utils/server/loader-data.ts'
 import { useIsDemo } from '../../hooks/use-demo.ts'
 import { useFocusRestoration } from '../../hooks/use-focus-restoration.ts'
+import { useUploadPendingSaves } from '../../hooks/use-upload-pending-saves.ts'
 import { useViewport } from '../../hooks/use-viewport.ts'
 import { PendingMask } from '../pending-mask.tsx'
 import { DemoLoginButton } from './demo-login-button.tsx'
@@ -28,6 +29,7 @@ function getPostfixedTitle(title: string) {
 
 export default function LibraryLayout({ children }: Readonly<PropsWithChildren>) {
   const { language, title, recentlyLaunchedRoms } = useLoaderData<typeof getLibraryLoaderData>()
+  useUploadPendingSaves()
   const isDemo = useIsDemo()
   const { isLargeScreen } = useViewport()
 

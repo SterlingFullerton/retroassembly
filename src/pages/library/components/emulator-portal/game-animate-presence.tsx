@@ -4,6 +4,7 @@ import { AnimatePresence, motion, type TargetAndTransition } from 'motion/react'
 import { useLaunchButton } from '../../atoms.ts'
 import { useAutosave } from './hooks/use-autosave.ts'
 import { useEmulator } from './hooks/use-emulator.ts'
+import { useSaveOnHide } from './hooks/use-save-on-hide.ts'
 
 export function GameAnimatePresence() {
   const { emulator, launched, start } = useEmulator()
@@ -13,6 +14,7 @@ export function GameAnimatePresence() {
   const initialStyle = rect ? { height: rect.height, left: rect.left, top: rect.top, width: rect.width } : {}
 
   useAutosave()
+  useSaveOnHide()
 
   async function handleAnimationComplete(definition: TargetAndTransition) {
     if (isMatch(definition, animateStyle) && emulator) {

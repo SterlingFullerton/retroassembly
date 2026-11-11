@@ -25,7 +25,7 @@ async function getStateAndThumbnail(emulator: Nostalgist, object: { state?: File
   return { state, thumbnail }
 }
 
-async function forceGetEmulatorThumbnail(emulator: Nostalgist, resolution: { width: number; height: number }) {
+export async function forceGetEmulatorThumbnail(emulator: Nostalgist, resolution: { width: number; height: number }) {
   const source = emulator.getCanvas()
   const { width, height } = source
   let sw: number
