@@ -170,17 +170,21 @@ export function GameOverlayVirtualGamepad() {
       </div>
 
       {isDS ? (
-        // Select and Start are stacked in the empty column between the d-pad and the face buttons, level with the
-        // d-pad. An invisible copy of the L button keeps them lined up with it however tall the controls are
+        // The empty column between the two sides holds fast forward, level with L and R and as tall as them, and below
+        // it Select and Start, stacked level with the d-pad
         <div
           className={twMerge(
             'bottom-safe pointer-events-none! absolute left-1/2 flex origin-bottom -translate-x-1/2 scale-85 flex-col gap-2 p-2',
             clsx({ hidden: !gamepadVisible }),
           )}
         >
-          <span aria-hidden='true' className='invisible inline-flex rounded px-2 py-1'>
-            L
-          </span>
+          <VirtualGamepadCommandButton
+            command='FAST_FORWARD_HOLD'
+            className='pointer-events-auto h-8 w-14 rounded-full ring ring-white/20'
+            title='Fast forward'
+          >
+            <span className='icon-[mdi--fast-forward] size-5' />
+          </VirtualGamepadCommandButton>
           <div className='flex h-42 flex-col items-center justify-center gap-3'>
             <VirtualGamepadButton
               buttonName='select'
@@ -335,16 +339,6 @@ export function GameOverlayVirtualGamepad() {
           <VirtualGamepadButton buttonName='b' className='col-start-2 row-start-3 ring ring-white/20'>
             B
           </VirtualGamepadButton>
-          {/* On DS, fast forward fills a corner, so the game gets the row it took */}
-          {isDS ? (
-            <VirtualGamepadCommandButton
-              command='FAST_FORWARD_HOLD'
-              className='col-start-3 row-start-1 size-10! place-self-center ring ring-white/20'
-              title='Fast forward'
-            >
-              <span className='icon-[mdi--fast-forward] size-5' />
-            </VirtualGamepadCommandButton>
-          ) : null}
         </div>
         {isDS ? null : (
           <VirtualGamepadButton buttonName='start' className='rounded py-1 text-xs ring ring-white/20'>
