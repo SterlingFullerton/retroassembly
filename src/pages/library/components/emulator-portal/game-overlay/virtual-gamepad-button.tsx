@@ -6,6 +6,8 @@ import { useEmulator } from '../hooks/use-emulator.ts'
 interface VirtualGamepadButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   buttonName?: string
   buttonNames?: string[]
+  // A finger can slide between buttons of the same group, like the d-pad's directions, but not onto another button
+  group?: string
   onVirtualPressEnd?: () => void
   onVirtualPressStart?: () => void
 }
@@ -13,6 +15,7 @@ interface VirtualGamepadButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
 interface VirtualGamepadButtonRegistration {
   activePointerIds: Set<number>
   buttonNames: string[]
+  group: string
   emulator?: {
     pressDown: (buttonName: string) => void
     pressUp: (buttonName: string) => void
@@ -24,6 +27,8 @@ interface VirtualGamepadButtonRegistration {
 
 const virtualGamepadButtons = new Map<string, VirtualGamepadButtonRegistration>()
 const activePointerButtonIds = new Map<number, string>()
+// The group of the button each finger first touched
+const pointerGroups = new Map<number, string>()
 
 function getVirtualGamepadButtonIdFromPoint(event: PointerEvent<HTMLButtonElement>) {
   return document
@@ -106,18 +111,24 @@ function releasePointersByButtonId(buttonId: string) {
   releaseButton(buttonId)
 }
 
+function endPointer(pointerId: number) {
+  releasePointer(pointerId)
+  pointerGroups.delete(pointerId)
+}
+
 function handleGlobalPointerEnd(event: globalThis.PointerEvent) {
-  releasePointer(event.pointerId)
+  endPointer(event.pointerId)
 }
 
 function handlePointerMove(event: PointerEvent<HTMLButtonElement>) {
   if (event.buttons === 0) {
-    releasePointer(event.pointerId)
+    endPointer(event.pointerId)
     return
   }
 
   const buttonId = getVirtualGamepadButtonIdFromPoint(event)
-  if (buttonId) {
+  const group = buttonId ? virtualGamepadButtons.get(buttonId)?.group : undefined
+  if (buttonId && group === pointerGroups.get(event.pointerId)) {
     pressButton(buttonId, event.pointerId)
   } else {
     releasePointer(event.pointerId)
@@ -125,7 +136,7 @@ function handlePointerMove(event: PointerEvent<HTMLButtonElement>) {
 }
 
 function handlePointerUp(event: PointerEvent<HTMLButtonElement>) {
-  releasePointer(event.pointerId)
+  endPointer(event.pointerId)
 }
 
 export function VirtualGamepadButton({
@@ -133,6 +144,7 @@ export function VirtualGamepadButton({
   buttonNames,
   children,
   className,
+  group,
   onVirtualPressEnd,
   onVirtualPressStart,
   ...props
@@ -148,6 +160,8 @@ export function VirtualGamepadButton({
       activePointerIds: new Set(),
       buttonNames: resolvedButtonNames,
       emulator,
+      // A button without a group is a group of its own, which no other finger can slide onto
+      group: group ?? id,
       onVirtualPressEnd,
       onVirtualPressStart,
       setTouching,
@@ -157,17 +171,18 @@ export function VirtualGamepadButton({
       releasePointersByButtonId(id)
       virtualGamepadButtons.delete(id)
     }
-  }, [emulator, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
+  }, [emulator, group, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
 
   useEffect(() => {
     const button = virtualGamepadButtons.get(id)
     if (button) {
       button.buttonNames = resolvedButtonNames
       button.emulator = emulator
+      button.group = group ?? id
       button.onVirtualPressEnd = onVirtualPressEnd
       button.onVirtualPressStart = onVirtualPressStart
     }
-  }, [emulator, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
+  }, [emulator, group, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -185,11 +200,13 @@ export function VirtualGamepadButton({
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
 
+    pointerGroups.set(event.pointerId, group ?? id)
     pressButton(id, event.pointerId)
   }
 
   return (
     <button
+      data-touching={touching}
       data-virtual-gamepad-button-id={id}
       className={twMerge(
         clsx(
