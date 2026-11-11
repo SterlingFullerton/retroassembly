@@ -170,34 +170,31 @@ export function GameOverlayVirtualGamepad() {
       </div>
 
       {isDS ? (
-        // Select and Start sit between L and R. An invisible copy of the L button lines their tops up with it, and they
-        // hang down into the empty space between the d-pad and the face buttons
+        // Select and Start are stacked in the empty column between the d-pad and the face buttons, level with the
+        // d-pad. An invisible copy of the L button keeps them lined up with it however tall the controls are
         <div
           className={twMerge(
             'bottom-safe pointer-events-none! absolute left-1/2 flex origin-bottom -translate-x-1/2 scale-85 flex-col gap-2 p-2',
             clsx({ hidden: !gamepadVisible }),
           )}
         >
-          <div className='relative'>
-            <span aria-hidden='true' className='invisible inline-flex rounded px-2 py-1'>
-              L
-            </span>
-            <div className='absolute top-0 left-1/2 flex -translate-x-1/2 gap-2'>
-              <VirtualGamepadButton
-                buttonName='select'
-                className='pointer-events-auto size-11 rounded text-[10px] ring ring-white/20'
-              >
-                Select
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='start'
-                className='pointer-events-auto size-11 rounded text-[10px] ring ring-white/20'
-              >
-                Start
-              </VirtualGamepadButton>
-            </div>
+          <span aria-hidden='true' className='invisible inline-flex rounded px-2 py-1'>
+            L
+          </span>
+          <div className='flex h-42 flex-col items-center justify-center gap-3'>
+            <VirtualGamepadButton
+              buttonName='select'
+              className='pointer-events-auto h-7 w-14 rounded-full text-[10px] ring ring-white/20'
+            >
+              Select
+            </VirtualGamepadButton>
+            <VirtualGamepadButton
+              buttonName='start'
+              className='pointer-events-auto h-7 w-14 rounded-full text-[10px] ring ring-white/20'
+            >
+              Start
+            </VirtualGamepadButton>
           </div>
-          <div className='h-42' />
         </div>
       ) : null}
 
