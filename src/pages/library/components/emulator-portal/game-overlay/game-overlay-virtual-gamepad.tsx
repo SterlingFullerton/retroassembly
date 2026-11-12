@@ -9,6 +9,7 @@ import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
+import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
 
 type HoldCommand = 'FAST_FORWARD_HOLD' | 'REWIND'
 
@@ -245,6 +246,14 @@ function DSControls({
   )
 }
 
+// X, Y, A and B around a diamond, by their grid cells
+const faceButtons: [VirtualGamepadLabelButton & ('a' | 'b' | 'x' | 'y'), string][] = [
+  ['x', 'col-start-2 row-start-1'],
+  ['y', 'col-start-1 row-start-2'],
+  ['a', 'col-start-3 row-start-2'],
+  ['b', 'col-start-2 row-start-3'],
+]
+
 export function GameOverlayVirtualGamepad() {
   const { connected } = useGamepads()
   const [gamepadVisible, setGamepadVisible] = useState(!connected)
@@ -257,6 +266,9 @@ export function GameOverlayVirtualGamepad() {
   const isDS = rom?.platform === 'nds'
   // Arcade games take a coin with Select
   const isArcade = rom?.platform === 'arcade'
+  const { core } = useEmulator()
+  // Each system's own names for the buttons; null hides a button its emulator does nothing with
+  const labels = getVirtualGamepadLabels(rom?.platform, core)
   const dsControls = useRef<HTMLDivElement>(null)
   useFitGameAboveControls(launched && isDS, dsControls)
 
@@ -308,14 +320,20 @@ export function GameOverlayVirtualGamepad() {
                 <span className='icon-[mdi--rewind] size-6' />
               </VirtualGamepadCommandButton>
             ) : null}
-            <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='l' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-                L1
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='l2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-                L2
-              </VirtualGamepadButton>
-            </div>
+            {labels.l === null && labels.l2 === null ? null : (
+              <div className='flex w-full gap-2'>
+                {labels.l === null ? null : (
+                  <VirtualGamepadButton buttonName='l' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+                    {labels.l}
+                  </VirtualGamepadButton>
+                )}
+                {labels.l2 === null ? null : (
+                  <VirtualGamepadButton buttonName='l2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+                    {labels.l2}
+                  </VirtualGamepadButton>
+                )}
+              </div>
+            )}
             <div className='relative size-42 overflow-hidden rounded-xl ring ring-white/20'>
               <VirtualGamepadButton
                 buttonNames={['up', 'left']}
@@ -390,19 +408,21 @@ export function GameOverlayVirtualGamepad() {
                 <span className='icon-[mdi--arrow-bottom-right-thick]' />
               </VirtualGamepadButton>
             </div>
-            <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
-              {isArcade ? (
-                <>
-                  <span className='icon-[mdi--hand-coin]' />
-                  {t('emulator.coin')}
-                </>
-              ) : (
-                <>
-                  <span className='icon-[mdi--menu]' />
-                  Select
-                </>
-              )}
-            </VirtualGamepadButton>
+            {labels.select === null ? null : (
+              <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
+                {isArcade ? (
+                  <>
+                    <span className='icon-[mdi--hand-coin]' />
+                    {t('emulator.coin')}
+                  </>
+                ) : (
+                  <>
+                    {labels.select === 'Select' ? <span className='icon-[mdi--menu]' /> : null}
+                    {labels.select}
+                  </>
+                )}
+              </VirtualGamepadButton>
+            )}
           </div>
 
           <div
@@ -418,30 +438,36 @@ export function GameOverlayVirtualGamepad() {
             >
               <span className='icon-[mdi--fast-forward] size-6' />
             </VirtualGamepadCommandButton>
-            <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-                R2
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='r' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
-                R1
-              </VirtualGamepadButton>
-            </div>
+            {labels.r === null && labels.r2 === null ? null : (
+              <div className='flex w-full gap-2'>
+                {labels.r2 === null ? null : (
+                  <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+                    {labels.r2}
+                  </VirtualGamepadButton>
+                )}
+                {labels.r === null ? null : (
+                  <VirtualGamepadButton buttonName='r' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+                    {labels.r}
+                  </VirtualGamepadButton>
+                )}
+              </div>
+            )}
             <div className='grid grid-cols-3 grid-rows-3 *:size-14 *:rounded-full'>
-              <VirtualGamepadButton buttonName='x' group='face' className='col-start-2 row-start-1 ring ring-white/20'>
-                X
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='y' group='face' className='col-start-1 row-start-2 ring ring-white/20'>
-                Y
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='a' group='face' className='col-start-3 row-start-2 ring ring-white/20'>
-                A
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='b' group='face' className='col-start-2 row-start-3 ring ring-white/20'>
-                B
-              </VirtualGamepadButton>
+              {faceButtons.map(([button, position]) =>
+                labels[button] === null ? null : (
+                  <VirtualGamepadButton
+                    buttonName={button}
+                    className={twMerge(position, 'ring ring-white/20', clsx({ 'text-xs': labels[button].length > 2 }))}
+                    group='face'
+                    key={button}
+                  >
+                    {labels[button]}
+                  </VirtualGamepadButton>
+                ),
+              )}
             </div>
             <VirtualGamepadButton buttonName='start' className='rounded py-1 text-xs ring ring-white/20'>
-              <span className='icon-[mdi--play]' /> Start
+              <span className='icon-[mdi--play]' /> {labels.start}
             </VirtualGamepadButton>
           </div>
         </>
