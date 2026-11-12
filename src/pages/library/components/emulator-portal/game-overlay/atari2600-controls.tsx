@@ -6,9 +6,8 @@ import { Joystick } from './joystick.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari 2600's controls drawn like its own: the CX40 joystick, which presses eight directions, its single red fire
-// button, and the console's Game Select and Game Reset switches as silver levers named in orange, between the hands in
-// portrait or beside pause in landscape. Stella reads the joystick as the d-pad, fire as B, and the two switches as
-// Select and Start.
+// button, and the console's Select and Reset switches as plain buttons, between the hands in portrait or beside pause in
+// landscape. Stella reads the joystick as the d-pad, fire as B, and the two switches as Select and Start.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 
 function ConsoleSwitch({ buttonName, label }: Readonly<{ buttonName: string; label: string }>) {
@@ -17,19 +16,12 @@ function ConsoleSwitch({ buttonName, label }: Readonly<{ buttonName: string; lab
       buttonName={buttonName}
       className={twMerge(
         pressed,
-        'flex flex-col items-center gap-1 bg-transparent px-1 data-[touching=true]:bg-transparent',
+        'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
       )}
-      title={`Game ${label}`}
+      style={{ background: 'linear-gradient(#3a3a3d, #202022)' }}
+      title={label}
     >
-      <span
-        className='block h-7.5 w-5.5 rounded shadow-[0_2px_3px_#0009]'
-        style={{ background: 'linear-gradient(90deg, #8a8a90, #e8e8ee 45%, #9a9aa0)' }}
-      />
-      <span className='text-center text-[8px] leading-tight font-extrabold tracking-[0.12em] text-[#e88a3a]'>
-        GAME
-        <br />
-        {label.toUpperCase()}
-      </span>
+      {label.toUpperCase()}
     </VirtualGamepadButton>
   )
 }
@@ -67,7 +59,7 @@ export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
       </div>
 
-      {/* Game Select and Game Reset: between the hands in portrait, beside pause in landscape */}
+      {/* Select and Reset: between the hands in portrait, beside pause in landscape */}
       <div
         className={twMerge(
           'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
@@ -75,7 +67,7 @@ export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
         )}
         style={{ scale }}
       >
-        <div className='absolute bottom-[262px] left-0 flex -translate-x-1/2 gap-5 landscape:top-3 landscape:bottom-auto landscape:translate-x-0 landscape:gap-3'>
+        <div className='absolute bottom-[250px] left-0 flex -translate-x-1/2 gap-2 landscape:top-1 landscape:bottom-auto landscape:translate-x-0'>
           <ConsoleSwitch buttonName='select' label='Select' />
           <ConsoleSwitch buttonName='start' label='Reset' />
         </div>
