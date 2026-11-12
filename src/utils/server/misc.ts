@@ -18,10 +18,10 @@ export function getConnInfo(context?: Context) {
   } catch {}
 }
 
-export async function getFileContent(id: string) {
+export async function getFileContent(id: string, options?: { range?: { length?: number; offset: number } }) {
   const { storage } = getContext().var
 
-  const object = await storage.get(id)
+  const object = await storage.get(id, options)
   return object
 }
 

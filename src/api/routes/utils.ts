@@ -22,7 +22,9 @@ function getContentType(fileId: string) {
 }
 
 export function createFileResponse(
-  object: { body: Buffer<ArrayBuffer>; httpEtag: string; size: number } | R2ObjectBody,
+  object:
+    | { body: ReadableStream<Uint8Array>; httpEtag: string; range?: { end: number; offset: number }; size: number }
+    | R2ObjectBody,
   fileId?: string,
 ) {
   const headers = new Headers()
@@ -39,13 +41,20 @@ export function createFileResponse(
     }
   }
   headers.set('ETag', object.httpEtag)
-  if ('range' in object && object.range && 'offset' in object.range && 'end' in object.range) {
-    const contentRange = `bytes ${object.range.offset}-${object.range.end ?? object.size - 1}/${object.size}`
-    headers.set('Content-Range', contentRange)
+  headers.set('Accept-Ranges', 'bytes')
+  let start = 0
+  let end = object.size - 1
+  const { range } = object
+  if (range && 'offset' in range && range.offset !== undefined) {
+    start = range.offset
+    if ('end' in range) {
+      ;({ end } = range)
+    } else if ('length' in range && range.length !== undefined) {
+      end = start + range.length - 1
+    }
+    headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`)
   }
-  let status = 304
-  if (object.body) {
-    status = headers.get('Range') ? 206 : 200
-  }
+  headers.set('Content-Length', String(end - start + 1))
+  const status = headers.has('Content-Range') ? 206 : 200
   return new Response(object.body, { headers, status })
 }

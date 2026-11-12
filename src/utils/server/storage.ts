@@ -43,17 +43,30 @@ export function createStorage() {
       }
     },
 
-    async get(id: string) {
+    // Streams the file from disk as it's sent, so it never sits in memory whole whatever its size. Takes the same range
+    // option as an R2 bucket, for partial requests
+    async get(id: string, options?: { range?: { length?: number; offset: number } }) {
       const filePath = path.join(storageDirectory, id)
-      const { default: fs } = await import('fs-extra')
-      const buffer = await fs.readFile(filePath)
-      // Create a mock R2ObjectBody-like object for compatibility with createFileResponse
-      const mockR2Object = {
-        body: buffer,
-        httpEtag: `"${Date.now()}"`,
-        size: buffer.length,
+      const { createReadStream } = await import('node:fs')
+      const { stat } = await import('node:fs/promises')
+      const { Readable } = await import('node:stream')
+      const { mtimeMs, size } = await stat(filePath)
+      const requested = options?.range
+      const range =
+        requested && requested.offset < size
+          ? {
+              end: Math.min(size, requested.offset + (requested.length ?? size - requested.offset)) - 1,
+              offset: requested.offset,
+            }
+          : undefined
+      const stream = createReadStream(filePath, range ? { end: range.end, start: range.offset } : {})
+      return {
+        body: Readable.toWeb(stream) as ReadableStream<Uint8Array>,
+        // Changes only when the file does, so a browser can tell it already has the current copy
+        httpEtag: `"${size.toString(36)}-${Math.trunc(mtimeMs).toString(36)}"`,
+        range,
+        size,
       }
-      return mockR2Object
     },
 
     async delete(id: string) {
