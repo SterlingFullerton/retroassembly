@@ -86,7 +86,57 @@ export function getN64Keyboard(mapping: KeyboardMapping) {
   return { config, keys }
 }
 
+// The ColecoVision's keypad on the number keys. Gearcoleco reads keys 1 to 6 from the RetroPad's Y, X, L, R, L2 and R2,
+// 7 and 8 from the stick clicks, and 9 and 0 from the left stick pushed down and right. ✱ and # stay on Start and Select
+const colecoVisionKeypad = [
+  ['1', 'input_player1_y', 'input_player1_y'],
+  ['2', 'input_player1_x', 'input_player1_x'],
+  ['3', 'input_player1_l1', 'input_player1_l'],
+  ['4', 'input_player1_r1', 'input_player1_r'],
+  ['5', 'input_player1_l2', 'input_player1_l2'],
+  ['6', 'input_player1_r2', 'input_player1_r2'],
+  ['7', 'input_player1_l3', 'input_player1_l3'],
+  ['8', 'input_player1_r3', 'input_player1_r3'],
+  ['9', 'input_player1_l_y_plus', 'input_player1_l_y_plus'],
+  ['0', 'input_player1_l_x_plus', 'input_player1_l_x_plus'],
+] as const
+
+/**
+ * The ColecoVision's keys: the number keys play its keypad, each unless the player uses that key for something else,
+ * in which case the keypad key keeps its usual key. Returns the RetroArch settings, and each keypad key's key for the
+ * key hint.
+ */
+export function getColecoVisionKeyboard(mapping: KeyboardMapping) {
+  const keypadInputs = new Set<string>(colecoVisionKeypad.map(([, input]) => input))
+  const usedKeys = new Set(
+    Object.entries(mapping)
+      .filter(([input, key]) => key && !keypadInputs.has(input))
+      .map(([, key]) => key),
+  )
+  // The left stick stays a stick, so that 9 and 0 aren't taken for the joystick moving down and right
+  const config: Record<string, number | string> = { input_player1_analog_dpad_mode: 0 }
+  const keypad: Record<string, string> = {}
+  for (const [label, input, retroarchInput] of colecoVisionKeypad) {
+    const numberKey = `num${label}`
+    const key = usedKeys.has(numberKey) ? mapping[input] : numberKey
+    config[retroarchInput] = key ?? ''
+    if (key) {
+      keypad[label] = key
+    }
+  }
+  // Gearcoleco takes the left stick pushed either way as 9 or 0, so the other directions mustn't keep keys of their own
+  config.input_player1_l_x_minus = ''
+  config.input_player1_l_y_minus = ''
+  return { config, keys: { keypad } }
+}
+
 /** RetroArch settings for the keys an emulator needs beyond the shared keyboard mapping */
 export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping) {
-  return core === 'mupen64plus_next' ? getN64Keyboard(mapping).config : {}
+  if (core === 'mupen64plus_next') {
+    return getN64Keyboard(mapping).config
+  }
+  if (core === 'gearcoleco') {
+    return getColecoVisionKeyboard(mapping).config
+  }
+  return {}
 }

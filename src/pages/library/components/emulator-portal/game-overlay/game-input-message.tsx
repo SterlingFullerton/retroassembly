@@ -6,7 +6,7 @@ import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useInputMapping } from '#@/pages/library/hooks/use-input-mapping.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
-import { getN64Keyboard } from '#@/pages/library/utils/core-keyboard.ts'
+import { getColecoVisionKeyboard, getN64Keyboard } from '#@/pages/library/utils/core-keyboard.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
 // RetroArch's names for modifier keys, spelled out for the hint
@@ -22,7 +22,9 @@ const modifierKeyNames: Record<string, string> = {
 const arrowNames: Record<string, string> = { down: '↓', left: '←', right: '→', up: '↑' }
 
 function keyName(key: string) {
-  return arrowNames[key] ?? modifierKeyNames[key] ?? capitalize(key)
+  // RetroArch calls the number keys num0 to num9
+  const numberKey = /^num(?<digit>\d)$/u.exec(key)?.groups?.digit
+  return numberKey ?? arrowNames[key] ?? modifierKeyNames[key] ?? capitalize(key)
 }
 
 // Several keys shown as one, such as the four arrows
@@ -32,8 +34,20 @@ function joinKeys(...keys: (string | undefined)[]) {
     .join(' ')
 }
 
-// The N64's buttons named and coloured as on its controller
-function N64Button({ children, color }: Readonly<{ children: ReactNode; color?: string }>) {
+// The keypad's keys, shown as one range when they are on the number keys
+function keypadKeyNames(keypad: Record<string, string>) {
+  const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+  if (labels.every((label) => keypad[label] === `num${label}`)) {
+    return '1 – 0'
+  }
+  return labels
+    .filter((label) => keypad[label])
+    .map((label) => `${label}: ${keyName(keypad[label])}`)
+    .join(' ')
+}
+
+// A console's buttons named, and coloured, as on its controller
+function ConsoleButton({ children, color }: Readonly<{ children: ReactNode; color?: string }>) {
   return (
     <span className='font-bold' style={color ? { color } : undefined}>
       {children}
@@ -57,18 +71,45 @@ export function GameInputMessage() {
   // On the N64 the keys play its controller: the RetroPad's B, Y, L2 and right stick are its A, B, Z and C buttons (its
   // emulator ignores the RetroPad's X and A), and the stick and D-pad have keys of their own
   const n64Messages: { keyNames: string[]; message: ReactNode }[] = [
-    { keyNames: compact([joinKeys(...n64Keys.stick)]), message: <N64Button>Stick</N64Button> },
-    { keyNames: compact([joinKeys(...n64Keys.dpad)]), message: <N64Button>D-pad</N64Button> },
-    { keyNames: compact([keyboardMapping.input_player1_b]), message: <N64Button color='#6f9bff'>A</N64Button> },
-    { keyNames: compact([keyboardMapping.input_player1_y]), message: <N64Button color='#4fcf68'>B</N64Button> },
-    { keyNames: compact([joinKeys(...n64Keys.c)]), message: <N64Button color='#f2c21a'>C</N64Button> },
-    { keyNames: compact([n64Keys.z]), message: <N64Button>Z</N64Button> },
-    { keyNames: compact([keyboardMapping.input_player1_l1]), message: <N64Button>L</N64Button> },
-    { keyNames: compact([keyboardMapping.input_player1_r1]), message: <N64Button>R</N64Button> },
+    { keyNames: compact([joinKeys(...n64Keys.stick)]), message: <ConsoleButton>Stick</ConsoleButton> },
+    { keyNames: compact([joinKeys(...n64Keys.dpad)]), message: <ConsoleButton>D-pad</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_b]), message: <ConsoleButton color='#6f9bff'>A</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_y]), message: <ConsoleButton color='#4fcf68'>B</ConsoleButton> },
+    { keyNames: compact([joinKeys(...n64Keys.c)]), message: <ConsoleButton color='#f2c21a'>C</ConsoleButton> },
+    { keyNames: compact([n64Keys.z]), message: <ConsoleButton>Z</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_l1]), message: <ConsoleButton>L</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_r1]), message: <ConsoleButton>R</ConsoleButton> },
     {
       keyNames: compact([keyboardMapping.input_player1_start]),
-      message: <N64Button color='#ff6b5e'>Start</N64Button>,
+      message: <ConsoleButton color='#ff6b5e'>Start</ConsoleButton>,
     },
+  ]
+
+  // On the ColecoVision the keys play its controller: its joystick, two orange fire buttons and keypad
+  const colecoVisionKeypad = getColecoVisionKeyboard(keyboardMapping).keys.keypad
+  const colecoVisionMessages: { keyNames: string[]; message: ReactNode }[] = [
+    {
+      keyNames: compact([
+        joinKeys(
+          keyboardMapping.input_player1_up,
+          keyboardMapping.input_player1_down,
+          keyboardMapping.input_player1_left,
+          keyboardMapping.input_player1_right,
+        ),
+      ]),
+      message: <ConsoleButton>Joystick</ConsoleButton>,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_b]),
+      message: <ConsoleButton color='#f5944a'>Fire L</ConsoleButton>,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_a]),
+      message: <ConsoleButton color='#f5944a'>Fire R</ConsoleButton>,
+    },
+    { keyNames: compact([keypadKeyNames(colecoVisionKeypad)]), message: <ConsoleButton>Keypad</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_start]), message: <ConsoleButton>✱</ConsoleButton> },
+    { keyNames: compact([keyboardMapping.input_player1_select]), message: <ConsoleButton>#</ConsoleButton> },
   ]
 
   // Elsewhere, the arrows and the four face buttons, shown by their place in the diamond
@@ -114,7 +155,8 @@ export function GameInputMessage() {
       ]
     : [
         ...(core === 'mupen64plus_next' ? n64Messages : []),
-        ...(core === 'mupen64plus_next' ? [] : genericMessages),
+        ...(core === 'gearcoleco' ? colecoVisionMessages : []),
+        ...(core === 'mupen64plus_next' || core === 'gearcoleco' ? [] : genericMessages),
         ...(coinKey ? [{ keyNames: [modifierKeyNames[coinKey] ?? coinKey], message: t('emulator.insertCoin') }] : []),
         { keyNames: compact([keyboardMapping.$pause]), message: t('emulator.pause') },
         ...(rewindEnabled
