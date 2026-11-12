@@ -2,19 +2,16 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { DPad } from './dpad.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The Game Boy's controls drawn like its own buttons: a black d-pad cross, berry-coloured B and A with their letters
+// The Game Boy's controls drawn like its own buttons: the d-pad every console shares, berry-coloured B and A with their letters
 // printed beside them, and grey slanted Select and Start between the hands in portrait, or beside pause in landscape.
 // B and A are slanted along the arc the thumb makes rolling from one to the other, as on the NES's. Game Boy Color
 // games share them. Every Game Boy emulator reads the RetroPad's B, A, Select and Start as the Game Boy's.
 const berry = '#d0508a'
 
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
-// The d-pad's arms light up when pressed rather than shrinking, which would open a gap between them
-const arm = 'text-[11px] text-[#6a6a70] data-[touching=true]:brightness-200'
-const armStyle: CSSProperties = { background: 'linear-gradient(#2c2c2f, #111113)' }
-const diagonal = 'bg-transparent data-[touching=true]:bg-white/10'
 
 function Pill({ buttonName, label }: Readonly<{ buttonName: string; label: string }>) {
   return (
@@ -50,72 +47,8 @@ export function GbControls({ visible }: Readonly<{ visible: boolean }>) {
   return (
     <>
       <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
-        {/* The d-pad: a cross whose corners press two directions at once */}
-        <div className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34'>
-          <div className='absolute inset-0 grid grid-cols-3 grid-rows-3'>
-            <VirtualGamepadButton
-              buttonNames={['up', 'left']}
-              className={twMerge(diagonal, 'rounded-tl-md')}
-              group='dpad'
-              title='up,left'
-            />
-            <VirtualGamepadButton
-              buttonName='up'
-              className={twMerge(arm, 'rounded-t-sm')}
-              group='dpad'
-              style={armStyle}
-              title='up'
-            >
-              ▲
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['right', 'up']}
-              className={twMerge(diagonal, 'rounded-tr-md')}
-              group='dpad'
-              title='right,up'
-            />
-            <VirtualGamepadButton
-              buttonName='left'
-              className={twMerge(arm, 'rounded-l-sm')}
-              group='dpad'
-              style={armStyle}
-              title='left'
-            >
-              ◀
-            </VirtualGamepadButton>
-            <div style={armStyle} />
-            <VirtualGamepadButton
-              buttonName='right'
-              className={twMerge(arm, 'rounded-r-sm')}
-              group='dpad'
-              style={armStyle}
-              title='right'
-            >
-              ▶
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['left', 'down']}
-              className={twMerge(diagonal, 'rounded-bl-md')}
-              group='dpad'
-              title='left,down'
-            />
-            <VirtualGamepadButton
-              buttonName='down'
-              className={twMerge(arm, 'rounded-b-sm')}
-              group='dpad'
-              style={armStyle}
-              title='down'
-            >
-              ▼
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['right', 'down']}
-              className={twMerge(diagonal, 'rounded-br-md')}
-              group='dpad'
-              title='right,down'
-            />
-          </div>
-        </div>
+        {/* The d-pad */}
+        <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
       </div>
 
       {/* B and A, slanted, with their letters printed below and to the right as on the Game Boy */}

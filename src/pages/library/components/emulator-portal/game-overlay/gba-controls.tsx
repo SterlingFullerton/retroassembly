@@ -1,17 +1,13 @@
 import { clsx } from 'clsx'
-import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { DPad } from './dpad.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The Game Boy Advance's controls drawn like its own buttons: a dark grey d-pad cross, pale grey A and B slanted with A
+// The Game Boy Advance's controls drawn like its own buttons: the d-pad every console shares, pale grey A and B slanted with A
 // higher, pale grey L and R shoulders, and Select and Start as pills between the hands in portrait, or beside pause in
 // landscape. mGBA and VBA Next read the RetroPad's buttons as the GBA's.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
-// The d-pad's arms light up when pressed rather than shrinking, which would open a gap between them
-const arm = 'text-[11px] text-[#8a8a90] data-[touching=true]:brightness-150'
-const armStyle: CSSProperties = { background: 'linear-gradient(#4a4a50, #26262a)' }
-const diagonal = 'bg-transparent data-[touching=true]:bg-white/10'
 const pale = 'radial-gradient(circle at 40% 30%, #ffffff, #d6d6dc 60%, #9a9aa2)'
 const paleBar = 'linear-gradient(#e6e6ea, #a8a8b0)'
 
@@ -62,70 +58,8 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
         >
           L
         </VirtualGamepadButton>
-        {/* The d-pad: a cross whose corners press two directions at once */}
-        <div className='absolute bottom-19 left-5.5 grid size-35 grid-cols-3 grid-rows-3 landscape:bottom-22.5 landscape:left-3 landscape:size-27'>
-          <VirtualGamepadButton
-            buttonNames={['up', 'left']}
-            className={twMerge(diagonal, 'rounded-tl-full')}
-            group='dpad'
-            title='up,left'
-          />
-          <VirtualGamepadButton
-            buttonName='up'
-            className={twMerge(arm, 'rounded-t-md')}
-            group='dpad'
-            style={armStyle}
-            title='up'
-          >
-            ▲
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['right', 'up']}
-            className={twMerge(diagonal, 'rounded-tr-full')}
-            group='dpad'
-            title='right,up'
-          />
-          <VirtualGamepadButton
-            buttonName='left'
-            className={twMerge(arm, 'rounded-l-md')}
-            group='dpad'
-            style={armStyle}
-            title='left'
-          >
-            ◀
-          </VirtualGamepadButton>
-          <div style={armStyle} />
-          <VirtualGamepadButton
-            buttonName='right'
-            className={twMerge(arm, 'rounded-r-md')}
-            group='dpad'
-            style={armStyle}
-            title='right'
-          >
-            ▶
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['left', 'down']}
-            className={twMerge(diagonal, 'rounded-bl-full')}
-            group='dpad'
-            title='left,down'
-          />
-          <VirtualGamepadButton
-            buttonName='down'
-            className={twMerge(arm, 'rounded-b-md')}
-            group='dpad'
-            style={armStyle}
-            title='down'
-          >
-            ▼
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['right', 'down']}
-            className={twMerge(diagonal, 'rounded-br-full')}
-            group='dpad'
-            title='right,down'
-          />
-        </div>
+        {/* The d-pad */}
+        <DPad className='absolute bottom-19 left-5.5 size-35 landscape:bottom-22.5 landscape:left-3 landscape:size-27' />
       </div>
 
       <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>

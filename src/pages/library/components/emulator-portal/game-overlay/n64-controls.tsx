@@ -3,6 +3,7 @@ import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'r
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { setVirtualGamepadAxis } from '#@/pages/library/utils/virtual-gamepad.ts'
+import { DPad } from './dpad.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
@@ -15,8 +16,6 @@ const shoulder = twMerge(
   'h-7.5 rounded-t-2xl rounded-b-lg text-[13px] font-bold text-[#2b2d31] shadow-[inset_0_1px_0_#fff8,0_2px_3px_#0006]',
 )
 const shoulderStyle: CSSProperties = { background: 'linear-gradient(#c9cbce, #9da0a4)' }
-const dpadArm = twMerge(pressed, 'text-[10px] text-[#8a8d92] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]')
-const dpadStyle: CSSProperties = { background: 'linear-gradient(#3a3c40, #1f2023)' }
 const roundButton = twMerge(
   pressed,
   'absolute rounded-full font-bold text-white shadow-[0_3px_4px_#0009,inset_0_1px_0_#ffffff55]',
@@ -146,48 +145,8 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
         {/* The D-pad at the left edge, the stick below it towards the middle, where the left thumb rests */}
         <div className='relative h-59'>
-          {/* A cross of four arms; the centre is a dimple, as on the controller */}
-          <div className='absolute top-0 left-0 grid size-24 grid-cols-3 grid-rows-3'>
-            <VirtualGamepadButton
-              buttonName='up'
-              className={twMerge(dpadArm, 'col-start-2 rounded-t-md')}
-              group='dpad'
-              style={dpadStyle}
-              title='up'
-            >
-              ▲
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonName='left'
-              className={twMerge(dpadArm, 'col-start-1 row-start-2 rounded-l-md')}
-              group='dpad'
-              style={dpadStyle}
-              title='left'
-            >
-              ◀
-            </VirtualGamepadButton>
-            <div className='col-start-2 row-start-2 grid place-items-center' style={dpadStyle}>
-              <div className='size-4 rounded-full bg-[#15161a]' />
-            </div>
-            <VirtualGamepadButton
-              buttonName='right'
-              className={twMerge(dpadArm, 'col-start-3 row-start-2 rounded-r-md')}
-              group='dpad'
-              style={dpadStyle}
-              title='right'
-            >
-              ▶
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonName='down'
-              className={twMerge(dpadArm, 'col-start-2 row-start-3 rounded-b-md')}
-              group='dpad'
-              style={dpadStyle}
-              title='down'
-            >
-              ▼
-            </VirtualGamepadButton>
-          </div>
+          {/* The d-pad */}
+          <DPad className='absolute top-0 left-0 size-24' />
           <div className='absolute bottom-0 left-1/2 -translate-x-1/2'>
             <AnalogStick />
           </div>

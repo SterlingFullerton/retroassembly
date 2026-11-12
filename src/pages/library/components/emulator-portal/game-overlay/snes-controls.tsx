@@ -2,19 +2,16 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { DPad } from './dpad.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The Super Famicom's controls drawn like its controller: a grey d-pad cross in a round dish, A, B, X and Y in its
+// The Super Famicom's controls drawn like its controller: the d-pad every console shares, A, B, X and Y in its
 // diamond and colours on a grey plate, grey L and R shoulder buttons, and slanted Select and Start between the hands in
 // portrait, or beside pause in landscape. Snes9x reads the RetroPad's buttons as the controller's, so each button is
 // the one its letter says.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 const dish: CSSProperties = { background: 'radial-gradient(circle at 45% 40%, #d9d9de, #b9b9c0 70%)' }
 const dishShadow = 'rounded-full shadow-[inset_0_2px_6px_#0005,0_0_0_2px_#9a9aa2]'
-// The d-pad's arms light up when pressed rather than shrinking, which would open a gap between them
-const arm = 'text-[11px] text-[#8a8a90] data-[touching=true]:brightness-150'
-const armStyle: CSSProperties = { background: 'linear-gradient(#3a3a3e, #1e1e22)' }
-const diagonal = 'bg-transparent data-[touching=true]:bg-black/10'
 
 function colored(light: string, middle: string, dark: string) {
   return `radial-gradient(circle at 40% 30%, ${light}, ${middle} 60%, ${dark})`
@@ -91,78 +88,8 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
         >
           L
         </VirtualGamepadButton>
-        {/* The d-pad: a cross in a dish; its corners press two directions at once */}
-        <div
-          className={twMerge(
-            'absolute bottom-16 left-4 size-40 landscape:bottom-15 landscape:left-2.5 landscape:size-35',
-            dishShadow,
-          )}
-          style={dish}
-        >
-          <div className='absolute inset-[14%] grid grid-cols-3 grid-rows-3'>
-            <VirtualGamepadButton
-              buttonNames={['up', 'left']}
-              className={twMerge(diagonal, 'rounded-tl-full')}
-              group='dpad'
-              title='up,left'
-            />
-            <VirtualGamepadButton
-              buttonName='up'
-              className={twMerge(arm, 'rounded-t-md')}
-              group='dpad'
-              style={armStyle}
-              title='up'
-            >
-              ▲
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['right', 'up']}
-              className={twMerge(diagonal, 'rounded-tr-full')}
-              group='dpad'
-              title='right,up'
-            />
-            <VirtualGamepadButton
-              buttonName='left'
-              className={twMerge(arm, 'rounded-l-md')}
-              group='dpad'
-              style={armStyle}
-              title='left'
-            >
-              ◀
-            </VirtualGamepadButton>
-            <div style={armStyle} />
-            <VirtualGamepadButton
-              buttonName='right'
-              className={twMerge(arm, 'rounded-r-md')}
-              group='dpad'
-              style={armStyle}
-              title='right'
-            >
-              ▶
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['left', 'down']}
-              className={twMerge(diagonal, 'rounded-bl-full')}
-              group='dpad'
-              title='left,down'
-            />
-            <VirtualGamepadButton
-              buttonName='down'
-              className={twMerge(arm, 'rounded-b-md')}
-              group='dpad'
-              style={armStyle}
-              title='down'
-            >
-              ▼
-            </VirtualGamepadButton>
-            <VirtualGamepadButton
-              buttonNames={['right', 'down']}
-              className={twMerge(diagonal, 'rounded-br-full')}
-              group='dpad'
-              title='right,down'
-            />
-          </div>
-        </div>
+        {/* The d-pad */}
+        <DPad className='absolute bottom-16 left-4 size-40 landscape:bottom-15 landscape:left-2.5 landscape:size-35' />
       </div>
 
       <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>

@@ -1,9 +1,10 @@
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DPad } from './dpad.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The Genesis's controls drawn like its controller: a round thumb pad with a cross on it, A, B and C as big black
+// The Genesis's controls drawn like its controller: the d-pad every console shares, A, B and C as big black
 // buttons in a row slanting up to the right, and the 6-button pad's X, Y and Z as a smaller row above them. Start and
 // Mode sit between the hands in portrait, and beside pause at the top left in landscape. Genesis Plus GX reads A, B and
 // C from the RetroPad's Y, B and A, X, Y and Z from L, X and R, and Mode from Select.
@@ -24,10 +25,6 @@ const face = twMerge(
   'rounded-full font-bold text-[#f2f2f2] shadow-[0_3px_5px_#000c,inset_0_1px_0_#ffffff30]',
 )
 const faceBackground = 'radial-gradient(circle at 38% 30%, #4a4a4e, #161618 65%, #0a0a0b)'
-// The thumb pad's arms light up when pressed rather than shrinking, which would open a gap between them
-const arm = 'text-[length:calc(11*var(--u))] text-[#8a8a8f] data-[touching=true]:brightness-150'
-const armStyle: CSSProperties = { background: 'linear-gradient(#2c2c2f, #18181a)' }
-const diagonal = 'bg-transparent data-[touching=true]:bg-white/10'
 
 // [right, bottom, size, text size] in portrait, then in landscape
 type Place = [number, number, number, number]
@@ -85,79 +82,14 @@ export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
         '[--u:min(1px,calc(100vw/390))] landscape:[--u:max(0.6px,min(1px,calc(100vh/390),calc((100vw-100vh*4/3)/2/164)))]',
       )}
     >
-      {/* The thumb pad: a disc with a cross of four arms; its corners press two directions at once */}
-      <div
+      {/* The thumb pad */}
+      <DPad
         className={twMerge(
-          'absolute bottom-[calc(56*var(--u)+env(safe-area-inset-bottom))] left-[calc(16*var(--u)+env(safe-area-inset-left))] size-[calc(150*var(--u))] rounded-full shadow-[0_4px_8px_#000c,inset_0_1px_0_#ffffff22]',
+          'absolute bottom-[calc(56*var(--u)+env(safe-area-inset-bottom))] left-[calc(16*var(--u)+env(safe-area-inset-left))] size-[calc(150*var(--u))]',
           'landscape:left-[calc(12*var(--u)+env(safe-area-inset-left))] landscape:size-[calc(140*var(--u))]',
           hidden,
         )}
-        style={{ background: 'radial-gradient(circle at 40% 35%, #3a3a3d, #1c1c1e 70%)' }}
-      >
-        <div className='absolute inset-[13%] grid grid-cols-3 grid-rows-3'>
-          <VirtualGamepadButton
-            buttonNames={['up', 'left']}
-            className={twMerge(diagonal, 'rounded-tl-full')}
-            group='dpad'
-            title='up,left'
-          />
-          <VirtualGamepadButton
-            buttonName='up'
-            className={twMerge(arm, 'rounded-t-md')}
-            group='dpad'
-            style={armStyle}
-            title='up'
-          >
-            ▲
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['right', 'up']}
-            className={twMerge(diagonal, 'rounded-tr-full')}
-            group='dpad'
-            title='right,up'
-          />
-          <VirtualGamepadButton
-            buttonName='left'
-            className={twMerge(arm, 'rounded-l-md')}
-            group='dpad'
-            style={armStyle}
-            title='left'
-          >
-            ◀
-          </VirtualGamepadButton>
-          <div style={armStyle} />
-          <VirtualGamepadButton
-            buttonName='right'
-            className={twMerge(arm, 'rounded-r-md')}
-            group='dpad'
-            style={armStyle}
-            title='right'
-          >
-            ▶
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['left', 'down']}
-            className={twMerge(diagonal, 'rounded-bl-full')}
-            group='dpad'
-            title='left,down'
-          />
-          <VirtualGamepadButton
-            buttonName='down'
-            className={twMerge(arm, 'rounded-b-md')}
-            group='dpad'
-            style={armStyle}
-            title='down'
-          >
-            ▼
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonNames={['right', 'down']}
-            className={twMerge(diagonal, 'rounded-br-full')}
-            group='dpad'
-            title='right,down'
-          />
-        </div>
-      </div>
+      />
 
       {/* A, B and C, big, in their slanted row; X, Y and Z, a smaller row above, for 6-button games */}
       <FaceButton buttonName='y' hidden={hidden} label='A' />

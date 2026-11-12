@@ -11,6 +11,7 @@ import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ArcadeControls } from './arcade-controls.tsx'
 import { Atari2600Controls } from './atari2600-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
+import { DPad } from './dpad.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
@@ -140,7 +141,6 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
 // controls go to its sides, as on the N64: L and R up top, the d-pad low on the left, the face buttons low on the right,
 // and Select and Start beside pause in the top left. Flat, translucent buttons turn white while pressed.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
-const dsDiagonal = 'bg-transparent data-[touching=true]:bg-white/20'
 
 function DSControls({
   controls,
@@ -195,58 +195,13 @@ function DSControls({
         </VirtualGamepadButton>
       </div>
 
-      {/* A cross of four arms around a centre; the empty corners press two directions at once */}
-      <div
+      {/* The d-pad */}
+      <DPad
         className={twMerge(
-          'absolute top-10.5 left-2.5 grid size-33 grid-cols-3 grid-rows-3',
+          'absolute top-10.5 left-2.5 size-33',
           'landscape:left-safe-offset-4 landscape:top-auto landscape:bottom-14',
         )}
-      >
-        <VirtualGamepadButton
-          buttonNames={['up', 'left']}
-          className={twMerge(dsDiagonal, 'rounded-tl-2xl')}
-          group='dpad'
-          title='up,left'
-        />
-        <VirtualGamepadButton buttonName='up' className={twMerge(dsButton, 'rounded-t-lg')} group='dpad' title='up'>
-          <span className='icon-[mdi--menu-up] size-6' />
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonNames={['right', 'up']}
-          className={twMerge(dsDiagonal, 'rounded-tr-2xl')}
-          group='dpad'
-          title='right,up'
-        />
-        <VirtualGamepadButton buttonName='left' className={twMerge(dsButton, 'rounded-l-lg')} group='dpad' title='left'>
-          <span className='icon-[mdi--menu-left] size-6' />
-        </VirtualGamepadButton>
-        <div className='grid place-items-center bg-white/9'>
-          <div className='size-5 rounded-full bg-black/35' />
-        </div>
-        <VirtualGamepadButton
-          buttonName='right'
-          className={twMerge(dsButton, 'rounded-r-lg')}
-          group='dpad'
-          title='right'
-        >
-          <span className='icon-[mdi--menu-right] size-6' />
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonNames={['left', 'down']}
-          className={twMerge(dsDiagonal, 'rounded-bl-2xl')}
-          group='dpad'
-          title='left,down'
-        />
-        <VirtualGamepadButton buttonName='down' className={twMerge(dsButton, 'rounded-b-lg')} group='dpad' title='down'>
-          <span className='icon-[mdi--menu-down] size-6' />
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonNames={['right', 'down']}
-          className={twMerge(dsDiagonal, 'rounded-br-2xl')}
-          group='dpad'
-          title='right,down'
-        />
-      </div>
+      />
 
       <div
         className={twMerge(
@@ -421,80 +376,7 @@ export function GameOverlayVirtualGamepad() {
                 )}
               </div>
             )}
-            <div className='relative size-42 overflow-hidden rounded-xl ring ring-white/20'>
-              <VirtualGamepadButton
-                buttonNames={['up', 'left']}
-                group='dpad'
-                className='absolute top-0 left-0 size-14 rounded-tl-xl ring-1 ring-white/10'
-                title='up,left'
-              >
-                <span className='icon-[mdi--arrow-up-left-thick]' />
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='up'
-                group='dpad'
-                className='absolute top-0 left-14 h-21 w-14 [clip-path:polygon(0_0,100%_0,100%_66.6667%,50%_100%,0_66.6667%)]'
-                title='up'
-              >
-                <span className='pointer-events-none absolute top-0 left-0 flex size-14 items-center justify-center'>
-                  <span className='icon-[mdi--arrow-up-thick]' />
-                </span>
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonNames={['right', 'up']}
-                group='dpad'
-                className='absolute top-0 right-0 size-14 rounded-tr-xl ring-1 ring-white/10'
-                title='right,up'
-              >
-                <span className='icon-[mdi--arrow-top-right-thick]' />
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='left'
-                group='dpad'
-                className='absolute top-14 left-0 h-14 w-21 [clip-path:polygon(0_0,66.6667%_0,100%_50%,66.6667%_100%,0_100%)]'
-                title='left'
-              >
-                <span className='pointer-events-none absolute top-0 left-0 flex size-14 items-center justify-center'>
-                  <span className='icon-[mdi--arrow-left-thick]' />
-                </span>
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='right'
-                group='dpad'
-                className='absolute top-14 right-0 h-14 w-21 [clip-path:polygon(33.3333%_0,100%_0,100%_100%,33.3333%_100%,0_50%)]'
-                title='right'
-              >
-                <span className='pointer-events-none absolute top-0 right-0 flex size-14 items-center justify-center'>
-                  <span className='icon-[mdi--arrow-right-thick]' />
-                </span>
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonNames={['left', 'down']}
-                group='dpad'
-                className='absolute bottom-0 left-0 size-14 rounded-bl-xl ring-1 ring-white/10'
-                title='left,down'
-              >
-                <span className='icon-[mdi--arrow-bottom-left-thick]' />
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonName='down'
-                group='dpad'
-                className='absolute bottom-0 left-14 h-21 w-14 [clip-path:polygon(50%_0,100%_33.3333%,100%_100%,0_100%,0_33.3333%)]'
-                title='down'
-              >
-                <span className='pointer-events-none absolute bottom-0 left-0 flex size-14 items-center justify-center'>
-                  <span className='icon-[mdi--arrow-bottom-thick]' />
-                </span>
-              </VirtualGamepadButton>
-              <VirtualGamepadButton
-                buttonNames={['right', 'down']}
-                group='dpad'
-                className='absolute right-0 bottom-0 size-14 rounded-br-xl ring-1 ring-white/10'
-                title='right,down'
-              >
-                <span className='icon-[mdi--arrow-bottom-right-thick]' />
-              </VirtualGamepadButton>
-            </div>
+            <DPad className='size-42' />
             {labels.select === null ? null : (
               <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
                 {isArcade ? (
