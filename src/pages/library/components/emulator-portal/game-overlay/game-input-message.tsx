@@ -6,7 +6,12 @@ import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useInputMapping } from '#@/pages/library/hooks/use-input-mapping.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
-import { getColecoVisionKeyboard, getGenesisKeyboard, getN64Keyboard } from '#@/pages/library/utils/core-keyboard.ts'
+import {
+  getArcadeKeyboard,
+  getColecoVisionKeyboard,
+  getGenesisKeyboard,
+  getN64Keyboard,
+} from '#@/pages/library/utils/core-keyboard.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
 // RetroArch's names for modifier keys, spelled out for the hint
@@ -147,6 +152,39 @@ export function GameInputMessage() {
     },
   ]
 
+  // Arcade games with FinalBurn Neo: the stick, and buttons 1 to 6 by their numbers, coloured as on screen. Coin is
+  // listed with the other arcade keys below
+  const isFBNeo = core === 'fbneo'
+  const arcadeKeys = getArcadeKeyboard(keyboardMapping).keys
+  const arcadeColors: Record<string, string | undefined> = {
+    '1': '#ff5a5a',
+    '2': '#f1c40f',
+    '3': '#5aa8ff',
+    '4': '#4fcf68',
+    '5': '#e6e6ea',
+  }
+  const arcadeMessages: { keyNames: string[]; message: ReactNode }[] = [
+    {
+      keyNames: compact([
+        joinKeys(
+          keyboardMapping.input_player1_up,
+          keyboardMapping.input_player1_down,
+          keyboardMapping.input_player1_left,
+          keyboardMapping.input_player1_right,
+        ),
+      ]),
+      message: <ConsoleButton>Stick</ConsoleButton>,
+    },
+    ...['1', '2', '3', '4', '5', '6'].map((label) => ({
+      keyNames: compact([joinKeys(arcadeKeys[label])]),
+      message: <ConsoleButton color={arcadeColors[label]}>{label}</ConsoleButton>,
+    })),
+    {
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_start)]),
+      message: <ConsoleButton>Start</ConsoleButton>,
+    },
+  ]
+
   // Elsewhere, the arrows and the four face buttons, shown by their place in the diamond
   const genericMessages: { keyNames: string[]; message: ReactNode }[] = [
     {
@@ -192,7 +230,8 @@ export function GameInputMessage() {
         ...(core === 'mupen64plus_next' ? n64Messages : []),
         ...(core === 'gearcoleco' ? colecoVisionMessages : []),
         ...(isGenesis ? genesisMessages : []),
-        ...(core === 'mupen64plus_next' || core === 'gearcoleco' || isGenesis ? [] : genericMessages),
+        ...(isFBNeo ? arcadeMessages : []),
+        ...(core === 'mupen64plus_next' || core === 'gearcoleco' || isGenesis || isFBNeo ? [] : genericMessages),
         ...(coinKey ? [{ keyNames: [modifierKeyNames[coinKey] ?? coinKey], message: t('emulator.insertCoin') }] : []),
         { keyNames: compact([keyboardMapping.$pause]), message: t('emulator.pause') },
         ...(rewindEnabled

@@ -142,24 +142,36 @@ const genesisButtons = [
   { defaultKey: 'w', input: 'input_player1_r1', key: 'd', label: 'Z', retroarchInput: 'input_player1_r' },
 ]
 
+interface ConsoleButtonKey {
+  // The key the shared keyboard mapping gives it
+  defaultKey: string
+  // Its input in the shared keyboard mapping
+  input: string
+  // The key it moves to
+  key: string
+  label: string
+  // Its input in RetroArch's settings, where L1 and R1 are L and R
+  retroarchInput: string
+}
+
 /**
- * The Genesis's keys: the RetroArch settings, and the key for each of its buttons, for the key hint. The keys move only
- * when all six are still the shared defaults and the new ones aren't used for anything else, so a player's own keys
- * are kept.
+ * Moves a console's buttons onto keys in its controller's order, and returns the RetroArch settings and the key for
+ * each button, for the key hint. The keys move only when all the buttons are still on the shared defaults and the new
+ * keys aren't used for anything else, so a player's own keys are kept.
  */
-export function getGenesisKeyboard(mapping: KeyboardMapping) {
-  const buttonInputs = new Set<string>(genesisButtons.map(({ input }) => input))
+function getButtonKeys(buttons: ConsoleButtonKey[], mapping: KeyboardMapping) {
+  const buttonInputs = new Set<string>(buttons.map(({ input }) => input))
   const otherKeys = new Set(
     Object.entries(mapping)
       .filter(([input, key]) => key && !buttonInputs.has(input))
       .map(([, key]) => key),
   )
   const move =
-    genesisButtons.every(({ defaultKey, input }) => mapping[input] === defaultKey) &&
-    genesisButtons.every(({ key }) => !otherKeys.has(key))
+    buttons.every(({ defaultKey, input }) => mapping[input] === defaultKey) &&
+    buttons.every(({ key }) => !otherKeys.has(key))
   const config: Record<string, string> = {}
   const keys: Record<string, string> = {}
-  for (const { input, key, label, retroarchInput } of genesisButtons) {
+  for (const { input, key, label, retroarchInput } of buttons) {
     if (move) {
       config[retroarchInput] = key
     }
@@ -171,11 +183,37 @@ export function getGenesisKeyboard(mapping: KeyboardMapping) {
   return { config, keys }
 }
 
+/** The Genesis's keys: the RetroArch settings, and the key for each of its buttons, for the key hint */
+export function getGenesisKeyboard(mapping: KeyboardMapping) {
+  return getButtonKeys(genesisButtons, mapping)
+}
+
+// An arcade game's buttons on the keyboard, as two rows like the cabinet's: 1, 2 and 5 on Z, X and C, and 3, 4 and 6
+// on A, S and D above them, which in Street Fighter-like games puts the kicks on the bottom row and the punches on
+// the top. FinalBurn Neo reads buttons 1 to 6 from the RetroPad's B, A, Y, X, R and L. The shared default keys already
+// put 1 to 4 there; 5 and 6 move from W and Q
+const arcadeButtons = [
+  { defaultKey: 'z', input: 'input_player1_b', key: 'z', label: '1', retroarchInput: 'input_player1_b' },
+  { defaultKey: 'x', input: 'input_player1_a', key: 'x', label: '2', retroarchInput: 'input_player1_a' },
+  { defaultKey: 'a', input: 'input_player1_y', key: 'a', label: '3', retroarchInput: 'input_player1_y' },
+  { defaultKey: 's', input: 'input_player1_x', key: 's', label: '4', retroarchInput: 'input_player1_x' },
+  { defaultKey: 'w', input: 'input_player1_r1', key: 'c', label: '5', retroarchInput: 'input_player1_r' },
+  { defaultKey: 'q', input: 'input_player1_l1', key: 'd', label: '6', retroarchInput: 'input_player1_l' },
+]
+
+/** An arcade game's keys with FinalBurn Neo: the RetroArch settings, and the key for each button, for the key hint */
+export function getArcadeKeyboard(mapping: KeyboardMapping) {
+  return getButtonKeys(arcadeButtons, mapping)
+}
+
 /** RetroArch settings for the keys an emulator needs beyond the shared keyboard mapping */
 export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping, platform?: string) {
   // Genesis Plus GX also plays the Game Gear and Master System, whose two buttons keep their keys
   if (core === 'genesis_plus_gx' && (platform === 'genesis' || platform === 'megadrive')) {
     return getGenesisKeyboard(mapping).config
+  }
+  if (core === 'fbneo') {
+    return getArcadeKeyboard(mapping).config
   }
   if (core === 'mupen64plus_next') {
     return getN64Keyboard(mapping).config

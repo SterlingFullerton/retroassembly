@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { defaultPreference } from '#@/constants/preference.ts'
 import {
+  getArcadeKeyboard,
   getColecoVisionKeyboard,
   getCoreKeyboardConfig,
   getGenesisKeyboard,
@@ -68,5 +69,26 @@ await describe('Genesis keys', async () => {
     assert.equal(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'megadrive').input_player1_y, 'z')
     assert.deepEqual(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'gamegear'), {})
     assert.deepEqual(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'sms'), {})
+  })
+})
+
+await describe('Arcade keys', async () => {
+  await it('puts buttons 1 2 5 on Z X C and 3 4 6 on A S D while the keys are the defaults', () => {
+    const { config, keys } = getArcadeKeyboard(defaults)
+    assert.deepEqual(keys, { 1: 'z', 2: 'x', 3: 'a', 4: 's', 5: 'c', 6: 'd' })
+    assert.equal(config.input_player1_r, 'c')
+    assert.equal(config.input_player1_l, 'd')
+  })
+
+  await it("keeps the player's own keys", () => {
+    const { config, keys } = getArcadeKeyboard({ ...defaults, input_player1_r1: 'e' })
+    assert.deepEqual(config, {})
+    assert.equal(keys['5'], 'e')
+    assert.equal(keys['6'], 'q')
+  })
+
+  await it('only applies to FinalBurn Neo', () => {
+    assert.equal(getCoreKeyboardConfig('fbneo', defaults, 'arcade').input_player1_r, 'c')
+    assert.deepEqual(getCoreKeyboardConfig('mame2003_plus', defaults, 'arcade'), {})
   })
 })
