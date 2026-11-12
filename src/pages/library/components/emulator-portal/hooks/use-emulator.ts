@@ -20,6 +20,7 @@ import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navig
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getCDNUrl } from '#@/utils/isomorphic/cdn.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
+import { toRetroarchInputNames } from '#@/utils/isomorphic/retroarch-input-names.ts'
 import { usePreference } from '../../../hooks/use-preference.ts'
 import { useEmulatorGamepadMapping, useEmulatorLazy } from '../emulator-session-provider.tsx'
 
@@ -78,8 +79,8 @@ export function useEmulator() {
       core,
       retroarchConfig: {
         ...defaultRetroarchConfig,
-        ...preference.input.keyboardMapping,
-        ...emulatorGamepadMapping,
+        ...toRetroarchInputNames(preference.input.keyboardMapping),
+        ...toRetroarchInputNames(emulatorGamepadMapping),
         // this might be a bug of retroarch's emscripten build, y plus and y minus are swapped
         input_player1_l_y_minus: preference.input.keyboardMapping.input_player1_l_y_plus,
         input_player1_l_y_plus: preference.input.keyboardMapping.input_player1_l_y_minus,
