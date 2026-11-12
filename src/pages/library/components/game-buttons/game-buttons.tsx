@@ -44,7 +44,7 @@ export function GameButtons({ lazy = false }: Readonly<{ lazy?: boolean }>) {
 function GameButtonsContent() {
   const { rom, state } = useLoaderData()
   const { t } = useTranslation()
-  const { error, isPreparing, launch, prepare } = useEmulator()
+  const { error, isDownloading, isPreparing, launch, prepare, warmUp } = useEmulator()
   const [, setLaunchButton] = useLaunchButton()
   const { syncStyle } = useFocusIndicator()
   const { preference } = usePreference()
@@ -86,6 +86,10 @@ function GameButtonsContent() {
     await launch()
   }
 
+  // The game starts downloading as soon as the player reaches for Start with a mouse or finger, so it's usually ready by
+  // the time it's pressed. Focus doesn't count: Start is focused as soon as the page opens
+  const warmUpHandlers = { onPointerDown: warmUp, onPointerEnter: warmUp }
+
   async function handleClickRetry() {
     if (!isPreparing) {
       await prepare()
@@ -112,11 +116,11 @@ function GameButtonsContent() {
   return (
     <div className='flex w-full flex-col gap-4 xl:flex-row'>
       {state ? (
-        <LaunchButton disabled={isPreparing} onClick={handleClickContinue}>
+        <LaunchButton disabled={isPreparing} onClick={handleClickContinue} {...warmUpHandlers}>
           <span
             className={clsx(
               'absolute left-10',
-              isPreparing
+              isPreparing || isDownloading
                 ? 'icon-[svg-spinners--180-ring]'
                 : [
                     'size-6',
@@ -144,11 +148,16 @@ function GameButtonsContent() {
         </LaunchButton>
       ) : null}
 
-      <LaunchButton disabled={isPreparing} onClick={handleClickStart} variant={state ? 'outline' : 'solid'}>
+      <LaunchButton
+        disabled={isPreparing}
+        onClick={handleClickStart}
+        variant={state ? 'outline' : 'solid'}
+        {...warmUpHandlers}
+      >
         <span
           className={clsx(
             'absolute left-10',
-            isPreparing
+            isPreparing || isDownloading
               ? 'icon-[svg-spinners--180-ring]'
               : ['size-6', mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--play]'],
           )}

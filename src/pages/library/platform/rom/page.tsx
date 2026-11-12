@@ -50,7 +50,7 @@ export default function RomPage() {
 
             <div className='flex flex-col gap-8 lg:flex-col-reverse'>
               <div className='lg:px-4'>
-                <GameButtons />
+                <GameButtons lazy />
               </div>
               <GameInfo rom={rom} />
             </div>

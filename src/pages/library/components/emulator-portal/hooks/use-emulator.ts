@@ -45,9 +45,9 @@ const defaultRetroarchConfig: RetroarchConfig = {
   video_viewport_bias_y: 0.1,
 }
 
-// Large games (a PlayStation disc can be 600 MB) are downloaded when they're started rather than when their page opens,
-// and let go when they're exited, so browsing past them doesn't download them or hold them in memory
-const largeGameSize = 64 * 1024 * 1024
+// A game and its emulator are downloaded only when the player shows they're about to play: when the pointer reaches the
+// Start button, a finger touches it, or it's pressed. Browsing past games downloads none of them
+const preparations = new Map<string, Promise<Nostalgist | undefined>>()
 
 let noSleep: NoSleep
 // One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
@@ -58,8 +58,7 @@ export function useEmulator() {
   const { state } = useLoaderData<typeof loader>()
   const { preference } = usePreference()
   const emulatorGamepadMapping = useEmulatorGamepadMapping()
-  const romFileSize = (rom as { fileSize?: number } | undefined)?.fileSize ?? 0
-  const lazy = useEmulatorLazy() || romFileSize >= largeGameSize
+  const lazy = useEmulatorLazy()
   const [launched, setLaunched] = useEmulatorLaunched()
   const isDemo = useIsDemo()
   const { reload } = useRouter()
@@ -123,11 +122,37 @@ export function useEmulator() {
   })
 
   const emulator = data
-  const isPreparing = !rom || isValidating
+  // While a lazy game downloads, Start can still be pressed: it waits for the download
+  const isPreparing = !rom || (isValidating && !lazy)
+  const isDownloading = isValidating
+
+  // Starts downloading the game, once however often it's asked for
+  async function prepareOnce() {
+    const key = unstable_serialize(options)
+    let preparation = preparations.get(key)
+    if (!preparation) {
+      preparation = (async () => {
+        try {
+          return await prepare()
+        } finally {
+          preparations.delete(key)
+        }
+      })()
+      preparations.set(key, preparation)
+    }
+    return await preparation
+  }
+
+  // Called when the player looks about to start the game
+  async function warmUp() {
+    if (lazy && !data) {
+      await attemptAsync(prepareOnce)
+    }
+  }
 
   async function launch({ withState }: { withState?: boolean } = {}) {
     // In a lazy session nothing is downloaded until now
-    const emulator = data ?? (lazy ? await prepare() : undefined)
+    const emulator = data ?? (lazy ? await prepareOnce() : undefined)
     if (!emulator || !rom) {
       return
     }
@@ -217,7 +242,7 @@ export function useEmulator() {
       setIsFullscreen(false)
       focus(launchButton)
       offCancel()
-      // A large game is let go, to be downloaded again when it's next started; anything else is prepared again now
+      // The game is let go, to be downloaded again when it's next started
       await (lazy ? prepare(undefined, { revalidate: false }) : attemptAsync(prepare))
       if (reloadAfterExit) {
         await reload()
@@ -262,6 +287,7 @@ export function useEmulator() {
     emulator,
     error,
     exit,
+    isDownloading,
     isFullscreen,
     isPreparing,
     launch,
@@ -270,5 +296,6 @@ export function useEmulator() {
     setLaunched,
     start,
     toggleFullscreen,
+    warmUp,
   }
 }
