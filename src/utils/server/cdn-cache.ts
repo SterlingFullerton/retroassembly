@@ -168,10 +168,21 @@ async function downloadOnce(url: string) {
  * Returns the cached file for `url`, downloading it first if needed. Concurrent requests share one download. When
  * the CDN can't be reached, a file that was known not to exist is still reported as missing instead of failing.
  */
-export async function getCachedFile(url: string) {
+/**
+ * With `RETROASSEMBLY_RUN_TIME_CDN_OFFLINE=true`, pages are served only what's already in the cache, and nothing is
+ * downloaded while they're browsed. Files are added only by the prefetch when the server starts
+ */
+export function isCDNCacheOffline() {
+  return process.env.RETROASSEMBLY_RUN_TIME_CDN_OFFLINE === 'true'
+}
+
+export async function getCachedFile(url: string, { offline = false } = {}) {
   const cached = await readCacheEntry(url)
-  if (cached && !cached.stale) {
+  if (cached && (!cached.stale || offline)) {
     return cached
+  }
+  if (offline) {
+    return
   }
   const { host } = new URL(url)
   if ((unreachableUntil.get(host) ?? 0) > Date.now()) {

@@ -11,7 +11,7 @@ export function cdnCache() {
       return
     }
 
-    const { createCachedFileStream, getCachedFile, getCachedWebPCopy, resolveCDNCacheTarget } =
+    const { createCachedFileStream, getCachedFile, getCachedWebPCopy, isCDNCacheOffline, resolveCDNCacheTarget } =
       await import('#@/utils/server/cdn-cache.ts')
     const cachePath = new URL(c.req.url).pathname.slice('/cdn/'.length)
     const target = resolveCDNCacheTarget(cachePath)
@@ -22,9 +22,14 @@ export function cdnCache() {
       throw new HTTPException(401, { message: 'Unauthorized' })
     }
 
-    const [error, cached] = await attemptAsync(() => getCachedFile(target.url))
+    const offline = isCDNCacheOffline()
+    const [error, cached] = await attemptAsync(() => getCachedFile(target.url, { offline }))
     if (error) {
       throw new HTTPException(502, { cause: error, message: 'Failed to fetch the file from the CDN.' })
+    }
+    // Offline, a file not in the cache yet may arrive with the next prefetch, so the browser is told to ask again
+    if (!cached && offline) {
+      return c.body(null, 404, { 'Cache-Control': 'no-cache' })
     }
     if (!cached || cached.status === 404) {
       // Lets the browser skip files it already knows are missing, such as box art for games that have none
