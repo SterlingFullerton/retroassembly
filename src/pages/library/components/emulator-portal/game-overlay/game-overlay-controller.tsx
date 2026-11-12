@@ -34,7 +34,8 @@ export function GameOverlayController() {
       {controllerVisible ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className='hidden flex-col justify-between lg:flex'
+          // Covers the whole game, so only its buttons take clicks: the game gets the rest, which on DS is its touchscreen
+          className='pointer-events-none! hidden flex-col justify-between lg:flex [&_button]:pointer-events-auto'
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           role='toolbar'
