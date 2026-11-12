@@ -87,6 +87,7 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
           buttonName='l'
           className={twMerge(shoulder, 'left-4 landscape:left-5.5')}
           style={shoulderStyle}
+          title='L'
         >
           L
         </VirtualGamepadButton>
@@ -169,6 +170,7 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
           buttonName='r'
           className={twMerge(shoulder, 'right-4 landscape:right-5.5')}
           style={shoulderStyle}
+          title='R'
         >
           R
         </VirtualGamepadButton>
