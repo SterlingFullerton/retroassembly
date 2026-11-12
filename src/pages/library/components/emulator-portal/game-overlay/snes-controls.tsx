@@ -59,7 +59,10 @@ function Pill({ buttonName, label }: Readonly<{ buttonName: string; label: strin
   return (
     <VirtualGamepadButton
       buttonName={buttonName}
-      className={twMerge(pressed, 'flex flex-col items-center gap-1 px-0.5 pt-1')}
+      className={twMerge(
+        pressed,
+        'flex flex-col items-center gap-1 bg-transparent px-0.5 pt-1 data-[touching=true]:bg-transparent',
+      )}
       title={label}
     >
       <span
