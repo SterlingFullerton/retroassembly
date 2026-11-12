@@ -24,7 +24,8 @@ const face = twMerge(
   'rounded-full font-bold text-[#f2f2f2] shadow-[0_3px_5px_#000c,inset_0_1px_0_#ffffff30]',
 )
 const faceBackground = 'radial-gradient(circle at 38% 30%, #4a4a4e, #161618 65%, #0a0a0b)'
-const arm = twMerge(pressed, 'text-[length:calc(11*var(--u))] text-[#8a8a8f]')
+// The thumb pad's arms light up when pressed rather than shrinking, which would open a gap between them
+const arm = 'text-[length:calc(11*var(--u))] text-[#8a8a8f] data-[touching=true]:brightness-150'
 const armStyle: CSSProperties = { background: 'linear-gradient(#2c2c2f, #18181a)' }
 const diagonal = 'bg-transparent data-[touching=true]:bg-white/10'
 

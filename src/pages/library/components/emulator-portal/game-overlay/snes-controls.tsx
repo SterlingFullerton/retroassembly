@@ -11,7 +11,8 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 const dish: CSSProperties = { background: 'radial-gradient(circle at 45% 40%, #d9d9de, #b9b9c0 70%)' }
 const dishShadow = 'rounded-full shadow-[inset_0_2px_6px_#0005,0_0_0_2px_#9a9aa2]'
-const arm = twMerge(pressed, 'text-[11px] text-[#8a8a90]')
+// The d-pad's arms light up when pressed rather than shrinking, which would open a gap between them
+const arm = 'text-[11px] text-[#8a8a90] data-[touching=true]:brightness-150'
 const armStyle: CSSProperties = { background: 'linear-gradient(#3a3a3e, #1e1e22)' }
 const diagonal = 'bg-transparent data-[touching=true]:bg-black/10'
 
