@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router'
+import { defaultRomsOrder, getDefaultRomsDirection } from '#@/constants/roms-order.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { routes } from '../../../routes.ts'
@@ -19,9 +20,9 @@ export function useGameListActions() {
   const shouldHideActions = isDemo || isHistoryPage || isSharedLibrary
 
   const searchParams = new URLSearchParams(search)
-  const direction = searchParams.get('direction') || 'asc'
+  const sort = searchParams.get('sort') || defaultRomsOrder
+  const direction = searchParams.get('direction') || getDefaultRomsDirection(sort)
   const isViewingFavorites = searchParams.get('favorite') === '1'
-  const sort = searchParams.get('sort') || 'name'
 
   const hasRoms = roms.length > 0
   const hasSelectedGames = selectedGames.length > 0

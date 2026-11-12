@@ -4,7 +4,7 @@ import type { Context } from 'hono'
 import { getRuntimeKey } from 'hono/adapter'
 import { getContext } from 'hono/context-storage'
 import { z } from 'zod'
-import { romsOrders } from '#@/controllers/roms/get-roms.ts'
+import { defaultRomsOrder, getDefaultRomsDirection, romsOrders } from '#@/constants/roms-order.ts'
 
 export function getConnInfo(context?: Context) {
   const c = context || getContext()
@@ -33,12 +33,13 @@ export function getRomsQuery() {
   const direction = searchParams.get('direction')
 
   const favorite = searchParams.get('favorite')
+  /* eslint-disable promise/prefer-await-to-then */
+  const order = z.enum(romsOrders).catch(defaultRomsOrder).parse(orderBy)
 
   return {
-    /* eslint-disable promise/prefer-await-to-then */
-    direction: z.enum(['asc', 'desc']).catch('asc').parse(direction),
+    direction: z.enum(['asc', 'desc']).catch(getDefaultRomsDirection(order)).parse(direction),
     favorite: favorite === '1',
-    orderBy: z.enum(romsOrders).catch('name').parse(orderBy),
+    orderBy: order,
     page: z.coerce.number().min(1).catch(1).parse(searchParams.get('page')),
     /* eslint-enable promise/prefer-await-to-then */
   }

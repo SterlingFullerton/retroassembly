@@ -2,8 +2,7 @@ import { Button, DropdownMenu } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-
-const highFirstSorts = new Set(['played', 'popular'])
+import { getDefaultRomsDirection } from '#@/constants/roms-order.ts'
 
 interface SortDropdownProps {
   currentSort: string
@@ -24,10 +23,8 @@ export function SortDropdown({ currentSort, currentDirection, buildSortLink }: S
 
   // Popular and Most played start from the top. Leaving them goes back to A to Z, oldest first and so on
   function getDirection(sort: string) {
-    if (highFirstSorts.has(sort)) {
-      return 'desc'
-    }
-    return highFirstSorts.has(currentSort) ? 'asc' : currentDirection
+    const direction = getDefaultRomsDirection(sort)
+    return direction === 'desc' || getDefaultRomsDirection(currentSort) === 'desc' ? direction : currentDirection
   }
 
   const directionOptions = [

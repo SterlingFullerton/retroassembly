@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, isNotNull, max, sql } from 'drizzle-orm'
 import { getContext } from 'hono/context-storage'
 import type { PlatformName } from '#@/constants/platform.ts'
+import type { RomsOrder } from '#@/constants/roms-order.ts'
 import { favoriteTable, launchRecordTable, romTable, statusEnum } from '#@/databases/schema.ts'
 import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
@@ -8,9 +9,6 @@ type GetRomsReturning = Awaited<ReturnType<typeof getRoms>>
 export type Roms = GetRomsReturning['roms']
 export type Rom = Roms[number]
 export type RomsPagination = GetRomsReturning['pagination']
-
-export const romsOrders = ['added', 'name', 'played', 'popular', 'released'] as const
-export type RomsOrder = (typeof romsOrders)[number]
 
 // Popular: the game's LaunchBox rating, weighted by how many people rated it, so a 4.9 from 3 votes doesn't beat a 4.4
 // from 600. It's the rating, pulled towards an average (3.5) as if by 100 more votes; games nobody rated sort last
