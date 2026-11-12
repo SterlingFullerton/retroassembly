@@ -110,6 +110,16 @@ export function useEmulator() {
         ...(core === 'desmume2015' ? { audio_latency: 160 } : {}),
         // On a touch screen the N64's on-screen controls have their own analog stick, so the D-pad is the D-pad again
         // Its sticks are the on-screen gamepad's axes: the left stick moves, the right stick is the C buttons
+        // The ColecoVision's on-screen keypad presses 9 and 0 by pushing the left stick, which must then stay a stick
+        ...(core === 'gearcoleco' && hasAnalogStickOnScreen()
+          ? {
+              input_player1_analog_dpad_mode: 0,
+              input_player1_l_x_minus_axis: '-0',
+              input_player1_l_x_plus_axis: '+0',
+              input_player1_l_y_minus_axis: '-1',
+              input_player1_l_y_plus_axis: '+1',
+            }
+          : {}),
         ...(core === 'mupen64plus_next' && hasAnalogStickOnScreen()
           ? {
               input_player1_analog_dpad_mode: 0,
@@ -215,7 +225,8 @@ export function useEmulator() {
     try {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
-    if (core === 'mupen64plus_next') {
+    // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and keypad
+    if (core === 'mupen64plus_next' || core === 'gearcoleco') {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()

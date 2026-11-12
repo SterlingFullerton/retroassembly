@@ -19,6 +19,11 @@ export function setVirtualGamepadAxis(axis: number, value: number) {
   virtualGamepad.axes[axis] = Math.max(-1, Math.min(1, value))
 }
 
+/** Buttons by their standard gamepad index: 10 and 11 are the stick clicks, 12 to 15 the d-pad's up, down, left, right */
+export function setVirtualGamepadButton(index: number, pressed: boolean) {
+  virtualGamepad.buttons[index] = { pressed, touched: pressed, value: pressed ? 1 : 0 }
+}
+
 function withVirtualGamepad(gamepads: (Gamepad | null)[] | null | undefined) {
   const list: unknown[] = gamepads ? [...gamepads] : []
   // A real controller in the first slot is the one being played with; the on-screen controls are hidden then
@@ -37,6 +42,9 @@ export function attachVirtualGamepad(emulator: Nostalgist) {
     return
   }
   virtualGamepad.axes.fill(0)
+  for (const index of virtualGamepad.buttons.keys()) {
+    setVirtualGamepadButton(index, false)
+  }
   // Each frame the emulator stores what navigator.getGamepads() returns here, then reads its gamepads from it
   let gamepads: unknown
   Object.defineProperty(JSEvents, 'lastGamepadState', {

@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
@@ -8,6 +8,7 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
+import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
@@ -282,6 +283,9 @@ export function GameOverlayVirtualGamepad() {
   const { t } = useTranslation()
   const isDS = rom?.platform === 'nds'
   const isN64 = rom?.platform === 'n64'
+  const isColecoVision = rom?.platform === 'colecovision'
+  const [keypadOpen, setKeypadOpen] = useState(false)
+  const closeKeypad = useCallback(() => setKeypadOpen(false), [])
   // Arcade games take a coin with Select
   const isArcade = rom?.platform === 'arcade'
   const { core } = useEmulator()
@@ -309,6 +313,19 @@ export function GameOverlayVirtualGamepad() {
         >
           <span className='icon-[mdi--pause]' />
         </VirtualGamepadButton>
+        {/* The ColecoVision's keypad opens from beside pause */}
+        {isColecoVision ? (
+          <VirtualGamepadButton
+            className={twMerge(
+              'left-safe-offset-10 absolute rounded p-2',
+              clsx({ 'bg-[#ff9a4a] text-[#3a1a00]': keypadOpen, hidden: !gamepadVisible }),
+            )}
+            onClick={() => setKeypadOpen(!keypadOpen)}
+            title='Keypad'
+          >
+            <span className='icon-[mdi--dialpad]' />
+          </VirtualGamepadButton>
+        ) : null}
 
         {/* Rewind and fast forward aren't buttons of the console, so they sit up here with pause rather than among its
             controls */}
@@ -341,7 +358,10 @@ export function GameOverlayVirtualGamepad() {
 
       {isDS ? <DSControls controls={dsControls} visible={gamepadVisible} /> : null}
       {isN64 ? <N64Controls visible={gamepadVisible} /> : null}
-      {isDS || isN64 ? null : (
+      {isColecoVision ? (
+        <ColecoVisionControls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
+      ) : null}
+      {isDS || isN64 || isColecoVision ? null : (
         <>
           <div
             className={twMerge(
