@@ -11,6 +11,7 @@ import { getCommonLoaderData } from '#@/utils/server/loader-data.ts'
 import type { Route } from './+types/root.ts'
 import { AppLayout } from './components/app-layout.tsx'
 import { ErrorPage } from './components/error-page.tsx'
+import { useReloadOnUpdate } from './hooks/use-reload-on-update.ts'
 
 const disabledHost = 'next.retroassembly.com'
 
@@ -45,6 +46,7 @@ export function Layout({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 export default function App() {
+  useReloadOnUpdate()
   return <Outlet />
 }
 

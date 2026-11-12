@@ -17,6 +17,12 @@ const pages = new Hono()
 const requestHandler = createRequestHandler(build, 'production')
 pages.all('*', (c) => requestHandler(c.req.raw, new RouterContextProvider()))
 
+// Which build is running, so pages that are already open can tell the site has been updated under them
+app.get('/build-version', (c) => {
+  c.header('Cache-Control', 'no-store')
+  return c.text(String(build.assets.version))
+})
+
 app.use(
   serveStatic({
     onFound: (_path, c) => {
