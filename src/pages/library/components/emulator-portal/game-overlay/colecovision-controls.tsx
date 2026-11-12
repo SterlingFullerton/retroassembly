@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import { type CSSProperties, type PointerEvent, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/pages/library/utils/virtual-gamepad.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
@@ -124,83 +125,88 @@ export function ColecoVisionControls({
   visible,
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
+  // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
+  // hangs off a point with no size at its corner, which is where it shrinks towards
+  const scale = useControlsScale(160)
   return (
     <>
-      <div
-        className={twMerge(
-          'bottom-safe-offset-14 left-safe-offset-5 absolute size-37.5',
-          'landscape:bottom-safe-offset-18 landscape:left-safe-offset-3 landscape:size-35',
-          hidden,
-        )}
-      >
-        <Joystick />
+      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+        <div className='absolute bottom-14 left-5 size-37.5 landscape:bottom-18 landscape:left-3 landscape:size-35'>
+          <Joystick />
+        </div>
       </div>
 
-      <VirtualGamepadButton
-        buttonName='b'
-        className={twMerge(
-          pressed,
-          'right-safe-offset-22 bottom-safe-offset-16 absolute size-18.5 rounded-full text-sm font-bold text-[#3a1a00] shadow-[0_3px_5px_#0009,inset_0_1px_0_#fff8]',
-          'landscape:right-safe-offset-22 landscape:bottom-safe-offset-18 landscape:size-17',
-          hidden,
-        )}
-        group='fire'
-        style={fireStyle}
-        title='Fire left'
-      >
-        L
-      </VirtualGamepadButton>
-      <VirtualGamepadButton
-        buttonName='a'
-        className={twMerge(
-          pressed,
-          'right-safe-offset-1 bottom-safe-offset-32 absolute size-21 rounded-full text-sm font-bold text-[#3a1a00] shadow-[0_3px_5px_#0009,inset_0_1px_0_#fff8]',
-          'landscape:right-safe-offset-2 landscape:bottom-safe-offset-34 landscape:size-19',
-          hidden,
-        )}
-        group='fire'
-        style={fireStyle}
-        title='Fire right'
-      >
-        R
-      </VirtualGamepadButton>
+      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+        <VirtualGamepadButton
+          buttonName='b'
+          className={twMerge(
+            pressed,
+            'absolute right-22 bottom-16 size-18.5 rounded-full text-sm font-bold text-[#3a1a00] shadow-[0_3px_5px_#0009,inset_0_1px_0_#fff8]',
+            'landscape:right-22 landscape:bottom-18 landscape:size-17',
+          )}
+          group='fire'
+          style={fireStyle}
+          title='Fire left'
+        >
+          L
+        </VirtualGamepadButton>
+        <VirtualGamepadButton
+          buttonName='a'
+          className={twMerge(
+            pressed,
+            'absolute right-1 bottom-32 size-21 rounded-full text-sm font-bold text-[#3a1a00] shadow-[0_3px_5px_#0009,inset_0_1px_0_#fff8]',
+            'landscape:right-2 landscape:bottom-34 landscape:size-19',
+          )}
+          group='fire'
+          style={fireStyle}
+          title='Fire right'
+        >
+          R
+        </VirtualGamepadButton>
+      </div>
 
       {keypadOpen && visible ? (
+        // Hangs off the middle of the bottom in portrait, and off the top left corner in landscape
         <div
-          className={twMerge(
-            'bottom-safe-offset-64 absolute left-1/2 grid w-65 -translate-x-1/2 grid-cols-3 gap-2 rounded-xl bg-[#2a2a2c] p-3 shadow-[0_10px_30px_#000c] outline-2 outline-[#ff9a4a55]',
-            'landscape:left-safe-offset-2 landscape:top-safe-offset-13 landscape:bottom-auto landscape:w-37 landscape:translate-x-0',
-          )}
+          className='bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto'
+          style={{ scale }}
         >
-          <div className='col-span-3 -mt-1 flex items-center justify-between pl-1 text-xs font-semibold tracking-wide text-white/60 uppercase'>
-            Keypad
-            <button
-              className='-mr-1 flex size-8 items-center justify-center rounded-full bg-white/10 text-white active:bg-white/30'
-              onClick={onKeypadClose}
-              aria-label='Close keypad'
-              title='Close keypad'
-              type='button'
-            >
-              <span className='icon-[mdi--close] size-5' />
-            </button>
+          <div
+            className={twMerge(
+              'absolute bottom-64 left-0 grid w-65 -translate-x-1/2 grid-cols-3 gap-2 rounded-xl bg-[#2a2a2c] p-3 shadow-[0_10px_30px_#000c] outline-2 outline-[#ff9a4a55]',
+              'landscape:top-13 landscape:bottom-auto landscape:left-2 landscape:w-37 landscape:translate-x-0',
+            )}
+          >
+            <div className='col-span-3 -mt-1 flex items-center justify-between pl-1 text-xs font-semibold tracking-wide text-white/60 uppercase'>
+              Keypad
+              <button
+                className='-mr-1 flex size-8 items-center justify-center rounded-full bg-white/10 text-white active:bg-white/30'
+                onClick={onKeypadClose}
+                aria-label='Close keypad'
+                title='Close keypad'
+                type='button'
+              >
+                <span className='icon-[mdi--close] size-5' />
+              </button>
+            </div>
+            {keypadKeys.map(([label, key]) => (
+              <VirtualGamepadButton
+                buttonName={'buttonName' in key ? key.buttonName : undefined}
+                className={twMerge(
+                  pressed,
+                  'h-11.5 rounded-md text-base font-bold text-[#f2f2f2] shadow-[0_2px_2px_#000a,inset_0_1px_0_#ffffff1a] landscape:h-12',
+                )}
+                group='keypad'
+                key={label}
+                onVirtualPressEnd={'handleEnd' in key ? key.handleEnd : undefined}
+                onVirtualPressStart={'handleStart' in key ? key.handleStart : undefined}
+                style={{ background: 'linear-gradient(#232325, #111)' }}
+                title={`Keypad ${label}`}
+              >
+                {label}
+              </VirtualGamepadButton>
+            ))}
           </div>
-          {keypadKeys.map(([label, key]) => (
-            <VirtualGamepadButton
-              buttonName={'buttonName' in key ? key.buttonName : undefined}
-              className={twMerge(
-                pressed,
-                'h-11.5 rounded-md text-base font-bold text-[#f2f2f2] shadow-[0_2px_2px_#000a,inset_0_1px_0_#ffffff1a] landscape:h-12',
-              )}
-              group='keypad'
-              key={label}
-              onVirtualPressEnd={'handleEnd' in key ? key.handleEnd : undefined}
-              onVirtualPressStart={'handleStart' in key ? key.handleStart : undefined}
-              style={{ background: 'linear-gradient(#232325, #111)' }}
-              title={`Keypad ${label}`}
-            >
-              {label}
-            </VirtualGamepadButton>
-          ))}
         </div>
       ) : null}
     </>

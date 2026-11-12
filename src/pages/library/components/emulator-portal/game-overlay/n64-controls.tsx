@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { setVirtualGamepadAxis } from '#@/pages/library/utils/virtual-gamepad.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
@@ -116,6 +117,8 @@ function AnalogStick() {
 }
 
 export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
+  // Each hand's column is 184 points wide; on smaller screens they shrink from their corners
+  const scale = useControlsScale(184)
   const startButton = (
     <VirtualGamepadButton
       buttonName='start'
@@ -132,7 +135,11 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
   return (
     <>
       <div
-        className={twMerge('bottom-safe left-safe absolute flex w-46 flex-col gap-2 p-2', clsx({ hidden: !visible }))}
+        className={twMerge(
+          'bottom-safe left-safe absolute flex w-46 origin-bottom-left flex-col gap-2 p-2',
+          clsx({ hidden: !visible }),
+        )}
+        style={{ scale }}
       >
         <VirtualGamepadButton buttonName='l' className={shoulder} style={shoulderStyle}>
           L
@@ -188,7 +195,11 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
       </div>
 
       <div
-        className={twMerge('bottom-safe right-safe absolute flex w-46 flex-col gap-2 p-2', clsx({ hidden: !visible }))}
+        className={twMerge(
+          'bottom-safe right-safe absolute flex w-46 origin-bottom-right flex-col gap-2 p-2',
+          clsx({ hidden: !visible }),
+        )}
+        style={{ scale }}
       >
         <VirtualGamepadButton buttonName='r' className={shoulder} style={shoulderStyle}>
           R
@@ -246,9 +257,10 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
           and Z. The box is as tall as the hands' controls, so Start keeps its place beside them */}
       <div
         className={twMerge(
-          'bottom-safe absolute left-1/2 h-[290px] -translate-x-1/2 landscape:hidden',
+          'bottom-safe absolute left-1/2 h-[290px] origin-bottom -translate-x-1/2 landscape:hidden',
           clsx({ hidden: !visible }),
         )}
+        style={{ scale }}
       >
         <div className='absolute top-25 left-1/2 -translate-x-1/2'>{startButton}</div>
       </div>

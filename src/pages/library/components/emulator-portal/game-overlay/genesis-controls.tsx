@@ -9,7 +9,8 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // C from the RetroPad's Y, B and A, X, Y and Z from L, X and R, and Mode from Select.
 //
 // Sizes and places are in a unit, --u, that is a point on a phone 390 points wide (or, in landscape, 390 high) and
-// shrinks on smaller screens, so the layout keeps its shape instead of the buttons running into the thumb pad.
+// shrinks on smaller screens, so the layout keeps its shape instead of the buttons running into the thumb pad. In
+// landscape it also shrinks so each side's controls, 164 points wide at full size, fit beside the game.
 // Each button gives its numbers in custom properties: --pr, --pb, --ps and --pf for its right, bottom, size and text
 // size in portrait, and --lr, --lb, --ls and --lf in landscape.
 const scaled = twMerge(
@@ -80,7 +81,7 @@ export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
     <div
       className={twMerge(
         'pointer-events-none absolute inset-0 *:pointer-events-auto',
-        '[--u:min(1px,calc(100vw/390))] landscape:[--u:min(1px,calc(100vh/390))]',
+        '[--u:min(1px,calc(100vw/390))] landscape:[--u:max(0.6px,min(1px,calc(100vh/390),calc((100vw-100vh*4/3)/2/164)))]',
       )}
     >
       {/* The thumb pad: a disc with a cross of four arms; its corners press two directions at once */}
