@@ -42,18 +42,6 @@ const defaultRetroarchConfig: RetroarchConfig = {
   video_viewport_bias_y: 0.1,
 }
 
-// A second controller gets the same buttons as the first. RetroArch names the shoulder buttons l and r
-function getPlayer2GamepadMapping(gamepadMapping: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(gamepadMapping)
-      .filter(([name]) => name.startsWith('input_player1_') && name.endsWith('_btn'))
-      .map(([name, button]) => [
-        name.replace('input_player1_', 'input_player2_').replace(/_(?<side>[lr])1_btn$/u, '_$<side>_btn'),
-        button,
-      ]),
-  )
-}
-
 let noSleep: NoSleep
 const originalGetUserMedia = globalThis.navigator?.mediaDevices?.getUserMedia?.bind(globalThis.navigator.mediaDevices)
 export function useEmulator() {
@@ -91,7 +79,6 @@ export function useEmulator() {
       retroarchConfig: {
         ...defaultRetroarchConfig,
         ...preference.input.keyboardMapping,
-        ...getPlayer2GamepadMapping(emulatorGamepadMapping),
         ...emulatorGamepadMapping,
         // this might be a bug of retroarch's emscripten build, y plus and y minus are swapped
         input_player1_l_y_minus: preference.input.keyboardMapping.input_player1_l_y_plus,

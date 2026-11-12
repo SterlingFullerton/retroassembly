@@ -1,5 +1,4 @@
 import { atom, useAtom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
 import type { CSSProperties } from 'react'
 
 const focusIndicatorStyleAtom = atom<CSSProperties>({})
@@ -55,10 +54,4 @@ export function useLaunchButton() {
 const isFullscreenAtom = atom(false)
 export function useIsFullscreen() {
   return useAtom(isFullscreenAtom)
-}
-
-// Whether to keep both players' keyboard keys on screen during play; remembered per browser
-const showPlayerKeysAtom = atomWithStorage('show-player-keys', false)
-export function useShowPlayerKeys() {
-  return useAtom(showPlayerKeysAtom)
 }
