@@ -3,6 +3,7 @@ import NoSleep from 'nosleep.js'
 import { Nostalgist } from 'nostalgist'
 import { useEffect, useMemo } from 'react'
 import { useLoaderData } from 'react-router'
+import { unstable_serialize, useSWRConfig } from 'swr'
 import useSWRImmutable from 'swr/immutable'
 import { client } from '#@/api/client.ts'
 import type { Rom } from '#@/controllers/roms/get-roms.ts'
@@ -101,12 +102,19 @@ export function useEmulator() {
     [romObject, bios, core, preference, emulatorGamepadMapping, shader, state?.fileId, rom.platform],
   )
 
+  // Many parts of the game screen use this hook, and some appear only once the game is running. Preparing again each
+  // time one appears would swap the running game for a fresh copy, which exit would then find not running and leave
+  // alone. So a game is prepared on mount only when there's none yet, or the last one has been shut down
+  const { cache } = useSWRConfig()
+  const cached = (cache.get(unstable_serialize(options)) as undefined | { data?: Nostalgist })?.data
   const {
     data,
     error,
     isValidating,
     mutate: prepare,
-  } = useSWRImmutable(options, () => Nostalgist.prepare(options), { revalidateOnMount: !lazy })
+  } = useSWRImmutable(options, () => Nostalgist.prepare(options), {
+    revalidateOnMount: !lazy && (!cached || cached.getStatus() === 'terminated'),
+  })
 
   const emulator = data
   const isPreparing = !rom || isValidating
