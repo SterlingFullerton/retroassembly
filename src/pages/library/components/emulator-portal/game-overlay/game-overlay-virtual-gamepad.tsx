@@ -96,7 +96,11 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
       }
       const rect = controls.current?.getBoundingClientRect()
       const viewportHeight = globalThis.visualViewport?.height ?? globalThis.innerHeight
-      const height = Math.floor(rect && rect.height > 0 ? Math.min(viewportHeight, rect.top) : viewportHeight)
+      // In landscape the controls are at the sides, so the game has the whole height
+      const landscape = globalThis.matchMedia('(orientation: landscape)').matches
+      const height = Math.floor(
+        rect && rect.height > 0 && !landscape ? Math.min(viewportHeight, rect.top) : viewportHeight,
+      )
       if (canvas.offsetHeight !== height) {
         canvas.style.height = `${height}px`
       }
@@ -123,9 +127,10 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
   }, [enabled, emulator, controls])
 }
 
-// On DS the controls fill one strip under the game: L and R in its top corners with Select and Start between them,
-// and the d-pad and the face buttons on either side. Flat, translucent buttons turn
-// white while pressed.
+// On DS in portrait the controls fill one strip under the game: L and R in its top corners with Select and Start
+// between them, and the d-pad and the face buttons on either side. In landscape the game takes the whole height and the
+// controls go to its sides, as on the N64: L and R up top, the d-pad low on the left, the face buttons low on the right,
+// and Select and Start beside pause in the top left. Flat, translucent buttons turn white while pressed.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 const dsDiagonal = 'bg-transparent data-[touching=true]:bg-white/20'
 
@@ -137,21 +142,43 @@ function DSControls({
   visible: boolean
 }>) {
   return (
-    <div className={twMerge('bottom-safe absolute inset-x-0 h-47', clsx({ hidden: !visible }))} ref={controls}>
+    <div
+      className={twMerge(
+        'bottom-safe absolute inset-x-0 h-47',
+        // Covers the whole screen in landscape, so only its buttons take touches: the game's touchscreen is between them
+        'landscape:top-safe landscape:pointer-events-none landscape:h-auto landscape:*:pointer-events-auto',
+        clsx({ hidden: !visible }),
+      )}
+      ref={controls}
+    >
       <VirtualGamepadButton
         buttonName='l'
-        className={twMerge(dsButton, 'absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl')}
+        className={twMerge(
+          dsButton,
+          'absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl',
+          'landscape:left-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+        )}
       >
         L
       </VirtualGamepadButton>
       <VirtualGamepadButton
         buttonName='r'
-        className={twMerge(dsButton, 'absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl')}
+        className={twMerge(
+          dsButton,
+          'absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl',
+          'landscape:right-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+        )}
       >
         R
       </VirtualGamepadButton>
 
-      <div className='absolute top-0.75 left-1/2 flex -translate-x-1/2 gap-1.5'>
+      <div
+        className={twMerge(
+          'absolute top-0.75 left-1/2 flex -translate-x-1/2 gap-1.5',
+          // In landscape: top left, beside pause, as on the N64
+          'landscape:left-safe-offset-10 landscape:top-1 landscape:translate-x-0',
+        )}
+      >
         <VirtualGamepadButton buttonName='select' className={twMerge(dsButton, 'h-6 w-13 rounded-full text-[11px]')}>
           Select
         </VirtualGamepadButton>
@@ -161,7 +188,12 @@ function DSControls({
       </div>
 
       {/* A cross of four arms around a centre; the empty corners press two directions at once */}
-      <div className='absolute top-10.5 left-2.5 grid size-33 grid-cols-3 grid-rows-3'>
+      <div
+        className={twMerge(
+          'absolute top-10.5 left-2.5 grid size-33 grid-cols-3 grid-rows-3',
+          'landscape:left-safe-offset-4 landscape:top-auto landscape:bottom-14',
+        )}
+      >
         <VirtualGamepadButton
           buttonNames={['up', 'left']}
           className={twMerge(dsDiagonal, 'rounded-tl-2xl')}
@@ -208,7 +240,12 @@ function DSControls({
         />
       </div>
 
-      <div className='absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full'>
+      <div
+        className={twMerge(
+          'absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full',
+          'landscape:right-safe-offset-4 landscape:top-auto landscape:bottom-14',
+        )}
+      >
         <VirtualGamepadButton buttonName='x' className={twMerge(dsButton, 'col-start-2 row-start-1')} group='face'>
           X
         </VirtualGamepadButton>
