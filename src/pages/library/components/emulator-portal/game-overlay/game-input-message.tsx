@@ -6,6 +6,7 @@ import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useInputMapping } from '#@/pages/library/hooks/use-input-mapping.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
+import { getCoreKeyboardKeys } from '#@/pages/library/utils/core-keyboard.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
 // RetroArch's names for modifier keys, spelled out for the hint
@@ -18,6 +19,28 @@ const modifierKeyNames: Record<string, string> = {
   rshift: 'Right Shift',
 }
 
+const arrowNames: Record<string, string> = { down: '↓', left: '←', right: '→', up: '↑' }
+
+function keyName(key: string) {
+  return arrowNames[key] ?? modifierKeyNames[key] ?? capitalize(key)
+}
+
+// Several keys shown as one, such as the four arrows
+function joinKeys(...keys: (string | undefined)[]) {
+  return compact(keys)
+    .map((key) => keyName(key))
+    .join(' ')
+}
+
+// The N64's buttons named and coloured as on its controller
+function N64Button({ children, color }: Readonly<{ children: ReactNode; color?: string }>) {
+  return (
+    <span className='font-bold' style={color ? { color } : undefined}>
+      {children}
+    </span>
+  )
+}
+
 export function GameInputMessage() {
   const { t } = useTranslation()
   const { connected } = useGamepads()
@@ -28,6 +51,77 @@ export function GameInputMessage() {
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
   // Arcade games take a coin with Select, which the hint otherwise doesn't mention
   const coinKey = rom?.platform === 'arcade' ? keyboardMapping.input_player1_select : undefined
+  const core = rom ? preference.emulator.platform[rom.platform]?.core : undefined
+  const coreKeys: Record<string, string | undefined> = getCoreKeyboardKeys(core, keyboardMapping)
+  function keyOf(input: string) {
+    return keyboardMapping[input] || coreKeys[input]
+  }
+
+  // On the N64 the keys play its controller: the arrows are the stick, and the RetroPad's B, Y, L2 and right stick are
+  // its A, B, Z and C buttons (its emulator ignores the RetroPad's X and A)
+  const n64Messages: { keyNames: string[]; message: ReactNode }[] = [
+    {
+      keyNames: compact([
+        joinKeys(
+          keyOf('input_player1_up'),
+          keyOf('input_player1_down'),
+          keyOf('input_player1_left'),
+          keyOf('input_player1_right'),
+        ),
+      ]),
+      message: <N64Button>Stick</N64Button>,
+    },
+    { keyNames: compact([keyOf('input_player1_b')]), message: <N64Button color='#6f9bff'>A</N64Button> },
+    { keyNames: compact([keyOf('input_player1_y')]), message: <N64Button color='#4fcf68'>B</N64Button> },
+    {
+      keyNames: compact([
+        joinKeys(
+          keyOf('input_player1_r_y_minus'),
+          keyOf('input_player1_r_x_minus'),
+          keyOf('input_player1_r_y_plus'),
+          keyOf('input_player1_r_x_plus'),
+        ),
+      ]),
+      message: <N64Button color='#f2c21a'>C</N64Button>,
+    },
+    { keyNames: compact([keyOf('input_player1_l2')]), message: <N64Button>Z</N64Button> },
+    { keyNames: compact([keyOf('input_player1_l1')]), message: <N64Button>L</N64Button> },
+    { keyNames: compact([keyOf('input_player1_r1')]), message: <N64Button>R</N64Button> },
+    { keyNames: compact([keyOf('input_player1_start')]), message: <N64Button color='#ff6b5e'>Start</N64Button> },
+  ]
+
+  // Elsewhere, the arrows and the four face buttons, shown by their place in the diamond
+  const genericMessages: { keyNames: string[]; message: ReactNode }[] = [
+    {
+      keyNames: [
+        compact([
+          keyboardMapping.input_player1_up,
+          keyboardMapping.input_player1_down,
+          keyboardMapping.input_player1_left,
+          keyboardMapping.input_player1_right,
+        ])
+          .map((key) => arrowNames[key] || capitalize(key))
+          .join(' '),
+      ],
+      message: <span className='icon-[mdi--gamepad]' />,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_x]),
+      message: <span className='icon-[mdi--gamepad-circle-up]' />,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_y]),
+      message: <span className='icon-[mdi--gamepad-circle-left]' />,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_a]),
+      message: <span className='icon-[mdi--gamepad-circle-right]' />,
+    },
+    {
+      keyNames: compact([keyboardMapping.input_player1_b]),
+      message: <span className='icon-[mdi--gamepad-circle-down]' />,
+    },
+  ]
 
   const messages: { keyNames: string[]; message: ReactNode }[] = connected
     ? [
@@ -38,35 +132,8 @@ export function GameInputMessage() {
         { keyNames: gamepadMapping.$fast_forward.split(/\s+\+\s/u), message: t('emulator.fastForward') },
       ]
     : [
-        {
-          keyNames: [
-            compact([
-              keyboardMapping.input_player1_up,
-              keyboardMapping.input_player1_down,
-              keyboardMapping.input_player1_left,
-              keyboardMapping.input_player1_right,
-            ])
-              .map((key) => ({ down: '↓', left: '←', right: '→', up: '↑' })[key] || capitalize(key))
-              .join(' '),
-          ],
-          message: <span className='icon-[mdi--gamepad]' />,
-        },
-        {
-          keyNames: compact([keyboardMapping.input_player1_x]),
-          message: <span className='icon-[mdi--gamepad-circle-up]' />,
-        },
-        {
-          keyNames: compact([keyboardMapping.input_player1_y]),
-          message: <span className='icon-[mdi--gamepad-circle-left]' />,
-        },
-        {
-          keyNames: compact([keyboardMapping.input_player1_a]),
-          message: <span className='icon-[mdi--gamepad-circle-right]' />,
-        },
-        {
-          keyNames: compact([keyboardMapping.input_player1_b]),
-          message: <span className='icon-[mdi--gamepad-circle-down]' />,
-        },
+        ...(core === 'mupen64plus_next' ? n64Messages : []),
+        ...(core === 'mupen64plus_next' ? [] : genericMessages),
         ...(coinKey ? [{ keyNames: [modifierKeyNames[coinKey] ?? coinKey], message: t('emulator.insertCoin') }] : []),
         { keyNames: compact([keyboardMapping.$pause]), message: t('emulator.pause') },
         ...(rewindEnabled

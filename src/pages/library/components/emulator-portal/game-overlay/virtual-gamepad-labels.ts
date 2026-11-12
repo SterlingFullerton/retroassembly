@@ -40,7 +40,8 @@ const labelsByPlatformAndCore: Record<string, Partial<VirtualGamepadLabels>> = {
   'gbc/mgba': { ...noShoulders, x: null, y: null },
   'genesis/genesis_plus_gx': { a: 'C', b: 'B', l: 'X', l2: null, r: 'Z', r2: null, select: 'Mode', x: 'Y', y: 'A' },
   'megadrive/genesis_plus_gx': { a: 'C', b: 'B', l: 'X', l2: null, r: 'Z', r2: null, select: 'Mode', x: 'Y', y: 'A' },
-  'n64/mupen64plus_next': { a: 'C▶', b: 'A', l: 'L', l2: 'Z', r: 'R', r2: null, select: null, x: 'C▲', y: 'B' },
+  // The C buttons are the right stick; the RetroPad's X and A do nothing unless R2 is held
+  'n64/mupen64plus_next': { a: null, b: 'A', l: 'L', l2: 'Z', r: 'R', r2: null, select: null, x: null, y: 'B' },
   'nes/fceumm': { ...noShoulders, x: null, y: null },
   'pcengine/mednafen_pce_fast': {
     a: 'I',
