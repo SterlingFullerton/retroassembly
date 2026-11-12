@@ -6,7 +6,7 @@
     "#@/*": "./src/*"
   },
   "scripts": {
-    "build": "react-router build",
+    "build": "react-router build && node scripts/precompress.ts",
     "build:node": "node --run=build",
     "build:workerd": "node --run=build",
     "check-lockfile": "node scripts/check-lockfile.ts",
