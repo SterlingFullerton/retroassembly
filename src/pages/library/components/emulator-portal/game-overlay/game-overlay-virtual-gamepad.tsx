@@ -9,6 +9,7 @@ import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
+import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
@@ -289,6 +290,8 @@ export function GameOverlayVirtualGamepad() {
   // Arcade games take a coin with Select
   const isArcade = rom?.platform === 'arcade'
   const { core } = useEmulator()
+  // Drawn like its controller with the emulator whose buttons are known; PicoDrive keeps the generic layout
+  const isGenesis = (rom?.platform === 'genesis' || rom?.platform === 'megadrive') && core === 'genesis_plus_gx'
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
   const dsControls = useRef<HTMLDivElement>(null)
@@ -361,7 +364,8 @@ export function GameOverlayVirtualGamepad() {
       {isColecoVision ? (
         <ColecoVisionControls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
       ) : null}
-      {isDS || isN64 || isColecoVision ? null : (
+      {isGenesis ? <GenesisControls visible={gamepadVisible} /> : null}
+      {isDS || isN64 || isColecoVision || isGenesis ? null : (
         <>
           <div
             className={twMerge(
