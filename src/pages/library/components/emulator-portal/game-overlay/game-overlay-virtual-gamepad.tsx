@@ -8,6 +8,7 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
+import { N64Controls } from './n64-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
 
@@ -123,18 +124,16 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
 }
 
 // On DS the controls fill one strip under the game: L and R in its top corners with Select and Start between them,
-// the d-pad and the face buttons on either side, and fast forward low in the middle. Flat, translucent buttons turn
+// and the d-pad and the face buttons on either side. Flat, translucent buttons turn
 // white while pressed.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 const dsDiagonal = 'bg-transparent data-[touching=true]:bg-white/20'
 
 function DSControls({
   controls,
-  rewindEnabled,
   visible,
 }: Readonly<{
   controls: RefObject<HTMLDivElement | null>
-  rewindEnabled: boolean
   visible: boolean
 }>) {
   return (
@@ -209,25 +208,6 @@ function DSControls({
         />
       </div>
 
-      <div className='absolute bottom-3.5 left-1/2 flex -translate-x-1/2 flex-col gap-2.5'>
-        {rewindEnabled ? (
-          <VirtualGamepadCommandButton
-            className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full')}
-            command='REWIND'
-            title='Rewind'
-          >
-            <span className='icon-[mdi--rewind] size-4' />
-          </VirtualGamepadCommandButton>
-        ) : null}
-        <VirtualGamepadCommandButton
-          className={twMerge(dsButton, 'h-6.5 w-15.5 rounded-full')}
-          command='FAST_FORWARD_HOLD'
-          title='Fast forward'
-        >
-          <span className='icon-[mdi--fast-forward] size-4' />
-        </VirtualGamepadCommandButton>
-      </div>
-
       <div className='absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full'>
         <VirtualGamepadButton buttonName='x' className={twMerge(dsButton, 'col-start-2 row-start-1')} group='face'>
           X
@@ -264,6 +244,7 @@ export function GameOverlayVirtualGamepad() {
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
   const { t } = useTranslation()
   const isDS = rom?.platform === 'nds'
+  const isN64 = rom?.platform === 'n64'
   // Arcade games take a coin with Select
   const isArcade = rom?.platform === 'arcade'
   const { core } = useEmulator()
@@ -292,18 +273,38 @@ export function GameOverlayVirtualGamepad() {
           <span className='icon-[mdi--pause]' />
         </VirtualGamepadButton>
 
-        <VirtualGamepadButton
-          className='right-safe absolute rounded p-2'
-          onClick={() => setGamepadVisible(!gamepadVisible)}
-          title='Toggle gamepad'
-        >
-          <span className='icon-[mdi--gamepad-square]' />
-        </VirtualGamepadButton>
+        {/* Rewind and fast forward aren't buttons of the console, so they sit up here with pause rather than among its
+            controls */}
+        <div className='right-safe absolute flex gap-1'>
+          {rewindEnabled ? (
+            <VirtualGamepadCommandButton
+              className={twMerge('rounded p-2', clsx({ hidden: !gamepadVisible }))}
+              command='REWIND'
+              title='Rewind'
+            >
+              <span className='icon-[mdi--rewind]' />
+            </VirtualGamepadCommandButton>
+          ) : null}
+          <VirtualGamepadCommandButton
+            className={twMerge('rounded p-2', clsx({ hidden: !gamepadVisible }))}
+            command='FAST_FORWARD_HOLD'
+            title='Fast forward'
+          >
+            <span className='icon-[mdi--fast-forward]' />
+          </VirtualGamepadCommandButton>
+          <VirtualGamepadButton
+            className='rounded p-2'
+            onClick={() => setGamepadVisible(!gamepadVisible)}
+            title='Toggle gamepad'
+          >
+            <span className='icon-[mdi--gamepad-square]' />
+          </VirtualGamepadButton>
+        </div>
       </div>
 
-      {isDS ? (
-        <DSControls controls={dsControls} rewindEnabled={rewindEnabled} visible={gamepadVisible} />
-      ) : (
+      {isDS ? <DSControls controls={dsControls} visible={gamepadVisible} /> : null}
+      {isN64 ? <N64Controls visible={gamepadVisible} /> : null}
+      {isDS || isN64 ? null : (
         <>
           <div
             className={twMerge(
@@ -311,15 +312,6 @@ export function GameOverlayVirtualGamepad() {
               clsx({ hidden: !gamepadVisible }),
             )}
           >
-            {rewindEnabled ? (
-              <VirtualGamepadCommandButton
-                className='rounded px-2 py-1 ring ring-white/20'
-                command='REWIND'
-                title='Rewind'
-              >
-                <span className='icon-[mdi--rewind] size-6' />
-              </VirtualGamepadCommandButton>
-            ) : null}
             {labels.l === null && labels.l2 === null ? null : (
               <div className='flex w-full gap-2'>
                 {labels.l === null ? null : (
@@ -431,13 +423,6 @@ export function GameOverlayVirtualGamepad() {
               clsx({ hidden: !gamepadVisible }),
             )}
           >
-            <VirtualGamepadCommandButton
-              command='FAST_FORWARD_HOLD'
-              className='rounded px-2 py-1 ring ring-white/20'
-              title='Fast forward'
-            >
-              <span className='icon-[mdi--fast-forward] size-6' />
-            </VirtualGamepadCommandButton>
             {labels.r === null && labels.r2 === null ? null : (
               <div className='flex w-full gap-2'>
                 {labels.r2 === null ? null : (

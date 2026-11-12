@@ -1,0 +1,234 @@
+import { clsx } from 'clsx'
+import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { setVirtualGamepadAxis } from '#@/pages/library/utils/virtual-gamepad.ts'
+import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
+
+// The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
+// gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens.
+const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
+const shoulder = twMerge(
+  pressed,
+  'h-7.5 rounded-t-2xl rounded-b-lg text-[13px] font-bold text-[#2b2d31] shadow-[inset_0_1px_0_#fff8,0_2px_3px_#0006]',
+)
+const shoulderStyle: CSSProperties = { background: 'linear-gradient(#c9cbce, #9da0a4)' }
+const dpadArm = twMerge(pressed, 'text-[10px] text-[#8a8d92] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]')
+const dpadStyle: CSSProperties = { background: 'linear-gradient(#3a3c40, #1f2023)' }
+const roundButton = twMerge(
+  pressed,
+  'absolute rounded-full font-bold text-white shadow-[0_3px_4px_#0009,inset_0_1px_0_#ffffff55]',
+)
+
+function gloss(light: string, base: string, dark: string): CSSProperties {
+  return { background: `radial-gradient(circle at 35% 30%, ${light}, ${base} 65%, ${dark})` }
+}
+
+// The C buttons are the right stick on the N64 emulator, pushed all the way. These stay the same between renders,
+// since the buttons re-register whenever their callbacks change
+const cButtons = {
+  down: { handleEnd: () => setVirtualGamepadAxis(3, 0), handleStart: () => setVirtualGamepadAxis(3, 1) },
+  left: { handleEnd: () => setVirtualGamepadAxis(2, 0), handleStart: () => setVirtualGamepadAxis(2, -1) },
+  right: { handleEnd: () => setVirtualGamepadAxis(2, 0), handleStart: () => setVirtualGamepadAxis(2, 1) },
+  up: { handleEnd: () => setVirtualGamepadAxis(3, 0), handleStart: () => setVirtualGamepadAxis(3, -1) },
+}
+
+function CButton({
+  children,
+  className,
+  direction,
+}: Readonly<{ children: ReactNode; className: string; direction: keyof typeof cButtons }>) {
+  return (
+    <VirtualGamepadButton
+      className={twMerge(roundButton, 'size-9.5 text-xs text-[#6b5300]', className)}
+      group='face'
+      onVirtualPressEnd={cButtons[direction].handleEnd}
+      onVirtualPressStart={cButtons[direction].handleStart}
+      style={gloss('#ffe680', '#f2c21a', '#c99a00')}
+      title={`C ${direction}`}
+    >
+      {children}
+    </VirtualGamepadButton>
+  )
+}
+
+// A stick that follows the thumb: how far it's pushed from the middle is how far the game's stick tilts
+function AnalogStick() {
+  const knob = useRef<HTMLDivElement>(null)
+  const activePointer = useRef<number | undefined>(undefined)
+
+  function move(event: PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const reach = rect.width / 2 - 14
+    let x = event.clientX - (rect.left + rect.width / 2)
+    let y = event.clientY - (rect.top + rect.height / 2)
+    const distance = Math.hypot(x, y)
+    if (distance > reach) {
+      x = (x / distance) * reach
+      y = (y / distance) * reach
+    }
+    if (knob.current) {
+      knob.current.style.transform = `translate(${x}px, ${y}px)`
+    }
+    setVirtualGamepadAxis(0, x / reach)
+    setVirtualGamepadAxis(1, y / reach)
+  }
+
+  function handleRelease() {
+    activePointer.current = undefined
+    if (knob.current) {
+      knob.current.style.transform = ''
+    }
+    setVirtualGamepadAxis(0, 0)
+    setVirtualGamepadAxis(1, 0)
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    activePointer.current = event.pointerId
+    move(event)
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerId === activePointer.current) {
+      move(event)
+    }
+  }
+
+  return (
+    <div
+      className='flex size-29 touch-none items-center justify-center bg-[#2c2e33] [clip-path:polygon(30%_0,70%_0,100%_30%,100%_70%,70%_100%,30%_100%,0_70%,0_30%)]'
+      onPointerCancel={handleRelease}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handleRelease}
+      title='Analog stick'
+    >
+      <div
+        className='pointer-events-none size-15.5 rounded-full shadow-[0_3px_6px_#000a,inset_0_1px_0_#fff8]'
+        ref={knob}
+        style={{ background: 'repeating-radial-gradient(circle, #b8babd 0 3px, #a3a6aa 3px 6px)' }}
+      />
+    </div>
+  )
+}
+
+export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
+  return (
+    <>
+      <div
+        className={twMerge('bottom-safe left-safe absolute flex w-46 flex-col gap-2 p-2', clsx({ hidden: !visible }))}
+      >
+        <div className='flex gap-1.5'>
+          <VirtualGamepadButton buttonName='l' className={twMerge(shoulder, 'flex-1')} style={shoulderStyle}>
+            L
+          </VirtualGamepadButton>
+          <VirtualGamepadButton
+            buttonName='l2'
+            className={twMerge(shoulder, 'w-13 rounded-lg text-[#e9e9e9]')}
+            style={{ background: 'linear-gradient(#7b7e83, #5e6166)' }}
+          >
+            Z
+          </VirtualGamepadButton>
+        </div>
+        <div className='relative h-59'>
+          {/* A cross of four arms; the centre is a dimple, as on the controller */}
+          <div className='absolute top-0 left-1.5 grid size-24 grid-cols-3 grid-rows-3'>
+            <VirtualGamepadButton
+              buttonName='up'
+              className={twMerge(dpadArm, 'col-start-2 rounded-t-md')}
+              group='dpad'
+              style={dpadStyle}
+              title='up'
+            >
+              ▲
+            </VirtualGamepadButton>
+            <VirtualGamepadButton
+              buttonName='left'
+              className={twMerge(dpadArm, 'col-start-1 row-start-2 rounded-l-md')}
+              group='dpad'
+              style={dpadStyle}
+              title='left'
+            >
+              ◀
+            </VirtualGamepadButton>
+            <div className='col-start-2 row-start-2 grid place-items-center' style={dpadStyle}>
+              <div className='size-4 rounded-full bg-[#15161a]' />
+            </div>
+            <VirtualGamepadButton
+              buttonName='right'
+              className={twMerge(dpadArm, 'col-start-3 row-start-2 rounded-r-md')}
+              group='dpad'
+              style={dpadStyle}
+              title='right'
+            >
+              ▶
+            </VirtualGamepadButton>
+            <VirtualGamepadButton
+              buttonName='down'
+              className={twMerge(dpadArm, 'col-start-2 row-start-3 rounded-b-md')}
+              group='dpad'
+              style={dpadStyle}
+              title='down'
+            >
+              ▼
+            </VirtualGamepadButton>
+          </div>
+          <div className='absolute right-0 bottom-0'>
+            <AnalogStick />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={twMerge('bottom-safe right-safe absolute flex w-46 flex-col gap-2 p-2', clsx({ hidden: !visible }))}
+      >
+        <VirtualGamepadButton buttonName='r' className={shoulder} style={shoulderStyle}>
+          R
+        </VirtualGamepadButton>
+        <div className='relative h-50'>
+          <CButton className='top-0 left-24' direction='up'>
+            ▲
+          </CButton>
+          <CButton className='top-9.5 left-14' direction='left'>
+            ◀
+          </CButton>
+          <CButton className='top-9.5 left-34' direction='right'>
+            ▶
+          </CButton>
+          <CButton className='top-19 left-24' direction='down'>
+            ▼
+          </CButton>
+          <VirtualGamepadButton
+            buttonName='y'
+            className={twMerge(roundButton, 'top-23 left-1.5 size-13 text-[17px]')}
+            group='face'
+            style={gloss('#56d36d', '#1d9a35', '#146b25')}
+          >
+            B
+          </VirtualGamepadButton>
+          <VirtualGamepadButton
+            buttonName='b'
+            className={twMerge(roundButton, 'top-32 left-14.5 size-16.5 text-xl')}
+            group='face'
+            style={gloss('#5d8cff', '#1f4fd6', '#163a9e')}
+          >
+            A
+          </VirtualGamepadButton>
+        </div>
+        <div className='flex justify-end'>
+          <VirtualGamepadButton
+            buttonName='start'
+            className={twMerge(
+              pressed,
+              'h-7.5 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-white shadow-[0_2px_3px_#0008]',
+            )}
+            style={gloss('#ff6b5e', '#d7261b', '#9e1910')}
+          >
+            START
+          </VirtualGamepadButton>
+        </div>
+      </div>
+    </>
+  )
+}

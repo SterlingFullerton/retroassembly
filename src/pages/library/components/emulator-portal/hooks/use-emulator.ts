@@ -19,6 +19,7 @@ import { useRouter } from '#@/pages/library/hooks/use-router.ts'
 import { closeAudioContexts } from '#@/pages/library/utils/audio-contexts.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
+import { attachVirtualGamepad } from '#@/pages/library/utils/virtual-gamepad.ts'
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getCDNUrl } from '#@/utils/isomorphic/cdn.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
@@ -48,6 +49,11 @@ const defaultRetroarchConfig: RetroarchConfig = {
 // A game and its emulator are downloaded only when the player shows they're about to play: when the pointer reaches the
 // Start button, a finger touches it, or it's pressed. Browsing past games downloads none of them
 const preparations = new Map<string, Promise<Nostalgist | undefined>>()
+
+// The on-screen controls show on touch screens; the N64's have an analog stick
+function hasAnalogStickOnScreen() {
+  return globalThis.matchMedia?.('(pointer: coarse)').matches ?? false
+}
 
 let noSleep: NoSleep
 // One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
@@ -98,6 +104,21 @@ export function useEmulator() {
         video_smooth: preference.emulator.videoSmooth,
         // A larger audio buffer keeps sound from crackling when a frame takes too long
         ...(core === 'desmume2015' ? { audio_latency: 160 } : {}),
+        // On a touch screen the N64's on-screen controls have their own analog stick, so the D-pad is the D-pad again
+        // Its sticks are the on-screen gamepad's axes: the left stick moves, the right stick is the C buttons
+        ...(core === 'mupen64plus_next' && hasAnalogStickOnScreen()
+          ? {
+              input_player1_analog_dpad_mode: 0,
+              input_player1_l_x_minus_axis: '-0',
+              input_player1_l_x_plus_axis: '+0',
+              input_player1_l_y_minus_axis: '-1',
+              input_player1_l_y_plus_axis: '+1',
+              input_player1_r_x_minus_axis: '-2',
+              input_player1_r_x_plus_axis: '+2',
+              input_player1_r_y_minus_axis: '-3',
+              input_player1_r_y_plus_axis: '+3',
+            }
+          : {}),
       },
       retroarchCoreConfig: preference.emulator.core[core],
       rom: romObject,
@@ -190,6 +211,9 @@ export function useEmulator() {
     try {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
+    if (core === 'mupen64plus_next') {
+      attachVirtualGamepad(emulator)
+    }
     const canvas = emulator.getCanvas()
     if (canvas) {
       canvas.style.opacity = '1'
