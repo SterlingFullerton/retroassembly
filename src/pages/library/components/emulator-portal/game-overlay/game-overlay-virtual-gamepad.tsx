@@ -12,6 +12,7 @@ import { ArcadeControls } from './arcade-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
+import { NesControls } from './nes-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
@@ -297,6 +298,9 @@ export function GameOverlayVirtualGamepad() {
   // Drawn like a cabinet with FinalBurn Neo, whose button numbers are known; MAME 2003-Plus keeps the generic layout
   const isFBNeo = isArcade && core === 'fbneo'
   // Every Snes9x reads the controller's buttons as they are
+  // Every NES emulator reads the controller's buttons as they are; the Famicom Disk System's own buttons keep the generic
+  // layout
+  const isNes = rom?.platform === 'nes' || rom?.platform === 'famicom'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -373,7 +377,8 @@ export function GameOverlayVirtualGamepad() {
       {isGenesis ? <GenesisControls visible={gamepadVisible} /> : null}
       {isFBNeo ? <ArcadeControls visible={gamepadVisible} /> : null}
       {isSnes ? <SnesControls visible={gamepadVisible} /> : null}
-      {isDS || isN64 || isColecoVision || isGenesis || isFBNeo || isSnes ? null : (
+      {isNes ? <NesControls famicom={rom.platform === 'famicom'} visible={gamepadVisible} /> : null}
+      {isDS || isN64 || isColecoVision || isGenesis || isFBNeo || isSnes || isNes ? null : (
         <>
           <div
             className={twMerge(
