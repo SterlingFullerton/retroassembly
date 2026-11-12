@@ -6,7 +6,7 @@ import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useInputMapping } from '#@/pages/library/hooks/use-input-mapping.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
-import { getColecoVisionKeyboard, getN64Keyboard } from '#@/pages/library/utils/core-keyboard.ts'
+import { getColecoVisionKeyboard, getGenesisKeyboard, getN64Keyboard } from '#@/pages/library/utils/core-keyboard.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
 // RetroArch's names for modifier keys, spelled out for the hint
@@ -73,14 +73,20 @@ export function GameInputMessage() {
   const n64Messages: { keyNames: string[]; message: ReactNode }[] = [
     { keyNames: compact([joinKeys(...n64Keys.stick)]), message: <ConsoleButton>Stick</ConsoleButton> },
     { keyNames: compact([joinKeys(...n64Keys.dpad)]), message: <ConsoleButton>D-pad</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_b]), message: <ConsoleButton color='#6f9bff'>A</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_y]), message: <ConsoleButton color='#4fcf68'>B</ConsoleButton> },
-    { keyNames: compact([joinKeys(...n64Keys.c)]), message: <ConsoleButton color='#f2c21a'>C</ConsoleButton> },
-    { keyNames: compact([n64Keys.z]), message: <ConsoleButton>Z</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_l1]), message: <ConsoleButton>L</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_r1]), message: <ConsoleButton>R</ConsoleButton> },
     {
-      keyNames: compact([keyboardMapping.input_player1_start]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_b)]),
+      message: <ConsoleButton color='#6f9bff'>A</ConsoleButton>,
+    },
+    {
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_y)]),
+      message: <ConsoleButton color='#4fcf68'>B</ConsoleButton>,
+    },
+    { keyNames: compact([joinKeys(...n64Keys.c)]), message: <ConsoleButton color='#f2c21a'>C</ConsoleButton> },
+    { keyNames: compact([joinKeys(n64Keys.z)]), message: <ConsoleButton>Z</ConsoleButton> },
+    { keyNames: compact([joinKeys(keyboardMapping.input_player1_l1)]), message: <ConsoleButton>L</ConsoleButton> },
+    { keyNames: compact([joinKeys(keyboardMapping.input_player1_r1)]), message: <ConsoleButton>R</ConsoleButton> },
+    {
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_start)]),
       message: <ConsoleButton color='#ff6b5e'>Start</ConsoleButton>,
     },
   ]
@@ -100,16 +106,45 @@ export function GameInputMessage() {
       message: <ConsoleButton>Joystick</ConsoleButton>,
     },
     {
-      keyNames: compact([keyboardMapping.input_player1_b]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_b)]),
       message: <ConsoleButton color='#f5944a'>Fire L</ConsoleButton>,
     },
     {
-      keyNames: compact([keyboardMapping.input_player1_a]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_a)]),
       message: <ConsoleButton color='#f5944a'>Fire R</ConsoleButton>,
     },
     { keyNames: compact([keypadKeyNames(colecoVisionKeypad)]), message: <ConsoleButton>Keypad</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_start]), message: <ConsoleButton>✱</ConsoleButton> },
-    { keyNames: compact([keyboardMapping.input_player1_select]), message: <ConsoleButton>#</ConsoleButton> },
+    { keyNames: compact([joinKeys(keyboardMapping.input_player1_start)]), message: <ConsoleButton>✱</ConsoleButton> },
+    { keyNames: compact([joinKeys(keyboardMapping.input_player1_select)]), message: <ConsoleButton>#</ConsoleButton> },
+  ]
+
+  // On the Genesis the keys are named after its buttons: A B C, the 6-button pad's X Y Z, Start and Mode
+  const isGenesis = core === 'genesis_plus_gx' && (rom?.platform === 'genesis' || rom?.platform === 'megadrive')
+  const genesisKeys = getGenesisKeyboard(keyboardMapping).keys
+  const genesisMessages: { keyNames: string[]; message: ReactNode }[] = [
+    {
+      keyNames: compact([
+        joinKeys(
+          keyboardMapping.input_player1_up,
+          keyboardMapping.input_player1_down,
+          keyboardMapping.input_player1_left,
+          keyboardMapping.input_player1_right,
+        ),
+      ]),
+      message: <ConsoleButton>D-pad</ConsoleButton>,
+    },
+    ...['A', 'B', 'C', 'X', 'Y', 'Z'].map((label) => ({
+      keyNames: compact([joinKeys(genesisKeys[label])]),
+      message: <ConsoleButton>{label}</ConsoleButton>,
+    })),
+    {
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_start)]),
+      message: <ConsoleButton>Start</ConsoleButton>,
+    },
+    {
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_select)]),
+      message: <ConsoleButton>Mode</ConsoleButton>,
+    },
   ]
 
   // Elsewhere, the arrows and the four face buttons, shown by their place in the diamond
@@ -132,15 +167,15 @@ export function GameInputMessage() {
       message: <span className='icon-[mdi--gamepad-circle-up]' />,
     },
     {
-      keyNames: compact([keyboardMapping.input_player1_y]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_y)]),
       message: <span className='icon-[mdi--gamepad-circle-left]' />,
     },
     {
-      keyNames: compact([keyboardMapping.input_player1_a]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_a)]),
       message: <span className='icon-[mdi--gamepad-circle-right]' />,
     },
     {
-      keyNames: compact([keyboardMapping.input_player1_b]),
+      keyNames: compact([joinKeys(keyboardMapping.input_player1_b)]),
       message: <span className='icon-[mdi--gamepad-circle-down]' />,
     },
   ]
@@ -156,7 +191,8 @@ export function GameInputMessage() {
     : [
         ...(core === 'mupen64plus_next' ? n64Messages : []),
         ...(core === 'gearcoleco' ? colecoVisionMessages : []),
-        ...(core === 'mupen64plus_next' || core === 'gearcoleco' ? [] : genericMessages),
+        ...(isGenesis ? genesisMessages : []),
+        ...(core === 'mupen64plus_next' || core === 'gearcoleco' || isGenesis ? [] : genericMessages),
         ...(coinKey ? [{ keyNames: [modifierKeyNames[coinKey] ?? coinKey], message: t('emulator.insertCoin') }] : []),
         { keyNames: compact([keyboardMapping.$pause]), message: t('emulator.pause') },
         ...(rewindEnabled

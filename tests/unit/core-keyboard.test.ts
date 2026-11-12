@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { defaultPreference } from '#@/constants/preference.ts'
-import { getColecoVisionKeyboard, getCoreKeyboardConfig } from '#@/pages/library/utils/core-keyboard.ts'
+import {
+  getColecoVisionKeyboard,
+  getCoreKeyboardConfig,
+  getGenesisKeyboard,
+} from '#@/pages/library/utils/core-keyboard.ts'
 
 const defaults = defaultPreference.input.keyboardMapping as Record<string, string>
 
@@ -35,5 +39,34 @@ await describe('ColecoVision keys', async () => {
   await it('only applies to the ColecoVision emulator', () => {
     assert.deepEqual(getCoreKeyboardConfig('fceumm', defaults), {})
     assert.equal(getCoreKeyboardConfig('gearcoleco', defaults).input_player1_x, 'num2')
+  })
+})
+
+await describe('Genesis keys', async () => {
+  await it('puts A B C on Z X C and X Y Z on A S D while the keys are the defaults', () => {
+    const { config, keys } = getGenesisKeyboard(defaults)
+    assert.deepEqual(keys, { A: 'z', B: 'x', C: 'c', X: 'a', Y: 's', Z: 'd' })
+    assert.equal(config.input_player1_y, 'z')
+    assert.equal(config.input_player1_a, 'c')
+    assert.equal(config.input_player1_l, 'a')
+    assert.equal(config.input_player1_r, 'd')
+  })
+
+  await it("keeps the player's own keys", () => {
+    const { config, keys } = getGenesisKeyboard({ ...defaults, input_player1_b: 'k' })
+    assert.deepEqual(config, {})
+    assert.equal(keys.B, 'k')
+    assert.equal(keys.A, 'a')
+  })
+
+  await it('leaves the keys alone when a new one is used for something else', () => {
+    assert.deepEqual(getGenesisKeyboard({ ...defaults, input_rewind: 'c' }).config, {})
+  })
+
+  await it('only applies to Genesis games, not the Game Gear or Master System on the same emulator', () => {
+    assert.equal(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'genesis').input_player1_y, 'z')
+    assert.equal(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'megadrive').input_player1_y, 'z')
+    assert.deepEqual(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'gamegear'), {})
+    assert.deepEqual(getCoreKeyboardConfig('genesis_plus_gx', defaults, 'sms'), {})
   })
 })

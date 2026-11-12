@@ -130,8 +130,53 @@ export function getColecoVisionKeyboard(mapping: KeyboardMapping) {
   return { config, keys: { keypad } }
 }
 
+// The Genesis's buttons on the keyboard. Genesis Plus GX reads A, B and C from the RetroPad's Y, B and A, and X, Y and Z
+// from L, X and R. The shared default keys put them out of order (A on A, B on Z, C on X, X on Q, Y on S, Z on W), so
+// while they are still the defaults, A, B and C go on Z, X and C and X, Y and Z on the keys right above, A, S and D
+const genesisButtons = [
+  { defaultKey: 'a', input: 'input_player1_y', key: 'z', label: 'A', retroarchInput: 'input_player1_y' },
+  { defaultKey: 'z', input: 'input_player1_b', key: 'x', label: 'B', retroarchInput: 'input_player1_b' },
+  { defaultKey: 'x', input: 'input_player1_a', key: 'c', label: 'C', retroarchInput: 'input_player1_a' },
+  { defaultKey: 'q', input: 'input_player1_l1', key: 'a', label: 'X', retroarchInput: 'input_player1_l' },
+  { defaultKey: 's', input: 'input_player1_x', key: 's', label: 'Y', retroarchInput: 'input_player1_x' },
+  { defaultKey: 'w', input: 'input_player1_r1', key: 'd', label: 'Z', retroarchInput: 'input_player1_r' },
+]
+
+/**
+ * The Genesis's keys: the RetroArch settings, and the key for each of its buttons, for the key hint. The keys move only
+ * when all six are still the shared defaults and the new ones aren't used for anything else, so a player's own keys
+ * are kept.
+ */
+export function getGenesisKeyboard(mapping: KeyboardMapping) {
+  const buttonInputs = new Set<string>(genesisButtons.map(({ input }) => input))
+  const otherKeys = new Set(
+    Object.entries(mapping)
+      .filter(([input, key]) => key && !buttonInputs.has(input))
+      .map(([, key]) => key),
+  )
+  const move =
+    genesisButtons.every(({ defaultKey, input }) => mapping[input] === defaultKey) &&
+    genesisButtons.every(({ key }) => !otherKeys.has(key))
+  const config: Record<string, string> = {}
+  const keys: Record<string, string> = {}
+  for (const { input, key, label, retroarchInput } of genesisButtons) {
+    if (move) {
+      config[retroarchInput] = key
+    }
+    const playedWith = move ? key : mapping[input]
+    if (playedWith) {
+      keys[label] = playedWith
+    }
+  }
+  return { config, keys }
+}
+
 /** RetroArch settings for the keys an emulator needs beyond the shared keyboard mapping */
-export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping) {
+export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping, platform?: string) {
+  // Genesis Plus GX also plays the Game Gear and Master System, whose two buttons keep their keys
+  if (core === 'genesis_plus_gx' && (platform === 'genesis' || platform === 'megadrive')) {
+    return getGenesisKeyboard(mapping).config
+  }
   if (core === 'mupen64plus_next') {
     return getN64Keyboard(mapping).config
   }

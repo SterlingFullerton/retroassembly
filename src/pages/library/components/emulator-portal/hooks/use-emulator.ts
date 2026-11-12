@@ -101,7 +101,7 @@ export function useEmulator() {
         input_player1_l_y_plus: preference.input.keyboardMapping.input_player1_l_y_minus,
         // Keys for inputs this emulator needs that the shared mapping leaves unbound, such as the N64's Z, C buttons and
         // separate stick and D-pad
-        ...getCoreKeyboardConfig(core, preference.input.keyboardMapping),
+        ...getCoreKeyboardConfig(core, preference.input.keyboardMapping, rom.platform),
         rewind_buffer_size: ['desmume2015', 'mupen64plus_next', 'pcsx_rearmed'].includes(core) ? 100 : 20,
         rewind_enable: preference.emulator.platform[rom.platform].rewindEnabled,
         run_ahead_enabled: !['desmume2015', 'mupen64plus_next', 'pcsx_rearmed'].includes(core),
