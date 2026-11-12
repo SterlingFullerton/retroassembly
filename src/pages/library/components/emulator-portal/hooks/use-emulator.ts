@@ -44,6 +44,8 @@ const defaultRetroarchConfig: RetroarchConfig = {
 }
 
 let noSleep: NoSleep
+// One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
+let exiting = false
 const originalGetUserMedia = globalThis.navigator?.mediaDevices?.getUserMedia?.bind(globalThis.navigator.mediaDevices)
 export function useEmulator() {
   const rom: Rom = useRom()
@@ -177,9 +179,18 @@ export function useEmulator() {
 
   async function exit({ reloadAfterExit = false } = {}) {
     const status = emulator?.getStatus() || ''
-    if (['paused', 'running'].includes(status)) {
-      emulator?.exit()
-      setLaunched(false)
+    if (exiting || !['paused', 'running'].includes(status)) {
+      return
+    }
+    exiting = true
+    try {
+      try {
+        emulator?.exit()
+      } finally {
+        // The canvas covers the whole page and hides the cursor, so it has to go even if shutting down failed
+        emulator?.getCanvas().remove()
+        setLaunched(false)
+      }
       noSleep.disable()
       const promises: Promise<void>[] = []
       if (document.fullscreenElement) {
@@ -194,6 +205,8 @@ export function useEmulator() {
       if (reloadAfterExit) {
         await reload()
       }
+    } finally {
+      exiting = false
     }
   }
 
