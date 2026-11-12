@@ -377,7 +377,7 @@ export function GameOverlayVirtualGamepad() {
       {isGenesis ? <GenesisControls visible={gamepadVisible} /> : null}
       {isFBNeo ? <ArcadeControls visible={gamepadVisible} /> : null}
       {isSnes ? <SnesControls visible={gamepadVisible} /> : null}
-      {isNes ? <NesControls famicom={rom.platform === 'famicom'} visible={gamepadVisible} /> : null}
+      {isNes ? <NesControls visible={gamepadVisible} /> : null}
       {isDS || isN64 || isColecoVision || isGenesis || isFBNeo || isSnes || isNes ? null : (
         <>
           <div
