@@ -8,6 +8,7 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
+import { ArcadeControls } from './arcade-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
@@ -292,6 +293,8 @@ export function GameOverlayVirtualGamepad() {
   const { core } = useEmulator()
   // Drawn like its controller with the emulator whose buttons are known; PicoDrive keeps the generic layout
   const isGenesis = (rom?.platform === 'genesis' || rom?.platform === 'megadrive') && core === 'genesis_plus_gx'
+  // Drawn like a cabinet with FinalBurn Neo, whose button numbers are known; MAME 2003-Plus keeps the generic layout
+  const isFBNeo = isArcade && core === 'fbneo'
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
   const dsControls = useRef<HTMLDivElement>(null)
@@ -365,7 +368,8 @@ export function GameOverlayVirtualGamepad() {
         <ColecoVisionControls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
       ) : null}
       {isGenesis ? <GenesisControls visible={gamepadVisible} /> : null}
-      {isDS || isN64 || isColecoVision || isGenesis ? null : (
+      {isFBNeo ? <ArcadeControls visible={gamepadVisible} /> : null}
+      {isDS || isN64 || isColecoVision || isGenesis || isFBNeo ? null : (
         <>
           <div
             className={twMerge(

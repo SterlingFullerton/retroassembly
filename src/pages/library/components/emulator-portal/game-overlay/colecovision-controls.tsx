@@ -1,8 +1,9 @@
 import { clsx } from 'clsx'
-import { type CSSProperties, type PointerEvent, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/pages/library/utils/virtual-gamepad.ts'
+import { Joystick } from './joystick.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The ColecoVision's controls: its joystick, two orange fire buttons and, when asked for from the top bar, its 12-key
@@ -11,9 +12,6 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // keypad button beside pause is pressed.
 const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
 const fireStyle: CSSProperties = { background: 'radial-gradient(circle at 35% 30%, #ffb070, #f07a2a 60%, #c4521a)' }
-
-// The joystick's directions, as the gamepad's d-pad buttons
-const directionButtons = { down: 13, left: 14, right: 15, up: 12 }
 
 // Gearcoleco reads keys 1 to 6, ✱ and # from buttons with keyboard keys of their own; 7 and 8 from the stick clicks;
 // and 9 and 0 from the left stick pushed up or down, and left or right
@@ -40,84 +38,6 @@ const keypadKeys: [string, { buttonName: string } | { handleEnd: () => void; han
   ['0', holdAxis(0)],
   ['#', { buttonName: 'select' }],
 ]
-
-function setDirections(directions: Partial<Record<keyof typeof directionButtons, boolean>>) {
-  for (const [direction, index] of Object.entries(directionButtons)) {
-    setVirtualGamepadButton(index, Boolean(directions[direction as keyof typeof directionButtons]))
-  }
-}
-
-// A digital joystick, as on the controller: it leans towards the thumb and presses the nearest of eight directions
-function Joystick() {
-  const knob = useRef<HTMLDivElement>(null)
-  const activePointer = useRef<number | undefined>(undefined)
-
-  function move(event: PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const reach = rect.width / 2 - 16
-    let x = event.clientX - (rect.left + rect.width / 2)
-    let y = event.clientY - (rect.top + rect.height / 2)
-    const distance = Math.hypot(x, y)
-    if (distance > reach) {
-      x = (x / distance) * reach
-      y = (y / distance) * reach
-    }
-    if (knob.current) {
-      knob.current.style.transform = `translate(${x}px, ${y}px)`
-    }
-    // Near the middle nothing is pressed; elsewhere, each eighth of the circle presses its one or two directions
-    if (distance < reach * 0.3) {
-      setDirections({})
-      return
-    }
-    const sector = Math.round(Math.atan2(y, x) / (Math.PI / 4))
-    setDirections({
-      down: sector >= 1 && sector <= 3,
-      left: Math.abs(sector) >= 3,
-      right: Math.abs(sector) <= 1,
-      up: sector <= -1 && sector >= -3,
-    })
-  }
-
-  function handleRelease() {
-    activePointer.current = undefined
-    if (knob.current) {
-      knob.current.style.transform = ''
-    }
-    setDirections({})
-  }
-
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    activePointer.current = event.pointerId
-    move(event)
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerId === activePointer.current) {
-      move(event)
-    }
-  }
-
-  return (
-    <div
-      className='flex size-full touch-none items-center justify-center rounded-full shadow-[inset_0_2px_6px_#000,0_0_0_2px_#333]'
-      onPointerCancel={handleRelease}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handleRelease}
-      style={{ background: 'radial-gradient(circle, #2a2a2c 55%, #1a1a1b 56%, #222 70%, #111)' }}
-      title='Joystick'
-    >
-      <div
-        className='pointer-events-none size-[45%] rounded-full shadow-[0_4px_8px_#000c,inset_0_1px_0_#ffffff30]'
-        ref={knob}
-        style={{ background: 'repeating-conic-gradient(#2f2f31 0 10deg, #1d1d1f 10deg 20deg)' }}
-      />
-    </div>
-  )
-}
 
 export function ColecoVisionControls({
   keypadOpen,

@@ -225,8 +225,9 @@ export function useEmulator() {
     try {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
-    // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and keypad
-    if (core === 'mupen64plus_next' || core === 'gearcoleco') {
+    // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
+    // keypad, and the arcade stick
+    if (core === 'mupen64plus_next' || core === 'gearcoleco' || core === 'fbneo') {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()
