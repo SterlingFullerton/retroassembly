@@ -3,6 +3,8 @@ import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+const highFirstSorts = new Set(['played', 'popular'])
+
 interface SortDropdownProps {
   currentSort: string
   currentDirection: string
@@ -16,7 +18,17 @@ export function SortDropdown({ currentSort, currentDirection, buildSortLink }: S
     { icon: 'icon-[mdi--pencil]', label: t('common.name'), value: 'name' },
     { icon: 'icon-[mdi--clock]', label: t('common.dateAdded'), value: 'added' },
     { icon: 'icon-[mdi--calendar]', label: t('common.released'), value: 'released' },
+    { icon: 'icon-[mdi--fire]', label: t('common.popular'), value: 'popular' },
+    { icon: 'icon-[mdi--gamepad-variant]', label: t('common.mostPlayed'), value: 'played' },
   ]
+
+  // Popular and Most played start from the top. Leaving them goes back to A to Z, oldest first and so on
+  function getDirection(sort: string) {
+    if (highFirstSorts.has(sort)) {
+      return 'desc'
+    }
+    return highFirstSorts.has(currentSort) ? 'asc' : currentDirection
+  }
 
   const directionOptions = [
     { icon: 'icon-[mdi--sort-ascending]', label: t('common.ascending'), value: 'asc' },
@@ -36,7 +48,7 @@ export function SortDropdown({ currentSort, currentDirection, buildSortLink }: S
         <DropdownMenu.Label>{t('common.sortBy')}</DropdownMenu.Label>
         {sortOptions.map(({ icon, label, value }) => (
           <DropdownMenu.Item asChild key={value}>
-            <Link to={buildSortLink({ direction: currentDirection, sort: value })}>
+            <Link to={buildSortLink({ direction: getDirection(value), sort: value })}>
               <span className={clsx('icon-[mdi--check]', { 'opacity-0': value !== currentSort })} />
               <span className={icon} />
               {label}
