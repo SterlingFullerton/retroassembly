@@ -1,0 +1,18 @@
+diff --git a/dist/nostalgist.js b/dist/nostalgist.js
+index b5b7d3d8d52d95e3beb1234f8202dec2b5985412..4fd13ca22e2a528fdcad8b40c81bf852cda98595 100644
+--- a/dist/nostalgist.js
++++ b/dist/nostalgist.js
+@@ -2416,6 +2416,13 @@ var EmulatorFileSystem = class EmulatorFileSystem {
+ 		const directory = path$1.dirname(filePath);
+ 		const fileName = path$1.basename(filePath);
+ 		const buffer = await (await ResolvableFile.create(fileContent)).getUint8Array();
++		// Large files (games, BIOS, states) are handed to the file system as they are instead of being copied through a
++		// temporary file, which held about three copies of a game in memory while it loaded
++		if (buffer.byteLength >= 1048576) {
++			this.mkdirTree(directory);
++			FS.writeFile(filePath, buffer, { canOwn: true });
++			return;
++		}
+ 		FS.createDataFile("/", fileName, buffer, true, false);
+ 		const encoding = "binary";
+ 		const data = this.readFile(fileName, encoding);
