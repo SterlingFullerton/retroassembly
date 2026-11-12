@@ -16,6 +16,7 @@ import {
 import { useIsDemo } from '#@/pages/library/hooks/use-demo.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useRouter } from '#@/pages/library/hooks/use-router.ts'
+import { closeAudioContexts } from '#@/pages/library/utils/audio-contexts.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
@@ -204,6 +205,8 @@ export function useEmulator() {
         emulator?.getCanvas().remove()
         setLaunched(false)
       }
+      // Otherwise the browser would keep the shut-down emulator, and the game in its memory, for as long as the page is open
+      await attemptAsync(closeAudioContexts)
       noSleep.disable()
       const promises: Promise<void>[] = []
       if (document.fullscreenElement) {

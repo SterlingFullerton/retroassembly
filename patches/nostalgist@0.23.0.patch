@@ -1,5 +1,5 @@
 diff --git a/dist/nostalgist.js b/dist/nostalgist.js
-index b5b7d3d8d52d95e3beb1234f8202dec2b5985412..b32abd20838721d715128b9d40f74cc2007691e6 100644
+index b5b7d3d8d52d95e3beb1234f8202dec2b5985412..5c64d700193c3b803e408f0c3f126f0d2b0de970 100644
 --- a/dist/nostalgist.js
 +++ b/dist/nostalgist.js
 @@ -951,6 +951,8 @@ var ResolvableFile = class ResolvableFile {
@@ -23,7 +23,65 @@ index b5b7d3d8d52d95e3beb1234f8202dec2b5985412..b32abd20838721d715128b9d40f74cc2
  		this.name ||= extractValidFileName(response.url);
  	}
  	loadUint8Array(uint8Array) {
-@@ -2416,6 +2421,13 @@ var EmulatorFileSystem = class EmulatorFileSystem {
+@@ -2270,7 +2275,18 @@ function isEsmScript(js) {
+ async function patchCoreJs({ js, name }) {
+ 	let jsContent = await js.getText();
+ 	name = name.replaceAll("-", "_");
++	// RetroArch starts timers that refer to all of its memory and doesn't stop them when it's shut down, so they are recorded here and stopped
++	// when the emulator exits. Otherwise a game stays in memory after it's exited
+ 	if (isGlobalScript(jsContent)) jsContent = `export function getEmscripten({ Module }) {
++        const __nostalgistTimers = new Set();
++        const setInterval = (...args) => { const id = globalThis.setInterval(...args); __nostalgistTimers.add(id); return id; };
++        const setTimeout = (callback, ...args) => {
++          if (typeof callback !== 'function') return globalThis.setTimeout(callback, ...args);
++          const id = globalThis.setTimeout((...callbackArgs) => { __nostalgistTimers.delete(id); callback(...callbackArgs); }, ...args);
++          __nostalgistTimers.add(id);
++          return id;
++        };
++        const clearTimers = () => { for (const id of __nostalgistTimers) { globalThis.clearTimeout(id); globalThis.clearInterval(id); } __nostalgistTimers.clear(); };
+         ${jsContent};
+         Module.FS = FS;
+         Module.PATH = PATH;
+@@ -2280,20 +2296,35 @@ async function patchCoreJs({ js, name }) {
+           Browser: typeof Browser === 'undefined' ? null: Browser,
+           JSEvents,
+           Module,
+-          exit: _emscripten_force_exit
++          clearTimers,
++          exit: _emscripten_force_exit,
++          freeBrowser: typeof PlatformEmscriptenFreeBrowser === 'function' ? PlatformEmscriptenFreeBrowser : null,
+          }
+       }`;
+-	else if (isEsmScript(jsContent)) jsContent = `${jsContent.replace("var setImmediate", "").replace("readyPromiseResolve(Module)", `readyPromiseResolve({
++	else if (isEsmScript(jsContent)) jsContent = `const __nostalgistTimers = new Set();
++        const setInterval = (...args) => { const id = globalThis.setInterval(...args); __nostalgistTimers.add(id); return id; };
++        const setTimeout = (callback, ...args) => {
++          if (typeof callback !== 'function') return globalThis.setTimeout(callback, ...args);
++          const id = globalThis.setTimeout((...callbackArgs) => { __nostalgistTimers.delete(id); callback(...callbackArgs); }, ...args);
++          __nostalgistTimers.add(id);
++          return id;
++        };
++        const clearTimers = () => { for (const id of __nostalgistTimers) { globalThis.clearTimeout(id); globalThis.clearInterval(id); } __nostalgistTimers.clear(); };
++        ${jsContent.replace("var setImmediate", "").replace("readyPromiseResolve(Module)", `readyPromiseResolve({
+           AL: typeof AL === 'undefined' ? null: AL,
+           Browser: typeof Browser === 'undefined' ? null: Browser,
+           JSEvents,
+           Module,
+-          exit: _emscripten_force_exit
++          clearTimers,
++          exit: _emscripten_force_exit,
++          freeBrowser: typeof PlatformEmscriptenFreeBrowser === 'function' ? PlatformEmscriptenFreeBrowser : null,
+         })`).replace("return moduleRtn;", `return moduleRtn.then((Module) => ({
+           AL: typeof AL === 'undefined' ? null: AL,
+           Browser: typeof Browser === 'undefined' ? null: Browser,
+           JSEvents,
++          clearTimers,
+           exit: _emscripten_force_exit,
++          freeBrowser: typeof PlatformEmscriptenFreeBrowser === 'function' ? PlatformEmscriptenFreeBrowser : null,
+           ...Module,
+         }));`)};
+     export function getEmscripten({ Module }) {
+@@ -2416,6 +2447,13 @@ var EmulatorFileSystem = class EmulatorFileSystem {
  		const directory = path$1.dirname(filePath);
  		const fileName = path$1.basename(filePath);
  		const buffer = await (await ResolvableFile.create(fileContent)).getUint8Array();
@@ -37,3 +95,78 @@ index b5b7d3d8d52d95e3beb1234f8202dec2b5985412..b32abd20838721d715128b9d40f74cc2
  		FS.createDataFile("/", fileName, buffer, true, false);
  		const encoding = "binary";
  		const data = this.readFile(fileName, encoding);
+@@ -2540,10 +2578,31 @@ var Emulator = class {
+ 		return this.setCheatsEnabled(target, true);
+ 	}
+ 	exit(statusCode = 0) {
+-		const { exit, JSEvents } = this.getEmscripten();
++		const { clearTimers, exit, freeBrowser, JSEvents, Module } = this.getEmscripten();
+ 		try {
+ 			exit(statusCode);
+ 		} catch {}
++		// RetroArch's own cleanup of what it set up in the page (listeners, observers, timers), which shutting it down this
++		// way skips. Whatever is left would keep its memory alive
++		try {
++			freeBrowser?.();
++		} catch {}
++		clearTimers?.();
++		// Empty the large files (the game) in its file system, so even if something still refers to the emulator the game
++		// itself is let go
++		for (let node of Module?.FS?.nameTable ?? []) for (; node; node = node.name_next) if (node.contents?.byteLength >= 1048576) {
++			node.contents = null;
++			node.usedBytes = 0;
++		}
++		// Emscripten adds its own functions to the game's WebGL context, which refer to all of its memory. The context
++		// belongs to this emulator's own canvas, so it's given up as well, which also frees its graphics memory
++		const context = Module?.ctx;
++		if (context) {
++			try {
++				context.getExtension?.("WEBGL_lose_context")?.loseContext();
++			} catch {}
++			for (const key of Object.keys(context)) delete context[key];
++		}
+ 		JSEvents.removeAllEventListeners();
+ 		this.removeGlobalDOMEventListeners();
+ 		if (this.blobUrlWasm !== void 0) {
+@@ -2556,6 +2615,12 @@ var Emulator = class {
+ 		}
+ 		uninstallSetImmediatePolyfill();
+ 		this.gameStatus = "terminated";
++		// Let go of the game and the emulator's memory, which anything still holding on to this emulator would keep alive
++		for (const file of [...this.options.rom, ...this.options.bios, this.options.state]) if (file) file.arrayBuffer = file.blob = file.uint8Array = file.raw = void 0;
++		this.emscripten = void 0;
++		this.fileSystem = void 0;
++		// Emscripten replaces the canvas's getContext with its own, which refers to all of the emulator's memory
++		if (this.options.element && Object.hasOwn(this.options.element, "getContext")) delete this.options.element.getContext;
+ 	}
+ 	getCheats() {
+ 		return this.options.cheats.map((cheat) => ({ ...cheat }));
+@@ -2794,20 +2859,20 @@ var Emulator = class {
+ 		this.updateKeyboardEventHandlers();
+ 		if (this.enabledCheats.length > 0) this.syncCheats();
+ 	}
++	// Every listener is recorded, with its options: RetroArch adds several of the same type, some of them as capturing
++	// listeners, and one left behind keeps all of the emulator's memory alive. The canvas's are recorded too, as an exited
++	// emulator still holds on to its canvas
+ 	recordGlobalDOMEventListeners() {
+-		for (const eventTarget of [globalThis, document]) eventTarget.addEventListener = (...args) => {
+-			const [type, listener] = args;
+-			const value = this.globalDOMEventListeners.get(eventTarget) || {};
+-			value[type] = listener;
++		for (const eventTarget of [globalThis, document, this.options.element].filter(Boolean)) eventTarget.addEventListener = (...args) => {
++			const value = this.globalDOMEventListeners.get(eventTarget) || [];
++			value.push(args);
+ 			this.globalDOMEventListeners.set(eventTarget, value);
+ 			return EventTarget.prototype.addEventListener.apply(eventTarget, args);
+ 		};
+ 	}
+ 	removeGlobalDOMEventListeners() {
+-		for (const [eventTarget, eventListeners] of this.globalDOMEventListeners) for (const eventType in eventListeners) {
+-			const listener = eventListeners[eventType];
+-			eventTarget.removeEventListener(eventType, listener);
+-		}
++		for (const [eventTarget, eventListeners] of this.globalDOMEventListeners) for (const args of eventListeners) eventTarget.removeEventListener(...args);
++		this.globalDOMEventListeners.clear();
+ 	}
+ 	async runEventListeners(event) {
+ 		const { [event]: eventListeners } = this.eventListeners;

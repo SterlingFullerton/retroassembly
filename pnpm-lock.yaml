@@ -165,7 +165,7 @@ settings:
 patchedDependencies:
   '@microsoft/clarity@1.0.2': 6e2d0481958fbc05c134cdb9cfc9416aa81357c2907f7eef3cdadcd0765117a5
   goodcodes-parser@2.5.0: 0d6b63ddf0231e5a7643df8e6fce96b8eb7f167de7fe13b28159cf77c2a13873
-  nostalgist@0.23.0: fd54584e09f0edcc8fc81d7505a24dfa5ea68ffe96bcb17796e9fc753844006e
+  nostalgist@0.23.0: 5260aa7b243b8535ab6eac11ea01fb66c3acd040baa7ad758dfe05fec27a9eec
   selector-set@1.1.5: d9e1ae2c2c305d4a342bb379999ee53e69dbcff1fa8c729ad499740862b311a7
   spatial-navigation-ts@1.0.8: 20e67dd661a3c61ae62b2ac903799529fec664c7b46c0d1b1ec966364973cf86
 
@@ -380,7 +380,7 @@ importers:
         version: 0.12.0
       nostalgist:
         specifier: 0.23.0
-        version: 0.23.0(patch_hash=fd54584e09f0edcc8fc81d7505a24dfa5ea68ffe96bcb17796e9fc753844006e)
+        version: 0.23.0(patch_hash=5260aa7b243b8535ab6eac11ea01fb66c3acd040baa7ad758dfe05fec27a9eec)
       path-to-regexp:
         specifier: 8.4.2
         version: 8.4.2
@@ -8091,7 +8091,7 @@ snapshots:
 
   nosleep.js@0.12.0: {}
 
-  nostalgist@0.23.0(patch_hash=fd54584e09f0edcc8fc81d7505a24dfa5ea68ffe96bcb17796e9fc753844006e):
+  nostalgist@0.23.0(patch_hash=5260aa7b243b8535ab6eac11ea01fb66c3acd040baa7ad758dfe05fec27a9eec):
     dependencies:
       '@types/emscripten': 1.41.6
       '@types/ini': 4.1.1

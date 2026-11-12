@@ -17,6 +17,7 @@ interface VirtualGamepadButtonRegistration {
   buttonNames: string[]
   group: string
   emulator?: {
+    getStatus: () => string
     pressDown: (buttonName: string) => void
     pressUp: (buttonName: string) => void
   }
@@ -70,7 +71,9 @@ function releaseButton(buttonId: string) {
     return
   }
 
-  if (button.emulator) {
+  // An emulator that has been shut down can't take a key press any more
+  const status = button.emulator?.getStatus()
+  if (button.emulator && (status === 'running' || status === 'paused')) {
     for (const buttonName of button.buttonNames) {
       button.emulator.pressUp(buttonName)
     }
@@ -104,11 +107,14 @@ function releasePointersByButtonId(buttonId: string) {
     return
   }
 
+  const pressed = button.activePointerIds.size > 0
   for (const pointerId of button.activePointerIds) {
     activePointerButtonIds.delete(pointerId)
   }
   button.activePointerIds.clear()
-  releaseButton(buttonId)
+  if (pressed) {
+    releaseButton(buttonId)
+  }
 }
 
 function endPointer(pointerId: number) {
@@ -168,8 +174,12 @@ export function VirtualGamepadButton({
     })
 
     return () => {
-      releasePointersByButtonId(id)
-      virtualGamepadButtons.delete(id)
+      // The button is always forgotten, or it would keep its emulator (and the game in its memory) alive
+      try {
+        releasePointersByButtonId(id)
+      } finally {
+        virtualGamepadButtons.delete(id)
+      }
     }
   }, [emulator, group, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
 
