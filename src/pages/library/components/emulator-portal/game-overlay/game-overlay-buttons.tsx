@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useShowPlayerKeys } from '#@/pages/library/atoms.ts'
 import { useIsDemo } from '#@/pages/library/hooks/use-demo.ts'
 import { focus } from '#@/pages/library/utils/spatial-navigation.ts'
 import { useEmulator } from '../hooks/use-emulator.ts'
@@ -12,6 +13,7 @@ export function GameOverlayButtons() {
   const { saveManualState } = useGameStates()
   const { hide, isPending, setIsPending } = useGameOverlay()
   const isDemo = useIsDemo()
+  const [showPlayerKeys, setShowPlayerKeys] = useShowPlayerKeys()
 
   async function handleClickResume() {
     await hide()
@@ -65,6 +67,14 @@ export function GameOverlayButtons() {
         <span className='icon-[mdi--content-save] size-5' />
         {t('emulator.saveState')}
       </GameOverlayButton>
+
+      {/* Keyboard keys only matter where there's a keyboard */}
+      <div className='hidden lg:contents'>
+        <GameOverlayButton onClick={() => setShowPlayerKeys(!showPlayerKeys)}>
+          <span className='icon-[mdi--keyboard-outline] size-5' />
+          {showPlayerKeys ? t('emulator.hideKeys') : t('emulator.showKeys')}
+        </GameOverlayButton>
+      </div>
 
       <div className='hidden lg:block lg:flex-1' />
 
