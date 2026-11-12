@@ -11,7 +11,7 @@ export function cdnCache() {
       return
     }
 
-    const { createCachedFileStream, getCachedFile, resolveCDNCacheTarget } =
+    const { createCachedFileStream, getCachedFile, getCachedWebPCopy, resolveCDNCacheTarget } =
       await import('#@/utils/server/cdn-cache.ts')
     const cachePath = new URL(c.req.url).pathname.slice('/cdn/'.length)
     const target = resolveCDNCacheTarget(cachePath)
@@ -32,6 +32,16 @@ export function cdnCache() {
     }
 
     c.header('Cache-Control', 'public, max-age=31536000, immutable')
+    // Images are sent as a much smaller WebP copy to browsers that accept it, which is all current ones
+    if (/image\/webp/iu.test(c.req.header('Accept') ?? '')) {
+      c.header('Vary', 'Accept')
+      const webP = await getCachedWebPCopy(cached)
+      if (webP) {
+        c.header('Content-Type', 'image/webp')
+        c.header('Content-Length', String(webP.size))
+        return c.body(createCachedFileStream(webP.path))
+      }
+    }
     c.header('Content-Type', cached.contentType)
     c.header('Content-Length', String(cached.size))
     return c.body(createCachedFileStream(cached.path))

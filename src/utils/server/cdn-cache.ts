@@ -199,3 +199,52 @@ export function createCachedFileStream(filePath: string) {
   const stream: ReadableStream = Readable.toWeb(fs.createReadStream(filePath))
   return stream
 }
+
+// Box art and artwork are large PNGs (an arcade box can be 700 KB) shown at a small size. A WebP copy, made once and
+// kept next to the cached file, is about a seventh of the size at the same dimensions
+const webPSourceTypes = new Set(['image/jpeg', 'image/png'])
+const webPConversions = new Map<string, Promise<string | undefined>>()
+
+async function convertToWebP(filePath: string) {
+  const webPPath = `${filePath}.webp`
+  const [, source] = await attemptAsync(() => fs.promises.stat(filePath))
+  const [, copy] = await attemptAsync(() => fs.promises.stat(webPPath))
+  if (!source) {
+    return
+  }
+  // A copy older than the file (which has been downloaded again since) is made again
+  if (copy && copy.mtimeMs >= source.mtimeMs) {
+    return webPPath
+  }
+  const { default: sharp } = await import('sharp')
+  const temporaryPath = `${webPPath}.${nanoid()}.tmp`
+  await sharp(filePath).webp({ quality: 82 }).toFile(temporaryPath)
+  await fs.promises.rename(temporaryPath, webPPath)
+  return webPPath
+}
+
+/** The path and size of a WebP copy of a cached image, or nothing if the file isn't an image that can be converted */
+export async function getCachedWebPCopy(cached: { contentType: string; path: string }) {
+  if (!webPSourceTypes.has(cached.contentType.split(';')[0].trim().toLowerCase())) {
+    return
+  }
+  // One conversion per file at a time, however many pages ask for it at once
+  let conversion = webPConversions.get(cached.path)
+  if (!conversion) {
+    conversion = (async () => {
+      try {
+        const [, result] = await attemptAsync(() => convertToWebP(cached.path))
+        return result ?? undefined
+      } finally {
+        webPConversions.delete(cached.path)
+      }
+    })()
+    webPConversions.set(cached.path, conversion)
+  }
+  const webPPath = await conversion
+  if (!webPPath) {
+    return
+  }
+  const [, stats] = await attemptAsync(() => fs.promises.stat(webPPath))
+  return stats ? { path: webPPath, size: stats.size } : undefined
+}
