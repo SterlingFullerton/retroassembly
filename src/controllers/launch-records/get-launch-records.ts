@@ -1,6 +1,7 @@
 import { and, count, countDistinct, desc, eq, inArray, max } from 'drizzle-orm'
 import { getContext } from 'hono/context-storage'
 import { favoriteTable, launchRecordTable, romTable, statusEnum } from '#@/databases/schema.ts'
+import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
 export async function getLaunchRecords({ page = 1, pageSize = 100 }: { page?: number; pageSize?: number }) {
   const c = getContext()
@@ -55,6 +56,7 @@ export async function getLaunchRecords({ page = 1, pageSize = 100 }: { page?: nu
     .from(launchRecordTable)
     .where(where)
   const pagination = { current: page, pages: Math.ceil(total / pageSize), size: pageSize, total }
+  await addCoverCandidates(roms)
   return {
     pagination,
     roms,

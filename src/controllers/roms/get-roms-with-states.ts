@@ -1,6 +1,7 @@
 import { and, count, countDistinct, desc, eq, gte, inArray, max } from 'drizzle-orm'
 import { getContext } from 'hono/context-storage'
 import { favoriteTable, romTable, stateTable, statusEnum } from '#@/databases/schema.ts'
+import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
 export async function getRomsWithStates({ page = 1, pageSize = 20 } = {}) {
   const { currentUser, db, effectiveLibraryUserId, preference } = getContext().var
@@ -75,5 +76,6 @@ export async function getRomsWithStates({ page = 1, pageSize = 20 } = {}) {
     .having(gte(count(stateTable.id), 1))
   const total = res[0]?.total || 0
   const pagination = { current: page, pages: Math.ceil(total / pageSize), size: pageSize, total }
+  await addCoverCandidates(roms)
   return { pagination, roms }
 }

@@ -3,6 +3,7 @@ import Fuse from 'fuse.js'
 import { getContext } from 'hono/context-storage'
 import type { PlatformName } from '#@/constants/platform.ts'
 import { favoriteTable, romTable, statusEnum } from '#@/databases/schema.ts'
+import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
 type SearchRomsReturning = Awaited<ReturnType<typeof searchRoms>>
 export type SearchRoms = SearchRomsReturning['roms']
@@ -98,6 +99,7 @@ export async function searchRoms(
   const roms = sortedRoms.slice(offset, offset + pageSize)
 
   const total = sortedRoms.length
+  await addCoverCandidates(roms)
 
   return {
     pagination: {

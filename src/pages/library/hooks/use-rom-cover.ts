@@ -2,41 +2,16 @@ import { uniq } from 'es-toolkit'
 import useSWRImmutable from 'swr/immutable'
 import type { Rom } from '#@/controllers/roms/get-roms.ts'
 import { imageLoaded } from '#@/utils/client/image.ts'
-import {
-  getDemoRomThumbnail,
-  getLibretroThumbnail,
-  getPlatformGameIcon,
-  getRomLibretroThumbnail,
-} from '#@/utils/client/library.ts'
-import { isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
+import { getDemoRomThumbnail, getPlatformGameIcon } from '#@/utils/client/library.ts'
+import { getRomCoverCandidates } from '#@/utils/isomorphic/rom-cover-candidates.ts'
 import { getFileUrl } from '../utils/file.ts'
 import { useIsDemo } from './use-demo.ts'
 
-const libretroThumbnailTypes = ['boxart', 'title', 'snap'] as const
 export function useRomCover(rom: Rom) {
   const isDemo = useIsDemo()
-  const romCovers = isDemo
-    ? [getDemoRomThumbnail(rom)]
-    : [
-        ...libretroThumbnailTypes.map((type) => getRomLibretroThumbnail(rom, type, 'libretro')),
-        // jsDelivr mirrors the same images, so it's skipped when the server caches them
-        ...(isCDNCacheEnabled()
-          ? []
-          : libretroThumbnailTypes.map((type) => getRomLibretroThumbnail(rom, type, 'jsdelivr'))),
-        ...libretroThumbnailTypes.map((type) =>
-          getLibretroThumbnail({ host: 'libretro', name: rom.fileName.split('.')[0], platform: rom.platform, type }),
-        ),
-        ...(isCDNCacheEnabled()
-          ? []
-          : libretroThumbnailTypes.map((type) =>
-              getLibretroThumbnail({
-                host: 'jsdelivr',
-                name: rom.fileName.split('.')[0],
-                platform: rom.platform,
-                type,
-              }),
-            )),
-      ]
+  // The server notes which images it has for each game; without that note, every possible one is tried
+  const { coverCandidates } = rom as { coverCandidates?: string[] }
+  const romCovers = isDemo ? [getDemoRomThumbnail(rom)] : [...(coverCandidates ?? getRomCoverCandidates(rom))]
   if (rom.gameBoxartFileIds) {
     romCovers.unshift(...rom.gameBoxartFileIds.split(',').map((fileId) => getFileUrl(fileId)))
   }

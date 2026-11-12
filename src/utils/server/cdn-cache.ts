@@ -205,6 +205,18 @@ export async function getCachedFile(url: string, { offline = false } = {}) {
   return await readCacheEntry(url)
 }
 
+/**
+ * Whether the cache holds a file (200), knows it doesn't exist upstream (404), or has yet to look for it (undefined).
+ * A file last found missing long ago is looked for again, so it counts as not looked for, unless the server is offline
+ */
+export async function getCachedFileStatus(url: string, { offline = false } = {}) {
+  const cached = await readCacheEntry(url)
+  if (!cached || (cached.stale && !offline)) {
+    return
+  }
+  return cached.status === 200 ? 200 : 404
+}
+
 export function createCachedFileStream(filePath: string) {
   // @ts-expect-error -- Node's web ReadableStream type differs from the DOM one, but they are the same at runtime
   const stream: ReadableStream = Readable.toWeb(fs.createReadStream(filePath))

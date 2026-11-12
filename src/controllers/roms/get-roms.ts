@@ -2,6 +2,7 @@ import { and, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { getContext } from 'hono/context-storage'
 import type { PlatformName } from '#@/constants/platform.ts'
 import { favoriteTable, romTable, statusEnum } from '#@/databases/schema.ts'
+import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
 type GetRomsReturning = Awaited<ReturnType<typeof getRoms>>
 export type Roms = GetRomsReturning['roms']
@@ -83,5 +84,6 @@ export async function getRoms({
     .leftJoin(favoriteTable, favoriteJoinCondition)
     .where(favoriteWhere)
 
+  await addCoverCandidates(roms)
   return { pagination: { current: page, pages: Math.ceil(total / pageSize), size: pageSize, total }, roms }
 }
