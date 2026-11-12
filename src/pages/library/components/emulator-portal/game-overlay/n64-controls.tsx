@@ -6,7 +6,8 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
 // gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens. The stick sits
-// low in the left hand with the D-pad at the edge above it, Z just under R, and Start in the middle between the hands.
+// low in the left hand with the D-pad at the edge above it, and Z just under R. Start is between the hands in portrait,
+// and beside pause at the top left in landscape.
 const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
 const shoulder = twMerge(
   pressed,
@@ -115,6 +116,19 @@ function AnalogStick() {
 }
 
 export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
+  const startButton = (
+    <VirtualGamepadButton
+      buttonName='start'
+      className={twMerge(
+        pressed,
+        'h-7.5 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-white shadow-[0_2px_3px_#0008]',
+      )}
+      style={gloss('#ff6b5e', '#d7261b', '#9e1910')}
+    >
+      START
+    </VirtualGamepadButton>
+  )
+
   return (
     <>
       <div
@@ -228,18 +242,19 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
         </div>
       </div>
 
-      {/* Start in the middle between the hands, as on the controller */}
-      <div className={twMerge('bottom-safe absolute left-1/2 mb-2 -translate-x-1/2', clsx({ hidden: !visible }))}>
-        <VirtualGamepadButton
-          buttonName='start'
-          className={twMerge(
-            pressed,
-            'h-7.5 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-white shadow-[0_2px_3px_#0008]',
-          )}
-          style={gloss('#ff6b5e', '#d7261b', '#9e1910')}
-        >
-          START
-        </VirtualGamepadButton>
+      {/* Start in portrait: in the middle between the hands, as on the controller, up in the gap between the D-pad
+          and Z. The box is as tall as the hands' controls, so Start keeps its place beside them */}
+      <div
+        className={twMerge(
+          'bottom-safe absolute left-1/2 h-[290px] -translate-x-1/2 landscape:hidden',
+          clsx({ hidden: !visible }),
+        )}
+      >
+        <div className='absolute top-25 left-1/2 -translate-x-1/2'>{startButton}</div>
+      </div>
+      {/* Start in landscape: top left beside pause, so it doesn't cover the game */}
+      <div className={twMerge('top-safe left-safe absolute mt-0.5 ml-10 portrait:hidden', clsx({ hidden: !visible }))}>
+        {startButton}
       </div>
     </>
   )
