@@ -1,21 +1,20 @@
-import { Button, Dialog, Progress } from '@radix-ui/themes'
+import { Button, Dialog } from '@radix-ui/themes'
 import { fileOpen } from 'browser-fs-access'
 import confetti from 'canvas-confetti'
 import { clsx } from 'clsx'
 import { isPlainObject } from 'es-toolkit'
 import { isMatch } from 'es-toolkit/compat'
 import { DateTime } from 'luxon'
-import { useDeferredValue, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslation } from 'react-i18next'
 import { mutate } from 'swr'
-import useSWRMutation from 'swr/mutation'
-import { client } from '#@/api/client.ts'
 import { platformMap, type PlatformName } from '#@/constants/platform.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { useRouter } from '../../hooks/use-router.ts'
-import { getROMMd5 } from '../../utils/file.ts'
+import { type UploadFailure, type UploadSnapshot, uploadRoms } from '../../utils/upload-roms.ts'
 import { UploadInstruction } from './upload-instruction.tsx'
+import { UploadProgress } from './upload-progress.tsx'
 
 export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: PlatformName; toggleOpen: () => void }>) {
   const { t } = useTranslation()
@@ -35,68 +34,50 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
 
   const [files, setFiles] = useState<File[]>([])
   const [status, setStatus] = useState<'done' | 'initial' | 'loading'>('initial')
-  const [uploadedFiles, setUploadedFiles] = useState<Record<'failure' | 'loading' | 'success', File[]>>({
-    failure: [],
-    loading: [],
-    success: [],
-  })
-  const [progress, setProgress] = useState(0)
-  const deferedProgress = useDeferredValue(progress)
+  const [successCount, setSuccessCount] = useState(0)
+  const [failures, setFailures] = useState<UploadFailure[]>([])
+  const [progress, setProgress] = useState<UploadSnapshot>()
 
-  async function uploadFile(file: File) {
-    const md5 = await getROMMd5(file, platform)
-    await client.roms.$post({ form: { file, ...(md5 ? { md5 } : {}), platform } })
+  // Leaving or reloading the page stops the upload, so the browser asks first
+  useEffect(() => {
+    if (status !== 'loading') {
+      return
+    }
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault()
+    }
+    globalThis.addEventListener('beforeunload', handleBeforeUnload)
+    return () => globalThis.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [status])
+
+  async function refreshLibrary() {
+    await reload()
+    await mutate((key) => isPlainObject(key) && isMatch(key, { endpoint: 'roms/search' }), false)
   }
 
-  const { trigger } = useSWRMutation(
-    '/api/v1/roms',
-    async (_url: string, { arg: files }: { arg: File[] }) => {
-      let showConfetti = false
-      setStatus('loading')
+  async function upload(files: File[]) {
+    setFiles(files)
+    setStatus('loading')
+    setFailures([])
+    setProgress(undefined)
+    const result = await uploadRoms({ files, onProgress: setProgress, platform })
+    setSuccessCount(result.succeeded.length)
+    setFailures(result.failed)
 
-      const errors: unknown[] = []
-      const successFiles: File[] = []
-      const failureFiles: File[] = []
+    if (result.failed.length === 0) {
+      toggleOpen()
+      await refreshLibrary()
+    } else {
+      setStatus('done')
+    }
+    if (result.succeeded.length > 0) {
+      await confetti({ disableForReducedMotion: true, particleCount: 150, spread: 180 })
+    }
+  }
 
-      for (const file of files) {
-        setUploadedFiles({ failure: failureFiles, loading: [file], success: successFiles })
-        setProgress(((successFiles.length + failureFiles.length) / files.length) * 100)
-
-        try {
-          await uploadFile(file)
-          successFiles.push(file)
-          showConfetti = true
-        } catch (error) {
-          failureFiles.push(file)
-          errors.push(error)
-        }
-
-        setUploadedFiles({ failure: failureFiles, loading: [], success: successFiles })
-        setProgress(((successFiles.length + failureFiles.length) / files.length) * 100)
-      }
-
-      if (failureFiles.length === 0) {
-        toggleOpen()
-        await reload()
-        await mutate((key) => isPlainObject(key) && isMatch(key, { endpoint: 'roms/search' }), false)
-      } else {
-        setStatus('done')
-        throw errors
-      }
-      if (showConfetti) {
-        await confetti({ disableForReducedMotion: true, particleCount: 150, spread: 180 })
-      }
-    },
-    {
-      onError(error) {
-        if (Array.isArray(error)) {
-          alert(error.map((e) => ('message' in e ? e.message : String(e))).join('\n'))
-        } else if ('message' in error) {
-          alert(error.message)
-        }
-      },
-    },
-  )
+  async function handleClickRetry() {
+    await upload(failures.map(({ file }) => file))
+  }
 
   function validateFiles(files: File[]) {
     let message = ''
@@ -115,8 +96,7 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
       alert(message)
       return
     }
-    setFiles(files)
-    await trigger(files)
+    await upload(files)
   }
 
   async function onDrop(files: File[]) {
@@ -129,20 +109,18 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
       alert(message)
       return
     }
-    setFiles(files)
-    await trigger(files)
+    await upload(files)
   }
 
   function prevendDefaultWhenUploading(event: Event) {
-    if (files.length > 0) {
+    if (status === 'loading') {
       event.preventDefault()
     }
   }
 
   async function handleClickDone() {
     toggleOpen()
-    await reload()
-    await mutate((key) => isPlainObject(key) && isMatch(key, { endpoint: 'roms/search' }), false)
+    await refreshLibrary()
   }
 
   return (
@@ -220,38 +198,35 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
             </>
           ),
 
-          loading: (
-            <div className='my-4'>
-              <Progress
-                className='[&>.rt-ProgressIndicator]:duration-3000!'
-                max={100}
-                size='3'
-                value={deferedProgress}
-              />
-              <div className='mt-4 flex items-center gap-2 text-sm text-(--gray-11)'>
-                <span className='icon-[svg-spinners--180-ring] text-zinc' />
-                {uploadedFiles.success.length + uploadedFiles.failure.length + uploadedFiles.loading.length}/
-                {files.length},
-                {uploadedFiles.failure.length > 0 ? (
-                  <span>
-                    {uploadedFiles.failure.length} {t('common.failed')}.
-                  </span>
-                ) : null}
-                <span>{t('common.doNotTurnOffDevice')}</span>
-              </div>
-            </div>
-          ),
+          loading: <UploadProgress progress={progress} total={files.length} />,
 
           done: (
             <div>
               <div className='py-10 text-center'>
-                {t('upload.uploadSuccessMessage', {
-                  successCount: uploadedFiles.success.length,
-                  totalCount: files.length,
-                })}
+                {t('upload.uploadSuccessMessage', { successCount, totalCount: files.length })}
               </div>
 
-              <div className='mt-4 flex justify-end'>
+              {failures.length > 0 ? (
+                <div className='text-sm'>
+                  <p className='text-(--gray-11)'>{t('upload.failedRoms')}</p>
+                  <ul className='mt-2 max-h-48 overflow-y-auto rounded-md bg-(--gray-3) px-3 py-2'>
+                    {failures.map(({ file, message }) => (
+                      <li className='py-0.5 break-all' key={`${file.name}-${file.size}-${file.lastModified}`}>
+                        <span className='font-medium'>{file.name}</span>
+                        <span className='text-(--red-11)'> — {message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div className='mt-4 flex justify-end gap-2'>
+                {failures.length > 0 ? (
+                  <Button onClick={handleClickRetry} variant='soft'>
+                    <span className='icon-[mdi--refresh]' />
+                    {t('upload.retryFailed')}
+                  </Button>
+                ) : null}
                 <Dialog.Close>
                   <Button onClick={handleClickDone} variant='soft'>
                     <span className='icon-[mdi--check]' />
