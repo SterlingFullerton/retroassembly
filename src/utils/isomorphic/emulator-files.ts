@@ -2,13 +2,15 @@ import { cdnHost } from './cdn.ts'
 
 const customCores = new Set(['a5200', 'mupen64plus_next', 'prosystem', 'stella2014'])
 
-// Cores built for this fork and shipped with the app, in public/cores
+// Cores built for this fork and shipped with the app, from src/assets/cores; the page gets their addresses from
+// bundled-cores.ts, since only the browser build can give them fingerprinted addresses
 const bundledCores = new Set(['desmume2015'])
 
+export function isBundledCore(core: string) {
+  return bundledCores.has(core)
+}
+
 export function getCoreUrl(core: string) {
-  if (bundledCores.has(core)) {
-    return `/cores/${core}_libretro.zip`
-  }
   const segments = customCores.has(core)
     ? [
         'npm',

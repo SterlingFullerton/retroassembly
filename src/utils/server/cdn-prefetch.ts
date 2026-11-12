@@ -5,7 +5,7 @@ import { romTable, statusEnum } from '#@/databases/schema.ts'
 import { shaders } from '#@/pages/library/components/library-layout/layout-menu/settings-dialog/emulating-settings/shaders.ts'
 import { getCompanyLogoUrls } from '#@/pages/library/platform/components/company-logo.tsx'
 import { getCDNUrl, isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
-import { getCoreUrl, getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts'
+import { getCoreUrl, getShaderUrls, isBundledCore } from '#@/utils/isomorphic/emulator-files.ts'
 import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
 import {
   getLibretroThumbnail,
@@ -33,7 +33,7 @@ async function getPrefetchUrls(selected: Set<Category>) {
     for (const { cores } of Object.values(platformMap)) {
       for (const core of cores) {
         // Cores bundled with the app are served locally and need no caching
-        if (getCoreUrl(core).startsWith('https://')) {
+        if (!isBundledCore(core)) {
           urls.add(getCoreUrl(core))
         }
       }
