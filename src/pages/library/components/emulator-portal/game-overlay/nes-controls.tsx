@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The NES's controls drawn like its controller: a black d-pad cross on a square, round B and A buttons with their
+// The NES's controls drawn like its controller: a black d-pad cross, round B and A buttons with their
 // letters printed beside them, and Select and Start as rubber pills between the hands in portrait, or beside pause in
 // landscape. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
 // the RetroPad's B, A, Select and Start as the controller's.
@@ -15,7 +15,7 @@ const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-9
 // The d-pad's arms light up when pressed rather than shrinking, which would open a gap between them
 const arm = 'text-[11px] text-[#6a6a70] data-[touching=true]:brightness-200'
 const armStyle: CSSProperties = { background: 'linear-gradient(#2c2c2f, #111113)' }
-const diagonal = 'bg-transparent data-[touching=true]:bg-black/10'
+const diagonal = 'bg-transparent data-[touching=true]:bg-white/10'
 
 function Pill({ buttonName, label }: Readonly<{ buttonName: string; label: string }>) {
   return (
@@ -52,12 +52,9 @@ export function NesControls({ visible }: Readonly<{ visible: boolean }>) {
   return (
     <>
       <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
-        {/* The d-pad: a cross on a square; its corners press two directions at once */}
-        <div
-          className='absolute bottom-17.5 left-4.5 size-37.5 rounded-[10px] shadow-[inset_0_1px_0_#fff,0_2px_4px_#0008] landscape:bottom-16.5 landscape:left-3 landscape:size-33'
-          style={{ background: grey }}
-        >
-          <div className='absolute inset-[12%] grid grid-cols-3 grid-rows-3'>
+        {/* The d-pad: a cross whose corners press two directions at once */}
+        <div className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34'>
+          <div className='absolute inset-0 grid grid-cols-3 grid-rows-3'>
             <VirtualGamepadButton
               buttonNames={['up', 'left']}
               className={twMerge(diagonal, 'rounded-tl-md')}
