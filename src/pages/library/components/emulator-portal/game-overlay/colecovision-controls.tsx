@@ -1,12 +1,13 @@
 import { clsx } from 'clsx'
-import { type CSSProperties, type PointerEvent, useMemo, useRef } from 'react'
+import { type CSSProperties, type PointerEvent, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/pages/library/utils/virtual-gamepad.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The ColecoVision's controls: its joystick, two orange fire buttons and, when asked for from the top bar, its 12-key
 // keypad. The keypad opens between the game and the controls in portrait, and over the joystick in landscape, since
-// nobody steers while pressing a key. It closes once a key is let go of, or on a tap anywhere else.
+// nobody steers while pressing a key. It stays open for as many keys as a game needs, until its close button or the
+// keypad button beside pause is pressed.
 const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
 const fireStyle: CSSProperties = { background: 'radial-gradient(circle at 35% 30%, #ffb070, #f07a2a 60%, #c4521a)' }
 
@@ -123,22 +124,6 @@ export function ColecoVisionControls({
   visible,
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
-  // Each key's handlers, made once: a button registers again whenever its handlers change
-  const keys = useMemo(
-    () =>
-      keypadKeys.map(([label, key]) => ({
-        buttonName: 'buttonName' in key ? key.buttonName : undefined,
-        handleEnd() {
-          if ('handleEnd' in key) {
-            key.handleEnd()
-          }
-          onKeypadClose()
-        },
-        handleStart: 'handleStart' in key ? key.handleStart : undefined,
-        label,
-      })),
-    [onKeypadClose],
-  )
   return (
     <>
       <div
@@ -181,34 +166,42 @@ export function ColecoVisionControls({
       </VirtualGamepadButton>
 
       {keypadOpen && visible ? (
-        <>
-          {/* A tap anywhere else closes the keypad */}
-          <div className='absolute inset-0' onPointerDown={onKeypadClose} />
-          <div
-            className={twMerge(
-              'bottom-safe-offset-64 absolute left-1/2 grid w-65 -translate-x-1/2 grid-cols-3 gap-2 rounded-xl bg-[#2a2a2c] p-3 shadow-[0_10px_30px_#000c] outline-2 outline-[#ff9a4a55]',
-              'landscape:left-safe-offset-2 landscape:top-safe-offset-13 landscape:bottom-auto landscape:w-37 landscape:translate-x-0',
-            )}
-          >
-            {keys.map(({ buttonName, handleEnd, handleStart, label }) => (
-              <VirtualGamepadButton
-                buttonName={buttonName}
-                className={twMerge(
-                  pressed,
-                  'h-11.5 rounded-md text-base font-bold text-[#f2f2f2] shadow-[0_2px_2px_#000a,inset_0_1px_0_#ffffff1a] landscape:h-13.5',
-                )}
-                group='keypad'
-                key={label}
-                onVirtualPressEnd={handleEnd}
-                onVirtualPressStart={handleStart}
-                style={{ background: 'linear-gradient(#232325, #111)' }}
-                title={`Keypad ${label}`}
-              >
-                {label}
-              </VirtualGamepadButton>
-            ))}
+        <div
+          className={twMerge(
+            'bottom-safe-offset-64 absolute left-1/2 grid w-65 -translate-x-1/2 grid-cols-3 gap-2 rounded-xl bg-[#2a2a2c] p-3 shadow-[0_10px_30px_#000c] outline-2 outline-[#ff9a4a55]',
+            'landscape:left-safe-offset-2 landscape:top-safe-offset-13 landscape:bottom-auto landscape:w-37 landscape:translate-x-0',
+          )}
+        >
+          <div className='col-span-3 -mt-1 flex items-center justify-between pl-1 text-xs font-semibold tracking-wide text-white/60 uppercase'>
+            Keypad
+            <button
+              className='-mr-1 flex size-8 items-center justify-center rounded-full bg-white/10 text-white active:bg-white/30'
+              onClick={onKeypadClose}
+              aria-label='Close keypad'
+              title='Close keypad'
+              type='button'
+            >
+              <span className='icon-[mdi--close] size-5' />
+            </button>
           </div>
-        </>
+          {keypadKeys.map(([label, key]) => (
+            <VirtualGamepadButton
+              buttonName={'buttonName' in key ? key.buttonName : undefined}
+              className={twMerge(
+                pressed,
+                'h-11.5 rounded-md text-base font-bold text-[#f2f2f2] shadow-[0_2px_2px_#000a,inset_0_1px_0_#ffffff1a] landscape:h-12',
+              )}
+              group='keypad'
+              key={label}
+              onVirtualPressEnd={'handleEnd' in key ? key.handleEnd : undefined}
+              onVirtualPressStart={'handleStart' in key ? key.handleStart : undefined}
+              style={{ background: 'linear-gradient(#232325, #111)' }}
+              title={`Keypad ${label}`}
+            >
+              {label}
+            </VirtualGamepadButton>
+          ))}
+        </div>
       ) : null}
     </>
   )
