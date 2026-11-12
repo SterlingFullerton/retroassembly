@@ -44,6 +44,10 @@ const defaultRetroarchConfig: RetroarchConfig = {
   video_viewport_bias_y: 0.1,
 }
 
+// Large games (a PlayStation disc can be 600 MB) are downloaded when they're started rather than when their page opens,
+// and let go when they're exited, so browsing past them doesn't download them or hold them in memory
+const largeGameSize = 64 * 1024 * 1024
+
 let noSleep: NoSleep
 // One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
 let exiting = false
@@ -53,7 +57,8 @@ export function useEmulator() {
   const { state } = useLoaderData<typeof loader>()
   const { preference } = usePreference()
   const emulatorGamepadMapping = useEmulatorGamepadMapping()
-  const lazy = useEmulatorLazy()
+  const romFileSize = (rom as { fileSize?: number } | undefined)?.fileSize ?? 0
+  const lazy = useEmulatorLazy() || romFileSize >= largeGameSize
   const [launched, setLaunched] = useEmulatorLaunched()
   const isDemo = useIsDemo()
   const { reload } = useRouter()
@@ -209,7 +214,8 @@ export function useEmulator() {
       setIsFullscreen(false)
       focus(launchButton)
       offCancel()
-      await attemptAsync(prepare)
+      // A large game is let go, to be downloaded again when it's next started; anything else is prepared again now
+      await (lazy ? prepare(undefined, { revalidate: false }) : attemptAsync(prepare))
       if (reloadAfterExit) {
         await reload()
       }

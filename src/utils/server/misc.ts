@@ -25,6 +25,13 @@ export async function getFileContent(id: string, options?: { range?: { length?: 
   return object
 }
 
+// The size of a stored file, without reading it
+export async function getFileSize(id: string) {
+  const object = await getFileContent(id)
+  await object?.body?.cancel()
+  return object?.size
+}
+
 export function getRomsQuery() {
   const c = getContext()
   const { searchParams } = new URL(c.req.url)

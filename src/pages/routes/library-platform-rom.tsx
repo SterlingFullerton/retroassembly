@@ -5,6 +5,7 @@ import { getRom } from '#@/controllers/roms/get-rom.ts'
 import { getStates } from '#@/controllers/states/get-states.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { getLibraryLoaderData } from '#@/utils/server/loader-data.ts'
+import { getFileSize } from '#@/utils/server/misc.ts'
 import RomPage from '../library/platform/rom/page.tsx'
 import type { Route } from './+types/library-platform-rom.ts'
 
@@ -18,8 +19,12 @@ export async function loader({ params }: Route.LoaderArgs) {
   }
   const { preference } = getContext().var
   const core = preference.emulator.platform[rom.platform]?.core
-  const [state] = await getStates({ core, limit: 1, rom: rom?.id, type: 'any' })
-  return await getLibraryLoaderData({ rom, state, title: getRomGoodcodes(rom).rom })
+  const [[state], fileSize] = await Promise.all([
+    getStates({ core, limit: 1, rom: rom?.id, type: 'any' }),
+    getFileSize(rom.fileId),
+  ])
+  // The game's size decides whether it's downloaded when its page opens or only when it's started
+  return await getLibraryLoaderData({ rom: { ...rom, fileSize }, state, title: getRomGoodcodes(rom).rom })
 }
 
 export default function LibraryPlatformRomRoute() {
