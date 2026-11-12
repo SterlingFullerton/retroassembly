@@ -8,6 +8,16 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
+// RetroArch's names for modifier keys, spelled out for the hint
+const modifierKeyNames: Record<string, string> = {
+  lalt: 'Left Alt',
+  lctrl: 'Left Ctrl',
+  lshift: 'Left Shift',
+  ralt: 'Right Alt',
+  rctrl: 'Right Ctrl',
+  rshift: 'Right Shift',
+}
+
 export function GameInputMessage() {
   const { t } = useTranslation()
   const { connected } = useGamepads()
@@ -16,6 +26,8 @@ export function GameInputMessage() {
   const { preference } = usePreference()
   const rom = useRom()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
+  // Arcade games take a coin with Select, which the hint otherwise doesn't mention
+  const coinKey = rom?.platform === 'arcade' ? keyboardMapping.input_player1_select : undefined
 
   const messages: { keyNames: string[]; message: ReactNode }[] = connected
     ? [
@@ -55,6 +67,7 @@ export function GameInputMessage() {
           keyNames: compact([keyboardMapping.input_player1_b]),
           message: <span className='icon-[mdi--gamepad-circle-down]' />,
         },
+        ...(coinKey ? [{ keyNames: [modifierKeyNames[coinKey] ?? coinKey], message: t('emulator.insertCoin') }] : []),
         { keyNames: compact([keyboardMapping.$pause]), message: t('emulator.pause') },
         ...(rewindEnabled
           ? [{ keyNames: compact([keyboardMapping.input_rewind]), message: t('emulator.rewind') }]

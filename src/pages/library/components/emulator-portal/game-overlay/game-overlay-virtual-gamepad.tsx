@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -252,7 +253,10 @@ export function GameOverlayVirtualGamepad() {
   const rom = useRom()
   const { preference } = usePreference()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
+  const { t } = useTranslation()
   const isDS = rom?.platform === 'nds'
+  // Arcade games take a coin with Select
+  const isArcade = rom?.platform === 'arcade'
   const dsControls = useRef<HTMLDivElement>(null)
   useFitGameAboveControls(launched && isDS, dsControls)
 
@@ -387,8 +391,17 @@ export function GameOverlayVirtualGamepad() {
               </VirtualGamepadButton>
             </div>
             <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
-              <span className='icon-[mdi--menu]' />
-              Select
+              {isArcade ? (
+                <>
+                  <span className='icon-[mdi--hand-coin]' />
+                  {t('emulator.coin')}
+                </>
+              ) : (
+                <>
+                  <span className='icon-[mdi--menu]' />
+                  Select
+                </>
+              )}
             </VirtualGamepadButton>
           </div>
 
