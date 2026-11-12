@@ -174,6 +174,7 @@
   "emulator.insertCoin": "投幣",
   "emulator.loadExternalState": "載入外部狀態",
   "emulator.pause": "暫停",
+  "emulator.player2Controller": "玩家 2:第二個控制器",
   "emulator.prefix": "前綴",
   "emulator.resetToDefaults": "重設為預設值",
   "emulator.resetToDefaultsDescription": "將模擬器及其選項重設為預設值",

@@ -174,6 +174,7 @@
   "emulator.insertCoin": "Вставить монету",
   "emulator.loadExternalState": "Загрузить внешнее состояние",
   "emulator.pause": "Пауза",
+  "emulator.player2Controller": "Игрок 2: второй контроллер",
   "emulator.prefix": "Префикс",
   "emulator.resetToDefaults": "Сбросить на значения по умолчанию",
   "emulator.resetToDefaultsDescription": "Сбросить эмулятор и его настройки на значения по умолчанию",

@@ -174,6 +174,7 @@
   "emulator.insertCoin": "Vhodit minci",
   "emulator.loadExternalState": "Načíst externí stav",
   "emulator.pause": "Pozastavit",
+  "emulator.player2Controller": "Hráč 2: druhý ovladač",
   "emulator.prefix": "Prefix",
   "emulator.resetToDefaults": "Obnovit výchozí hodnoty",
   "emulator.resetToDefaultsDescription": "Resetovat emulátor a jeho nastavení na výchozí hodnoty",

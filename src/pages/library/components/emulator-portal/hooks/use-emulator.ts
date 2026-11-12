@@ -16,7 +16,6 @@ import { useIsDemo } from '#@/pages/library/hooks/use-demo.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useRouter } from '#@/pages/library/hooks/use-router.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
-import { getPlayer2KeyboardMapping } from '#@/pages/library/utils/player2-keys.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getCDNUrl } from '#@/utils/isomorphic/cdn.ts'
@@ -91,7 +90,6 @@ export function useEmulator() {
       core,
       retroarchConfig: {
         ...defaultRetroarchConfig,
-        ...getPlayer2KeyboardMapping(preference.input.keyboardMapping),
         ...preference.input.keyboardMapping,
         ...getPlayer2GamepadMapping(emulatorGamepadMapping),
         ...emulatorGamepadMapping,

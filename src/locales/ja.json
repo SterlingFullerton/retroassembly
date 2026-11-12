@@ -174,6 +174,7 @@
   "emulator.insertCoin": "コイン投入",
   "emulator.loadExternalState": "外部ステートを読み込む",
   "emulator.pause": "一時停止",
+  "emulator.player2Controller": "プレイヤー2:2台目のコントローラー",
   "emulator.prefix": "プレフィックス",
   "emulator.resetToDefaults": "デフォルトに戻す",
   "emulator.resetToDefaultsDescription": "エミュレーターとそのオプションをデフォルトにリセット",

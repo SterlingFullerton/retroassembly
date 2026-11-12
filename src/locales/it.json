@@ -174,6 +174,7 @@
   "emulator.insertCoin": "Inserisci moneta",
   "emulator.loadExternalState": "Carica un stato esterno",
   "emulator.pause": "Pausa",
+  "emulator.player2Controller": "Giocatore 2: secondo controller",
   "emulator.prefix": "Prefisso",
   "emulator.resetToDefaults": "Ripristina ai valori predefiniti",
   "emulator.resetToDefaultsDescription": "Ripristina l'emulatore e le sue opzioni ai valori predefiniti",
