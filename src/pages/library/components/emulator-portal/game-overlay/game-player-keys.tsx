@@ -1,6 +1,6 @@
 import { Kbd } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
-import { useEmulatorLaunched, useShowPlayerKeys } from '#@/pages/library/atoms.ts'
+import { useEmulatorLaunched, useShowGameOverlayContent, useShowPlayerKeys } from '#@/pages/library/atoms.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 
@@ -48,10 +48,12 @@ export function GamePlayerKeys() {
   const { t } = useTranslation()
   const [showPlayerKeys] = useShowPlayerKeys()
   const [launched] = useEmulatorLaunched()
+  const [pauseMenuVisible] = useShowGameOverlayContent()
   const { preference } = usePreference()
   const rom = useRom()
 
-  if (!showPlayerKeys || !launched) {
+  // Hidden behind the pause menu, which has its own layout
+  if (!showPlayerKeys || !launched || pauseMenuVisible) {
     return
   }
 
