@@ -14,6 +14,7 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRomCover } from '#@/pages/library/hooks/use-rom-cover.ts'
 import { routes } from '#@/pages/routes.ts'
 import { getPlatformIcon, getRomGoodcodes } from '#@/utils/client/library.ts'
+import { getSearchMatchRanges } from '#@/utils/isomorphic/search.ts'
 import { DistrictIcon } from '../../district-icon.tsx'
 import { useShowSearchModal } from '../atoms.ts'
 import { useSelectedResult } from './atoms.ts'
@@ -48,7 +49,18 @@ export function SearchResultItem({ keyword, rom }: Readonly<SearchResultItemProp
   }
 
   const romUrl = generatePath(routes.libraryPlatformRom, { fileName: rom.fileName, platform: rom.platform })
-  const keywordChars = compact([...keyword.replace(/\s+/u, '').toLowerCase()])
+  const title = goodcodes.rom
+  const matchRanges = getSearchMatchRanges(title, keyword)
+  const titleParts: { highlighted: boolean; text: string }[] = []
+  let position = 0
+  for (const [start, end] of matchRanges) {
+    titleParts.push(
+      { highlighted: false, text: title.slice(position, start) },
+      { highlighted: true, text: title.slice(start, end) },
+    )
+    position = end
+  }
+  titleParts.push({ highlighted: false, text: title.slice(position) })
 
   function handleMouseMove() {
     if (!selected) {
@@ -94,10 +106,8 @@ export function SearchResultItem({ keyword, rom }: Readonly<SearchResultItemProp
               ? [...districts].map((district) => <DistrictIcon district={district} key={district} />)
               : null}
 
-            {[...goodcodes.rom].map((char, index) => (
-              <Fragment key={index}>
-                {keywordChars.includes(char.toLowerCase()) ? <span className='text-(--accent-9)'>{char}</span> : char}
-              </Fragment>
+            {titleParts.map(({ highlighted, text }, index) => (
+              <Fragment key={index}>{highlighted ? <span className='text-(--accent-9)'>{text}</span> : text}</Fragment>
             ))}
 
             {compact([revisionText, versionText]).map((text) => (
