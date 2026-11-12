@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
@@ -16,7 +17,7 @@ export function GameOverlayController() {
   }
   const idle = useMouseIdle(3000)
   const { hide, show, visible } = useGameOverlay()
-  const { exit, isFullscreen, toggleFullscreen } = useEmulator()
+  const { emulator, exit, isFullscreen, toggleFullscreen } = useEmulator()
   const [launched] = useEmulatorLaunched()
 
   async function handleClickExit() {
@@ -28,6 +29,16 @@ export function GameOverlayController() {
   }
 
   const controllerVisible = launched && !idle && !visible
+
+  // On DS the mouse is the stylus, so it always shows there, though the DS emulator hides it. Elsewhere it shows while
+  // the mouse moves and hides once it's still, like the bar. Classes are used because the emulator keeps resetting the
+  // canvas's own cursor style, and an important rule wins over it
+  const showCursor = rom.platform === 'nds' || !idle
+  useEffect(() => {
+    const canvas = emulator?.getCanvas()
+    canvas?.classList.toggle('cursor-default!', launched && showCursor)
+    canvas?.classList.toggle('cursor-none!', launched && !showCursor)
+  }, [emulator, launched, showCursor])
 
   return (
     <AnimatePresence>
