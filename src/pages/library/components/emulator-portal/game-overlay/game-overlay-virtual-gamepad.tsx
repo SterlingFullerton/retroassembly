@@ -10,6 +10,7 @@ import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ArcadeControls } from './arcade-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
+import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
@@ -301,6 +302,8 @@ export function GameOverlayVirtualGamepad() {
   // Every NES emulator reads the controller's buttons as they are; the Famicom Disk System's own buttons keep the generic
   // layout
   const isNes = rom?.platform === 'nes' || rom?.platform === 'famicom'
+  // mGBA and VBA Next both read the GBA's buttons as they are
+  const isGba = rom?.platform === 'gba'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -378,7 +381,8 @@ export function GameOverlayVirtualGamepad() {
       {isFBNeo ? <ArcadeControls visible={gamepadVisible} /> : null}
       {isSnes ? <SnesControls visible={gamepadVisible} /> : null}
       {isNes ? <NesControls visible={gamepadVisible} /> : null}
-      {isDS || isN64 || isColecoVision || isGenesis || isFBNeo || isSnes || isNes ? null : (
+      {isGba ? <GbaControls visible={gamepadVisible} /> : null}
+      {isDS || isN64 || isColecoVision || isGenesis || isFBNeo || isSnes || isNes || isGba ? null : (
         <>
           <div
             className={twMerge(
