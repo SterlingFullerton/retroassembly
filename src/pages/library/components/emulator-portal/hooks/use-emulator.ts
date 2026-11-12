@@ -16,6 +16,7 @@ import { useIsDemo } from '#@/pages/library/hooks/use-demo.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useRouter } from '#@/pages/library/hooks/use-router.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
+import { getPlayer2KeyboardMapping } from '#@/pages/library/utils/player2-keys.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getCDNUrl } from '#@/utils/isomorphic/cdn.ts'
@@ -40,6 +41,18 @@ const defaultRetroarchConfig: RetroarchConfig = {
   video_gpu_screenshot: true,
   // @ts-expect-error this option is not yet listed in types
   video_viewport_bias_y: 0.1,
+}
+
+// A second controller gets the same buttons as the first. RetroArch names the shoulder buttons l and r
+function getPlayer2GamepadMapping(gamepadMapping: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(gamepadMapping)
+      .filter(([name]) => name.startsWith('input_player1_') && name.endsWith('_btn'))
+      .map(([name, button]) => [
+        name.replace('input_player1_', 'input_player2_').replace(/_(?<side>[lr])1_btn$/u, '_$<side>_btn'),
+        button,
+      ]),
+  )
 }
 
 let noSleep: NoSleep
@@ -78,7 +91,9 @@ export function useEmulator() {
       core,
       retroarchConfig: {
         ...defaultRetroarchConfig,
+        ...getPlayer2KeyboardMapping(preference.input.keyboardMapping),
         ...preference.input.keyboardMapping,
+        ...getPlayer2GamepadMapping(emulatorGamepadMapping),
         ...emulatorGamepadMapping,
         // this might be a bug of retroarch's emscripten build, y plus and y minus are swapped
         input_player1_l_y_minus: preference.input.keyboardMapping.input_player1_l_y_plus,
