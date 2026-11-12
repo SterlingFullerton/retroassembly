@@ -226,8 +226,8 @@ export function useEmulator() {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
-    // keypad, and the arcade stick
-    if (core === 'mupen64plus_next' || core === 'gearcoleco' || core === 'fbneo') {
+    // keypad, and the arcade and Atari 2600 sticks
+    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'stella2014'].includes(core)) {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()
