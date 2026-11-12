@@ -3,3 +3,20 @@
 @plugin '@iconify/tailwind4';
 @plugin '@tailwindcss/typography';
 @plugin 'tailwindcss-motion';
+
+/* Text can't be selected anywhere, so pressing and holding on a phone, or dragging with a mouse, doesn't highlight
+   words. Text boxes still can be, for editing what's typed in them; that takes !important because Radix's text boxes
+   reset every style of theirs, outside any layer, and would otherwise inherit none from the page. */
+@layer base {
+  html {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable]:not([contenteditable='false']) {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+  }
+}
