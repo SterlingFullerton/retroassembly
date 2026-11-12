@@ -5,7 +5,8 @@ import { setVirtualGamepadAxis } from '#@/pages/library/utils/virtual-gamepad.ts
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
-// gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens.
+// gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens. The stick sits
+// in the bottom-left corner, Z by the right thumb, and Start in the middle between the hands.
 const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
 const shoulder = twMerge(
   pressed,
@@ -119,21 +120,13 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
       <div
         className={twMerge('bottom-safe left-safe absolute flex w-46 flex-col gap-2 p-2', clsx({ hidden: !visible }))}
       >
-        <div className='flex gap-1.5'>
-          <VirtualGamepadButton buttonName='l' className={twMerge(shoulder, 'flex-1')} style={shoulderStyle}>
-            L
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonName='l2'
-            className={twMerge(shoulder, 'w-13 rounded-lg text-[#e9e9e9]')}
-            style={{ background: 'linear-gradient(#7b7e83, #5e6166)' }}
-          >
-            Z
-          </VirtualGamepadButton>
-        </div>
+        <VirtualGamepadButton buttonName='l' className={shoulder} style={shoulderStyle}>
+          L
+        </VirtualGamepadButton>
+        {/* The stick in the corner where the left thumb rests, the D-pad above it */}
         <div className='relative h-59'>
           {/* A cross of four arms; the centre is a dimple, as on the controller */}
-          <div className='absolute top-0 left-1.5 grid size-24 grid-cols-3 grid-rows-3'>
+          <div className='absolute top-0 right-0 grid size-24 grid-cols-3 grid-rows-3'>
             <VirtualGamepadButton
               buttonName='up'
               className={twMerge(dpadArm, 'col-start-2 rounded-t-md')}
@@ -174,7 +167,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
               ▼
             </VirtualGamepadButton>
           </div>
-          <div className='absolute right-0 bottom-0'>
+          <div className='absolute bottom-0 left-0'>
             <AnalogStick />
           </div>
         </div>
@@ -186,48 +179,66 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
         <VirtualGamepadButton buttonName='r' className={shoulder} style={shoulderStyle}>
           R
         </VirtualGamepadButton>
-        <div className='relative h-50'>
-          <CButton className='top-0 left-24' direction='up'>
-            ▲
-          </CButton>
-          <CButton className='top-9.5 left-14' direction='left'>
-            ◀
-          </CButton>
-          <CButton className='top-9.5 left-34' direction='right'>
-            ▶
-          </CButton>
-          <CButton className='top-19 left-24' direction='down'>
-            ▼
-          </CButton>
-          <VirtualGamepadButton
-            buttonName='y'
-            className={twMerge(roundButton, 'top-23 left-1.5 size-13 text-[17px]')}
-            group='face'
-            style={gloss('#56d36d', '#1d9a35', '#146b25')}
-          >
-            B
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonName='b'
-            className={twMerge(roundButton, 'top-32 left-14.5 size-16.5 text-xl')}
-            group='face'
-            style={gloss('#5d8cff', '#1f4fd6', '#163a9e')}
-          >
-            A
-          </VirtualGamepadButton>
+        {/* As tall as the left hand's controls, so L and R line up; the buttons sit at its foot */}
+        <div className='relative h-59'>
+          <div className='absolute inset-x-0 bottom-0 h-52'>
+            {/* Z is by the right thumb rather than on the left shoulder: the left thumb is on the stick, and Z is usually
+              pressed with B or A. Being in the same group, a thumb can roll between them */}
+            <VirtualGamepadButton
+              buttonName='l2'
+              className={twMerge(
+                pressed,
+                'absolute top-5.5 left-0 h-11.5 w-14 rounded-xl text-[15px] font-bold text-[#e9e9e9] shadow-[inset_0_1px_0_#fff6,0_2px_3px_#0006]',
+              )}
+              group='face'
+              style={{ background: 'linear-gradient(#7b7e83, #5e6166)' }}
+            >
+              Z
+            </VirtualGamepadButton>
+            <CButton className='top-0 left-[98px]' direction='up'>
+              ▲
+            </CButton>
+            <CButton className='top-9.5 left-[60px]' direction='left'>
+              ◀
+            </CButton>
+            <CButton className='top-9.5 left-[136px]' direction='right'>
+              ▶
+            </CButton>
+            <CButton className='top-19 left-[98px]' direction='down'>
+              ▼
+            </CButton>
+            <VirtualGamepadButton
+              buttonName='y'
+              className={twMerge(roundButton, 'top-29 left-4.5 size-13 text-[17px]')}
+              group='face'
+              style={gloss('#56d36d', '#1d9a35', '#146b25')}
+            >
+              B
+            </VirtualGamepadButton>
+            <VirtualGamepadButton
+              buttonName='b'
+              className={twMerge(roundButton, 'top-35 left-19 size-16.5 text-xl')}
+              group='face'
+              style={gloss('#5d8cff', '#1f4fd6', '#163a9e')}
+            >
+              A
+            </VirtualGamepadButton>
+          </div>
         </div>
-        <div className='flex justify-end'>
-          <VirtualGamepadButton
-            buttonName='start'
-            className={twMerge(
-              pressed,
-              'h-7.5 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-white shadow-[0_2px_3px_#0008]',
-            )}
-            style={gloss('#ff6b5e', '#d7261b', '#9e1910')}
-          >
-            START
-          </VirtualGamepadButton>
-        </div>
+      </div>
+
+      {/* Start in the middle between the hands, as on the controller */}
+      <div className={twMerge('bottom-safe absolute left-1/2 mb-2 -translate-x-1/2', clsx({ hidden: !visible }))}>
+        <VirtualGamepadButton
+          buttonName='start'
+          className={twMerge(
+            pressed,
+            'h-7.5 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-white shadow-[0_2px_3px_#0008]',
+          )}
+          style={gloss('#ff6b5e', '#d7261b', '#9e1910')}
+        >
+          START
+        </VirtualGamepadButton>
       </div>
     </>
   )
