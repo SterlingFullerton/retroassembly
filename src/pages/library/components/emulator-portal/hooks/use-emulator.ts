@@ -274,7 +274,7 @@ export function useEmulator() {
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
     // keypad, the arcade, Atari and Channel F sticks, the Atari 5200's keypad, the PlayStation's two analog sticks, and
-    // the Virtual Boy's right d-pad
+    // the Virtual Boy's right d-pad, and the Disk System's flip disk button
     if (
       [
         'a5200',
@@ -286,7 +286,8 @@ export function useEmulator() {
         'pcsx_rearmed',
         'prosystem',
         'stella2014',
-      ].includes(core)
+      ].includes(core) ||
+      rom.platform === 'fds'
     ) {
       attachVirtualGamepad(emulator)
     }

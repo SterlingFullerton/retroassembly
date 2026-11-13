@@ -270,6 +270,7 @@ export function GameOverlayVirtualGamepad() {
   // Every NES emulator reads the controller's buttons as they are; the Famicom Disk System's own buttons keep the generic
   // layout
   const isNes = rom?.platform === 'nes' || rom?.platform === 'famicom'
+  const isFds = rom?.platform === 'fds' && (core === 'fceumm' || core === 'nestopia')
   // mGBA and VBA Next both read the GBA's buttons as they are
   const isGba = rom?.platform === 'gba'
   // Every Game Boy emulator reads the Game Boy's buttons as they are; Game Boy Color games look the same
@@ -383,6 +384,7 @@ export function GameOverlayVirtualGamepad() {
       {isFBNeo ? <ArcadeControls visible={gamepadVisible} /> : null}
       {isSnes ? <SnesControls visible={gamepadVisible} /> : null}
       {isNes ? <NesControls visible={gamepadVisible} /> : null}
+      {isFds ? <NesControls diskCore={core} visible={gamepadVisible} /> : null}
       {isGba ? <GbaControls visible={gamepadVisible} /> : null}
       {isGb ? <GbControls visible={gamepadVisible} /> : null}
       {isAtari2600 ? <Atari2600Controls visible={gamepadVisible} /> : null}
@@ -406,6 +408,7 @@ export function GameOverlayVirtualGamepad() {
       isFBNeo ||
       isSnes ||
       isNes ||
+      isFds ||
       isGba ||
       isGb ||
       isAtari2600 ||
