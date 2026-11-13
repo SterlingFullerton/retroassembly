@@ -13,12 +13,13 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // sticks games switch on themselves.
 const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
 
-// Each face button: its symbol and colour, and its place in the diamond in portrait and in landscape
+// Each face button: its symbol and colour, and its place in the diamond in portrait and in landscape. The diamond, like
+// the d-pad, sits midway between the bumpers above and the sticks below
 const faceButtons: [label: string, buttonName: string, color: string, className: string][] = [
-  ['△', 'x', '#3fcf8e', 'right-[64px] bottom-[274px] landscape:right-[48px] landscape:bottom-[244px]'],
-  ['□', 'y', '#e88ac8', 'right-[112px] bottom-[226px] landscape:right-[86px] landscape:bottom-[206px]'],
-  ['○', 'a', '#ff5a5a', 'right-[16px] bottom-[226px] landscape:right-[10px] landscape:bottom-[206px]'],
-  ['✕', 'b', '#7aa8ff', 'right-[64px] bottom-[178px] landscape:right-[48px] landscape:bottom-[168px]'],
+  ['△', 'x', '#3fcf8e', 'right-[64px] bottom-[267px] landscape:right-[48px] landscape:bottom-[227px]'],
+  ['□', 'y', '#e88ac8', 'right-[112px] bottom-[219px] landscape:right-[86px] landscape:bottom-[189px]'],
+  ['○', 'a', '#ff5a5a', 'right-[16px] bottom-[219px] landscape:right-[10px] landscape:bottom-[189px]'],
+  ['✕', 'b', '#7aa8ff', 'right-[64px] bottom-[171px] landscape:right-[48px] landscape:bottom-[151px]'],
 ]
 const faceStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #4a4a52, #2a2a30 60%, #18181c)',
@@ -66,7 +67,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
         <VirtualGamepadButton buttonName='l' className={twMerge(bumper, 'left-4 landscape:left-3')} style={bumperStyle}>
           L1
         </VirtualGamepadButton>
-        <DPad className='absolute bottom-[186px] left-5 size-34 landscape:bottom-[170px] landscape:left-4 landscape:size-27.5' />
+        <DPad className='absolute bottom-[174px] left-5 size-34 landscape:bottom-[152px] landscape:left-4 landscape:size-27.5' />
         <Thumbstick
           className='absolute bottom-7 left-16 size-30 landscape:bottom-6.5 landscape:left-10 landscape:size-26'
           stick='left'
