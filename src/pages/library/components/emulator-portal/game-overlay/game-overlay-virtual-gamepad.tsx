@@ -12,6 +12,7 @@ import { ArcadeControls } from './arcade-controls.tsx'
 import { Atari2600Controls } from './atari2600-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DPad } from './dpad.tsx'
+import { GameGearControls } from './gamegear-controls.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
@@ -265,6 +266,8 @@ export function GameOverlayVirtualGamepad() {
   const isGb = rom?.platform === 'gb' || rom?.platform === 'gbc'
   // Stella, the Atari 2600's emulator, reads the joystick from the on-screen gamepad
   const isAtari2600 = rom?.platform === 'atari2600' && core === 'stella2014'
+  // Both Game Gear emulators read buttons 1 and 2 the same way
+  const isGameGear = rom?.platform === 'gamegear'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -345,6 +348,7 @@ export function GameOverlayVirtualGamepad() {
       {isGba ? <GbaControls visible={gamepadVisible} /> : null}
       {isGb ? <GbControls visible={gamepadVisible} /> : null}
       {isAtari2600 ? <Atari2600Controls visible={gamepadVisible} /> : null}
+      {isGameGear ? <GameGearControls visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
       isColecoVision ||
@@ -354,7 +358,8 @@ export function GameOverlayVirtualGamepad() {
       isNes ||
       isGba ||
       isGb ||
-      isAtari2600 ? null : (
+      isAtari2600 ||
+      isGameGear ? null : (
         <>
           <div
             className={twMerge(
