@@ -21,6 +21,7 @@ import { GenesisControls } from './genesis-controls.tsx'
 import { LynxControls } from './lynx-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
+import { NgpControls } from './ngp-controls.tsx'
 import { PcEngineControls } from './pce-controls.tsx'
 import { PsxControls } from './psx-controls.tsx'
 import { MasterSystemControls } from './sms-controls.tsx'
@@ -290,6 +291,8 @@ export function GameOverlayVirtualGamepad() {
   const isAtari5200 = rom?.platform === 'atari5200' && core === 'a5200'
   // Beetle Lynx reads A, B, both Options, Pause and Rotate as the Lynx has them
   const isLynx = rom?.platform === 'atarilynx' && core === 'mednafen_lynx'
+  // Beetle Neo Geo Pocket reads A, B and Option as the Pocket has them, for both Pockets
+  const isNgp = (rom?.platform === 'ngp' || rom?.platform === 'ngpc') && core === 'mednafen_ngp'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -381,6 +384,7 @@ export function GameOverlayVirtualGamepad() {
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
+      {isNgp ? <NgpControls visible={gamepadVisible} /> : null}
       {isLynx ? <LynxControls top={lynxControlsTop} visible={gamepadVisible} /> : null}
       {isAtari5200 ? (
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
@@ -403,7 +407,8 @@ export function GameOverlayVirtualGamepad() {
       isAtari7800 ||
       isWonderSwan ||
       isAtari5200 ||
-      isLynx ? null : (
+      isLynx ||
+      isNgp ? null : (
         <>
           <div
             className={twMerge(
