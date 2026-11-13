@@ -18,6 +18,7 @@ import { GameGearControls } from './gamegear-controls.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
+import { LynxControls } from './lynx-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
 import { PcEngineControls } from './pce-controls.tsx'
@@ -287,6 +288,8 @@ export function GameOverlayVirtualGamepad() {
     (rom?.platform === 'wonderswan' || rom?.platform === 'wonderswancolor') && core === 'mednafen_wswan'
   // a5200 reads the stick and the keypad's digits from the on-screen gamepad's sticks
   const isAtari5200 = rom?.platform === 'atari5200' && core === 'a5200'
+  // Beetle Lynx reads A, B, both Options, Pause and Rotate as the Lynx has them
+  const isLynx = rom?.platform === 'atarilynx' && core === 'mednafen_lynx'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -295,6 +298,9 @@ export function GameOverlayVirtualGamepad() {
   // Rotated for a game played upright, the WonderSwan's picture is tall; in portrait it's kept above the controls
   const wonderSwanControlsTop = useRef<HTMLDivElement>(null)
   useFitGameAboveControls(launched && isWonderSwan, wonderSwanControlsTop)
+  // So is the Lynx's, rotated for a game played with it held upright
+  const lynxControlsTop = useRef<HTMLDivElement>(null)
+  useFitGameAboveControls(launched && isLynx, lynxControlsTop)
 
   if (!launched) {
     return
@@ -375,6 +381,7 @@ export function GameOverlayVirtualGamepad() {
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
+      {isLynx ? <LynxControls top={lynxControlsTop} visible={gamepadVisible} /> : null}
       {isAtari5200 ? (
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
       ) : null}
@@ -395,7 +402,8 @@ export function GameOverlayVirtualGamepad() {
       isPcEngine ||
       isAtari7800 ||
       isWonderSwan ||
-      isAtari5200 ? null : (
+      isAtari5200 ||
+      isLynx ? null : (
         <>
           <div
             className={twMerge(

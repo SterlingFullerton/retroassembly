@@ -3,6 +3,7 @@ import type { CSSProperties, RefObject } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { refitGame } from './refit-game.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The WonderSwan's controls: the d-pad every console shares as the X pad, the Y pad as four buttons in a diamond above
@@ -29,12 +30,6 @@ const yButtons: [label: string, buttonName: string, className: string][] = [
   ['Y3', 'l2', 'left-[75px] bottom-[243px] landscape:left-[45px] landscape:bottom-[168px]'],
   ['Y4', 'l', 'left-[29px] bottom-[289px] landscape:left-[9px] landscape:bottom-[204px]'],
 ]
-
-// RetroArch fits the picture to the screen again only when told the window was resized, so once the turned picture is
-// drawn it's told so, and an upright picture then fits above the controls
-function refitGame() {
-  setTimeout(() => globalThis.dispatchEvent(new Event('resize')), 300)
-}
 
 export function WonderSwanControls({
   top,
