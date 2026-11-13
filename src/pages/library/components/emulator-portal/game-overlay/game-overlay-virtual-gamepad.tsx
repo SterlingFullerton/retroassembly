@@ -19,6 +19,7 @@ import { GameGearControls } from './gamegear-controls.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
+import { GwControls } from './gw-controls.tsx'
 import { LynxControls } from './lynx-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
@@ -301,6 +302,8 @@ export function GameOverlayVirtualGamepad() {
   // on-screen gamepad
   const isChannelF = rom?.platform === 'channelf' && core === 'freechaf'
   const isVirtualBoy = rom?.platform === 'vb' && core === 'mednafen_vb'
+  // gw reads the Game & Watch's d-pad, A and B, and its menu from Select and Start
+  const isGameAndWatch = rom?.platform === 'gameandwatch' && core === 'gw'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -396,6 +399,7 @@ export function GameOverlayVirtualGamepad() {
       {isNgp ? <NgpControls visible={gamepadVisible} /> : null}
       {isChannelF ? <ChannelFControls visible={gamepadVisible} /> : null}
       {isVirtualBoy ? <VbControls visible={gamepadVisible} /> : null}
+      {isGameAndWatch ? <GwControls visible={gamepadVisible} /> : null}
       {isLynx ? <LynxControls top={lynxControlsTop} visible={gamepadVisible} /> : null}
       {isAtari5200 ? (
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
@@ -422,7 +426,8 @@ export function GameOverlayVirtualGamepad() {
       isLynx ||
       isNgp ||
       isChannelF ||
-      isVirtualBoy ? null : (
+      isVirtualBoy ||
+      isGameAndWatch ? null : (
         <>
           <div
             className={twMerge(
