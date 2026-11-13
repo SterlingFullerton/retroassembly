@@ -52,6 +52,18 @@ const defaultRetroarchConfig: RetroarchConfig = {
 const preparations = new Map<string, Promise<Nostalgist | undefined>>()
 
 // The on-screen controls show on touch screens; the N64's have an analog stick
+// PCSX ReARMed's DualShock: libretro's analog controller (5), the second of its kinds, as RetroArch numbers it.
+// RetroArch only takes a controller type for a core from its remap file, which is written before each launch
+const dualShock = 517
+const remapDirectory = '/home/web_user/retroarch/userdata/config/remaps'
+
+function writeDualShockRemap(emulator: Nostalgist) {
+  const fs = emulator.getEmscriptenFS()
+  const directory = `${remapDirectory}/PCSX-ReARMed`
+  fs.mkdirTree(directory)
+  fs.writeFile(`${directory}/PCSX-ReARMed.rmp`, `input_libretro_device_p1 = "${dualShock}"\n`)
+}
+
 function hasAnalogStickOnScreen() {
   return globalThis.matchMedia?.('(pointer: coarse)').matches ?? false
 }
@@ -118,6 +130,22 @@ export function useEmulator() {
               input_player1_l_x_plus_axis: '+0',
               input_player1_l_y_minus_axis: '-1',
               input_player1_l_y_plus_axis: '+1',
+            }
+          : {}),
+        // The PlayStation's on-screen controls are a DualShock's, with two sticks: the emulator is told so by a remap
+        // file, and its sticks are the on-screen gamepad's axes. Games that don't use the sticks still see a digital pad
+        ...(core === 'pcsx_rearmed' && hasAnalogStickOnScreen()
+          ? {
+              input_player1_analog_dpad_mode: 0,
+              input_player1_l_x_minus_axis: '-0',
+              input_player1_l_x_plus_axis: '+0',
+              input_player1_l_y_minus_axis: '-1',
+              input_player1_l_y_plus_axis: '+1',
+              input_player1_r_x_minus_axis: '-2',
+              input_player1_r_x_plus_axis: '+2',
+              input_player1_r_y_minus_axis: '-3',
+              input_player1_r_y_plus_axis: '+3',
+              input_remapping_directory: remapDirectory,
             }
           : {}),
         ...(core === 'mupen64plus_next' && hasAnalogStickOnScreen()
@@ -201,6 +229,10 @@ export function useEmulator() {
       })
     }
 
+    if (core === 'pcsx_rearmed' && hasAnalogStickOnScreen()) {
+      emulator.getEmulator().on('beforeLaunch', () => writeDualShockRemap(emulator))
+    }
+
     const canvas = emulator.getCanvas()
     canvas.setAttribute('tabindex', '-1')
     canvas.dataset.snFocusStyle = JSON.stringify({ display: 'none' })
@@ -226,8 +258,8 @@ export function useEmulator() {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
-    // keypad, and the arcade and Atari 2600 sticks
-    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'stella2014'].includes(core)) {
+    // keypad, the arcade and Atari 2600 sticks, and the PlayStation's two analog sticks
+    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'pcsx_rearmed', 'stella2014'].includes(core)) {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()

@@ -18,6 +18,7 @@ import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
+import { PsxControls } from './psx-controls.tsx'
 import { MasterSystemControls } from './sms-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -271,6 +272,8 @@ export function GameOverlayVirtualGamepad() {
   const isGameGear = rom?.platform === 'gamegear'
   // All three Master System emulators read buttons 1 and 2, and Pause, the same way
   const isMasterSystem = rom?.platform === 'sms'
+  // PCSX ReARMed is told it has a DualShock, whose sticks the on-screen gamepad tilts
+  const isPsx = rom?.platform === 'psx' && core === 'pcsx_rearmed'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -353,6 +356,7 @@ export function GameOverlayVirtualGamepad() {
       {isAtari2600 ? <Atari2600Controls visible={gamepadVisible} /> : null}
       {isGameGear ? <GameGearControls visible={gamepadVisible} /> : null}
       {isMasterSystem ? <MasterSystemControls visible={gamepadVisible} /> : null}
+      {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
       isColecoVision ||
@@ -364,7 +368,8 @@ export function GameOverlayVirtualGamepad() {
       isGb ||
       isAtari2600 ||
       isGameGear ||
-      isMasterSystem ? null : (
+      isMasterSystem ||
+      isPsx ? null : (
         <>
           <div
             className={twMerge(
