@@ -10,6 +10,7 @@ import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ArcadeControls } from './arcade-controls.tsx'
 import { Atari2600Controls } from './atari2600-controls.tsx'
+import { Atari5200Controls } from './atari5200-controls.tsx'
 import { Atari7800Controls } from './atari7800-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DPad } from './dpad.tsx'
@@ -284,6 +285,8 @@ export function GameOverlayVirtualGamepad() {
   // Beetle WonderSwan reads both pads, A, B, Start and Rotate as the console has them
   const isWonderSwan =
     (rom?.platform === 'wonderswan' || rom?.platform === 'wonderswancolor') && core === 'mednafen_wswan'
+  // a5200 reads the stick and the keypad's digits from the on-screen gamepad's sticks
+  const isAtari5200 = rom?.platform === 'atari5200' && core === 'a5200'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -312,8 +315,8 @@ export function GameOverlayVirtualGamepad() {
         >
           <span className='icon-[mdi--pause]' />
         </VirtualGamepadButton>
-        {/* The ColecoVision's keypad opens from beside pause */}
-        {isColecoVision ? (
+        {/* The ColecoVision's and Atari 5200's keypads open from beside pause */}
+        {isColecoVision || isAtari5200 ? (
           <VirtualGamepadButton
             className={twMerge(
               'left-safe-offset-10 absolute rounded p-2',
@@ -372,6 +375,9 @@ export function GameOverlayVirtualGamepad() {
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
+      {isAtari5200 ? (
+        <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
+      ) : null}
       {isWonderSwan ? <WonderSwanControls top={wonderSwanControlsTop} visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
@@ -388,7 +394,8 @@ export function GameOverlayVirtualGamepad() {
       isPsx ||
       isPcEngine ||
       isAtari7800 ||
-      isWonderSwan ? null : (
+      isWonderSwan ||
+      isAtari5200 ? null : (
         <>
           <div
             className={twMerge(

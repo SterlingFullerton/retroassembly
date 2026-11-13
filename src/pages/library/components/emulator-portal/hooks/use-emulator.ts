@@ -148,6 +148,21 @@ export function useEmulator() {
               input_remapping_directory: remapDirectory,
             }
           : {}),
+        // The Atari 5200's stick is the on-screen gamepad's left stick, and its keypad presses most digits by pushing the
+        // right stick, so both sticks are its axes
+        ...(core === 'a5200' && hasAnalogStickOnScreen()
+          ? {
+              input_player1_analog_dpad_mode: 0,
+              input_player1_l_x_minus_axis: '-0',
+              input_player1_l_x_plus_axis: '+0',
+              input_player1_l_y_minus_axis: '-1',
+              input_player1_l_y_plus_axis: '+1',
+              input_player1_r_x_minus_axis: '-2',
+              input_player1_r_x_plus_axis: '+2',
+              input_player1_r_y_minus_axis: '-3',
+              input_player1_r_y_plus_axis: '+3',
+            }
+          : {}),
         ...(core === 'mupen64plus_next' && hasAnalogStickOnScreen()
           ? {
               input_player1_analog_dpad_mode: 0,
@@ -258,8 +273,10 @@ export function useEmulator() {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
-    // keypad, the arcade and Atari sticks, and the PlayStation's two analog sticks
-    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'pcsx_rearmed', 'prosystem', 'stella2014'].includes(core)) {
+    // keypad, the arcade and Atari sticks, the Atari 5200's keypad, and the PlayStation's two analog sticks
+    if (
+      ['a5200', 'fbneo', 'gearcoleco', 'mupen64plus_next', 'pcsx_rearmed', 'prosystem', 'stella2014'].includes(core)
+    ) {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()
