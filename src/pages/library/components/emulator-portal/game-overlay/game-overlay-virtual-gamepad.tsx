@@ -18,6 +18,7 @@ import { GbaControls } from './gba-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { N64Controls } from './n64-controls.tsx'
 import { NesControls } from './nes-controls.tsx'
+import { PcEngineControls } from './pce-controls.tsx'
 import { PsxControls } from './psx-controls.tsx'
 import { MasterSystemControls } from './sms-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
@@ -274,6 +275,8 @@ export function GameOverlayVirtualGamepad() {
   const isMasterSystem = rom?.platform === 'sms'
   // PCSX ReARMed is told it has a DualShock, whose sticks the on-screen gamepad tilts
   const isPsx = rom?.platform === 'psx' && core === 'pcsx_rearmed'
+  // Beetle PCE Fast reads II and I, Select and Run, as the controller has them
+  const isPcEngine = rom?.platform === 'pcengine' && core === 'mednafen_pce_fast'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -357,6 +360,7 @@ export function GameOverlayVirtualGamepad() {
       {isGameGear ? <GameGearControls visible={gamepadVisible} /> : null}
       {isMasterSystem ? <MasterSystemControls visible={gamepadVisible} /> : null}
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
+      {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
       isColecoVision ||
@@ -369,7 +373,8 @@ export function GameOverlayVirtualGamepad() {
       isAtari2600 ||
       isGameGear ||
       isMasterSystem ||
-      isPsx ? null : (
+      isPsx ||
+      isPcEngine ? null : (
         <>
           <div
             className={twMerge(
