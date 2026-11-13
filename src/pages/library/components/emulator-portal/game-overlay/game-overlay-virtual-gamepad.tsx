@@ -12,6 +12,7 @@ import { ArcadeControls } from './arcade-controls.tsx'
 import { Atari2600Controls } from './atari2600-controls.tsx'
 import { Atari5200Controls } from './atari5200-controls.tsx'
 import { Atari7800Controls } from './atari7800-controls.tsx'
+import { ChannelFControls } from './channelf-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DPad } from './dpad.tsx'
 import { GameGearControls } from './gamegear-controls.tsx'
@@ -294,6 +295,9 @@ export function GameOverlayVirtualGamepad() {
   const isLynx = rom?.platform === 'atarilynx' && core === 'mednafen_lynx'
   // Beetle Neo Geo Pocket reads A, B and Option as the Pocket has them, for both Pockets
   const isNgp = (rom?.platform === 'ngp' || rom?.platform === 'ngpc') && core === 'mednafen_ngp'
+  // FreeChaF reads the Channel F's stick, its push, pull and twists, Console and Swap; the joystick goes through the
+  // on-screen gamepad
+  const isChannelF = rom?.platform === 'channelf' && core === 'freechaf'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -386,6 +390,7 @@ export function GameOverlayVirtualGamepad() {
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
       {isNgp ? <NgpControls visible={gamepadVisible} /> : null}
+      {isChannelF ? <ChannelFControls visible={gamepadVisible} /> : null}
       {isLynx ? <LynxControls top={lynxControlsTop} visible={gamepadVisible} /> : null}
       {isAtari5200 ? (
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
@@ -409,7 +414,8 @@ export function GameOverlayVirtualGamepad() {
       isWonderSwan ||
       isAtari5200 ||
       isLynx ||
-      isNgp ? null : (
+      isNgp ||
+      isChannelF ? null : (
         <>
           <div
             className={twMerge(
