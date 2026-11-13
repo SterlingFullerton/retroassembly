@@ -25,6 +25,7 @@ import { MasterSystemControls } from './sms-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
+import { WonderSwanControls } from './wonderswan-controls.tsx'
 
 type HoldCommand = 'FAST_FORWARD_HOLD' | 'REWIND'
 
@@ -280,11 +281,17 @@ export function GameOverlayVirtualGamepad() {
   const isPcEngine = rom?.platform === 'pcengine' && core === 'mednafen_pce_fast'
   // ProSystem, the Atari 7800's emulator, reads the joystick from the on-screen gamepad
   const isAtari7800 = rom?.platform === 'atari7800' && core === 'prosystem'
+  // Beetle WonderSwan reads both pads, A, B, Start and Rotate as the console has them
+  const isWonderSwan =
+    (rom?.platform === 'wonderswan' || rom?.platform === 'wonderswancolor') && core === 'mednafen_wswan'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
   const dsControls = useRef<HTMLDivElement>(null)
   useFitGameAboveControls(launched && isDS, dsControls)
+  // Rotated for a game played upright, the WonderSwan's picture is tall; in portrait it's kept above the controls
+  const wonderSwanControlsTop = useRef<HTMLDivElement>(null)
+  useFitGameAboveControls(launched && isWonderSwan, wonderSwanControlsTop)
 
   if (!launched) {
     return
@@ -365,6 +372,7 @@ export function GameOverlayVirtualGamepad() {
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
+      {isWonderSwan ? <WonderSwanControls top={wonderSwanControlsTop} visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
       isColecoVision ||
@@ -379,7 +387,8 @@ export function GameOverlayVirtualGamepad() {
       isMasterSystem ||
       isPsx ||
       isPcEngine ||
-      isAtari7800 ? null : (
+      isAtari7800 ||
+      isWonderSwan ? null : (
         <>
           <div
             className={twMerge(
