@@ -264,8 +264,12 @@ export function GameOverlayVirtualGamepad() {
   // Arcade games take a coin with Select
   const isArcade = rom?.platform === 'arcade'
   const { core } = useEmulator()
-  // Drawn like its controller with the emulator whose buttons are known; PicoDrive keeps the generic layout
-  const isGenesis = (rom?.platform === 'genesis' || rom?.platform === 'megadrive') && core === 'genesis_plus_gx'
+  // Drawn like its controller with the emulator whose buttons are known; Genesis games on PicoDrive keep the generic
+  // layout
+  // The 32X plays with the Genesis's controller, and PicoDrive, its only emulator, reads it from the same buttons
+  const isGenesis =
+    ((rom?.platform === 'genesis' || rom?.platform === 'megadrive') && core === 'genesis_plus_gx') ||
+    (rom?.platform === 'sega32x' && core === 'picodrive')
   // Drawn like a cabinet with FinalBurn Neo, whose button numbers are known; MAME 2003-Plus keeps the generic layout
   const isFBNeo = isArcade && core === 'fbneo'
   // Every Snes9x reads the controller's buttons as they are
