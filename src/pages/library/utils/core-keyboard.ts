@@ -233,6 +233,20 @@ export function getOdyssey2Keyboard(mapping: KeyboardMapping) {
   return { config: toRetroarchInputNames(moved), mapping: { ...mapping, ...moved } }
 }
 
+/**
+ * The DS's microphone. DeSmuME 2015 can't hear a real microphone; while the RetroPad's L3 is held, the game hears the
+ * sound of blowing into it instead. The shared mapping leaves L3 without a key, so it gets M, unless the player has
+ * given L3 a key of their own or uses M for something else
+ */
+export function getDSKeyboard(mapping: KeyboardMapping) {
+  const usedKeys = new Set(Object.values(mapping).filter(Boolean))
+  const config: Record<string, string> = {}
+  if (!mapping.input_player1_l3 && !usedKeys.has('m')) {
+    config.input_player1_l3 = 'm'
+  }
+  return { config }
+}
+
 /** RetroArch settings for the keys an emulator needs beyond the shared keyboard mapping */
 export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping, platform?: string) {
   // Genesis Plus GX also plays the Game Gear and Master System, whose two buttons keep their keys
@@ -250,6 +264,9 @@ export function getCoreKeyboardConfig(core: string | undefined, mapping: Keyboar
   }
   if (core === 'o2em') {
     return getOdyssey2Keyboard(mapping).config
+  }
+  if (core === 'desmume2015') {
+    return getDSKeyboard(mapping).config
   }
   return {}
 }

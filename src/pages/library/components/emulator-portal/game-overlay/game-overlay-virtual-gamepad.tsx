@@ -152,7 +152,9 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
 // On DS in portrait the controls fill one strip under the game: L and R in its top corners with Select and Start
 // between them, and the d-pad and the face buttons on either side. In landscape the game takes the whole height and the
 // controls go to its sides, as on the N64: L and R up top, the d-pad low on the left, the face buttons low on the right,
-// and Select and Start beside pause in the top left. Flat, translucent buttons turn white while pressed.
+// and Select and Start beside pause in the top left. Flat, translucent buttons turn white while pressed. Mic, for games
+// you blow into or shout at, sits at the bottom between the d-pad and the face buttons in portrait, and after Start in
+// landscape: DeSmuME can't hear a real microphone, so while it's held the game hears the sound of blowing instead.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 
 function DSControls({
@@ -207,6 +209,20 @@ function DSControls({
           Start
         </VirtualGamepadButton>
       </div>
+
+      <VirtualGamepadButton
+        buttonName='l3'
+        className={twMerge(
+          dsButton,
+          'absolute bottom-3 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
+          'landscape:left-safe-offset-39 landscape:top-1 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
+        )}
+        title='Mic'
+      >
+        <span className='icon-[mdi--microphone] size-3.5' />
+        {/* Phones narrower than 360 points leave room only for the icon between the d-pad and the face buttons */}
+        <span className='max-[359px]:portrait:hidden'>MIC</span>
+      </VirtualGamepadButton>
 
       {/* The d-pad */}
       <DPad
