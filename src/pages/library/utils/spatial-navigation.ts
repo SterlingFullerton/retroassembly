@@ -64,6 +64,15 @@ export function move(direction?: Direction) {
     return
   }
   const currentActiveElement = document.activeElement
+  // A control that left and right change, such as the volume, is told which way instead of losing the focus
+  if (
+    (direction === 'left' || direction === 'right') &&
+    currentActiveElement instanceof HTMLElement &&
+    currentActiveElement.dataset.snAdjust !== undefined
+  ) {
+    currentActiveElement.dispatchEvent(new CustomEvent('sn:adjust', { detail: direction }))
+    return
+  }
   return new Promise<void>((resolve) => {
     const abortController = new AbortController()
     async function handleWillFocus(event: Event) {

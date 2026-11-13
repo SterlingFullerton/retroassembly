@@ -8,7 +8,9 @@ export function useFocusIndicator() {
     ({ transition = true }: { transition?: boolean } = {}) => {
       const { activeElement } = document
       if (activeElement instanceof HTMLElement && activeElement.dataset.snEnabled) {
-        const { height, left, top, width } = activeElement.getBoundingClientRect()
+        // A control inside a larger one, such as the volume slider in its row, can have the indicator drawn around that
+        const box = (activeElement.dataset.snFocusParent && activeElement.parentElement) || activeElement
+        const { height, left, top, width } = box.getBoundingClientRect()
         const focusIndicatorStyle: CSSProperties = { height, left, top, width }
         if (transition) {
           focusIndicatorStyle.transitionProperty = 'all'

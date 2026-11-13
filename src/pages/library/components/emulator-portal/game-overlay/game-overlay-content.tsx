@@ -12,6 +12,7 @@ import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ControllerButton } from './controller-button.tsx'
 import { GameInputMessage } from './game-input-message.tsx'
 import { GameOverlayButtons } from './game-overlay-buttons.tsx'
+import { GameOverlayVolume } from './game-overlay-volume.tsx'
 import { GameStates } from './game-states.tsx'
 
 function handleAnimationComplete(animation) {
@@ -69,6 +70,7 @@ export function GameOverlayContent() {
             <div className='game-overlay-buttons flex flex-col gap-5 lg:flex-row'>
               <GameOverlayButtons />
             </div>
+            <GameOverlayVolume />
             {isDemo ? null : <GameStates />}
           </div>
 
