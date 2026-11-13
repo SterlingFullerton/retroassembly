@@ -9,7 +9,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // with their numbers printed beside them in white, and a plain Pause button, for the console's own, between the hands in
 // portrait, or beside pause in landscape. 1 and 2 are slanted along the arc the thumb makes rolling from one to the
 // other, as on the Game Gear's. Genesis Plus GX, PicoDrive and Gearsystem all read button 1 from the RetroPad's B, 2
-// from A, and Pause from Start.
+// from A, and Pause from Start. SG-1000 games, whose controller is the same, share them.
 const white = '#e8e8ea'
 
 const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'

@@ -276,8 +276,9 @@ export function GameOverlayVirtualGamepad() {
   const isAtari2600 = rom?.platform === 'atari2600' && core === 'stella2014'
   // Both Game Gear emulators read buttons 1 and 2 the same way
   const isGameGear = rom?.platform === 'gamegear'
-  // All three Master System emulators read buttons 1 and 2, and Pause, the same way
-  const isMasterSystem = rom?.platform === 'sms'
+  // All three Master System emulators read buttons 1 and 2, and Pause, the same way; the SG-1000, whose controller is
+  // the same, shares its controls
+  const isMasterSystem = rom?.platform === 'sms' || rom?.platform === 'sg-1000'
   // PCSX ReARMed is told it has a DualShock, whose sticks the on-screen gamepad tilts
   const isPsx = rom?.platform === 'psx' && core === 'pcsx_rearmed'
   // Beetle PCE Fast reads II and I, Select and Run, as the controller has them
