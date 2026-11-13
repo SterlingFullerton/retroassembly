@@ -10,6 +10,7 @@ import { useEmulator } from '../hooks/use-emulator.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { ArcadeControls } from './arcade-controls.tsx'
 import { Atari2600Controls } from './atari2600-controls.tsx'
+import { Atari7800Controls } from './atari7800-controls.tsx'
 import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DPad } from './dpad.tsx'
 import { GameGearControls } from './gamegear-controls.tsx'
@@ -277,6 +278,8 @@ export function GameOverlayVirtualGamepad() {
   const isPsx = rom?.platform === 'psx' && core === 'pcsx_rearmed'
   // Beetle PCE Fast reads II and I, Select and Run, as the controller has them
   const isPcEngine = rom?.platform === 'pcengine' && core === 'mednafen_pce_fast'
+  // ProSystem, the Atari 7800's emulator, reads the joystick from the on-screen gamepad
+  const isAtari7800 = rom?.platform === 'atari7800' && core === 'prosystem'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -361,6 +364,7 @@ export function GameOverlayVirtualGamepad() {
       {isMasterSystem ? <MasterSystemControls visible={gamepadVisible} /> : null}
       {isPsx ? <PsxControls visible={gamepadVisible} /> : null}
       {isPcEngine ? <PcEngineControls visible={gamepadVisible} /> : null}
+      {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
       {isDS ||
       isN64 ||
       isColecoVision ||
@@ -374,7 +378,8 @@ export function GameOverlayVirtualGamepad() {
       isGameGear ||
       isMasterSystem ||
       isPsx ||
-      isPcEngine ? null : (
+      isPcEngine ||
+      isAtari7800 ? null : (
         <>
           <div
             className={twMerge(

@@ -258,8 +258,8 @@ export function useEmulator() {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
-    // keypad, the arcade and Atari 2600 sticks, and the PlayStation's two analog sticks
-    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'pcsx_rearmed', 'stella2014'].includes(core)) {
+    // keypad, the arcade and Atari sticks, and the PlayStation's two analog sticks
+    if (['fbneo', 'gearcoleco', 'mupen64plus_next', 'pcsx_rearmed', 'prosystem', 'stella2014'].includes(core)) {
       attachVirtualGamepad(emulator)
     }
     const canvas = emulator.getCanvas()
