@@ -27,6 +27,7 @@ import { PcEngineControls } from './pce-controls.tsx'
 import { PsxControls } from './psx-controls.tsx'
 import { MasterSystemControls } from './sms-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
+import { VbControls } from './vb-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { getVirtualGamepadLabels, type VirtualGamepadLabelButton } from './virtual-gamepad-labels.ts'
 import { WonderSwanControls } from './wonderswan-controls.tsx'
@@ -298,6 +299,7 @@ export function GameOverlayVirtualGamepad() {
   // FreeChaF reads the Channel F's stick, its push, pull and twists, Console and Swap; the joystick goes through the
   // on-screen gamepad
   const isChannelF = rom?.platform === 'channelf' && core === 'freechaf'
+  const isVirtualBoy = rom?.platform === 'vb' && core === 'mednafen_vb'
   const isSnes = (rom?.platform === 'sfc' || rom?.platform === 'snes') && core.startsWith('snes9x')
   // Each system's own names for the buttons; null hides a button its emulator does nothing with
   const labels = getVirtualGamepadLabels(rom?.platform, core)
@@ -391,6 +393,7 @@ export function GameOverlayVirtualGamepad() {
       {isAtari7800 ? <Atari7800Controls visible={gamepadVisible} /> : null}
       {isNgp ? <NgpControls visible={gamepadVisible} /> : null}
       {isChannelF ? <ChannelFControls visible={gamepadVisible} /> : null}
+      {isVirtualBoy ? <VbControls visible={gamepadVisible} /> : null}
       {isLynx ? <LynxControls top={lynxControlsTop} visible={gamepadVisible} /> : null}
       {isAtari5200 ? (
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
@@ -415,7 +418,8 @@ export function GameOverlayVirtualGamepad() {
       isAtari5200 ||
       isLynx ||
       isNgp ||
-      isChannelF ? null : (
+      isChannelF ||
+      isVirtualBoy ? null : (
         <>
           <div
             className={twMerge(

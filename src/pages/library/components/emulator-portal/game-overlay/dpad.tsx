@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { setVirtualGamepadButton } from '#@/pages/library/utils/virtual-gamepad.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The d-pad every console's on-screen controls use: one solid dark cross, drawn as a single shape so it reads as one
@@ -12,8 +13,43 @@ const corner = 'bg-transparent data-[touching=true]:bg-transparent'
 const cross =
   'M66 0h48a6 6 0 0 1 6 6v54h54a6 6 0 0 1 6 6v48a6 6 0 0 1-6 6h-54v54a6 6 0 0 1-6 6h-48a6 6 0 0 1-6-6v-54h-54a6 6 0 0 1-6-6v-48a6 6 0 0 1 6-6h54v-54a6 6 0 0 1 6-6z'
 
-/** A d-pad, sized and placed by `className` */
-export function DPad({ className }: Readonly<{ className?: string }>) {
+type Direction = 'down' | 'left' | 'right' | 'up'
+
+// What touching each of the nine areas presses, by its title
+const areas: Direction[][] = [
+  ['up', 'left'],
+  ['up'],
+  ['right', 'up'],
+  ['left'],
+  [],
+  ['right'],
+  ['left', 'down'],
+  ['down'],
+  ['right', 'down'],
+]
+const armRounding: Record<Direction, string> = {
+  down: 'rounded-b-[10%]',
+  left: 'rounded-l-[10%]',
+  right: 'rounded-r-[10%]',
+  up: 'rounded-t-[10%]',
+}
+
+function pressGamepadButtons(buttons: Record<Direction, number>, directions: Direction[], pressed: boolean) {
+  for (const direction of directions) {
+    setVirtualGamepadButton(buttons[direction], pressed)
+  }
+}
+
+/**
+ * A d-pad, sized and placed by `className`. It presses the RetroPad's d-pad, or, given `gamepadButtons`, the on-screen
+ * gamepad's buttons at those standard indices instead, for a second d-pad such as the Virtual Boy's right one. Each
+ * d-pad on screen takes its own `group`, so a finger can't slide from one onto the other.
+ */
+export function DPad({
+  className,
+  gamepadButtons,
+  group = 'dpad',
+}: Readonly<{ className?: string; gamepadButtons?: Record<Direction, number>; group?: string }>) {
   const gradient = useId()
   return (
     <div className={twMerge('relative', className)}>
@@ -45,20 +81,36 @@ export function DPad({ className }: Readonly<{ className?: string }>) {
         </g>
       </svg>
       <div className='absolute inset-0 grid grid-cols-3 grid-rows-3'>
-        <VirtualGamepadButton buttonNames={['up', 'left']} className={corner} group='dpad' title='up,left' />
-        <VirtualGamepadButton buttonName='up' className={twMerge(arm, 'rounded-t-[10%]')} group='dpad' title='up' />
-        <VirtualGamepadButton buttonNames={['right', 'up']} className={corner} group='dpad' title='right,up' />
-        <VirtualGamepadButton buttonName='left' className={twMerge(arm, 'rounded-l-[10%]')} group='dpad' title='left' />
-        <div />
-        <VirtualGamepadButton
-          buttonName='right'
-          className={twMerge(arm, 'rounded-r-[10%]')}
-          group='dpad'
-          title='right'
-        />
-        <VirtualGamepadButton buttonNames={['left', 'down']} className={corner} group='dpad' title='left,down' />
-        <VirtualGamepadButton buttonName='down' className={twMerge(arm, 'rounded-b-[10%]')} group='dpad' title='down' />
-        <VirtualGamepadButton buttonNames={['right', 'down']} className={corner} group='dpad' title='right,down' />
+        {areas.map((directions) => {
+          if (directions.length === 0) {
+            return <div key='middle' />
+          }
+          const title = directions.join(',')
+          const className = directions.length === 1 ? twMerge(arm, armRounding[directions[0]]) : corner
+          if (!gamepadButtons) {
+            return directions.length === 1 ? (
+              <VirtualGamepadButton buttonName={title} className={className} group={group} key={title} title={title} />
+            ) : (
+              <VirtualGamepadButton
+                buttonNames={directions}
+                className={className}
+                group={group}
+                key={title}
+                title={title}
+              />
+            )
+          }
+          return (
+            <VirtualGamepadButton
+              className={className}
+              group={group}
+              key={title}
+              onVirtualPressEnd={() => pressGamepadButtons(gamepadButtons, directions, false)}
+              onVirtualPressStart={() => pressGamepadButtons(gamepadButtons, directions, true)}
+              title={title}
+            />
+          )
+        })}
       </div>
     </div>
   )
