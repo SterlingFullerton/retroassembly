@@ -11,6 +11,7 @@ import {
   getColecoVisionKeyboard,
   getGenesisKeyboard,
   getN64Keyboard,
+  getOdyssey2Keyboard,
 } from '#@/pages/library/utils/core-keyboard.ts'
 import { GameInputMessageItem } from './game-input-message-item.tsx'
 
@@ -64,13 +65,15 @@ export function GameInputMessage() {
   const { t } = useTranslation()
   const { connected } = useGamepads()
   const gamepadMapping = useGamepadMapping()
-  const { keyboard: keyboardMapping } = useInputMapping()
+  const { keyboard: sharedKeyboardMapping } = useInputMapping()
   const { preference } = usePreference()
   const rom = useRom()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
   // Arcade games take a coin with Select, which the hint otherwise doesn't mention
-  const coinKey = rom?.platform === 'arcade' ? keyboardMapping.input_player1_select : undefined
+  const coinKey = rom?.platform === 'arcade' ? sharedKeyboardMapping.input_player1_select : undefined
   const core = rom ? preference.emulator.platform[rom.platform]?.core : undefined
+  // O2EM takes the keys the Odyssey²'s keyboard has off the controller buttons and shortcuts
+  const keyboardMapping = core === 'o2em' ? getOdyssey2Keyboard(sharedKeyboardMapping).mapping : sharedKeyboardMapping
   const n64Keys = getN64Keyboard(keyboardMapping).keys
 
   // On the N64 the keys play its controller: the RetroPad's B, Y, L2 and right stick are its A, B, Z and C buttons (its

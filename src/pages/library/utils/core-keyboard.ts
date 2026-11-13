@@ -1,3 +1,5 @@
+import { toRetroarchInputNames } from '#@/utils/isomorphic/retroarch-input-names.ts'
+
 type KeyboardMapping = Record<string, string>
 
 // The keys each N64 control is played with on a keyboard
@@ -206,6 +208,31 @@ export function getArcadeKeyboard(mapping: KeyboardMapping) {
   return getButtonKeys(arcadeButtons, mapping)
 }
 
+// The keys O2EM reads as the Odyssey²'s own keyboard: the letters and digits, and space, full stop, minus, divide (/),
+// equals, Clear (End) and Enter. RetroArch's web build has no key for the Odyssey²'s +, ✱ and ?
+const odyssey2KeyNames = new Set(['end', 'enter', 'equals', 'minus', 'period', 'slash', 'space'])
+
+/** Whether O2EM reads a key, by its RetroArch name, as a key of the Odyssey²'s keyboard */
+export function isOdyssey2Key(key: string) {
+  return /^[\da-z]$/u.test(key) || odyssey2KeyNames.has(key)
+}
+
+/**
+ * The Odyssey²'s keys. O2EM reads the console's keyboard from the keyboard, so a key that also plays a controller button
+ * or does something such as rewind would do both. Those lose their keys, except the action button, which moves to the
+ * right Ctrl; the joystick keeps the arrows.
+ */
+export function getOdyssey2Keyboard(mapping: KeyboardMapping) {
+  const moved: Record<string, string> = {}
+  for (const [input, key] of Object.entries(mapping)) {
+    if (input.startsWith('input_') && key && isOdyssey2Key(key)) {
+      moved[input] = input === 'input_player1_b' ? 'rctrl' : ''
+    }
+  }
+  // The RetroArch settings, and the shared mapping with the keys moved, for the key hint
+  return { config: toRetroarchInputNames(moved), mapping: { ...mapping, ...moved } }
+}
+
 /** RetroArch settings for the keys an emulator needs beyond the shared keyboard mapping */
 export function getCoreKeyboardConfig(core: string | undefined, mapping: KeyboardMapping, platform?: string) {
   // Genesis Plus GX also plays the Game Gear and Master System, whose two buttons keep their keys
@@ -220,6 +247,9 @@ export function getCoreKeyboardConfig(core: string | undefined, mapping: Keyboar
   }
   if (core === 'gearcoleco') {
     return getColecoVisionKeyboard(mapping).config
+  }
+  if (core === 'o2em') {
+    return getOdyssey2Keyboard(mapping).config
   }
   return {}
 }

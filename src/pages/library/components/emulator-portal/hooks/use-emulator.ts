@@ -273,8 +273,8 @@ export function useEmulator() {
       globalThis.navigator.mediaDevices.getUserMedia = originalGetUserMedia
     } catch {}
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
-    // keypad, the arcade, Atari and Channel F sticks, the Atari 5200's keypad, the PlayStation's two analog sticks, and
-    // the Virtual Boy's right d-pad, and the Disk System's flip disk button
+    // keypad, the arcade, Atari and Channel F sticks, the Atari 5200's keypad, the PlayStation's two analog sticks,
+    // the Virtual Boy's right d-pad, the Disk System's flip disk button and the Odyssey²'s joystick
     if (
       [
         'a5200',
@@ -283,6 +283,7 @@ export function useEmulator() {
         'gearcoleco',
         'mednafen_vb',
         'mupen64plus_next',
+        'o2em',
         'pcsx_rearmed',
         'prosystem',
         'stella2014',
