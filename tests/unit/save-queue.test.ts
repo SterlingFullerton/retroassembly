@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { createSaveQueue, type QueuedSave, type SaveStore } from '#@/emulator/save-queue.ts'
+import { createSaveQueue, newId, type QueuedSave, type SaveStore } from '#@/emulator/save-queue.ts'
 
 // The browser's queue of saves, with memory standing in for IndexedDB and a recorder for the server
 function memoryStore() {
@@ -133,5 +133,19 @@ await describe('save queue', async () => {
     const saved = await queue.save(input('rom-1', 'auto'))
     assert.equal(server.uploaded[0].id, saved.id)
     assert.equal(await queue.flush(), 0)
+  })
+
+  await it('makes ids on a page opened over plain http, where randomUUID is missing', () => {
+    const { randomUUID } = globalThis.crypto
+    Object.defineProperty(globalThis.crypto, 'randomUUID', { configurable: true, value: undefined })
+    try {
+      const ids = new Set(Array.from({ length: 100 }, () => newId()))
+      assert.equal(ids.size, 100)
+      for (const id of ids) {
+        assert.match(id, /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/u)
+      }
+    } finally {
+      Object.defineProperty(globalThis.crypto, 'randomUUID', { configurable: true, value: randomUUID })
+    }
   })
 })
