@@ -1,11 +1,10 @@
 import path from 'node:path'
 import { and, eq, like } from 'drizzle-orm'
 import { noop } from 'es-toolkit'
-import { getDirectories } from '#@/constants/env.ts'
 import { romTable, statusEnum } from '#@/databases/schema.ts'
 import { checkCso, compressIsoToCso, repairCsoEnd } from './cso.ts'
 import { getDatabase } from './drizzle.ts'
-import { getStoragePath } from './storage-path.ts'
+import { getFilePath } from './storage-path.ts'
 
 // PSP games are kept as CSO, compressed discs PPSSPP reads directly: smaller to download and to hold while playing.
 // An uploaded ISO is playable straight away and compressed afterwards, in the background, one game at a time
@@ -46,10 +45,9 @@ export function compressPspGame(isoFileId: string) {
 }
 
 async function compress(isoFileId: string) {
-  const { storageDirectory } = getDirectories()
   const csoFileId = getCsoFileId(isoFileId)
-  const isoPath = getStoragePath(storageDirectory, isoFileId)
-  const csoPath = getStoragePath(storageDirectory, csoFileId)
+  const isoPath = getFilePath(isoFileId)
+  const csoPath = getFilePath(csoFileId)
   if (!isoPath || !csoPath || csoFileId === isoFileId) {
     return
   }
@@ -85,9 +83,8 @@ async function compress(isoFileId: string) {
 
 /** Removes an ISO no game uses any more, once its CSO is in place */
 async function removeUnusedIso(isoFileId: string, { evenWithoutCso = false } = {}) {
-  const { storageDirectory } = getDirectories()
-  const isoPath = getStoragePath(storageDirectory, isoFileId)
-  const csoPath = getStoragePath(storageDirectory, getCsoFileId(isoFileId))
+  const isoPath = getFilePath(isoFileId)
+  const csoPath = getFilePath(getCsoFileId(isoFileId))
   const { library } = getDatabase()
   const [used] = library.select({ id: romTable.id }).from(romTable).where(eq(romTable.fileId, isoFileId)).limit(1).all()
   const { default: fs } = await import('fs-extra')
@@ -101,7 +98,6 @@ async function removeUnusedIso(isoFileId: string, { evenWithoutCso = false } = {
  * left behind by a restart during the wait after a swap
  */
 export async function compressPspGames() {
-  const { storageDirectory } = getDirectories()
   const { library } = getDatabase()
   const rows = library
     .selectDistinct({ fileId: romTable.fileId })
@@ -113,7 +109,7 @@ export async function compressPspGames() {
   }
 
   const { default: fs } = await import('fs-extra')
-  const directory = getStoragePath(storageDirectory, 'roms/psp')
+  const directory = getFilePath('roms/psp')
   if (!directory || !(await fs.pathExists(directory))) {
     return
   }

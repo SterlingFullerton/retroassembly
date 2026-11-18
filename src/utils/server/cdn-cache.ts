@@ -82,7 +82,7 @@ interface CacheEntry {
 }
 
 function getCacheDirectory() {
-  return path.join(getDirectories().dataDirectory, 'cache', 'cdn')
+  return path.join(getDirectories().cacheDirectory, 'cdn')
 }
 
 function getCachePaths(url: string) {

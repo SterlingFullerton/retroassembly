@@ -1,23 +1,21 @@
 import path from 'node:path'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
-import { getDirectories } from '../../constants/env.ts'
-import { getStoragePath } from './storage-path.ts'
+import { getFilePath } from './storage-path.ts'
+
+// Each kind of file in its own folder (see getFilePath). Ids that would reach outside it are treated as files that don't
+// exist, or refused when writing
+function getWritablePath(id: string) {
+  const filePath = getFilePath(id)
+  if (!filePath) {
+    throw new Error('Invalid file id')
+  }
+  return filePath
+}
 
 export function createStorage() {
-  const { storageDirectory } = getDirectories()
-
-  // Ids that would reach outside the storage directory are treated as files that don't exist, or refused when writing
-  function getWritablePath(id: string) {
-    const filePath = getStoragePath(storageDirectory, id)
-    if (!filePath) {
-      throw new Error('Invalid file id')
-    }
-    return filePath
-  }
-
   return {
     async head(id: string) {
-      const filePath = getStoragePath(storageDirectory, id)
+      const filePath = getFilePath(id)
       if (!filePath) {
         return false
       }
@@ -51,7 +49,7 @@ export function createStorage() {
     // Streams the file from disk as it's sent, so it never sits in memory whole whatever its size. Takes a range, for
     // partial requests
     async get(id: string, options?: { range?: { length?: number; offset: number } }) {
-      const filePath = getStoragePath(storageDirectory, id)
+      const filePath = getFilePath(id)
       if (!filePath) {
         return
       }

@@ -26,11 +26,34 @@ export function getRunTimeEnv() {
   )
 }
 
+/**
+ * Each kind of stored file can have a folder of its own, such as the games on a large disk and the saves on a fast one.
+ * A kind with no folder set is kept where it always was: in the storage folder, or the cache in the data folder
+ */
+export const directorySettings = {
+  biosesDirectory: 'RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY',
+  cacheDirectory: 'RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY',
+  gameSavesDirectory: 'RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY',
+  romsDirectory: 'RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY',
+  statesDirectory: 'RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY',
+} as const
+
 export function getDirectories() {
   const runTimeEnv = getRunTimeEnv()
   const dataDirectory = runTimeEnv.RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY
   const storageDirectory = runTimeEnv.RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY
-  return { dataDirectory, storageDirectory }
+  function own(setting: keyof typeof directorySettings, fallback: string) {
+    return runTimeEnv[directorySettings[setting]] || fallback
+  }
+  return {
+    biosesDirectory: own('biosesDirectory', path.join(storageDirectory, 'bioses')),
+    cacheDirectory: own('cacheDirectory', path.join(dataDirectory, 'cache')),
+    dataDirectory,
+    gameSavesDirectory: own('gameSavesDirectory', path.join(storageDirectory, 'game-saves')),
+    romsDirectory: own('romsDirectory', path.join(storageDirectory, 'roms')),
+    statesDirectory: own('statesDirectory', path.join(storageDirectory, 'states')),
+    storageDirectory,
+  }
 }
 
 export function getDatabasePath() {

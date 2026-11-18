@@ -52,9 +52,16 @@ export function streamFormData() {
     }
 
     const { default: busboy } = await import('busboy')
-    const directory = path.join(getDirectories().storageDirectory, 'tmp', 'uploads')
+    // Games are the only files uploaded this way, so they arrive in the games folder: finishing an upload is then a
+    // rename on the same disk, even when the games are on a different disk from everything else
+    const { romsDirectory, storageDirectory } = getDirectories()
+    const directory = path.join(romsDirectory, '.uploads')
     await fs.promises.mkdir(directory, { recursive: true })
-    staleFilesRemoved ??= removeStaleFiles(directory)
+    // Where uploads arrived before, left behind by uploads that stopped part-way
+    staleFilesRemoved ??= (async () => {
+      await removeStaleFiles(directory)
+      await removeStaleFiles(path.join(storageDirectory, 'tmp', 'uploads'))
+    })()
 
     const [parserError, parser] = attempt(() =>
       busboy({ defParamCharset: 'utf8', headers: { 'content-type': contentType }, limits, preservePath: true }),

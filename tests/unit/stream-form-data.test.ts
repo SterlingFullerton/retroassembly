@@ -15,7 +15,8 @@ import { createStorage } from '#@/utils/server/storage.ts'
 import { streamFormData } from '#@/utils/server/stream-form-data.ts'
 
 const storageDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'retroassembly-stream-form-data-'))
-const uploadsDirectory = path.join(storageDirectory, 'tmp', 'uploads')
+// Games arrive in the games folder, which is in the storage folder unless set apart
+const uploadsDirectory = path.join(storageDirectory, 'roms', '.uploads')
 const headers = { 'Content-Type': 'multipart/form-data; boundary=boundary' }
 const platformPart = 'Content-Disposition: form-data; name="platform"\r\n\r\npsx'
 
@@ -288,5 +289,45 @@ await describe('storage.put', async () => {
     await app.request('/', { method: 'POST' })
     assert.equal(result, 'rejected')
     assert.deepEqual(fs.readdirSync(path.join(directory, 'roms', 'psx')), [])
+  })
+})
+
+await describe('a games folder of its own', async () => {
+  const storage = fs.mkdtempSync(path.join(os.tmpdir(), 'retroassembly-storage-'))
+  const games = fs.mkdtempSync(path.join(os.tmpdir(), 'retroassembly-games-'))
+
+  before(() => {
+    process.env.RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY = storage
+    process.env.RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY = games
+  })
+
+  after(() => {
+    delete process.env.RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY
+    delete process.env.RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY
+    fs.rmSync(storage, { force: true, recursive: true })
+    fs.rmSync(games, { force: true, recursive: true })
+  })
+
+  await it('receives an upload in the games folder and finishes it with a rename', async () => {
+    let arrivedAt = ''
+    let arrivedInode = 0
+    const app = createApp(async (file) => {
+      assert.ok(file instanceof DiskFile)
+      const [name] = fs.readdirSync(path.join(games, '.uploads'))
+      arrivedAt = path.join(games, '.uploads', name)
+      arrivedInode = fs.statSync(arrivedAt).ino
+      await createStorage().put('roms/psx/game.chd', file)
+    })
+    const response = await app.request('/', multipart([platformPart, filePart('game.chd', 'GAME')]))
+    assert.equal(response.status, 200)
+
+    const stored = path.join(games, 'psx', 'game.chd')
+    assert.equal(fs.readFileSync(stored, 'utf8'), 'GAME')
+    // The same file on disk, moved rather than copied
+    assert.equal(fs.statSync(stored).ino, arrivedInode)
+    assert.equal(fs.existsSync(arrivedAt), false)
+    // Nothing in the storage folder
+    assert.equal(fs.existsSync(path.join(storage, 'roms')), false)
+    assert.equal(fs.existsSync(path.join(storage, 'tmp')), false)
   })
 })
