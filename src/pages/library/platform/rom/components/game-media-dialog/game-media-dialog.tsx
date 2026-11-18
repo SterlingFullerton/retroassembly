@@ -35,7 +35,7 @@ export function GameMediaDialog({ children }: Readonly<PropsWithChildren>) {
         {children || (
           <IconButton
             aria-label={t('game.media.edit')}
-            className='transition-opacity! group-hover:opacity-100! lg:opacity-0!'
+            className='transition-opacity! group-hover:opacity-100! focus:opacity-100! lg:opacity-0!'
             title={t('game.media.edit')}
             variant='ghost'
           >

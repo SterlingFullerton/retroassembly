@@ -15,7 +15,7 @@ import { GameInfoDataList } from './game-info-data-list.tsx'
 const defaultTrigger = (
   <IconButton
     aria-label='Edit metadata'
-    className='transition-opacity! group-hover:opacity-100! lg:opacity-0!'
+    className='transition-opacity! group-hover:opacity-100! focus:opacity-100! lg:opacity-0!'
     title='Edit metadata'
     variant='ghost'
   >
