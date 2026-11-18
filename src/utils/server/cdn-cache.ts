@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { attemptAsync } from 'es-toolkit'
+import { attempt, attemptAsync } from 'es-toolkit'
 import { customCoresPackage, retroarchBuild, shadersRepository } from '#@/consoles/assets.ts'
 import { getDirectories } from '#@/constants/env.ts'
 import { cdnCacheHosts, cdnHost, libretroThumbnailsHost, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
@@ -90,6 +90,11 @@ function getCacheDirectory() {
 // libretro's art folders: Named_Boxarts, Named_Titles, Named_Snaps and Named_Logos
 const libretroArtFolder = /^Named_[A-Z][a-z]+s$/u
 
+// A web address keeps a "%" that isn't followed by two hex digits as it is, as in "Cotton 100% (Japan).png"
+function decodeName(segment: string) {
+  return decodeURIComponent(segment.replaceAll(/%(?![\dA-Fa-f]{2})/gu, '%25'))
+}
+
 /**
  * Where a libretro cover, title screen or screenshot goes in the artwork folder, by libretro's own layout, as in
  * "Nintendo - Game Boy/Named_Boxarts/Tetris (World).png"; the same layout RetroArch keeps its thumbnails in, so art put
@@ -107,10 +112,15 @@ export function getArtworkPath(url: string) {
     segments = parts
   } else if (url.startsWith(cdnHost) && parts[0] === 'gh' && parts[1] === 'libretro-thumbnails') {
     // jsDelivr's copy of libretro's GitHub repositories, named after the console with underscores for spaces
-    const [repository] = decodeURIComponent(parts[2] || '').split('@')
+    const repository = attempt(() => decodeName(parts[2] || '').split('@')[0])[1] ?? ''
     segments = [repository.replaceAll('_', ' '), ...parts.slice(3)]
   }
-  const [consoleName, folder, file] = segments.map((segment) => decodeURIComponent(segment))
+  // A name that still can't be read, such as a broken character, stays in the cache rather than failing the page
+  const [error, names] = attempt(() => segments.map((segment) => decodeName(segment)))
+  if (error || !names) {
+    return
+  }
+  const [consoleName, folder, file] = names
   if (
     segments.length !== 3 ||
     !consoleName ||

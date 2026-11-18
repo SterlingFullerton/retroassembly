@@ -58,6 +58,23 @@ await describe('the artwork folder', async () => {
     )
   })
 
+  await it('names art for games with a "%" in their name', () => {
+    assert.equal(
+      getArtworkPath(
+        new URL(
+          'Nintendo - Super Nintendo Entertainment System/Named_Boxarts/Maerchen Adventure Cotton 100% (Japan).png',
+          'https://thumbnails.libretro.com/',
+        ).href,
+      ),
+      path.join(
+        artworkDirectory,
+        'Nintendo - Super Nintendo Entertainment System',
+        'Named_Boxarts',
+        'Maerchen Adventure Cotton 100% (Japan).png',
+      ),
+    )
+  })
+
   await it('leaves everything else in the cache', () => {
     for (const url of [
       'https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroassembly-assets@feab5bc/platforms/icons/nes.png',
@@ -66,6 +83,7 @@ await describe('the artwork folder', async () => {
       'https://thumbnails.libretro.com/..%2F..%2Fdata/Named_Boxarts/x.png',
       'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/..%2F..%2Fx.png',
       'https://thumbnails.libretro.com/.hidden/Named_Boxarts/x.png',
+      'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Broken%E0%A4%A.png',
     ]) {
       assert.equal(getArtworkPath(url), undefined, url)
     }
