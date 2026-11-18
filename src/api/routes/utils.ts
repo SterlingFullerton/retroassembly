@@ -37,6 +37,13 @@ export function createFileResponse(object: StoredFile, fileId?: string) {
       headers.set('Content-Type', contentType)
     }
   }
+  // A stored file is only ever data: box art, a game, a save. One that holds a script, such as an uploaded SVG, can't
+  // run it on this site when opened on its own, and a browser never guesses a type the file wasn't given
+  headers.set(
+    'Content-Security-Policy',
+    "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'",
+  )
+  headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('ETag', object.httpEtag)
   headers.set('Accept-Ranges', 'bytes')
   let start = 0
