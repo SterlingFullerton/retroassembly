@@ -1,6 +1,7 @@
 import { Badge, Button, IconButton, Popover } from '@radix-ui/themes'
 import { fileOpen } from 'browser-fs-access'
 import { Nostalgist } from 'nostalgist'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
@@ -84,6 +85,13 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
 
   const disabled = isLoading || isDeleting || isUploading
 
+  // Some consoles, the arcade most of all, expect dozens of optional files. Shown are the required ones and any
+  // uploaded, and the rest when asked for
+  const [showAll, setShowAll] = useState(false)
+  const folds = !showAll && (expectedBioses?.length ?? 0) > 6
+  const shownBioses = (expectedBioses ?? []).filter((bios) => !folds || bios.required || isBiosUploaded(bios))
+  const foldedCount = (expectedBioses?.length ?? 0) - shownBioses.length
+
   if (!expectedBioses?.length) {
     return
   }
@@ -138,14 +146,23 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
           </div>
           <div className='gap-1 text-xs'>
             <span className='opacity-80'>{t('bios.expectedFile', { count: expectedBioses.length })}</span>
-            {expectedBioses.map((bios, index) => (
+            {shownBioses.map((bios, index) => (
               <span className='mr-1' key={bios.name}>
                 <span className={getBiosClassName(bios)}>
                   <b>{bios.name}</b> {getBiosStatusText(bios)}
                 </span>
-                <span className='opacity-80'>{index < expectedBioses.length - 1 ? ',' : ''}</span>
+                <span className='opacity-80'>{index < shownBioses.length - 1 ? ',' : ''}</span>
               </span>
             ))}
+            {foldedCount ? (
+              <button
+                className='ml-1 font-medium text-(--accent-11) underline-offset-2 hover:underline'
+                onClick={() => setShowAll(true)}
+                type='button'
+              >
+                +{foldedCount} {t('common.optional')}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

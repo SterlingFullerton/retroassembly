@@ -1,6 +1,7 @@
 import { Badge, Callout, Card, Tabs } from '@radix-ui/themes'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouteLoaderData } from 'react-router'
 import useSWR, { useSWRConfig } from 'swr'
 import { client, parseResponse } from '#@/api/client.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
@@ -17,7 +18,9 @@ export function AccountsSettings() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
-  const { data: users, error: usersError } = useSWR({ endpoint: 'users', method: 'get' }, () =>
+  // Only the admin may list every account, so no one else asks
+  const isAdmin = Boolean(useRouteLoaderData('library')?.isAdmin)
+  const { data: users, error: usersError } = useSWR(isAdmin ? { endpoint: 'users', method: 'get' } : null, () =>
     parseResponse(client.users.$get()),
   )
 

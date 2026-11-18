@@ -13,7 +13,7 @@ export function LayoutSettings() {
       </SettingsTitle>
       <Card>
         <div className='flex flex-col gap-2 py-2'>
-          <label className='flex items-center gap-2'>
+          <label className='flex items-center justify-between gap-2'>
             <SettingsTitle className='text-base'>
               <span className='icon-[mdi--page-layout-sidebar-left]' />
               Show Sidebar

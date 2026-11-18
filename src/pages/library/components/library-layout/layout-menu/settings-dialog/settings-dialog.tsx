@@ -15,6 +15,13 @@ const settingsTabs = [
   { content: GeneralSettings, iconClass: 'icon-[mdi--cog]', name: 'general' },
 ]
 
+// Whether the mouse or a finger, or the keyboard, was used last
+let lastInput: 'keyboard' | 'pointer' = 'pointer'
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', () => (lastInput = 'pointer'), { capture: true, passive: true })
+  document.addEventListener('keydown', () => (lastInput = 'keyboard'), { capture: true, passive: true })
+}
+
 export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProps>) {
   const { t } = useTranslation()
   const [tabName, setTabName] = useSettingsDialogTabName()
@@ -30,7 +37,21 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
 
   return (
     <DialogRoot {...props} onOpenChange={handleOpenChange}>
-      <Dialog.Content aria-describedby={undefined} className='lg:w-5xl!' maxWidth='calc(100vw - var(--space-8))'>
+      <Dialog.Content
+        aria-describedby={undefined}
+        className='lg:w-5xl!'
+        maxWidth='calc(100vw - var(--space-8))'
+        onOpenAutoFocus={(event) => {
+          // Opened with the mouse or a finger, nothing inside is focused, so no focus ring shows on the first tab; from
+          // the keyboard or a controller, the first tab is focused as usual
+          if (lastInput === 'pointer') {
+            event.preventDefault()
+            if (event.currentTarget instanceof HTMLElement) {
+              event.currentTarget.focus()
+            }
+          }
+        }}
+      >
         <Dialog.Title className='flex items-center gap-2'>
           <span className='icon-[mdi--cog]' />
           {t('nav.settings')}
@@ -41,9 +62,17 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
             <div>
               <Tabs.List>
                 {settingsTabs.map(({ iconClass, name }) => (
-                  <Tabs.Trigger key={name} value={name}>
-                    <span className={clsx('mr-2 size-5', iconClass)} />
-                    <span className='text-lg capitalize'>{t(`settings.${name}`)}</span>
+                  <Tabs.Trigger aria-label={t(`settings.${name}`)} key={name} value={name}>
+                    <span
+                      className={clsx('size-5', iconClass, {
+                        'mr-2': name === tabName,
+                        'mr-2 max-sm:mr-0': name !== tabName,
+                      })}
+                    />
+                    {/* On a phone only the open tab is named, so all four fit across */}
+                    <span className={clsx('text-lg capitalize', { 'max-sm:hidden': name !== tabName })}>
+                      {t(`settings.${name}`)}
+                    </span>
                   </Tabs.Trigger>
                 ))}
               </Tabs.List>
@@ -60,8 +89,8 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
         </div>
 
         <div className='mt-4 flex justify-between'>
-          <div className='flex items-center gap-2 text-xs text-(--accent-11)'>
-            <span className='icon-[mdi--info]' />
+          <div className='flex items-center gap-2 text-xs text-(--gray-11)'>
+            <span className='icon-[mdi--content-save-check-outline] shrink-0' />
             {t('settings.immediateEffect')}
           </div>
         </div>

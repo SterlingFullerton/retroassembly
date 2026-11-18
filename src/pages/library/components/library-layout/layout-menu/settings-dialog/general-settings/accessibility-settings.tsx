@@ -52,7 +52,7 @@ export function AccessibilitySettings() {
             </Select.Root>
           </label>
 
-          <label className='flex items-center gap-2'>
+          <label className='flex items-center justify-between gap-2'>
             <SettingsTitle className='mb-0 text-base'>
               <span className='icon-[mdi--image]' />
               {t('settings.applyToImages')}
@@ -69,7 +69,7 @@ export function AccessibilitySettings() {
             />
           </label>
 
-          <label className='flex items-center gap-2'>
+          <label className='flex items-center justify-between gap-2'>
             <SettingsTitle className='mb-0 text-base'>
               <span className='icon-[mdi--monitor-eye]' />
               {t('settings.applyToGame')}

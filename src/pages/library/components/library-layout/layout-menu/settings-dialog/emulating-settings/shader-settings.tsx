@@ -43,7 +43,7 @@ export function ShaderSettings() {
           </div>
 
           <div>
-            <label className='flex items-center gap-2'>
+            <label className='flex items-center justify-between gap-2'>
               <SettingsTitle className='mb-0 text-base'>
                 <span className='icon-[mdi--blur]' />
                 {t('settings.bilinearFiltering')}
@@ -69,7 +69,7 @@ export function ShaderSettings() {
           </div>
 
           <div>
-            <label className='flex items-center gap-2'>
+            <label className='flex items-center justify-between gap-2'>
               <SettingsTitle className='mb-0 text-base'>
                 <span className='icon-[mdi--fullscreen]' />
                 {t('settings.goFullscreenOnLaunch')}

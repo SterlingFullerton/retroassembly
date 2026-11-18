@@ -2,7 +2,7 @@ import { getContext } from 'hono/context-storage'
 import { Outlet, redirect, type ShouldRevalidateFunctionArgs } from 'react-router'
 import { defaultRedirectTo } from '#@/constants/auth.ts'
 import { getLaunchRecords } from '#@/controllers/launch-records/get-launch-records.ts'
-import { getLibraryScope } from '#@/utils/server/library-scope.ts'
+import { getAdmin, getLibraryScope } from '#@/utils/server/library-scope.ts'
 import LibraryLayout from '../library/components/library-layout/library-layout.tsx'
 import type { Route } from './+types/library-layout.ts'
 
@@ -23,10 +23,15 @@ export const middleware: Route.MiddlewareFunction[] = [
   },
 ]
 
-// What every library page shares: the games played most recently, for the home page and search
+// What every library page shares: the games played most recently, for the home page and search, and whether the user
+// is the admin, who alone sees every account in the settings
 export async function loader() {
-  const { roms: recentlyLaunchedRoms } = await getLaunchRecords(getLibraryScope(), { pageSize: 20 })
-  return { recentlyLaunchedRoms }
+  const scope = getLibraryScope()
+  const [{ roms: recentlyLaunchedRoms }, admin] = await Promise.all([
+    getLaunchRecords(scope, { pageSize: 20 }),
+    getAdmin(scope),
+  ])
+  return { isAdmin: admin?.id === scope.user.id, recentlyLaunchedRoms }
 }
 
 // Loaded again only when something may have changed it, not on every move between library pages: after a change made

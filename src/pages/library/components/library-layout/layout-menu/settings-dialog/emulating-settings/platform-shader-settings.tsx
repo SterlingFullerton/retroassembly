@@ -28,7 +28,7 @@ export function PlatformShaderSettings({ platform }: Readonly<{ platform: Platfo
   return (
     <div>
       <SettingsTitle className='text-base'>
-        <label className='flex items-center gap-2'>
+        <label className='flex w-full items-center justify-between gap-2'>
           <SettingsTitle className='mb-0 text-base'>
             <span className='icon-[mdi--monitor-shimmer]' />
             {t('settings.platformShader')}

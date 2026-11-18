@@ -52,7 +52,7 @@ export function GameEntrySettings() {
             </div>
           </label>
 
-          <label className='flex items-center gap-2'>
+          <label className='flex items-center justify-between gap-2'>
             <SettingsTitle className='mb-0 text-base'>
               <span className='icon-[mdi--text-long]' />
               {t('settings.showGameTitles')}
@@ -65,7 +65,7 @@ export function GameEntrySettings() {
           </label>
 
           {preference.ui.showTitle ? (
-            <label className='flex items-center gap-2'>
+            <label className='flex items-center justify-between gap-2'>
               <SettingsTitle className='mb-0 text-base'>
                 <span className='icon-[mdi--earth]' />
                 {t('settings.showDistrict')}
