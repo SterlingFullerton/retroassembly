@@ -84,6 +84,8 @@ await describe('the artwork folder', async () => {
       'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/..%2F..%2Fx.png',
       'https://thumbnails.libretro.com/.hidden/Named_Boxarts/x.png',
       'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Broken%E0%A4%A.png',
+      'https://thumbnails.libretro.com/A%00B/Named_Boxarts/x.png',
+      `https://thumbnails.libretro.com/A/Named_Boxarts/${'x'.repeat(250)}.png`,
     ]) {
       assert.equal(getArtworkPath(url), undefined, url)
     }

@@ -90,6 +90,19 @@ function getCacheDirectory() {
 // libretro's art folders: Named_Boxarts, Named_Titles, Named_Snaps and Named_Logos
 const libretroArtFolder = /^Named_[A-Z][a-z]+s$/u
 
+// A name that can't be a file or folder here stays in the cache under its made-up name: one that would step outside
+// its folder, is hidden, holds a control character such as NUL, or is too long for the disk with what's added to it
+function isUsableName(name: string) {
+  return (
+    !name.includes('/') &&
+    !name.includes('\\') &&
+    !name.startsWith('.') &&
+    // eslint-disable-next-line no-control-regex -- control characters are what this looks for
+    !/[\u0000-\u001F\u007F]/u.test(name) &&
+    Buffer.byteLength(name) <= 200
+  )
+}
+
 // A web address keeps a "%" that isn't followed by two hex digits as it is, as in "Cotton 100% (Japan).png"
 function decodeName(segment: string) {
   return decodeURIComponent(segment.replaceAll(/%(?![\dA-Fa-f]{2})/gu, '%25'))
@@ -129,7 +142,7 @@ export function getArtworkPath(url: string) {
   ) {
     return
   }
-  if ([consoleName, file].some((name) => name.includes('/') || name.includes('\\') || name.startsWith('.'))) {
+  if ([consoleName, file].some((name) => !isUsableName(name))) {
     return
   }
   return getStoragePath(artworkDirectory, path.join(consoleName, folder, file))
@@ -206,6 +219,11 @@ async function readCacheEntry(url: string) {
 /** An error response from the CDN, as opposed to the CDN being unreachable */
 class UpstreamError extends Error {
   override name = 'UpstreamError'
+}
+
+/** A file that couldn't be written here, which says nothing about whether the CDN can be reached */
+function isFileSystemError(error: unknown) {
+  return error instanceof Error && 'syscall' in error
 }
 
 async function download(url: string) {
@@ -288,7 +306,7 @@ export async function getCachedFile(url: string, { offline = false } = {}) {
   }
   const [error] = await attemptAsync(() => downloadOnce(url))
   if (error) {
-    if (!(error instanceof UpstreamError)) {
+    if (!(error instanceof UpstreamError) && !isFileSystemError(error)) {
       unreachableUntil.set(host, Date.now() + unreachableBackoff)
     }
     if (cached) {
