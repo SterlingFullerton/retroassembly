@@ -4,6 +4,18 @@ import { getCDNUrl, libretroThumbnailsHost, toCDNCacheUrl } from './cdn.ts'
 
 export type LibretroThumbnailType = 'boxart' | 'logo' | 'snap' | 'title'
 
+/** A game's file name without its extension, keeping any full stops in the name: "Dr. Mario (World).gb" is "Dr. Mario (World)" */
+export function getNameWithoutExtension(fileName = '') {
+  const dot = fileName.lastIndexOf('.')
+  return dot > 0 ? fileName.slice(0, dot) : fileName
+}
+
+/** The folder libretro keeps a console's art in, such as "Nintendo - Game Boy"; all arcade games are in "MAME" */
+export function getLibretroConsoleFolder(platform: string) {
+  const name = platformMap[platform]?.libretroName || platform
+  return name?.includes('MAME') ? 'MAME' : name
+}
+
 export function getLibretroThumbnail({
   host = 'jsdelivr',
   platform,
@@ -18,12 +30,9 @@ export function getLibretroThumbnail({
   if (!name || !platform) {
     return ''
   }
-  let platformFullName = platformMap[platform]?.libretroName || platform
+  const platformFullName = getLibretroConsoleFolder(platform)
   if (!platformFullName) {
     return ''
-  }
-  if (platformFullName.includes('MAME')) {
-    platformFullName = 'MAME'
   }
 
   const normalizedPlatformFullName = platformFullName.replaceAll(' ', '_')

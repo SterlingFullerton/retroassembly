@@ -9,6 +9,7 @@ import { getStates } from '#@/controllers/states/get-states.ts'
 import { routes } from '#@/pages/routes.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { getLibraryScope } from '#@/utils/server/library-scope.ts'
+import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 import RomPage from '../library/platform/rom/page.tsx'
 import type { Route } from './+types/library-platform-rom.ts'
 
@@ -33,6 +34,8 @@ export async function loader({ params }: Route.LoaderArgs) {
     // The game's own save, put back before it boots
     core ? getLatestGameSave(getLibraryScope(), { core, rom: rom.id }) : undefined,
   ])
+  // Which of its pictures the server has, including libretro's box art matched by title
+  await addCoverCandidates([rom])
   return { discs, gameSave, rom, state: states[0], states, title: getRomGoodcodes(rom).rom }
 }
 

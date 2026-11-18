@@ -8,12 +8,15 @@ import { getCDNUrl, isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
 import { getCoreUrl, getShaderUrls, isBundledCore } from '#@/utils/isomorphic/emulator-files.ts'
 import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
 import {
+  getLibretroConsoleFolder,
   getLibretroThumbnail,
+  getNameWithoutExtension,
   getRomLibretroThumbnail,
   type LibretroThumbnailType,
 } from '#@/utils/isomorphic/libretro-thumbnail.ts'
 import { getCachedFile, resolveCDNCacheTarget } from './cdn-cache.ts'
 import { getDatabase } from './drizzle.ts'
+import { getMatchedCoverUrl, refreshCoverList } from './libretro-covers.ts'
 
 // `all` leaves out `thumbnails`: box art and screenshots for every ROM in the library can take several GB
 const categories = ['cores', 'shaders', 'assets', 'thumbnails'] as const
@@ -73,12 +76,25 @@ async function getPrefetchUrls(selected: Set<Category>) {
       .select({ fileName: romTable.fileName, platform: romTable.platform, rawGameMetadata: romTable.rawGameMetadata })
       .from(romTable)
       .where(eq(romTable.status, statusEnum.normal))
+    // libretro's list of each console's box art first, so games whose names find none can be matched by title
+    const consoleFolders = new Set(
+      roms.map((rom) => getLibretroConsoleFolder(rom.rawGameMetadata?.libretro?.platform || rom.platform)),
+    )
+    for (const folder of consoleFolders) {
+      if (folder) {
+        await attemptAsync(() => refreshCoverList(folder))
+      }
+    }
     for (const rom of roms) {
+      const [, matched] = await attemptAsync(() => getMatchedCoverUrl(rom))
+      if (matched) {
+        urls.add(matched)
+      }
       for (const type of thumbnailTypes) {
         urls.add(getRomLibretroThumbnail(rom, type, 'libretro'))
       }
       // The pages also look up art by file name, which is how games without metadata get theirs
-      const name = rom.fileName.split('.')[0]
+      const name = getNameWithoutExtension(rom.fileName)
       for (const type of ['boxart', 'title', 'snap'] as const) {
         urls.add(getLibretroThumbnail({ host: 'libretro', name, platform: rom.platform, type }))
       }

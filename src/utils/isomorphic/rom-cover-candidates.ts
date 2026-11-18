@@ -1,5 +1,5 @@
 import { isCDNCacheEnabled } from './cdn.ts'
-import { getLibretroThumbnail, getRomLibretroThumbnail } from './libretro-thumbnail.ts'
+import { getLibretroThumbnail, getNameWithoutExtension, getRomLibretroThumbnail } from './libretro-thumbnail.ts'
 
 const libretroThumbnailTypes = ['boxart', 'title', 'snap'] as const
 
@@ -11,7 +11,7 @@ interface RomForCover {
 
 /** The libretro images that may show a game, best first: box art, title screen, then screenshot */
 export function getRomCoverCandidates(rom: RomForCover) {
-  const name = rom.fileName?.split('.')[0] ?? ''
+  const name = getNameWithoutExtension(rom.fileName ?? '')
   // jsDelivr mirrors the same images, so it's skipped when the server caches them
   const hosts = isCDNCacheEnabled() ? (['libretro'] as const) : (['libretro', 'jsdelivr'] as const)
   return [

@@ -289,9 +289,14 @@ export function isCDNCacheOffline() {
   return process.env.RETROASSEMBLY_RUN_TIME_CDN_OFFLINE === 'true'
 }
 
-export async function getCachedFile(url: string, { offline = false } = {}) {
+export async function getCachedFile(
+  url: string,
+  { maxAge, offline = false }: { maxAge?: number; offline?: boolean } = {},
+) {
   const cached = await readCacheEntry(url)
-  if (cached && (!cached.stale || offline)) {
+  // A file that changes upstream, such as libretro's list of covers, is fetched again once it's older than `maxAge`
+  const old = maxAge !== undefined && cached?.status === 200 && Date.now() - cached.time > maxAge
+  if (cached && ((!cached.stale && !old) || offline)) {
     return cached
   }
   if (offline) {
