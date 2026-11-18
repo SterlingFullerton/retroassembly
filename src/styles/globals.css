@@ -137,3 +137,24 @@ a.pending:focus {
     );
   }
 }
+
+/*
+ * Anything that can be pressed darkens a little and shrinks a touch while it's held, so a tap or a click shows at once,
+ * before its page or dialog appears. On a phone it's the only sign a tap was taken. What's pressed is marked
+ * data-pressed (see utils/client/global.ts), since phones apply :active late or not at all. The on-screen game buttons
+ * draw their own pressed look, so they're left out
+ */
+.radix-themes
+  :is(
+    a[href],
+    button,
+    [role='button'],
+    [role='tab'],
+    [role='combobox'],
+    [role='menuitem'],
+    [role='option'],
+    summary
+  ):not(:disabled, [aria-disabled='true'], [data-virtual-gamepad-button-id]):is(:active, [data-pressed]) {
+  filter: brightness(0.9);
+  scale: 0.97;
+}

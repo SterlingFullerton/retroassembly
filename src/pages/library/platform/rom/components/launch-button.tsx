@@ -31,7 +31,7 @@ export function LaunchButton({
     <button
       aria-busy={progress ? 'true' : undefined}
       aria-disabled={disabled ? 'true' : 'false'}
-      className={clsx('launch-button block', compact ? 'min-w-0 flex-1 lg:max-w-56' : 'w-full lg:w-80', {
+      className={clsx('launch-button group block', compact ? 'min-w-0 flex-1 lg:max-w-56' : 'w-full lg:w-80', {
         'opacity-50': disabled && !progress,
       })}
       data-sn-enabled
@@ -40,9 +40,14 @@ export function LaunchButton({
     >
       <Button asChild radius='small' size='4' variant={variant}>
         <div
-          className={clsx('relative w-full! overflow-hidden', compact ? 'h-12!' : 'h-16!', {
-            'border-2! bg-(--color-background)! shadow-none!': variant === 'outline',
-          })}
+          className={clsx(
+            'relative w-full! overflow-hidden transition-[filter,background-color]',
+            compact ? 'h-12!' : 'h-16!',
+            {
+              'border-2! bg-(--color-background)! shadow-none! group-hover:bg-(--accent-2)!': variant === 'outline',
+              'group-hover:brightness-110': variant !== 'outline',
+            },
+          )}
         >
           {progress ? (
             // The button fills as the game's files arrive

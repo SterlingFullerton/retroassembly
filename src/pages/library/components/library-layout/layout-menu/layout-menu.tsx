@@ -35,7 +35,12 @@ export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
               <span className='icon-[mdi--menu] size-6' />
             </button>
           ) : (
-            <Button aria-label={t('common.menu')} type='button'>
+            <Button
+              aria-label={t('common.menu')}
+              className='m-0! text-white! hover:bg-white/10!'
+              type='button'
+              variant='ghost'
+            >
               <span className='icon-[mdi--menu]' />
             </Button>
           )}

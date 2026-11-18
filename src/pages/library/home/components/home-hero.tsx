@@ -44,7 +44,7 @@ function AlsoInProgress({ layout, roms }: Readonly<{ layout: 'panel' | 'row'; ro
         <div className='mb-1 text-xs tracking-wider uppercase opacity-75'>{t('home.alsoInProgress')}</div>
         {roms.slice(0, 3).map((rom) => (
           <Link
-            className='flex items-center gap-3 border-t border-white/15 py-2 first-of-type:border-t-0 hover:bg-white/5'
+            className='-mx-2 flex items-center gap-3 rounded-md border-t border-white/15 px-2 py-2 first-of-type:border-t-0 hover:bg-white/10'
             key={rom.id}
             to={romPath(rom)}
           >
@@ -64,7 +64,7 @@ function AlsoInProgress({ layout, roms }: Readonly<{ layout: 'panel' | 'row'; ro
       <div className='scrollbar-on-hover -mx-4 flex gap-2 overflow-x-auto px-4 pb-1'>
         {roms.map((rom) => (
           <Link
-            className='flex w-52 shrink-0 items-center gap-2 rounded-lg border border-(--gray-5) p-1.5 pr-3'
+            className='flex w-52 shrink-0 items-center gap-2 rounded-lg border border-(--gray-5) p-1.5 pr-3 hover:border-(--accent-7)'
             key={rom.id}
             to={romPath(rom)}
           >

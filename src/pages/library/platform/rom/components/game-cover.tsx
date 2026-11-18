@@ -1,4 +1,5 @@
 import { Skeleton } from '@radix-ui/themes'
+import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { TiltCover } from '#@/pages/library/components/tilt-cover.tsx'
 import { skeletonClassnames } from '#@/pages/library/constants/skeleton-classnames.ts'
@@ -16,7 +17,13 @@ export function GameCover({ className = '', parallax = false, rom }) {
   }
 
   return (
-    <a className={className} href={cover?.src} rel='noreferrer noopener' target='_blank' title={rom.name}>
+    <a
+      className={clsx('transition-[filter] hover:brightness-110', className)}
+      href={cover?.src}
+      rel='noreferrer noopener'
+      target='_blank'
+      title={rom.name}
+    >
       {content}
     </a>
   )

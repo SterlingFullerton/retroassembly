@@ -50,7 +50,11 @@ export default function LibraryLayout({ children }: Readonly<PropsWithChildren>)
 
         <SidebarContainer>
           <div className='flex items-center justify-between px-4 pb-4'>
-            <Link className='flex items-center gap-2 font-bold' data-sn-skip='' to={routes.libraryHome}>
+            <Link
+              className='-m-1 flex items-center gap-2 rounded-md p-1 font-bold transition-opacity hover:opacity-80'
+              data-sn-skip=''
+              to={routes.libraryHome}
+            >
               <Logo height='32' width='32' />
               <span className='font-serif font-semibold'>{metadata.title}</span>
             </Link>
@@ -60,7 +64,7 @@ export default function LibraryLayout({ children }: Readonly<PropsWithChildren>)
           <ScrollArea className='flex-1' size='2'>
             <SidebarLinks part='rest' />
           </ScrollArea>
-          <div className='flex items-center justify-between border-t border-t-white/30 py-2'>
+          <div className='flex items-center justify-between border-t border-t-white/30 py-2' data-sn-section=''>
             {isLargeScreen ? <LayoutMenu /> : null}
           </div>
         </SidebarContainer>
