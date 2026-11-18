@@ -6,7 +6,7 @@ import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 
 // The PC Engine's controls drawn like its controller: the d-pad every console shares, dark grey buttons II and I with
-// their numerals printed beside them in white, and Select and Run in the top bar
+// their numerals on them in white, and Select and Run in the top bar
 // beside pause. II and I are slanted along the arc the thumb makes rolling from one to the other, as on the
 // Game Gear's. Beetle PCE Fast reads II from the RetroPad's B, I from A, Select from Select and Run from Start; the
 // six-button pad's extra buttons, which only a few games use, are left out.
@@ -30,15 +30,15 @@ export function PcEngineControls({ visible }: Readonly<{ visible: boolean }>) {
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
       </Corner>
 
-      {/* II and I, slanted, with their numerals printed below and to the right */}
+      {/* II and I, slanted */}
       <Corner scale={scale} side='right' visible={visible}>
         <SlantedPair
           buttons={[
             { buttonName: 'b', label: 'II' },
             { buttonName: 'a', label: 'I' },
           ]}
-          className={twMerge(pressed, 'absolute rounded-full')}
-          printed={white}
+          className={twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold landscape:text-xl')}
+          labelColor={white}
           style={buttonStyle}
         />
       </Corner>

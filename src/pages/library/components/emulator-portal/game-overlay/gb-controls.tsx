@@ -5,12 +5,10 @@ import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 
-// The Game Boy's controls drawn like its own buttons: the d-pad every console shares, berry-coloured B and A with their letters
-// printed beside them, and Select and Start in the top bar beside pause.
+// The Game Boy's controls drawn like its own buttons: the d-pad every console shares, berry-coloured B and A with
+// their letters on them in white, and Select and Start in the top bar beside pause.
 // B and A are slanted along the arc the thumb makes rolling from one to the other, as on the NES's. Game Boy Color
 // games share them. Every Game Boy emulator reads the RetroPad's B, A, Select and Start as the Game Boy's.
-const berry = '#d0508a'
-
 const pressed = pressedLook(90)
 
 export function GbControls({ visible }: Readonly<{ visible: boolean }>) {
@@ -30,15 +28,15 @@ export function GbControls({ visible }: Readonly<{ visible: boolean }>) {
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
       </Corner>
 
-      {/* B and A, slanted, with their letters printed below and to the right as on the Game Boy */}
+      {/* B and A, slanted */}
       <Corner scale={scale} side='right' visible={visible}>
         <SlantedPair
           buttons={[
             { buttonName: 'b', label: 'B' },
             { buttonName: 'a', label: 'A' },
           ]}
-          className={twMerge(pressed, 'absolute rounded-full')}
-          printed={berry}
+          className={twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold landscape:text-xl')}
+          labelColor='#ffffff'
           style={buttonStyle}
         />
       </Corner>

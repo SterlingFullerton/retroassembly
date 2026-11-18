@@ -7,10 +7,9 @@ import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 
 // The NES's controls drawn like its controller: the d-pad every console shares, round B and A buttons with their
-// letters printed beside them, and Select and Start in the top bar beside pause. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
+// letters on them, and Select and Start in the top bar beside pause. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
 // the RetroPad's B, A, Select and Start as the controller's. Disk System games add Flip disk, labelled FLIP, after
 // them.
-const red = '#e0242a'
 
 const pressed = pressedLook(90)
 
@@ -83,15 +82,15 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
       </Corner>
 
-      {/* B and A, slanted, with their letters printed below and to the right as on the controller */}
+      {/* B and A, slanted */}
       <Corner scale={scale} side='right' visible={visible}>
         <SlantedPair
           buttons={[
             { buttonName: 'b', label: 'B' },
             { buttonName: 'a', label: 'A' },
           ]}
-          className={twMerge(pressed, 'absolute rounded-full')}
-          printed={red}
+          className={twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold landscape:text-xl')}
+          labelColor='#3a0000'
           style={buttonStyle}
         />
       </Corner>

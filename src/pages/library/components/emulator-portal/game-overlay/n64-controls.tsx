@@ -3,13 +3,13 @@ import type { CSSProperties, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { pressedLook, useStick } from './controls-kit.tsx'
+import { pressedLook, StickLook, useStick } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
-// gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens. The stick sits
+// The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, the stick every console shares,
+// four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens. The stick sits
 // low in the left hand with the D-pad at the edge above it, and Z just under R. Start is in the top bar beside pause.
 const pressed = pressedLook(75)
 const shoulder = twMerge(
@@ -68,19 +68,7 @@ function AnalogStick() {
     reach: (width) => width / 2 - 14,
   })
 
-  return (
-    <div
-      className='flex size-29 touch-none items-center justify-center bg-[#2c2e33] [clip-path:polygon(30%_0,70%_0,100%_30%,100%_70%,70%_100%,30%_100%,0_70%,0_30%)]'
-      {...handlers}
-      title='Analog stick'
-    >
-      <div
-        className='pointer-events-none size-15.5 rounded-full shadow-[0_3px_6px_#000a,inset_0_1px_0_#fff8]'
-        ref={knob}
-        style={{ background: 'repeating-radial-gradient(circle, #b8babd 0 3px, #a3a6aa 3px 6px)' }}
-      />
-    </div>
-  )
+  return <StickLook className='size-29' handlers={handlers} knob={knob} title='Analog stick' />
 }
 
 export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {

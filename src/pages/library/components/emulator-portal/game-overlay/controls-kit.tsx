@@ -122,13 +122,6 @@ const pairSpots = {
     'right-4.5 bottom-29 size-19.5 landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
   ],
 }
-// Where a pair's letters or numbers go when they're printed beside the buttons rather than on them: below and to the
-// right of each, as on the Game Boy
-const printedSpots = [
-  'right-35 bottom-12.5 landscape:right-27 landscape:bottom-11.5',
-  'right-12.5 bottom-22.5 landscape:right-9.5 landscape:bottom-20',
-]
-
 interface PairButton {
   buttonName: RetroPadButton
   label: string
@@ -136,49 +129,64 @@ interface PairButton {
 }
 
 /**
- * A console's two main buttons as a slanted pair, in the right-hand corner (inside a `Corner`). Each console gives the
- * buttons' look; the label goes on the button, or, given `printed` (its colour), beside it as on the console
+ * A console's two main buttons as a slanted pair, in the right-hand corner (inside a `Corner`), each with its letter or
+ * number on it. Each console gives the buttons' look, and `labelColor` when the labels need a colour of their own
  */
 export function SlantedPair({
   buttons,
   className,
   group = 'face',
-  printed,
+  labelColor,
   spots = 'standard',
   style,
 }: Readonly<{
   buttons: [PairButton, PairButton]
   className: string
   group?: string
-  printed?: string
+  labelColor?: string
   spots?: keyof typeof pairSpots
   style: CSSProperties
 }>) {
+  return buttons.map(({ buttonName, label, title }, index) => (
+    <VirtualGamepadButton
+      buttonName={buttonName}
+      className={twMerge(className, pairSpots[spots][index])}
+      group={group}
+      key={buttonName}
+      style={labelColor ? { ...style, color: labelColor } : style}
+      title={title ?? label}
+    >
+      {label}
+    </VirtualGamepadButton>
+  ))
+}
+
+/**
+ * How every stick looks, in the style of the app's original on-screen controls: a see-through disc with a thin outline,
+ * and a see-through knob that moves with the thumb. Nothing lights up while it's held. How a stick works (pressing
+ * directions, or tilting by how far it's pushed) is up to the stick
+ */
+export function StickLook({
+  className,
+  handlers,
+  knob,
+  title,
+}: Readonly<{
+  className?: string
+  handlers: ReturnType<typeof useStick>['handlers']
+  knob: ReturnType<typeof useStick>['knob']
+  title: string
+}>) {
   return (
-    <>
-      {buttons.map(({ buttonName, label, title }, index) => (
-        <VirtualGamepadButton
-          buttonName={buttonName}
-          className={twMerge(className, pairSpots[spots][index])}
-          group={group}
-          key={buttonName}
-          style={style}
-          title={title ?? label}
-        >
-          {printed ? undefined : label}
-        </VirtualGamepadButton>
-      ))}
-      {printed
-        ? buttons.map(({ buttonName, label }, index) => (
-            <span
-              className={twMerge('absolute text-lg font-black landscape:text-base', printedSpots[index])}
-              key={buttonName}
-              style={{ color: printed }}
-            >
-              {label}
-            </span>
-          ))
-        : null}
-    </>
+    <div
+      className={twMerge(
+        'flex touch-none items-center justify-center rounded-full bg-black/20 ring-1 ring-white/20',
+        className,
+      )}
+      {...handlers}
+      title={title}
+    >
+      <div className='pointer-events-none size-[46%] rounded-full bg-white/12 ring-1 ring-white/25' ref={knob} />
+    </div>
   )
 }

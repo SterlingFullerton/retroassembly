@@ -1,6 +1,5 @@
-import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
-import { useStick } from './controls-kit.tsx'
+import { StickLook, useStick } from './controls-kit.tsx'
 
 const sticks = {
   // The gamepad's axes 0 and 1
@@ -28,20 +27,11 @@ export function Thumbstick({ className, stick }: Readonly<{ className?: string; 
   })
 
   return (
-    <div
-      className={twMerge(
-        'flex touch-none items-center justify-center rounded-full shadow-[inset_0_2px_6px_#000,0_0_0_2px_#333]',
-        className,
-      )}
-      {...handlers}
-      style={{ background: 'radial-gradient(circle, #1b1b1d 55%, #0d0d0e 56%, #19191b 70%, #0a0a0a)' }}
+    <StickLook
+      className={className}
+      handlers={handlers}
+      knob={knob}
       title={stick === 'left' ? 'Left stick' : 'Right stick'}
-    >
-      <div
-        className='pointer-events-none size-[52%] rounded-full shadow-[0_3px_6px_#000c,inset_0_1px_0_#ffffff22]'
-        ref={knob}
-        style={{ background: 'radial-gradient(circle at 40% 35%, #3a3a3e, #1a1a1c 70%)' }}
-      />
-    </div>
+    />
   )
 }

@@ -8,7 +8,7 @@ import { Joystick } from './joystick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
-// An arcade cabinet's controls: a ball-top stick, and push-buttons numbered as the game numbers them. Most arcade games
+// An arcade cabinet's controls: a stick, and push-buttons numbered as the game numbers them. Most arcade games
 // use one or two buttons, so 1 and 2 are big and sit under the thumb; 3 to 6, for fighting games and the like, are a
 // smaller group above them. Coin and Start sit in the top bar beside pause.
 //
@@ -74,7 +74,7 @@ export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
     <>
       <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-15 left-4.5 size-37.5 landscape:bottom-16.5 landscape:left-2.5 landscape:size-34'>
-          <Joystick knob='ball' />
+          <Joystick />
         </div>
       </Corner>
 

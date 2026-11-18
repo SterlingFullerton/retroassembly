@@ -7,7 +7,7 @@ import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 
 // Sega's 8-bit consoles, the Master System and the Game Gear, drawn like their own buttons: the d-pad every console
 // shares, and dark grey buttons 1 and 2 slanted along the arc the thumb makes rolling from one to the other, with their
-// numbers printed beside them. The Master System's are printed in white, and its console's own Pause sits in the top
+// numbers on them. The Master System's are in white, and its console's own Pause sits in the top
 // bar beside the app's; the Game Gear's are in its blue, with Start in the top bar. Genesis Plus GX, PicoDrive and
 // Gearsystem all read button 1 from the RetroPad's B, 2 from A, and Pause or Start from Start. SG-1000 games, whose
 // controller is the Master System's, share its controls.
@@ -36,15 +36,15 @@ function SegaEightBitControls({ kind, visible }: Readonly<{ kind: keyof typeof c
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
       </Corner>
 
-      {/* 1 and 2, slanted, with their numbers printed below and to the right */}
+      {/* 1 and 2, slanted */}
       <Corner scale={scale} side='right' visible={visible}>
         <SlantedPair
           buttons={[
             { buttonName: 'b', label: '1' },
             { buttonName: 'a', label: '2' },
           ]}
-          className={twMerge(pressed, 'absolute rounded-full')}
-          printed={numbers}
+          className={twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold landscape:text-xl')}
+          labelColor={numbers}
           style={buttonStyle}
         />
       </Corner>
