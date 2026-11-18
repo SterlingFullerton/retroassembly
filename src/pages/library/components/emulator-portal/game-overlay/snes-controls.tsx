@@ -4,11 +4,12 @@ import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Super Famicom's controls drawn like its controller: the d-pad every console shares, A, B, X and Y in its
-// diamond and colours on a grey plate, grey L and R shoulder buttons, and slanted Select and Start between the hands in
-// portrait, or beside pause in landscape. Snes9x reads the RetroPad's buttons as the controller's, so each button is
+// diamond and colours on a grey plate, grey L and R shoulder buttons, and Select and Start in the top bar beside
+// pause. Snes9x reads the RetroPad's buttons as the controller's, so each button is
 // the one its letter says.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 const dish: CSSProperties = { background: 'radial-gradient(circle at 45% 40%, #d9d9de, #b9b9c0 70%)' }
@@ -52,25 +53,6 @@ const shoulder = twMerge(
   'landscape:bottom-[222px] landscape:w-28',
 )
 const shoulderStyle: CSSProperties = { background: 'linear-gradient(#e2e2e6, #a8a8b0)' }
-
-function Pill({ buttonName, label }: Readonly<{ buttonName: RetroPadButton; label: string }>) {
-  return (
-    <VirtualGamepadButton
-      buttonName={buttonName}
-      className={twMerge(
-        pressed,
-        'flex flex-col items-center gap-1 bg-transparent px-0.5 pt-1 data-[touching=true]:bg-transparent',
-      )}
-      title={label}
-    >
-      <span
-        className='block h-3.25 w-10.5 -rotate-25 rounded-full shadow-[0_2px_3px_#0008]'
-        style={{ background: 'linear-gradient(#4a4a50, #26262a)' }}
-      />
-      <span className='text-[9px] font-bold tracking-widest text-[#9a9aa2]'>{label}</span>
-    </VirtualGamepadButton>
-  )
-}
 
 export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
@@ -127,19 +109,10 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
         ))}
       </div>
 
-      {/* Select and Start: between the shoulders in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[252px] left-0 flex -translate-x-1/2 gap-1.5 landscape:top-2 landscape:bottom-auto landscape:left-0 landscape:translate-x-0'>
-          <Pill buttonName='select' label='SELECT' />
-          <Pill buttonName='start' label='START' />
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

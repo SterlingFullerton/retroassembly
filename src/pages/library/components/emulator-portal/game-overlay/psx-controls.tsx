@@ -5,11 +5,12 @@ import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
 import { Thumbstick } from './thumbstick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The PlayStation's controls drawn like a DualShock: the d-pad every console shares, the four face buttons in their
 // diamond with their coloured symbols, L1 and R1 as short flat bumpers with the taller L2 and R2 triggers behind them,
-// the two analog sticks below, and plain Select and Start between the hands in portrait, or beside pause in landscape.
+// the two analog sticks below, and Select and Start in the top bar beside pause.
 // PCSX ReARMed reads □, △, ✕ and ○ from the RetroPad's Y, X, B and A, and is told the controller is a DualShock, whose
 // sticks games switch on themselves.
 export const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
@@ -40,13 +41,6 @@ const trigger = twMerge(
   'landscape:bottom-[312px] landscape:w-33',
 )
 const triggerStyle: CSSProperties = { background: 'linear-gradient(#7a7a84, #4a4a52)' }
-
-export const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-  'landscape:px-1.5 landscape:text-[9px] landscape:tracking-wide',
-)
-export const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
 export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
@@ -112,23 +106,10 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
         />
       </div>
 
-      {/* Select and Start: between the hands in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[420px] left-0 flex -translate-x-1/2 gap-2 landscape:top-3 landscape:bottom-auto landscape:translate-x-0 landscape:gap-1'>
-          <VirtualGamepadButton buttonName='select' className={plain} style={plainStyle} title='Select'>
-            SELECT
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Start'>
-            START
-          </VirtualGamepadButton>
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

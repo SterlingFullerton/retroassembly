@@ -6,6 +6,7 @@ import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
 import { pressed } from './psx-controls.tsx'
 import { Thumbstick } from './thumbstick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The PSP's controls, drawn like the PSP itself: the d-pad every console shares with the analog nub below it, and the
@@ -55,10 +56,6 @@ const shoulder = twMerge(
   'absolute bottom-[366px] grid h-12 w-34 place-items-center text-sm font-extrabold text-[#c8c8ce]',
   'landscape:bottom-[296px] landscape:h-10 landscape:w-27.5 landscape:text-xs',
 )
-
-// Select and Start in the top bar: like pause beside them, a label with no background that lights up while pressed
-const topBarButton =
-  'rounded p-2 text-[10px] font-semibold tracking-wider text-white/75 data-[touching=true]:bg-white/25'
 
 // The top bar with pause, Select and Start, drawn over the top of the game's picture
 const topBarHeight = 44
@@ -123,15 +120,10 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
         ))}
       </div>
 
-      {/* Select and Start: in the top bar, beside pause */}
-      <div className={twMerge('top-safe left-safe-offset-10 absolute flex', hidden)}>
-        <VirtualGamepadButton buttonName='select' className={topBarButton} title='Select'>
-          SELECT
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='start' className={topBarButton} title='Start'>
-          START
-        </VirtualGamepadButton>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

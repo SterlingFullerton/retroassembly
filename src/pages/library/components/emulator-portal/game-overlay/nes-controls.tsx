@@ -2,41 +2,18 @@ import { clsx } from 'clsx'
 import { type CSSProperties, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
-import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The NES's controls drawn like its controller: the d-pad every console shares, round B and A buttons with their
-// letters printed beside them, and Select and Start as rubber pills between the hands in portrait, or beside pause in
-// landscape. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
-// the RetroPad's B, A, Select and Start as the controller's. Disk System games add a plain Flip disk button, above
-// Select and Start in portrait or under pause in landscape.
-const grey = 'linear-gradient(#cfcfd3, #a9a9af)'
+// letters printed beside them, and Select and Start in the top bar beside pause. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
+// the RetroPad's B, A, Select and Start as the controller's. Disk System games add Flip disk, labelled FLIP, after
+// them.
 const red = '#e0242a'
 
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
-
-function Pill({ buttonName, label }: Readonly<{ buttonName: RetroPadButton; label: string }>) {
-  return (
-    <VirtualGamepadButton
-      buttonName={buttonName}
-      className={twMerge(
-        pressed,
-        'flex flex-col items-center gap-1 bg-transparent px-0.5 data-[touching=true]:bg-transparent',
-      )}
-      title={label}
-    >
-      <span className='text-[9px] font-extrabold tracking-[0.12em]' style={{ color: red }}>
-        {label}
-      </span>
-      <span
-        className='block h-3.5 w-11 rounded-full shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff20]'
-        style={{ background: 'linear-gradient(#3a3a3e, #121214)' }}
-      />
-    </VirtualGamepadButton>
-  )
-}
 
 // The standard gamepad's L and R, which both Disk System emulators read the disk from
 const l = 4
@@ -84,18 +61,9 @@ function FlipDiskButton({ core }: Readonly<{ core: string }>) {
   }
 
   return (
-    <VirtualGamepadButton
-      className={twMerge(
-        pressed,
-        'flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold tracking-wider whitespace-nowrap text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-      )}
-      onVirtualPressStart={flip}
-      style={{ background: 'linear-gradient(#3a3a3d, #202022)' }}
-      title='Flip disk'
-    >
-      <span className='icon-[mdi--eject] size-3.5' />
-      FLIP DISK
-    </VirtualGamepadButton>
+    <TopBarButton onVirtualPressStart={flip} title='Flip disk'>
+      FLIP
+    </TopBarButton>
   )
 }
 
@@ -154,38 +122,11 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
         </span>
       </div>
 
-      {/* Select and Start: on a strip between the hands in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div
-          className='absolute bottom-[246px] left-0 h-11 w-33 -translate-x-1/2 rounded-lg shadow-[inset_0_1px_0_#fff,0_2px_4px_#0008] landscape:hidden'
-          style={{ background: grey }}
-        />
-        <div className='absolute bottom-[252px] left-0 flex -translate-x-1/2 gap-3.5 landscape:top-2 landscape:bottom-auto landscape:translate-x-0'>
-          <Pill buttonName='select' label='SELECT' />
-          <Pill buttonName='start' label='START' />
-        </div>
-      </div>
-
-      {diskCore ? (
-        // Above Select and Start in portrait, under pause in landscape
-        <div
-          className={twMerge(
-            'bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-            hidden,
-          )}
-          style={{ scale }}
-        >
-          <div className='absolute bottom-[306px] left-0 -translate-x-1/2 landscape:top-[52px] landscape:bottom-auto landscape:left-3 landscape:translate-x-0'>
-            <FlipDiskButton core={diskCore} />
-          </div>
-        </div>
-      ) : null}
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+        {diskCore ? <FlipDiskButton core={diskCore} /> : null}
+      </TopBarButtons>
     </>
   )
 }

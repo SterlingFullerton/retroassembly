@@ -33,6 +33,7 @@ import { PspControls } from './psp-controls.tsx'
 import { PsxControls } from './psx-controls.tsx'
 import { MasterSystemControls } from './sms-controls.tsx'
 import { SnesControls } from './snes-controls.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VbControls } from './vb-controls.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 import { WonderSwanControls } from './wonderswan-controls.tsx'
@@ -152,12 +153,11 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
   }, [enabled, emulator, controls])
 }
 
-// On DS in portrait the controls fill one strip under the game: L and R in its top corners with Select and Start
-// between them, and the d-pad and the face buttons on either side. In landscape the game takes the whole height and the
-// controls go to its sides, as on the N64: L and R up top, the d-pad low on the left, the face buttons low on the right,
-// and Select and Start beside pause in the top left. Flat, translucent buttons turn white while pressed. Mic, for games
-// you blow into or shout at, sits at the bottom between the d-pad and the face buttons in portrait, and after Start in
-// landscape: DeSmuME can't hear a real microphone, so while it's held the game hears the sound of blowing instead.
+// On DS in portrait the controls fill one strip under the game: L and R in its top corners, and the d-pad and the face
+// buttons on either side. In landscape the game takes the whole height and the controls go to its sides, as on the N64:
+// L and R up top, the d-pad low on the left, the face buttons low on the right. Select and Start are in the top bar
+// beside pause. Flat, translucent buttons turn white while pressed. Mic, for games you blow into or shout at, sits at
+// the bottom between the d-pad and the face buttons in portrait, and after Start in landscape: DeSmuME can't hear a real microphone, so while it's held the game hears the sound of blowing instead.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 
 function DSControls({
@@ -168,93 +168,84 @@ function DSControls({
   visible: boolean
 }>) {
   return (
-    <div
-      className={twMerge(
-        'bottom-safe absolute inset-x-0 h-47',
-        // Covers the whole screen in landscape, so only its buttons take touches: the game's touchscreen is between them
-        'landscape:top-safe landscape:pointer-events-none landscape:h-auto landscape:*:pointer-events-auto',
-        clsx({ hidden: !visible }),
-      )}
-      ref={controls}
-    >
-      <VirtualGamepadButton
-        buttonName='l'
-        className={twMerge(
-          dsButton,
-          'absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl',
-          'landscape:left-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
-        )}
-      >
-        L
-      </VirtualGamepadButton>
-      <VirtualGamepadButton
-        buttonName='r'
-        className={twMerge(
-          dsButton,
-          'absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl',
-          'landscape:right-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
-        )}
-      >
-        R
-      </VirtualGamepadButton>
-
+    <>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
       <div
         className={twMerge(
-          'absolute top-0.75 left-1/2 flex -translate-x-1/2 gap-1.5',
-          // In landscape: top left, beside pause, as on the N64
-          'landscape:left-safe-offset-10 landscape:top-1 landscape:translate-x-0',
+          'bottom-safe absolute inset-x-0 h-47',
+          // Covers the whole screen in landscape, so only its buttons take touches: the game's touchscreen is between them
+          'landscape:top-safe landscape:pointer-events-none landscape:h-auto landscape:*:pointer-events-auto',
+          clsx({ hidden: !visible }),
         )}
+        ref={controls}
       >
-        <VirtualGamepadButton buttonName='select' className={twMerge(dsButton, 'h-6 w-13 rounded-full text-[11px]')}>
-          Select
+        <VirtualGamepadButton
+          buttonName='l'
+          className={twMerge(
+            dsButton,
+            'absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl',
+            'landscape:left-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+          )}
+        >
+          L
         </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='start' className={twMerge(dsButton, 'h-6 w-13 rounded-full text-[11px]')}>
-          Start
+        <VirtualGamepadButton
+          buttonName='r'
+          className={twMerge(
+            dsButton,
+            'absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl',
+            'landscape:right-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+          )}
+        >
+          R
         </VirtualGamepadButton>
+
+        <VirtualGamepadButton
+          buttonName='l3'
+          className={twMerge(
+            dsButton,
+            'absolute bottom-3 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
+            'landscape:left-safe-offset-39 landscape:top-1 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
+          )}
+          title='Mic'
+        >
+          <span className='icon-[mdi--microphone] size-3.5' />
+          {/* Phones narrower than 360 points leave room only for the icon between the d-pad and the face buttons */}
+          <span className='max-[359px]:portrait:hidden'>MIC</span>
+        </VirtualGamepadButton>
+
+        {/* The d-pad */}
+        <DPad
+          className={twMerge(
+            'absolute top-10.5 left-2.5 size-33',
+            'landscape:left-safe-offset-4 landscape:top-auto landscape:bottom-14',
+          )}
+        />
+
+        <div
+          className={twMerge(
+            'absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full',
+            'landscape:right-safe-offset-4 landscape:top-auto landscape:bottom-14',
+          )}
+        >
+          <VirtualGamepadButton buttonName='x' className={twMerge(dsButton, 'col-start-2 row-start-1')} group='face'>
+            X
+          </VirtualGamepadButton>
+          <VirtualGamepadButton buttonName='y' className={twMerge(dsButton, 'col-start-1 row-start-2')} group='face'>
+            Y
+          </VirtualGamepadButton>
+          <VirtualGamepadButton buttonName='a' className={twMerge(dsButton, 'col-start-3 row-start-2')} group='face'>
+            A
+          </VirtualGamepadButton>
+          <VirtualGamepadButton buttonName='b' className={twMerge(dsButton, 'col-start-2 row-start-3')} group='face'>
+            B
+          </VirtualGamepadButton>
+        </div>
       </div>
-
-      <VirtualGamepadButton
-        buttonName='l3'
-        className={twMerge(
-          dsButton,
-          'absolute bottom-3 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
-          'landscape:left-safe-offset-39 landscape:top-1 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
-        )}
-        title='Mic'
-      >
-        <span className='icon-[mdi--microphone] size-3.5' />
-        {/* Phones narrower than 360 points leave room only for the icon between the d-pad and the face buttons */}
-        <span className='max-[359px]:portrait:hidden'>MIC</span>
-      </VirtualGamepadButton>
-
-      {/* The d-pad */}
-      <DPad
-        className={twMerge(
-          'absolute top-10.5 left-2.5 size-33',
-          'landscape:left-safe-offset-4 landscape:top-auto landscape:bottom-14',
-        )}
-      />
-
-      <div
-        className={twMerge(
-          'absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full',
-          'landscape:right-safe-offset-4 landscape:top-auto landscape:bottom-14',
-        )}
-      >
-        <VirtualGamepadButton buttonName='x' className={twMerge(dsButton, 'col-start-2 row-start-1')} group='face'>
-          X
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='y' className={twMerge(dsButton, 'col-start-1 row-start-2')} group='face'>
-          Y
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='a' className={twMerge(dsButton, 'col-start-3 row-start-2')} group='face'>
-          A
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='b' className={twMerge(dsButton, 'col-start-2 row-start-3')} group='face'>
-          B
-        </VirtualGamepadButton>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -386,6 +377,12 @@ export function GameOverlayVirtualGamepad() {
       {controls === 'wonderswan' ? <WonderSwanControls top={wonderSwanControlsTop} visible={gamepadVisible} /> : null}
       {controls === 'generic' ? (
         <>
+          <TopBarButtons visible={gamepadVisible}>
+            <TopBarButton buttonName='select' className={clsx({ uppercase: isArcade })}>
+              {isArcade ? t('emulator.coin') : 'SELECT'}
+            </TopBarButton>
+            <TopBarButton buttonName='start'>START</TopBarButton>
+          </TopBarButtons>
           <div
             className={twMerge(
               'bottom-safe left-safe absolute flex flex-col gap-2 p-2',
@@ -401,19 +398,6 @@ export function GameOverlayVirtualGamepad() {
               </VirtualGamepadButton>
             </div>
             <DPad className='size-42' />
-            <VirtualGamepadButton buttonName='select' className='rounded py-1 text-xs ring ring-white/20'>
-              {isArcade ? (
-                <>
-                  <span className='icon-[mdi--hand-coin]' />
-                  {t('emulator.coin')}
-                </>
-              ) : (
-                <>
-                  <span className='icon-[mdi--menu]' />
-                  Select
-                </>
-              )}
-            </VirtualGamepadButton>
           </div>
 
           <div
@@ -442,9 +426,6 @@ export function GameOverlayVirtualGamepad() {
                 </VirtualGamepadButton>
               ))}
             </div>
-            <VirtualGamepadButton buttonName='start' className='rounded py-1 text-xs ring ring-white/20'>
-              <span className='icon-[mdi--play]' /> Start
-            </VirtualGamepadButton>
           </div>
         </>
       ) : null}

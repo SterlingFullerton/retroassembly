@@ -3,11 +3,11 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Neo Geo Pocket's controls: the d-pad every console shares, dark grey A and B slanted along the arc the thumb makes
-// rolling from one to the other, as on the WonderSwan and Lynx, and a plain Option button between the hands in
-// portrait, or beside pause in landscape. Beetle Neo Geo Pocket reads A from the RetroPad's B, B from A, and Option from
+// rolling from one to the other, as on the WonderSwan and Lynx, and Option in the top bar beside pause. Beetle Neo Geo Pocket reads A from the RetroPad's B, B from A, and Option from
 // Start. Neo Geo Pocket Color games share them.
 const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
 const buttonStyle: CSSProperties = {
@@ -56,28 +56,11 @@ export function NgpControls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
       </div>
 
-      {/* Option: between the hands in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[250px] left-0 -translate-x-1/2 landscape:top-1 landscape:bottom-auto landscape:translate-x-0'>
-          <VirtualGamepadButton
-            buttonName='start'
-            className={twMerge(
-              pressed,
-              'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-            )}
-            style={{ background: 'linear-gradient(#3a3a3d, #202022)' }}
-            title='Option'
-          >
-            OPTION
-          </VirtualGamepadButton>
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='start' title='Option'>
+          OPTION
+        </TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

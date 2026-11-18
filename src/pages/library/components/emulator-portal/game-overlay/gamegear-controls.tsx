@@ -3,11 +3,11 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Game Gear's controls drawn like its own buttons: the d-pad every console shares, dark grey buttons 1 and 2 with
-// their numbers printed beside them in the Game Gear's blue, and a plain Start button between the hands in portrait, or
-// beside pause in landscape. 1 and 2 are slanted along the arc the thumb makes rolling from one to the other, as on the
+// their numbers printed beside them in the Game Gear's blue, and Start in the top bar beside pause. 1 and 2 are slanted along the arc the thumb makes rolling from one to the other, as on the
 // NES's. Genesis Plus GX and Gearsystem both read button 1 from the RetroPad's B, 2 from A, and Start from Start.
 const blue = '#4a90e0'
 
@@ -68,28 +68,9 @@ export function GameGearControls({ visible }: Readonly<{ visible: boolean }>) {
         </span>
       </div>
 
-      {/* Start: between the hands in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe-offset-11 absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[250px] left-0 -translate-x-1/2 landscape:top-1 landscape:bottom-auto landscape:translate-x-0'>
-          <VirtualGamepadButton
-            buttonName='start'
-            className={twMerge(
-              pressed,
-              'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-            )}
-            style={{ background: 'linear-gradient(#3a3a3d, #202022)' }}
-            title='Start'
-          >
-            START
-          </VirtualGamepadButton>
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

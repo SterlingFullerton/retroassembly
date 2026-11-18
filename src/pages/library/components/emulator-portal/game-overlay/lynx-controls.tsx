@@ -4,11 +4,12 @@ import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
 import { refitGame } from './refit-game.ts'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari Lynx's controls, in the WonderSwan's style: the d-pad every console shares, dark grey B and A slanted along
-// the arc the thumb makes rolling from one to the other, and plain Option 1, Option 2, Pause and Rotate, in two rows
-// between the hands in portrait or stacked under pause in landscape. Rotate turns the picture for games played with the
+// the arc the thumb makes rolling from one to the other, and Option 1, Option 2, Pause and Rotate in the top bar
+// beside pause, shortened to OPT 1 and OPT 2 so the bar fits. Rotate turns the picture for games played with the
 // Lynx held upright, and the d-pad with it. Beetle Lynx reads A from the RetroPad's B, B from A, Option 1 and 2 from L
 // and R, Pause from Start and Rotate from Select.
 const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
@@ -17,11 +18,6 @@ const buttonStyle: CSSProperties = {
   boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006',
 }
 const round = twMerge(pressed, 'absolute rounded-full font-extrabold text-[#e8e8ea]')
-const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-)
-const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
 export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDivElement | null>; visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
@@ -63,38 +59,28 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
         </VirtualGamepadButton>
       </div>
 
-      {/* Option 1, Option 2, Pause and Rotate: two rows between the hands in portrait, stacked under pause in
-          landscape, where side by side they would reach the game */}
+      {/* Marks the top of the controls, so that in portrait the game, upright or not, fits above them */}
       <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
+        className={twMerge('bottom-safe absolute left-1/2 size-0 origin-top-left landscape:hidden', hidden)}
         style={{ scale }}
       >
-        {/* Marks the top of the controls, so that in portrait the game, upright or not, fits above them */}
-        <div className='absolute bottom-[334px] left-0 h-px w-px landscape:hidden' ref={top} />
-        <div className='absolute bottom-[262px] left-0 grid w-max -translate-x-1/2 grid-cols-2 gap-2 landscape:top-[52px] landscape:bottom-auto landscape:left-2.5 landscape:flex landscape:translate-x-0 landscape:flex-col landscape:items-start'>
-          <VirtualGamepadButton buttonName='l' className={plain} style={plainStyle} title='Option 1'>
-            OPTION 1
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='r' className={plain} style={plainStyle} title='Option 2'>
-            OPTION 2
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Pause'>
-            PAUSE
-          </VirtualGamepadButton>
-          <VirtualGamepadButton
-            buttonName='select'
-            className={plain}
-            onVirtualPressEnd={refitGame}
-            style={plainStyle}
-            title='Rotate'
-          >
-            ROTATE
-          </VirtualGamepadButton>
-        </div>
+        <div className='absolute bottom-[334px] left-0 h-px w-px' ref={top} />
       </div>
+
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='l' title='Option 1'>
+          OPT 1
+        </TopBarButton>
+        <TopBarButton buttonName='r' title='Option 2'>
+          OPT 2
+        </TopBarButton>
+        <TopBarButton buttonName='start' title='Pause'>
+          PAUSE
+        </TopBarButton>
+        <TopBarButton buttonName='select' onVirtualPressEnd={refitGame} title='Rotate'>
+          ROTATE
+        </TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

@@ -3,11 +3,12 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { Joystick } from './joystick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari 7800's controls, like the 2600's: the joystick, which presses eight directions, its two red buttons, 1 and
-// 2, slanted along the arc the thumb makes rolling from one to the other, and the console's Select, Pause and Reset as
-// plain buttons between the hands in portrait, or stacked under pause in landscape. ProSystem reads the joystick as the
+// 2, slanted along the arc the thumb makes rolling from one to the other, and the console's Select, Pause and Reset in
+// the top bar beside pause. ProSystem reads the joystick as the
 // d-pad, 1 as B, 2 as A, and Select, Pause and Reset as Select, Start and X.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 const fireStyle: CSSProperties = {
@@ -15,11 +16,6 @@ const fireStyle: CSSProperties = {
   boxShadow: '0 3px 5px #000c, inset 0 -3px 0 #0004, inset 0 2px 0 #ff9a90',
 }
 const fire = twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold text-[#3a0000]')
-const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-)
-const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
 export function Atari7800Controls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
@@ -62,27 +58,15 @@ export function Atari7800Controls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
       </div>
 
-      {/* Select, Pause and Reset: side by side between the hands in portrait, stacked under pause in landscape, where
-          side by side they would reach the game */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[250px] left-0 flex -translate-x-1/2 gap-2 landscape:top-[52px] landscape:bottom-auto landscape:left-3 landscape:translate-x-0 landscape:flex-col landscape:items-start'>
-          <VirtualGamepadButton buttonName='select' className={plain} style={plainStyle} title='Select'>
-            SELECT
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Pause'>
-            PAUSE
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='x' className={plain} style={plainStyle} title='Reset'>
-            RESET
-          </VirtualGamepadButton>
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start' title='Pause'>
+          PAUSE
+        </TopBarButton>
+        <TopBarButton buttonName='x' title='Reset'>
+          RESET
+        </TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

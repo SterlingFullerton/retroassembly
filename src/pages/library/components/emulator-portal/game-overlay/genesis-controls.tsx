@@ -3,11 +3,12 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Genesis's controls drawn like its controller: the d-pad every console shares, A, B and C as big black
 // buttons in a row slanting up to the right, and the 6-button pad's X, Y and Z as a smaller row above them. Start and
-// Mode sit between the hands in portrait, and beside pause at the top left in landscape. Genesis Plus GX reads A, B and
+// Mode sit in the top bar beside pause. Genesis Plus GX reads A, B and
 // C from the RetroPad's Y, B and A, X, Y and Z from L, X and R, and Mode from Select.
 //
 // Sizes and places are in a unit, --u, that is a point on a phone 390 points wide (or, in landscape, 390 high) and
@@ -70,11 +71,6 @@ function FaceButton({
 
 export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
-  const pill = twMerge(
-    pressed,
-    'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-  )
-  const pillStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
   return (
     <div
@@ -100,21 +96,12 @@ export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
       <FaceButton buttonName='x' hidden={hidden} label='Y' />
       <FaceButton buttonName='r' hidden={hidden} label='Z' />
 
-      {/* Start and Mode: between the hands in portrait, beside pause in landscape */}
-      <div
-        className={twMerge(
-          'absolute bottom-[calc(248*var(--u)+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 gap-2',
-          'landscape:left-safe-offset-10 landscape:top-safe-offset-1 landscape:bottom-auto landscape:translate-x-0',
-          hidden,
-        )}
-      >
-        <VirtualGamepadButton buttonName='start' className={pill} style={pillStyle}>
-          START
-        </VirtualGamepadButton>
-        <VirtualGamepadButton buttonName='select' className={pill} style={pillStyle}>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+        <TopBarButton buttonName='select' title='Mode'>
           MODE
-        </VirtualGamepadButton>
-      </div>
+        </TopBarButton>
+      </TopBarButtons>
     </div>
   )
 }

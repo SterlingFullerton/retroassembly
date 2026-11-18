@@ -3,11 +3,12 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { DPad } from './dpad.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Virtual Boy's controls, laid out as on its controller: a d-pad for each thumb, the d-pad every console shares,
-// with plain Select and Start under the left one and dark grey B and A under the right, and L and R as the short light
-// bars from the PlayStation controls above them. In landscape the Virtual Boy's wide picture leaves little room
+// with dark grey B and A under the right one, and L and R as the short light
+// bars from the PlayStation controls above them. Select and Start are in the top bar beside pause. In landscape the Virtual Boy's wide picture leaves little room
 // beside it, so each side stacks down the edge at about half the size. Beetle VB reads the left d-pad from the
 // RetroPad's d-pad and the right one's up, down, left and right from L2, L3, R2 and R3, which have no keys, so the
 // right d-pad presses them on the on-screen gamepad.
@@ -23,12 +24,6 @@ const bumper = twMerge(
   'landscape:bottom-[312px] landscape:w-19',
 )
 const bumperStyle: CSSProperties = { background: 'linear-gradient(#e6e6ea, #b4b4bc)' }
-const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-  'landscape:h-6 landscape:px-2.25 landscape:text-[10px]',
-)
-const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 // The standard gamepad's L2, L3, R2 and R3
 const rightDPadButtons = { down: 10, left: 7, right: 11, up: 6 }
 
@@ -51,14 +46,6 @@ export function VbControls({ visible }: Readonly<{ visible: boolean }>) {
           L
         </VirtualGamepadButton>
         <DPad className='absolute bottom-42 left-3.25 size-40 landscape:bottom-26 landscape:left-1 landscape:size-20' />
-        <div className='absolute bottom-23 left-5.5 flex gap-2 landscape:bottom-4.5 landscape:left-1.5 landscape:w-19 landscape:flex-col landscape:items-center landscape:gap-1.5'>
-          <VirtualGamepadButton buttonName='select' className={plain} style={plainStyle} title='Select'>
-            SELECT
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Start'>
-            START
-          </VirtualGamepadButton>
-        </div>
       </div>
 
       <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
@@ -100,6 +87,10 @@ export function VbControls({ visible }: Readonly<{ visible: boolean }>) {
           A
         </VirtualGamepadButton>
       </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select'>SELECT</TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

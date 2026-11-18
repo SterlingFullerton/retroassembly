@@ -5,11 +5,11 @@ import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/emulator/on-s
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { Thumbstick } from './thumbstick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari 5200's controls: an analog stick, like its own, its two red fire buttons, 1 and 2, slanted along the arc
-// the thumb makes rolling from one to the other, plain Start and Pause between the hands in portrait or stacked under
-// pause in landscape, and, when asked for from the top bar, its 12-key keypad, as on the ColecoVision. a5200 reads the
+// the thumb makes rolling from one to the other, Start and Pause in the top bar after the keypad button, and, when asked for from the top bar, its 12-key keypad, as on the ColecoVision. a5200 reads the
 // stick from the left analog stick, fire 1 from A, fire 2 from B, and Start and Pause from Start and Select.
 const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
 const fireStyle: CSSProperties = {
@@ -17,11 +17,6 @@ const fireStyle: CSSProperties = {
   boxShadow: '0 3px 5px #000c, inset 0 -3px 0 #0004, inset 0 2px 0 #ff9a90',
 }
 const fire = twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold text-[#3a0000]')
-const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-)
-const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
 // a5200 reads 0, ✱ and # from R, Y and X, 5 from the right stick's click, and the other digits from the right stick
 // pushed towards them on a phone's keypad: up and left is 1, up is 2, up and right is 3, and so on
@@ -104,24 +99,12 @@ export function Atari5200Controls({
         </VirtualGamepadButton>
       </div>
 
-      {/* Start and Pause: side by side between the hands in portrait, stacked under pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[250px] left-0 flex -translate-x-1/2 gap-2 landscape:top-[52px] landscape:bottom-auto landscape:left-3 landscape:translate-x-0 landscape:flex-col landscape:items-start'>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Start'>
-            START
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='select' className={plain} style={plainStyle} title='Pause'>
-            PAUSE
-          </VirtualGamepadButton>
-        </div>
-      </div>
-
+      <TopBarButtons afterKeypad visible={visible}>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+        <TopBarButton buttonName='select' title='Pause'>
+          PAUSE
+        </TopBarButton>
+      </TopBarButtons>
       {keypadOpen && visible ? (
         // Hangs off the middle of the bottom in portrait, and off the top left corner in landscape
         <div

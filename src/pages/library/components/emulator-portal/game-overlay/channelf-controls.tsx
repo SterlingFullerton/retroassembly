@@ -4,12 +4,13 @@ import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { Joystick } from './joystick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Channel F's controls: its stick is a joystick that also pushes down, pulls up and twists either way. The
 // joystick presses eight directions, as on the Atari; the other moves are four buttons in a diamond laid out like them,
-// pull on top, push below and the twists at the sides. Plain Console and Swap sit between the hands in portrait, or
-// stacked under pause in landscape: Console switches to the console's own buttons 1 to 4, which the joystick then
+// pull on top, push below and the twists at the sides. Console and Swap sit in the top bar beside
+// pause: Console switches to the console's own buttons 1 to 4, which the joystick then
 // picks between and a diamond button presses, and Swap swaps the left and right controllers. FreeChaF reads push from
 // B, pull from X, twist left and right from Y and A, Swap from Select and Console from Start.
 const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
@@ -17,11 +18,6 @@ const buttonStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
   boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006',
 }
-const plain = twMerge(
-  pressed,
-  'h-7 rounded-full px-3.5 text-[11px] font-bold tracking-wider text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-)
-const plainStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
 // Each move: its arrow, name, RetroPad button and place in the diamond in portrait and in landscape
 const moves: [arrow: string, name: string, buttonName: RetroPadButton, className: string][] = [
@@ -68,23 +64,14 @@ export function ChannelFControls({ visible }: Readonly<{ visible: boolean }>) {
         ))}
       </div>
 
-      {/* Console and Swap: side by side between the hands in portrait, stacked under pause in landscape */}
-      <div
-        className={twMerge(
-          'bottom-safe landscape:top-safe landscape:left-safe absolute left-1/2 size-0 origin-top-left landscape:bottom-auto',
-          hidden,
-        )}
-        style={{ scale }}
-      >
-        <div className='absolute bottom-[250px] left-0 flex -translate-x-1/2 gap-2 landscape:top-[52px] landscape:bottom-auto landscape:left-3 landscape:translate-x-0 landscape:flex-col landscape:items-start'>
-          <VirtualGamepadButton buttonName='start' className={plain} style={plainStyle} title='Console'>
-            CONSOLE
-          </VirtualGamepadButton>
-          <VirtualGamepadButton buttonName='select' className={plain} style={plainStyle} title='Swap'>
-            SWAP
-          </VirtualGamepadButton>
-        </div>
-      </div>
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='start' title='Console'>
+          CONSOLE
+        </TopBarButton>
+        <TopBarButton buttonName='select' title='Swap'>
+          SWAP
+        </TopBarButton>
+      </TopBarButtons>
     </>
   )
 }

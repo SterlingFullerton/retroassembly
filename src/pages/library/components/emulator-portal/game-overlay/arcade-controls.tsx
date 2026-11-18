@@ -5,11 +5,12 @@ import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { Joystick } from './joystick.tsx'
+import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // An arcade cabinet's controls: a ball-top stick, and push-buttons numbered as the game numbers them. Most arcade games
 // use one or two buttons, so 1 and 2 are big and sit under the thumb; 3 to 6, for fighting games and the like, are a
-// smaller group above them. Coin and Start sit between the hands in portrait, and under pause in landscape.
+// smaller group above them. Coin and Start sit in the top bar beside pause.
 //
 // FinalBurn Neo reads buttons 1 to 6 from the RetroPad's B, A, Y, X, R and L; in Street Fighter-like games that puts
 // the punches on 3, 4 and 6 and the kicks on 1, 2 and 5.
@@ -69,11 +70,6 @@ export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
-  const cabinetButton = twMerge(
-    pressed,
-    'flex h-7 items-center gap-1 rounded-md px-3 text-[11px] font-bold tracking-wider shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22]',
-  )
-  const cabinetStyle: CSSProperties = { background: 'linear-gradient(#3a3a3d, #202022)' }
 
   return (
     <>
@@ -98,31 +94,12 @@ export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
         ))}
       </div>
 
-      {/* Coin and Start: above the buttons between the hands in portrait, under pause in landscape */}
-      <div
-        className={twMerge(
-          'absolute bottom-[calc(268px*var(--scale)+env(safe-area-inset-bottom))] left-1/2 flex -translate-x-1/2 gap-2',
-          'landscape:left-safe-offset-2 landscape:top-safe-offset-12 landscape:bottom-auto landscape:translate-x-0 landscape:flex-col landscape:items-start',
-          hidden,
-        )}
-        style={{ '--scale': scale } as CSSProperties}
-      >
-        <VirtualGamepadButton
-          buttonName='select'
-          className={twMerge(cabinetButton, 'text-[#ffd34a]')}
-          style={cabinetStyle}
-        >
-          <span className='icon-[mdi--hand-coin]' />
+      <TopBarButtons visible={visible}>
+        <TopBarButton buttonName='select' className='uppercase' title={t('emulator.coin')}>
           {t('emulator.coin')}
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='start'
-          className={twMerge(cabinetButton, 'text-[#e8e8ea]')}
-          style={cabinetStyle}
-        >
-          START
-        </VirtualGamepadButton>
-      </div>
+        </TopBarButton>
+        <TopBarButton buttonName='start'>START</TopBarButton>
+      </TopBarButtons>
     </>
   )
 }
