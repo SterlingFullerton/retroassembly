@@ -5,23 +5,29 @@ import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 
-// The Master System's controls drawn like its controller: the d-pad every console shares, dark grey buttons 1 and 2
-// with their numbers printed beside them in white, and the console's own Pause in the top bar beside
-// the app's. 1 and 2 are slanted along the arc the thumb makes rolling from one to the
-// other, as on the Game Gear's. Genesis Plus GX, PicoDrive and Gearsystem all read button 1 from the RetroPad's B, 2
-// from A, and Pause from Start. SG-1000 games, whose controller is the same, share them.
-const white = '#e8e8ea'
+// Sega's 8-bit consoles, the Master System and the Game Gear, drawn like their own buttons: the d-pad every console
+// shares, and dark grey buttons 1 and 2 slanted along the arc the thumb makes rolling from one to the other, with their
+// numbers printed beside them. The Master System's are printed in white, and its console's own Pause sits in the top
+// bar beside the app's; the Game Gear's are in its blue, with Start in the top bar. Genesis Plus GX, PicoDrive and
+// Gearsystem all read button 1 from the RetroPad's B, 2 from A, and Pause or Start from Start. SG-1000 games, whose
+// controller is the Master System's, share its controls.
+const consoles = {
+  gamegear: { label: 'START', numbers: '#4a90e0', picture: 10 / 9, title: undefined },
+  mastersystem: { label: 'PAUSE', numbers: '#e8e8ea', picture: 4 / 3, title: 'Pause' },
+}
 
 const pressed = pressedLook(125)
 
-export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>) {
-  // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
-  // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
-  const buttonStyle: CSSProperties = {
-    background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
-    boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006, 0 0 0 2px #3a3a42',
-  }
+const buttonStyle: CSSProperties = {
+  background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
+  boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006, 0 0 0 2px #3a3a42',
+}
+
+function SegaEightBitControls({ kind, visible }: Readonly<{ kind: keyof typeof consoles; visible: boolean }>) {
+  const { label, numbers, picture, title } = consoles[kind]
+  // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Game
+  // Gear's picture is almost square (10:9), so in landscape it leaves more room beside it
+  const scale = useControlsScale(160, picture)
 
   return (
     <>
@@ -38,16 +44,24 @@ export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>
             { buttonName: 'a', label: '2' },
           ]}
           className={twMerge(pressed, 'absolute rounded-full')}
-          printed={white}
+          printed={numbers}
           style={buttonStyle}
         />
       </Corner>
 
       <TopBarButtons visible={visible}>
-        <TopBarButton buttonName='start' title='Pause'>
-          PAUSE
+        <TopBarButton buttonName='start' title={title}>
+          {label}
         </TopBarButton>
       </TopBarButtons>
     </>
   )
+}
+
+export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>) {
+  return <SegaEightBitControls kind='mastersystem' visible={visible} />
+}
+
+export function GameGearControls({ visible }: Readonly<{ visible: boolean }>) {
+  return <SegaEightBitControls kind='gamegear' visible={visible} />
 }

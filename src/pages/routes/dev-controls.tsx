@@ -9,7 +9,6 @@ import { Atari7800Controls } from '#@/pages/library/components/emulator-portal/g
 import { ChannelFControls } from '#@/pages/library/components/emulator-portal/game-overlay/channelf-controls.tsx'
 import { ColecoVisionControls } from '#@/pages/library/components/emulator-portal/game-overlay/colecovision-controls.tsx'
 import { DSControls } from '#@/pages/library/components/emulator-portal/game-overlay/game-overlay-virtual-gamepad.tsx'
-import { GameGearControls } from '#@/pages/library/components/emulator-portal/game-overlay/gamegear-controls.tsx'
 import { GbControls } from '#@/pages/library/components/emulator-portal/game-overlay/gb-controls.tsx'
 import { GbaControls } from '#@/pages/library/components/emulator-portal/game-overlay/gba-controls.tsx'
 import { GenesisControls } from '#@/pages/library/components/emulator-portal/game-overlay/genesis-controls.tsx'
@@ -22,7 +21,10 @@ import { Odyssey2Controls } from '#@/pages/library/components/emulator-portal/ga
 import { PcEngineControls } from '#@/pages/library/components/emulator-portal/game-overlay/pce-controls.tsx'
 import { PspControls } from '#@/pages/library/components/emulator-portal/game-overlay/psp-controls.tsx'
 import { PsxControls } from '#@/pages/library/components/emulator-portal/game-overlay/psx-controls.tsx'
-import { MasterSystemControls } from '#@/pages/library/components/emulator-portal/game-overlay/sms-controls.tsx'
+import {
+  GameGearControls,
+  MasterSystemControls,
+} from '#@/pages/library/components/emulator-portal/game-overlay/sms-controls.tsx'
 import { SnesControls } from '#@/pages/library/components/emulator-portal/game-overlay/snes-controls.tsx'
 import { VbControls } from '#@/pages/library/components/emulator-portal/game-overlay/vb-controls.tsx'
 import { WonderSwanControls } from '#@/pages/library/components/emulator-portal/game-overlay/wonderswan-controls.tsx'
