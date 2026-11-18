@@ -1,9 +1,9 @@
 import { clsx } from 'clsx'
-import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { pressedLook } from './controls-kit.tsx'
+import { pressedLook, useStick } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -56,55 +56,22 @@ function CButton({
 
 // A stick that follows the thumb: how far it's pushed from the middle is how far the game's stick tilts
 function AnalogStick() {
-  const knob = useRef<HTMLDivElement>(null)
-  const activePointer = useRef<number | undefined>(undefined)
-
-  function move(event: PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const reach = rect.width / 2 - 14
-    let x = event.clientX - (rect.left + rect.width / 2)
-    let y = event.clientY - (rect.top + rect.height / 2)
-    const distance = Math.hypot(x, y)
-    if (distance > reach) {
-      x = (x / distance) * reach
-      y = (y / distance) * reach
-    }
-    if (knob.current) {
-      knob.current.style.transform = `translate(${x}px, ${y}px)`
-    }
-    setVirtualGamepadAxis(0, x / reach)
-    setVirtualGamepadAxis(1, y / reach)
-  }
-
-  function handleRelease() {
-    activePointer.current = undefined
-    if (knob.current) {
-      knob.current.style.transform = ''
-    }
-    setVirtualGamepadAxis(0, 0)
-    setVirtualGamepadAxis(1, 0)
-  }
-
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    activePointer.current = event.pointerId
-    move(event)
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerId === activePointer.current) {
-      move(event)
-    }
-  }
+  const { handlers, knob } = useStick({
+    onMove(x, y) {
+      setVirtualGamepadAxis(0, x)
+      setVirtualGamepadAxis(1, y)
+    },
+    onRelease() {
+      setVirtualGamepadAxis(0, 0)
+      setVirtualGamepadAxis(1, 0)
+    },
+    reach: (width) => width / 2 - 14,
+  })
 
   return (
     <div
       className='flex size-29 touch-none items-center justify-center bg-[#2c2e33] [clip-path:polygon(30%_0,70%_0,100%_30%,100%_70%,70%_100%,30%_100%,0_70%,0_30%)]'
-      onPointerCancel={handleRelease}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handleRelease}
+      {...handlers}
       title='Analog stick'
     >
       <div
