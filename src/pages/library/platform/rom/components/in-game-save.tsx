@@ -161,7 +161,7 @@ function InGameSaveDialog({ rom }: Readonly<{ rom: Rom }>) {
                 <span className='ml-2 text-xs text-(--gray-10)'>{ago(version.createdAt)}</span>
               </span>
               {index === 0 ? (
-                <span className='text-xs font-semibold text-(--accent-9)'>{t('emulator.inUse')}</span>
+                <span className='text-xs font-semibold text-(--accent-11)'>{t('emulator.inUse')}</span>
               ) : null}
               <span
                 className={clsx(

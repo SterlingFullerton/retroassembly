@@ -15,30 +15,18 @@ export function FocusIndicator({ children }: { readonly children?: ReactNode }) 
   const { pristine } = useSpatialNavigation()
   const { preference } = usePreference()
 
+  // A new page puts the indicator straight on its first focus, rather than sliding it over from the last page
   useLayoutEffect(() => {
     if (location.pathname) {
-      syncStyle()
+      syncStyle({ transition: false })
     }
   }, [location.pathname, syncStyle])
-
-  let mergedStyle = style
-
-  const { height, width } = mergedStyle
-  if (typeof width === 'number' && typeof height === 'number') {
-    const scale = (width + 16) / width
-    mergedStyle = structuredClone(style)
-    const cssVars = {
-      '--motion-loop-scale-x': `${scale * 100}%`,
-      '--motion-loop-scale-y': `${((width * (scale - 1)) / height + 1) * 100}%`,
-    }
-    Object.assign(mergedStyle, cssVars)
-  }
 
   if (preference.ui.showFocusIndicators === 'never') {
     return
   }
 
-  if (pristine) {
+  if (pristine || style.width === undefined) {
     return
   }
 
@@ -46,10 +34,10 @@ export function FocusIndicator({ children }: { readonly children?: ReactNode }) 
     <RadixThemePortal>
       <div
         className={clsx(
-          'motion-scale-loop motion-duration-1200 motion-ease-in-out-quad pointer-events-none fixed z-10 rounded bg-(--accent-9)/10 in-[.dark]:bg-black/30',
+          'pointer-events-none z-10 rounded bg-(--accent-9)/10 ring-2 ring-(--accent-11)/70 in-[.dark]:bg-white/10',
           { 'hidden lg:block': !connected },
         )}
-        style={mergedStyle}
+        style={style}
       >
         {children}
       </div>

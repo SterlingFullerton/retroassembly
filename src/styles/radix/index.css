@@ -39,3 +39,10 @@ body {
   --red-indicator: var(--red-9);
   --red-track: var(--red-9);
 }
+
+/* The brand red is about 2.5:1 on #222, so red text and icons in the dark theme use a lighter red of the same hue.
+   Red fills keep the brand red */
+:is(.dark, .dark-theme) body {
+  --red-11: oklch(from var(--red) 0.72 c h);
+  --red-12: oklch(from var(--red) 0.84 c h);
+}

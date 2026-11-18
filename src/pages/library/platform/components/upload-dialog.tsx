@@ -97,10 +97,10 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
                 )}
               >
                 {isDragActive ? (
-                  <span className='text-sm text-(--accent-9)'>{t('upload.dropFilesHere')}</span>
+                  <span className='text-sm text-(--accent-11)'>{t('upload.dropFilesHere')}</span>
                 ) : (
                   <>
-                    <span className='text-sm text-(--accent-9)'>{t('upload.dragFilesHereOr')}</span>
+                    <span className='text-sm text-(--accent-11)'>{t('upload.dragFilesHereOr')}</span>
                     <Button onClick={handleClickSelect} size='2'>
                       <span className='icon-[mdi--folder-open]' />
                       {t('upload.selectFiles')}

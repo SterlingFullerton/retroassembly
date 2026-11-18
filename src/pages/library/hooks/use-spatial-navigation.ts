@@ -36,7 +36,7 @@ function isTypingIn(target: EventTarget | null) {
 export function useSpatialNavigation() {
   const { state } = useNavigation()
   const inputMapping = useInputMapping()
-  const { syncStyle } = useFocusIndicator()
+  const { syncAfterScroll, syncStyle } = useFocusIndicator()
   const isIdle = useMouseIdle(100)
   const [emulatorLaunched] = useEmulatorLaunched()
   const [showGameOverlay] = useShowGameOverlayContent()
@@ -230,10 +230,11 @@ export function useSpatialNavigation() {
   useEffect(() => {
     const abortController = new AbortController()
     const options = { capture: true, signal: abortController.signal }
-    document.addEventListener('scroll', () => syncStyle({ transition: false }), options)
+    document.addEventListener('scroll', (event) => syncAfterScroll(event.target), options)
     document.addEventListener('focusin', () => syncStyle(), options)
+    globalThis.addEventListener('resize', () => syncStyle({ transition: false }), { signal: abortController.signal })
     return () => abortController.abort()
-  }, [syncStyle])
+  }, [syncAfterScroll, syncStyle])
 
   return { pristine }
 }

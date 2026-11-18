@@ -50,7 +50,14 @@ export function getRomGoodcodes(rom: { fileName?: string; rawGameMetadata?: any;
   if (rom.platform === 'arcade' && rom.rawGameMetadata?.libretro?.name) {
     name = rom.rawGameMetadata.libretro.name
   }
-  return parse(`0 - ${name}`)
+  const goodcodes = parse(`0 - ${name}`)
+  goodcodes.rom = moveArticleToFront(goodcodes.rom)
+  return goodcodes
+}
+
+/** File names put an article last, as in "Legend of Zelda, The - Link's Awakening", which reads better with it first */
+export function moveArticleToFront(name: string) {
+  return name.replace(/^(?<title>.+?), (?<article>The|A|An)(?=$| - )/u, '$<article> $<title>')
 }
 
 export function getCompactName(name: string) {

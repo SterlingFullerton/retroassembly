@@ -120,7 +120,7 @@ function SeeAllSnapshots({ disabled, onPick }: Readonly<{ disabled: boolean; onP
     <DialogRoot onOpenChange={setOpen} open={open}>
       <Dialog.Trigger>
         <button
-          className='ml-auto flex items-center text-sm font-semibold text-(--accent-9) hover:underline'
+          className='ml-auto flex min-h-6 items-center text-sm font-semibold text-(--accent-11) hover:underline'
           onFocus={(event) => aimAtSnapshots(event.currentTarget, 'down')}
           type='button'
         >

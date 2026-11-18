@@ -23,7 +23,8 @@ export function LayoutHeader() {
   const consoleLinks = groups.at(-1)?.links ?? []
   const currentLink = consoleLinks.find(({ to }) => isActive(to))
   const currentRouteName = currentLink?.name
-  const pickerLabel = currentLink ?? { ...consolesLink, text: t('nav.consoles') }
+  // Off a console's page it reads as a prompt, not as the page's name
+  const pickerLabel = currentLink ?? { ...consolesLink, text: t('nav.pickConsole') }
 
   async function handleValueChange(value: string) {
     const link = consoleLinks.find(({ name }) => name === value)

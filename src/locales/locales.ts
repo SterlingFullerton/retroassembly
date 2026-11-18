@@ -1,4 +1,3 @@
-import { isEqual } from 'es-toolkit'
 import cs from './cs.json' with { type: 'json' }
 import de from './de.json' with { type: 'json' }
 import { canadianize } from './en-ca.ts'
@@ -47,10 +46,22 @@ export const locales = [
   { code: 'zh-TW', name: '繁體中文', translation: zhTW },
 ]
 
+// Plural forms differ by language, so keys are compared without their plural suffix
+function getBaseKeys(translation: Record<string, string>) {
+  const keys = Object.keys(translation).map((key) => key.replace(/_(?:zero|one|two|few|many|other)$/u, ''))
+  return new Set(keys)
+}
+
 if (import.meta.env?.DEV || import.meta.main) {
-  for (let i = 1; i < locales.length; i += 1) {
-    if (!isEqual(Object.keys(locales[i].translation), Object.keys(locales[i - 1].translation))) {
-      throw new Error(`Locale ${locales[i].code} does not have the same keys as locale ${locales[i - 1].code}`)
+  const englishKeys = getBaseKeys(en)
+  for (const { code, translation } of locales) {
+    const keys = getBaseKeys(translation)
+    const missing = [...englishKeys].filter((key) => !keys.has(key))
+    const extra = [...keys].filter((key) => !englishKeys.has(key))
+    if (missing.length > 0 || extra.length > 0) {
+      throw new Error(
+        `Locale ${code} does not have the same keys as English. Missing: ${missing.join(', ') || 'none'}. Extra: ${extra.join(', ') || 'none'}`,
+      )
     }
   }
 }

@@ -7,19 +7,18 @@ import { GameRow } from './components/game-row.tsx'
 import { HomeEmpty } from './components/home-empty.tsx'
 import { HomeHero } from './components/home-hero.tsx'
 import { HomeRow } from './components/home-row.tsx'
-import { LibraryStats } from './components/library-stats.tsx'
 import { OnThisDayRow } from './components/on-this-day-row.tsx'
 import { usePlayTogetherPicks, useRediscoverPicks } from './components/use-home-picks.ts'
 
-// Home: what you're in the middle of, the library at a glance and its consoles, then rows that change from visit to
-// visit. A row with nothing in it is left out
+// Home: what you're in the middle of and the consoles, then rows that change from visit to visit. A row with nothing in
+// it is left out
 
 /** Picks another handful for a row of random picks */
 function ShuffleButton({ onClick }: Readonly<{ onClick: () => void }>) {
   const { t } = useTranslation()
   return (
     <button
-      className='rounded-full border border-(--accent-6) px-3 py-0.5 text-xs font-semibold text-(--accent-11) hover:bg-(--accent-3)'
+      className='min-h-6 rounded-full border border-(--accent-6) px-3 text-xs font-semibold text-(--accent-11) hover:bg-(--accent-3)'
       onClick={onClick}
       type='button'
     >
@@ -44,8 +43,8 @@ export function LibraryHomePage() {
   return (
     // On a computer, the same 32-point margin as the other pages; on a very wide screen, no wider than 1600 points, centred
     <div className='p-4 lg:mx-auto lg:max-w-[1664px] lg:p-8'>
+      <h1 className='sr-only'>{t('nav.home')}</h1>
       <HomeHero />
-      <LibraryStats />
       <ConsoleRow />
 
       {rediscover.data?.length ? (
@@ -61,7 +60,7 @@ export function LibraryHomePage() {
       <OnThisDayRow />
 
       {/* Side by side on a computer when there are both; Recently added alone takes the whole width */}
-      <div className={favoriteRoms.length > 0 ? 'lg:grid lg:grid-cols-2 lg:gap-8' : ''}>
+      <div className={favoriteRoms.length > 0 ? 'xl:grid xl:grid-cols-2 xl:gap-8' : ''}>
         {favoriteRoms.length > 0 ? (
           <HomeRow link={generatePath(routes.libraryFavorites)} title={t('nav.favorites')}>
             <GameRow roms={favoriteRoms} />

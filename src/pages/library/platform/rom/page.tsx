@@ -28,9 +28,13 @@ export default function RomPage() {
       <RomBackground rom={rom} />
 
       <div className='relative'>
-        <div className='flex min-h-full w-full flex-col gap-4 p-4 lg:flex-row'>
-          <div className='group lg:sticky'>
-            <GameCover className='top-4 block w-full lg:w-64' parallax={isLargeScreen} rom={rom} />
+        <div className='flex min-h-full w-full flex-col gap-4 p-4 md:flex-row'>
+          <div className='group md:sticky'>
+            <GameCover
+              className='top-4 mx-auto block w-full max-w-72 md:mx-0 md:w-56 lg:w-64'
+              parallax={isLargeScreen}
+              rom={rom}
+            />
 
             <div className='mt-2 flex justify-end px-1'>
               <GameMediaDialog />
@@ -60,7 +64,7 @@ export default function RomPage() {
 
             <div className='flex flex-col gap-6'>
               <GameMedia />
-              <div className='prose group max-w-none text-justify font-serif whitespace-pre-line text-(--color-text)/90 lg:pl-4 2xl:mr-64'>
+              <div className='prose group max-w-[70ch] font-serif text-pretty whitespace-pre-line text-(--color-text)/90 lg:pl-4'>
                 {overview}
                 <div className='mt-1 flex justify-end'>
                   <GameInfoDialog autoFocusField='gameDescription' />
@@ -70,7 +74,7 @@ export default function RomPage() {
               {launchboxGame?.wikipediaUrl ? (
                 <div>
                   <a
-                    className='inline-flex items-center gap-2 text-(--accent-9) underline'
+                    className='inline-flex items-center gap-2 text-(--accent-11) underline'
                     href={launchboxGame.wikipediaUrl}
                     rel='noreferrer noopener'
                     target='_blank'

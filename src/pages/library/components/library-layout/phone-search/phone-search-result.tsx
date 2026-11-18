@@ -73,7 +73,7 @@ export function PhoneSearchResult({ keyword, onOpen, rom }: Readonly<PhoneSearch
             {platformName}
           </div>
         </div>
-        {rom.isFavorite ? <span className='icon-[mdi--heart] mr-1 shrink-0 text-(--accent-9)' /> : null}
+        {rom.isFavorite ? <span className='icon-[mdi--heart] mr-1 shrink-0 text-(--accent-11)' /> : null}
       </Link>
     </li>
   )

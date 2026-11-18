@@ -99,7 +99,7 @@ export function SearchField() {
         aria-label={t('common.search')}
         autoComplete='off'
         className={clsx(
-          'min-w-0 flex-1 bg-transparent text-sm outline-none',
+          'h-full min-w-0 flex-1 bg-transparent text-sm outline-none',
           active
             ? 'placeholder:text-[#8b8b93]'
             : 'placeholder:text-white/85 group-focus-within/search:placeholder:text-[#8b8b93]',

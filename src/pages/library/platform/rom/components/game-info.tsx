@@ -37,7 +37,13 @@ export function GameInfo({ rom }: Readonly<{ rom: Rom }>) {
       icon: 'icon-[mdi--tag-multiple]',
       name: 'gameGenres',
       title: t('common.genres'),
-      value: (rom.gameGenres ?? launchboxGame.genres)?.trim() || unknown,
+      // Stored comma-separated without spaces
+      value:
+        (rom.gameGenres ?? launchboxGame.genres)
+          ?.split(',')
+          .map((genre: string) => genre.trim())
+          .filter(Boolean)
+          .join(', ') || unknown,
     },
     {
       icon: 'icon-[mdi--person-multiple]',

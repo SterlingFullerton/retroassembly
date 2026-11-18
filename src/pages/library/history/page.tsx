@@ -18,16 +18,18 @@ export default function HistoryPage() {
       <h1 className='text-5xl font-semibold'>{title}</h1>
       <PageStats>
         <span className='icon-[mdi--bar-chart] text-(--color-text)' />
-        <Trans
-          components={{
-            1: <span className='font-bold text-(--accent-9)' />,
-          }}
-          i18nKey='stats.playedGames'
-          values={{
-            game: gameLabel,
-            gameCount: pagination.total,
-          }}
-        />
+        <span>
+          <Trans
+            components={{
+              1: <span className='font-bold text-(--accent-11)' />,
+            }}
+            i18nKey='stats.playedGames'
+            values={{
+              game: gameLabel,
+              gameCount: pagination.total,
+            }}
+          />
+        </span>
       </PageStats>
     </GameListMain>
   )

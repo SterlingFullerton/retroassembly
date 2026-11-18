@@ -60,7 +60,7 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
         </div>
 
         <div className='mt-4 flex justify-between'>
-          <div className='flex items-center gap-2 text-xs text-(--accent-9)'>
+          <div className='flex items-center gap-2 text-xs text-(--accent-11)'>
             <span className='icon-[mdi--info]' />
             {t('settings.immediateEffect')}
           </div>

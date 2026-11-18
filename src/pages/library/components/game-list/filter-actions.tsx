@@ -16,7 +16,7 @@ export function FilterActions({ leading }: Readonly<{ leading?: ReactNode }>) {
   } = useGameListActions()
 
   return (
-    <div className='ml-auto flex items-center gap-2'>
+    <div className='ml-auto flex flex-wrap items-center justify-end gap-2'>
       {leading}
       {showFavoriteButton && (
         <FavoriteButton isViewingFavorites={isViewingFavorites} getToggleLink={getFavoriteToggleLink} />

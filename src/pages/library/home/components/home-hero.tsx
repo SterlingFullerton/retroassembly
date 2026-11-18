@@ -84,7 +84,7 @@ function AlsoInProgress({ layout, roms }: Readonly<{ layout: 'panel' | 'row'; ro
  * The top of Home: the game to continue, over its own artwork, with Continue and Start; and the other games with saves
  */
 export function HomeHero() {
-  const { inProgressRoms, rom, state } = useLoaderData<typeof loader>()
+  const { heroReason, inProgressRoms, rom, state } = useLoaderData<typeof loader>()
   const { t } = useTranslation()
   const ago = useAgo()
   const { data: cover } = useRomCover(rom as never)
@@ -96,6 +96,11 @@ export function HomeHero() {
   const art = cover?.type === 'rom' ? cover.src : undefined
   const platformName = t(platformMap[rom.platform].displayNameI18nKey)
   const when = ago(state?.createdAt)
+  const heading = {
+    added: t('home.recentlyAdded'),
+    played: t('home.lastPlayed'),
+    saved: t('home.continuePlaying'),
+  }[heroReason]
 
   return (
     <>
@@ -111,7 +116,7 @@ export function HomeHero() {
               <GameEntryImage centered rom={rom} />
             </div>
             <div className='min-w-0 lg:hidden'>
-              <div className='text-xs tracking-wider uppercase opacity-75'>{t('home.continuePlaying')}</div>
+              <div className='text-xs tracking-wider uppercase opacity-75'>{heading}</div>
               <Link className='block text-xl leading-tight font-bold' to={romPath(rom)}>
                 {getRomGoodcodes(rom).rom}
               </Link>
@@ -121,7 +126,7 @@ export function HomeHero() {
 
           <div className='flex min-w-0 flex-col gap-3 lg:flex-1'>
             <div className='hidden lg:block'>
-              <div className='text-xs tracking-wider uppercase opacity-75'>{t('home.continuePlaying')}</div>
+              <div className='text-xs tracking-wider uppercase opacity-75'>{heading}</div>
               <Link className='block text-3xl leading-tight font-bold hover:underline' to={romPath(rom)}>
                 {getRomGoodcodes(rom).rom}
               </Link>
@@ -130,7 +135,9 @@ export function HomeHero() {
               </div>
             </div>
             {/* Download the game only when it's launched, so opening the library stays quick */}
-            <GameButtons compact lazy />
+            <div className='sm:max-w-sm'>
+              <GameButtons compact lazy />
+            </div>
           </div>
 
           {inProgressRoms.length > 0 ? <AlsoInProgress layout='panel' roms={inProgressRoms} /> : null}

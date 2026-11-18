@@ -12,7 +12,7 @@ export function GamePlatform({ platform }: Readonly<{ platform: string }>) {
   }
 
   return (
-    <div className='mt-1 flex items-center justify-center gap-2 text-xs text-(--color-text)/40'>
+    <div className='mt-1 flex items-center justify-center gap-2 text-xs text-(--gray-11)'>
       <img
         alt={t(platformMap[platform].displayNameI18nKey)}
         className='size-4'

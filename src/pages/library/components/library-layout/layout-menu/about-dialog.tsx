@@ -22,7 +22,7 @@ export function AboutDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProp
         <div className='flex flex-col items-center gap-2 p-2 text-center'>
           <Logo height='56' width='56' />
           <a
-            className='font-serif text-xl font-semibold text-(--accent-9)'
+            className='font-serif text-xl font-semibold text-(--accent-11)'
             href={metadata.link}
             rel='noreferrer noopener'
             target='_blank'

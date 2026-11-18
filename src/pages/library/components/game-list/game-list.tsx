@@ -35,7 +35,10 @@ export function GameList({ actionsInHeader, actionsLeading }: Readonly<GameListP
       <GameListActions className={actionsInHeader ? 'lg:hidden' : undefined} leading={actionsLeading} />
       {roms?.length ? (
         <div className='mt-4 flex gap-2' data-sn-section=''>
-          <div className='grid flex-1 [--min-width:150px] lg:[--min-width:100%]' style={{ gridTemplateColumns }}>
+          <div
+            className='grid flex-1 gap-x-3 [--min-width:120px] sm:[--min-width:150px] lg:gap-x-0 lg:[--min-width:100%]'
+            style={{ gridTemplateColumns }}
+          >
             {roms.map((rom) => (
               <GameEntry key={rom.id} rom={rom} />
             ))}

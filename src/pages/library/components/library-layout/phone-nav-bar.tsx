@@ -33,7 +33,7 @@ export function PhoneNavBar() {
         return (
           <Link
             aria-current={active ? 'page' : undefined}
-            className={clsx('flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]', {
+            className={clsx('flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs', {
               'font-bold': active,
               'opacity-75': !active,
             })}

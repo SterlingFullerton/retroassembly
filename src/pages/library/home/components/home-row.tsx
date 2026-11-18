@@ -22,7 +22,10 @@ export function HomeRow({
         <div className='ml-auto flex shrink-0 items-center gap-3'>
           {extra}
           {link ? (
-            <Link className='text-sm font-semibold text-(--accent-11) hover:underline' to={link}>
+            <Link
+              className='inline-flex min-h-6 items-center text-sm font-semibold text-(--accent-11) hover:underline'
+              to={link}
+            >
               {t('home.seeAll')}
             </Link>
           ) : null}

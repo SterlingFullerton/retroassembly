@@ -16,7 +16,7 @@ export function SelectionInfo({ selectedCount, canSelectAll, onSelectAll }: Sele
       <span className='icon-[mdi--order-checkbox-ascending]' />
       <Trans
         components={{
-          1: <span className='font-semibold text-(--accent-9)' />,
+          1: <span className='font-semibold text-(--accent-11)' />,
         }}
         i18nKey='game.selectedItems'
         values={{

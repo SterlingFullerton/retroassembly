@@ -26,7 +26,7 @@ export function StatusBar() {
   ]
 
   return (
-    <div className='fixed right-0 bottom-0 left-72 z-11 hidden h-12 items-center justify-end gap-4 bg-(--accent-9) pr-8 text-sm font-medium text-white/80 lg:flex'>
+    <div className='fixed right-0 bottom-0 left-72 z-11 hidden h-12 items-center justify-end gap-4 bg-(--accent-9) pr-8 text-sm font-medium text-white lg:flex'>
       <UploadBadge className='mr-auto ml-8 flex items-center gap-2 text-white' />
       {connected ? (
         <>
@@ -57,13 +57,14 @@ export function StatusBar() {
         </>
       ) : (
         <>
-          {/* Browsers only report a controller once one of its buttons is pressed on the page */}
-          <span className='flex items-center gap-2 text-white/60'>
+          {/* Browsers only report a controller once one of its buttons is pressed on the page. The hint is left out below
+              1280 points, where it would crowd the keys */}
+          <span className='hidden items-center gap-2 text-white/90 xl:flex'>
             <span className='icon-[mdi--google-gamepad]' />
             {t('gamepad.pressToUse')}
           </span>
           <span className='flex items-center gap-2'>
-            <Kbd className='text-(--accent-9)!' size='1'>
+            <Kbd className='text-xs! text-(--accent-9)!' size='1'>
               {[
                 keyboardMapping.input_player1_up,
                 keyboardMapping.input_player1_down,
@@ -78,7 +79,7 @@ export function StatusBar() {
           </span>
 
           <span className='flex items-center gap-2'>
-            <Kbd className='text-(--accent-9)!' size='1'>
+            <Kbd className='text-xs! text-(--accent-9)!' size='1'>
               Shift ↑ ↓ ← →
             </Kbd>
             {t('nav.jump')}
@@ -86,7 +87,7 @@ export function StatusBar() {
 
           {keyboarMappingConfirm ? (
             <span className='flex items-center gap-2'>
-              <Kbd className='text-(--accent-9)!' size='1'>
+              <Kbd className='text-xs! text-(--accent-9)!' size='1'>
                 {uniq(['Enter', capitalize(keyboarMappingConfirm)]).join(' / ')}
               </Kbd>
               {t('common.confirm')}
@@ -95,7 +96,7 @@ export function StatusBar() {
 
           {keyboarMappingCancel ? (
             <span className='flex items-center gap-2'>
-              <Kbd className='text-(--accent-9)!' size='1'>
+              <Kbd className='text-xs! text-(--accent-9)!' size='1'>
                 {capitalize(keyboarMappingCancel)}
               </Kbd>
               {t('common.back')}

@@ -36,6 +36,13 @@ export async function loader() {
   } = { discs: [], rom: null, state: null }
 
   const rom = recentlySavedRoms[0] || recentlyLaunchedRoms[0] || newAddedRoms[0]
+  // Why this game is at the top, for its label
+  let heroReason: 'added' | 'played' | 'saved' = 'added'
+  if (recentlySavedRoms[0]) {
+    heroReason = 'saved'
+  } else if (recentlyLaunchedRoms[0]) {
+    heroReason = 'played'
+  }
   if (rom) {
     const { core } = preference.emulator.platform[rom.platform]
     const [state] = await getStates(getLibraryScope(), {
@@ -61,6 +68,7 @@ export async function loader() {
     discs: data.discs,
     favoriteRoms,
     gameSave: data.gameSave,
+    heroReason,
     inProgressRoms: recentlySavedRoms.filter(({ id }) => id !== data.rom?.id).slice(0, 8),
     newAddedRoms,
     overview,

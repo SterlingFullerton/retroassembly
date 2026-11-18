@@ -62,7 +62,7 @@ export function DeviceInfo({ actions, platform }: Readonly<{ actions?: ReactNode
         </h1>
         <button
           aria-expanded={aboutOpen}
-          className='flex shrink-0 items-center gap-0.5 text-sm font-semibold text-(--accent-11) hover:underline'
+          className='flex min-h-6 shrink-0 items-center gap-0.5 text-sm font-semibold text-(--accent-11) hover:underline'
           data-sn-enabled
           onClick={() => setAboutOpen(!aboutOpen)}
           type='button'

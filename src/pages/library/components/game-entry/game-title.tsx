@@ -28,19 +28,26 @@ export function GameTitle({ rom }) {
     )
   }
 
+  const badges = compact([revisionText, versionText])
+
+  // Revision and version always go on their own line under the name, which then takes two lines instead of three
   return (
-    <div className='line-clamp-3 h-16 overflow-hidden text-center text-sm font-semibold'>
-      {preference.ui.showDistrictOnTitle
-        ? [...districts].map((district) => <DistrictIcon district={district} key={district} />)
-        : null}
-
-      {goodcodes.rom}
-
-      {compact([revisionText, versionText]).map((text) => (
-        <Badge className='mx-0.5 capitalize' key={text} size='1'>
-          {text}
-        </Badge>
-      ))}
+    <div className='flex h-16 flex-col items-center overflow-hidden text-center text-sm font-semibold'>
+      <div className={badges.length > 0 ? 'line-clamp-2' : 'line-clamp-3'}>
+        {preference.ui.showDistrictOnTitle
+          ? [...districts].map((district) => <DistrictIcon district={district} key={district} />)
+          : null}
+        {goodcodes.rom}
+      </div>
+      {badges.length > 0 ? (
+        <div className='mt-0.5 flex gap-1'>
+          {badges.map((text) => (
+            <Badge className='capitalize' key={text} size='1'>
+              {text}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

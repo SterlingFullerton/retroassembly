@@ -1,9 +1,9 @@
-import { and, count, countDistinct, desc, eq, gte, inArray, isNotNull, notInArray, sql } from 'drizzle-orm'
+import { and, count, desc, eq, gte, inArray, isNotNull, notInArray, sql } from 'drizzle-orm'
 import { favoriteTable, launchRecordTable, romTable, statusEnum } from '#@/databases/schema.ts'
 import { discCount, type LibraryScope, listedOnce } from '#@/utils/server/library-scope.ts'
 import { addCoverCandidates } from '#@/utils/server/rom-cover-candidates.ts'
 
-// What Home shows besides the game to continue: how big the library is, its consoles, and rows of games picked from it.
+// What Home shows besides the game to continue: its consoles, and rows of games picked from it.
 // Ratings are LaunchBox's community ratings (out of 5) and how many people gave one; games with few ratings are left
 // out of the picks, so they're games worth trying rather than demos and hacks
 
@@ -60,7 +60,7 @@ async function romsByIds(scope: LibraryScope, ids: string[]) {
   return roms
 }
 
-/** How many games each console has, most first, and the totals Home shows at the top */
+/** How many games each console has, most first */
 export async function getLibraryOverview(scope: LibraryScope) {
   const consoles = await scope.db
     .select({ count: count(), platform: romTable.platform })
@@ -69,36 +69,7 @@ export async function getLibraryOverview(scope: LibraryScope) {
     .groupBy(romTable.platform)
     .orderBy(desc(count()))
 
-  const monthStart = new Date()
-  monthStart.setUTCDate(1)
-  monthStart.setUTCHours(0, 0, 0, 0)
-  const [[{ playedThisMonth }], [{ favorites }]] = await Promise.all([
-    scope.db
-      .select({ playedThisMonth: countDistinct(launchRecordTable.romId) })
-      .from(launchRecordTable)
-      .where(
-        and(
-          eq(launchRecordTable.userId, scope.user.id),
-          eq(launchRecordTable.status, statusEnum.normal),
-          gte(launchRecordTable.createdAt, monthStart),
-        ),
-      ),
-    scope.db
-      .select({ favorites: count() })
-      .from(favoriteTable)
-      .innerJoin(romTable, eq(favoriteTable.romId, romTable.id))
-      .where(and(eq(favoriteTable.userId, scope.user.id), eq(favoriteTable.status, statusEnum.normal), listed(scope))),
-  ])
-
-  return {
-    consoles,
-    stats: {
-      consoles: consoles.length,
-      favorites,
-      games: consoles.reduce((sum, { count }) => sum + count, 0),
-      playedThisMonth,
-    },
-  }
+  return { consoles }
 }
 
 /** Well-rated games this player has never started, a different handful each time */

@@ -21,8 +21,10 @@ export default function PlatformPage() {
   }
 
   // How many games (on a computer: a phone's line has no room) and Add, at the start of the Favorites and Sort line.
-  // While searching, how many match is in the sidebar and the console tabs instead
-  const leading = (
+  // While searching, how many match is in the sidebar and the console tabs instead. A console with no games has its
+  // Add in the empty message, so it isn't shown twice
+  const empty = !search && pagination.total === 0
+  const leading = empty ? null : (
     <>
       {search ? null : (
         <span className='mr-1 hidden text-sm whitespace-nowrap text-(--gray-11) lg:inline'>

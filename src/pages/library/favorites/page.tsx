@@ -18,16 +18,18 @@ export default function FavoritesPage() {
       <h1 className='text-5xl font-semibold'>{t('nav.favorites')}</h1>
       <PageStats>
         <span className='icon-[mdi--heart] text-(--color-text)' />
-        <Trans
-          components={{
-            1: <span className='font-semibold text-(--accent-9)' />,
-          }}
-          i18nKey='stats.favoriteGames'
-          values={{
-            game: gameLabel,
-            gameCount: pagination.total,
-          }}
-        />
+        <span>
+          <Trans
+            components={{
+              1: <span className='font-semibold text-(--accent-11)' />,
+            }}
+            i18nKey='stats.favoriteGames'
+            values={{
+              game: gameLabel,
+              gameCount: pagination.total,
+            }}
+          />
+        </span>
       </PageStats>
     </GameListMain>
   )

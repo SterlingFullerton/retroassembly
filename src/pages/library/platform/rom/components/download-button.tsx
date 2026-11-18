@@ -17,7 +17,7 @@ export function DownloadButton({ rom }: Readonly<DownloadButtonProps>) {
       href={getFileUrl(rom.fileId)}
       title={t('game.downloadRom')}
     >
-      <span className='icon-[mdi--download] text-lg text-(--accent-9)' />
+      <span className='icon-[mdi--download] text-lg text-(--accent-11)' />
     </a>
   )
 }
