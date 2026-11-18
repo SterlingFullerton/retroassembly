@@ -1,7 +1,7 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -13,10 +13,9 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // from A, and Pause from Start. SG-1000 games, whose controller is the same, share them.
 const white = '#e8e8ea'
 
-const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
+const pressed = pressedLook(125)
 
 export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
@@ -28,13 +27,13 @@ export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         {/* The d-pad */}
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
-      </div>
+      </Corner>
 
       {/* 1 and 2, slanted, with their numbers printed below and to the right */}
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -67,7 +66,7 @@ export function MasterSystemControls({ visible }: Readonly<{ visible: boolean }>
         >
           2
         </span>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='start' title='Pause'>

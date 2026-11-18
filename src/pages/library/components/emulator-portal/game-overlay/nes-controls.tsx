@@ -1,8 +1,8 @@
-import { clsx } from 'clsx'
 import { type CSSProperties, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -13,7 +13,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // them.
 const red = '#e0242a'
 
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 
 // The standard gamepad's L and R, which both Disk System emulators read the disk from
 const l = 4
@@ -69,7 +69,6 @@ function FlipDiskButton({ core }: Readonly<{ core: string }>) {
 
 /** The NES's controls; `diskCore`, for Disk System games, adds the flip disk button for that emulator */
 export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string; visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
@@ -81,13 +80,13 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         {/* The d-pad */}
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
-      </div>
+      </Corner>
 
       {/* B and A, slanted, with their letters printed below and to the right as on the controller */}
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -120,7 +119,7 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
         >
           A
         </span>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>

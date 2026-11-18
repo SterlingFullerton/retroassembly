@@ -1,9 +1,9 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Thumbstick } from './thumbstick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -11,7 +11,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // The Atari 5200's controls: an analog stick, like its own, its two red fire buttons, 1 and 2, slanted along the arc
 // the thumb makes rolling from one to the other, Start and Pause in the top bar after the keypad button, and, when asked for from the top bar, its 12-key keypad, as on the ColecoVision. a5200 reads the
 // stick from the left analog stick, fire 1 from A, fire 2 from B, and Start and Pause from Start and Select.
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 const fireStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #ff6a5a, #d0281c 60%, #8a140c)',
   boxShadow: '0 3px 5px #000c, inset 0 -3px 0 #0004, inset 0 2px 0 #ff9a90',
@@ -58,21 +58,20 @@ export function Atari5200Controls({
   onKeypadClose,
   visible,
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <Thumbstick
           className='absolute bottom-16 left-5 size-37.5 landscape:bottom-15 landscape:left-3 landscape:size-34'
           stick='left'
         />
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='a'
           className={twMerge(
@@ -97,7 +96,7 @@ export function Atari5200Controls({
         >
           2
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       <TopBarButtons afterKeypad visible={visible}>
         <TopBarButton buttonName='start'>START</TopBarButton>

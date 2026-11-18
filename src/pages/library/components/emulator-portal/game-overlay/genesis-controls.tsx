@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
+import { pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -20,7 +21,7 @@ const scaled = twMerge(
   'absolute right-[calc(var(--pr)*var(--u)+env(safe-area-inset-right))] bottom-[calc(var(--pb)*var(--u)+env(safe-area-inset-bottom))] size-[calc(var(--ps)*var(--u))] text-[length:calc(var(--pf)*var(--u))]',
   'landscape:right-[calc(var(--lr)*var(--u)+env(safe-area-inset-right))] landscape:bottom-[calc(var(--lb)*var(--u)+env(safe-area-inset-bottom))] landscape:size-[calc(var(--ls)*var(--u))] landscape:text-[length:calc(var(--lf)*var(--u))]',
 )
-const pressed = 'data-[touching=true]:brightness-150 data-[touching=true]:scale-95'
+const pressed = pressedLook(150)
 const face = twMerge(
   pressed,
   scaled,

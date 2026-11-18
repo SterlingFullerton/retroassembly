@@ -1,13 +1,13 @@
-import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Game Boy Advance's controls drawn like its own buttons: the d-pad every console shares, pale grey A and B slanted with A
 // higher, pale grey L and R shoulders, and Select and Start in the top bar beside pause. mGBA and VBA Next read the RetroPad's buttons as the GBA's.
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 const pale = 'radial-gradient(circle at 40% 30%, #ffffff, #d6d6dc 60%, #9a9aa2)'
 const paleBar = 'linear-gradient(#e6e6ea, #a8a8b0)'
 
@@ -22,7 +22,6 @@ const face = twMerge(
 )
 
 export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 120 points wide; on smaller screens they shrink towards their corner. The GBA's
   // picture is 3:2, wider than the other consoles', so in landscape it leaves less room beside it. Each group hangs off
   // a point with no size at its corner, which is where it shrinks towards
@@ -30,7 +29,7 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <VirtualGamepadButton
           buttonName='l'
           className={twMerge(shoulder, 'left-4 landscape:left-3')}
@@ -41,9 +40,9 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
         {/* The d-pad */}
         <DPad className='absolute bottom-19 left-5.5 size-35 landscape:bottom-22.5 landscape:left-3 landscape:size-27' />
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='r'
           className={twMerge(shoulder, 'right-4 landscape:right-3')}
@@ -71,7 +70,7 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
         >
           A
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>

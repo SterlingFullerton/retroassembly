@@ -3,6 +3,7 @@ import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'r
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -10,7 +11,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // The N64's controls drawn like its controller: grey L, Z and R, a black cross D-pad, a grey stick in its octagonal
 // gate, four small yellow C buttons, a green B, a big blue A and a red Start. A pressed button darkens. The stick sits
 // low in the left hand with the D-pad at the edge above it, and Z just under R. Start is in the top bar beside pause.
-const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
+const pressed = pressedLook(75)
 const shoulder = twMerge(
   pressed,
   'h-7.5 rounded-t-2xl rounded-b-lg text-[13px] font-bold text-[#2b2d31] shadow-[inset_0_1px_0_#fff8,0_2px_3px_#0006]',

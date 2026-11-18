@@ -1,7 +1,7 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -10,7 +10,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // 2, slanted along the arc the thumb makes rolling from one to the other, and the console's Select, Pause and Reset in
 // the top bar beside pause. ProSystem reads the joystick as the
 // d-pad, 1 as B, 2 as A, and Select, Pause and Reset as Select, Start and X.
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 const fireStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #ff6a5a, #d0281c 60%, #8a140c)',
   boxShadow: '0 3px 5px #000c, inset 0 -3px 0 #0004, inset 0 2px 0 #ff9a90',
@@ -18,20 +18,19 @@ const fireStyle: CSSProperties = {
 const fire = twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold text-[#3a0000]')
 
 export function Atari7800Controls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-16 left-5 size-37.5 landscape:bottom-15 landscape:left-3 landscape:size-34'>
           <Joystick />
         </div>
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -56,7 +55,7 @@ export function Atari7800Controls({ visible }: Readonly<{ visible: boolean }>) {
         >
           2
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>

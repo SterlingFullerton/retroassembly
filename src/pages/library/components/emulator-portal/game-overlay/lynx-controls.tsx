@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type { CSSProperties, RefObject } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { refitGame } from './refit-game.ts'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
@@ -12,7 +13,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // beside pause, shortened to OPT 1 and OPT 2 so the bar fits. Rotate turns the picture for games played with the
 // Lynx held upright, and the d-pad with it. Beetle Lynx reads A from the RetroPad's B, B from A, Option 1 and 2 from L
 // and R, Pause from Start and Rotate from Select.
-const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
+const pressed = pressedLook(125)
 const buttonStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
   boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006',
@@ -28,11 +29,11 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-14 landscape:left-2.5 landscape:size-26.5' />
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='a'
           className={twMerge(
@@ -57,7 +58,7 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
         >
           A
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       {/* Marks the top of the controls, so that in portrait the game, upright or not, fits above them */}
       <div

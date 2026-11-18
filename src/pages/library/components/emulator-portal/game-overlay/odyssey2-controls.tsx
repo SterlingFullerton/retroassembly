@@ -4,6 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import { sendKey } from '#@/emulator/adapter.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
@@ -11,7 +12,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // brings up the phone's own keyboard for the console's keyboard, which most games ask for a number from before they
 // start. O2EM reads the joystick from the d-pad, the action button from B, and the console's keyboard from the
 // keyboard. What's typed goes to a hidden text field, and each character presses its key in the emulator
-const pressed = 'data-[touching=true]:brightness-110 data-[touching=true]:scale-95'
+const pressed = pressedLook(110)
 const actionStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #ff5a5a, #d01818 60%, #8a0c0c)',
   boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ff9a9a, inset 0 -3px 0 #0004',
@@ -167,13 +168,13 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
         tabIndex={-1}
       />
 
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-16 left-5 size-37.5 landscape:bottom-15 landscape:left-3 landscape:size-34'>
           <Joystick />
         </div>
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -185,7 +186,7 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
         >
           ACTION
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       {/* Keyboard: between the hands in portrait, under pause in landscape */}
       <div

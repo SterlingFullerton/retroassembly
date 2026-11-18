@@ -1,7 +1,7 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -11,10 +11,9 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // NES's. Genesis Plus GX and Gearsystem both read button 1 from the RetroPad's B, 2 from A, and Start from Start.
 const blue = '#4a90e0'
 
-const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
+const pressed = pressedLook(125)
 
 export function GameGearControls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Game Gear's
   // picture is almost square (10:9), so in landscape it leaves more room beside it. Each group hangs off a point with
   // no size at its corner, which is where it shrinks towards
@@ -27,13 +26,13 @@ export function GameGearControls({ visible }: Readonly<{ visible: boolean }>) {
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         {/* The d-pad */}
         <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-16 landscape:left-3 landscape:size-34' />
-      </div>
+      </Corner>
 
       {/* 1 and 2, slanted, with their numbers printed below and to the right */}
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -66,7 +65,7 @@ export function GameGearControls({ visible }: Readonly<{ visible: boolean }>) {
         >
           2
         </span>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='start'>START</TopBarButton>

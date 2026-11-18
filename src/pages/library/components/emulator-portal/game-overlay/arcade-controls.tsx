@@ -1,9 +1,9 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -14,7 +14,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 //
 // FinalBurn Neo reads buttons 1 to 6 from the RetroPad's B, A, Y, X, R and L; in Street Fighter-like games that puts
 // the punches on 3, 4 and 6 and the kicks on 1, 2 and 5.
-const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
+const pressed = pressedLook(125)
 const pushButton = twMerge(
   pressed,
   'absolute rounded-full font-bold shadow-[0_3px_5px_#000c,inset_0_-3px_0_#0004,inset_0_2px_0_#fff4]',
@@ -66,20 +66,19 @@ const buttons: [label: string, buttonName: RetroPadButton, style: CSSProperties,
 
 export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
   const { t } = useTranslation()
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-15 left-4.5 size-37.5 landscape:bottom-16.5 landscape:left-2.5 landscape:size-34'>
           <Joystick knob='ball' />
         </div>
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         {buttons.map(([label, buttonName, style, className]) => (
           <VirtualGamepadButton
             buttonName={buttonName}
@@ -92,7 +91,7 @@ export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
             {label}
           </VirtualGamepadButton>
         ))}
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select' className='uppercase' title={t('emulator.coin')}>

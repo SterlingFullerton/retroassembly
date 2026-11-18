@@ -1,9 +1,9 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
@@ -11,7 +11,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // keypad. The keypad opens between the game and the controls in portrait, and over the joystick in landscape, since
 // nobody steers while pressing a key. It stays open for as many keys as a game needs, until its close button or the
 // keypad button beside pause is pressed.
-const pressed = 'data-[touching=true]:brightness-75 data-[touching=true]:scale-95'
+const pressed = pressedLook(75)
 const fireStyle: CSSProperties = { background: 'radial-gradient(circle at 35% 30%, #ffb070, #f07a2a 60%, #c4521a)' }
 
 // Gearcoleco reads keys 1 to 6, ✱ and # from buttons with keyboard keys of their own; 7 and 8 from the stick clicks;
@@ -45,19 +45,18 @@ export function ColecoVisionControls({
   onKeypadClose,
   visible,
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-14 left-5 size-37.5 landscape:bottom-18 landscape:left-3 landscape:size-35'>
           <Joystick />
         </div>
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -84,7 +83,7 @@ export function ColecoVisionControls({
         >
           R
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       {keypadOpen && visible ? (
         // Hangs off the middle of the bottom in portrait, and off the top left corner in landscape

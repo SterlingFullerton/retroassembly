@@ -1,17 +1,16 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari 2600's controls drawn like its own: the CX40 joystick, which presses eight directions, its single red fire
 // button, and the console's Select and Reset switches in the top bar beside pause. Stella reads the joystick as the d-pad, fire as B, and the two switches as Select and Start.
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 
 export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
@@ -22,13 +21,13 @@ export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <div className='absolute bottom-16 left-5 size-37.5 landscape:bottom-15 landscape:left-3 landscape:size-34'>
           <Joystick />
         </div>
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='b'
           className={twMerge(
@@ -41,7 +40,7 @@ export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
         >
           FIRE
         </VirtualGamepadButton>
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>

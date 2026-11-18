@@ -1,8 +1,8 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { Thumbstick } from './thumbstick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
@@ -13,7 +13,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // the two analog sticks below, and Select and Start in the top bar beside pause.
 // PCSX ReARMed reads □, △, ✕ and ○ from the RetroPad's Y, X, B and A, and is told the controller is a DualShock, whose
 // sticks games switch on themselves.
-export const pressed = 'data-[touching=true]:brightness-125 data-[touching=true]:scale-95'
+export const pressed = pressedLook(125)
 
 // Each face button: its symbol and colour, and its place in the diamond in portrait and in landscape. The diamond, like
 // the d-pad, sits midway between the bumpers above and the sticks below
@@ -43,7 +43,6 @@ const trigger = twMerge(
 const triggerStyle: CSSProperties = { background: 'linear-gradient(#7a7a84, #4a4a52)' }
 
 export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 150 points wide, and 450 tall in portrait, up to Select and Start; on smaller screens
   // they shrink towards their corner, and on short phones enough to stay below the game. Each group hangs off a point
   // with no size at its corner, which is where it shrinks towards
@@ -51,7 +50,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <VirtualGamepadButton
           buttonName='l2'
           className={twMerge(trigger, 'left-4 landscape:left-3')}
@@ -67,9 +66,9 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
           className='absolute bottom-7 left-16 size-30 landscape:bottom-6.5 landscape:left-10 landscape:size-26'
           stick='left'
         />
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='r2'
           className={twMerge(trigger, 'right-4 landscape:right-3')}
@@ -104,7 +103,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
           className='absolute right-16 bottom-7 size-30 landscape:right-10 landscape:bottom-6.5 landscape:size-26'
           stick='right'
         />
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>

@@ -1,8 +1,8 @@
-import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { Corner, pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -11,7 +11,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 // diamond and colours on a grey plate, grey L and R shoulder buttons, and Select and Start in the top bar beside
 // pause. Snes9x reads the RetroPad's buttons as the controller's, so each button is
 // the one its letter says.
-const pressed = 'data-[touching=true]:brightness-90 data-[touching=true]:scale-95'
+const pressed = pressedLook(90)
 const dish: CSSProperties = { background: 'radial-gradient(circle at 45% 40%, #d9d9de, #b9b9c0 70%)' }
 const dishShadow = 'rounded-full shadow-[inset_0_2px_6px_#0005,0_0_0_2px_#9a9aa2]'
 
@@ -55,14 +55,13 @@ const shoulder = twMerge(
 const shoulderStyle: CSSProperties = { background: 'linear-gradient(#e2e2e6, #a8a8b0)' }
 
 export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
-  const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale(160)
 
   return (
     <>
-      <div className={twMerge('bottom-safe left-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='left' visible={visible}>
         <VirtualGamepadButton
           buttonName='l'
           className={twMerge(shoulder, 'left-4 landscape:left-5.5')}
@@ -73,9 +72,9 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
         </VirtualGamepadButton>
         {/* The d-pad */}
         <DPad className='absolute bottom-16 left-4 size-40 landscape:bottom-15 landscape:left-2.5 landscape:size-35' />
-      </div>
+      </Corner>
 
-      <div className={twMerge('bottom-safe right-safe absolute size-0 origin-top-left', hidden)} style={{ scale }}>
+      <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='r'
           className={twMerge(shoulder, 'right-4 landscape:right-5.5')}
@@ -107,7 +106,7 @@ export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
             {label}
           </VirtualGamepadButton>
         ))}
-      </div>
+      </Corner>
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='select'>SELECT</TopBarButton>
