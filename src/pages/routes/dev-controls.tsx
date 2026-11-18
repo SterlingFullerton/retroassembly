@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router'
 import { connectTestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { TestSessionProvider } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
@@ -82,6 +82,10 @@ function Controls({ kind }: Readonly<{ kind: string }>) {
 
 export default function DevControlsRoute() {
   const { kind = '' } = useParams()
+  // Drawn only in the browser, as in a game, where the controls first appear once it starts: drawn on the server, they'd
+  // be sized for no screen at all, and the browser keeps that size
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [emulator] = useState(() => {
     // Development runs this twice, so both runs record into the same list
     globalThis.testControls ??= { gamepad: connectTestOnScreenGamepad(), presses: [] }
@@ -95,9 +99,7 @@ export default function DevControlsRoute() {
 
   return (
     <TestSessionProvider emulator={emulator}>
-      <div className='fixed inset-0 block touch-none bg-black'>
-        <Controls kind={kind} />
-      </div>
+      <div className='fixed inset-0 block touch-none bg-black'>{mounted ? <Controls kind={kind} /> : null}</div>
     </TestSessionProvider>
   )
 }
