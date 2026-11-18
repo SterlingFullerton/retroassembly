@@ -251,7 +251,6 @@
   "gamepad.pressToUse": "按任意按钮以使用手柄",
   "gamepad.valveDetected": "Steam Deck 或 Valve 手柄。",
   "home.alsoInProgress": "其他进行中",
-  "home.consoles": "游戏机",
   "home.continuePlaying": "继续游戏",
   "home.lastPlayed": "最近玩过",
   "home.gameCount_other": "{{formatted}} 款游戏",

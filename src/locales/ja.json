@@ -251,7 +251,6 @@
   "gamepad.pressToUse": "ボタンを押してコントローラーを使う",
   "gamepad.valveDetected": "Steam Deck または Valve のコントローラー。",
   "home.alsoInProgress": "ほかにプレイ中",
-  "home.consoles": "ゲーム機",
   "home.continuePlaying": "プレイを続ける",
   "home.lastPlayed": "最近プレイしたゲーム",
   "home.gameCount_other": "{{formatted}}本のゲーム",

@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { generatePath, useLoaderData } from 'react-router'
 import { routes } from '#@/pages/routes.ts'
 import type { loader } from '#@/pages/routes/library-home.tsx'
-import { ConsoleRow } from './components/console-row.tsx'
 import { GameRow } from './components/game-row.tsx'
 import { HomeEmpty } from './components/home-empty.tsx'
 import { HomeHero } from './components/home-hero.tsx'
@@ -45,10 +44,6 @@ export function LibraryHomePage() {
     <div className='p-4 lg:mx-auto lg:max-w-[1664px] lg:p-8'>
       <h1 className='sr-only'>{t('nav.home')}</h1>
       <HomeHero />
-      {/* On a phone, consoles are chosen from the Consoles tab in the bottom bar instead */}
-      <div className='hidden lg:contents'>
-        <ConsoleRow />
-      </div>
 
       {rediscover.data?.length ? (
         <HomeRow

@@ -251,7 +251,6 @@
   "gamepad.pressToUse": "버튼을 눌러 컨트롤러 사용",
   "gamepad.valveDetected": "Steam Deck 또는 Valve 컨트롤러.",
   "home.alsoInProgress": "진행 중인 다른 게임",
-  "home.consoles": "콘솔",
   "home.continuePlaying": "계속 플레이",
   "home.lastPlayed": "최근 플레이",
   "home.gameCount_other": "게임 {{formatted}}개",

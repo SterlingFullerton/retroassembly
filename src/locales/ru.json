@@ -254,7 +254,6 @@
   "gamepad.pressToUse": "Нажмите кнопку, чтобы использовать контроллер",
   "gamepad.valveDetected": "Steam Deck или контроллер Valve.",
   "home.alsoInProgress": "Тоже в процессе",
-  "home.consoles": "Консоли",
   "home.continuePlaying": "Продолжить игру",
   "home.lastPlayed": "Последняя игра",
   "home.gameCount_one": "{{formatted}} игра",

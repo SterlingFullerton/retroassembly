@@ -252,7 +252,6 @@
   "gamepad.pressToUse": "Press a button to use a controller",
   "gamepad.valveDetected": "Steam Deck or Valve controller.",
   "home.alsoInProgress": "Also in progress",
-  "home.consoles": "Consoles",
   "home.continuePlaying": "Continue playing",
   "home.lastPlayed": "Last played",
   "home.gameCount_one": "{{formatted}} game",
