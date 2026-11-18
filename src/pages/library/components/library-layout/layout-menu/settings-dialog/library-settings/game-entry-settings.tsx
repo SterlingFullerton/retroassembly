@@ -24,14 +24,16 @@ export function GameEntrySettings() {
             </SettingsTitle>
             <div className='px-6'>
               <RadioCards.Root
-                columns={{ initial: '1', md: '6' }}
+                // One row of five on every screen; on a phone each shows only its size letters, and the chosen one is named
+                // below
+                columns={{ initial: '5', md: '6' }}
                 onValueChange={(value) => update({ ui: { libraryCoverSize: value } })}
                 size='1'
                 value={preference.ui.libraryCoverSize}
               >
                 {['extra-small', 'small', 'medium', 'large', 'extra-large'].map((size) => (
                   <RadioCards.Item key={size} value={size}>
-                    <div className='flex items-center justify-start gap-1'>
+                    <div className='flex items-center justify-center gap-1 md:justify-start'>
                       <span
                         className={clsx(
                           'text-2xl',
@@ -44,11 +46,16 @@ export function GameEntrySettings() {
                           }[size],
                         )}
                       />
-                      <span className='capitalize'>{t(['common', camelCase(['size', size].join('-'))].join('.'))}</span>
+                      <span className='capitalize max-md:hidden'>
+                        {t(['common', camelCase(['size', size].join('-'))].join('.'))}
+                      </span>
                     </div>
                   </RadioCards.Item>
                 ))}
               </RadioCards.Root>
+              <div className='mt-1 text-center text-xs text-(--gray-11) capitalize md:hidden'>
+                {t(['common', camelCase(['size', preference.ui.libraryCoverSize].join('-'))].join('.'))}
+              </div>
             </div>
           </label>
 

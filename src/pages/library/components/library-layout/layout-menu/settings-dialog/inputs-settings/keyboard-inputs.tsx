@@ -15,6 +15,42 @@ interface ButtonGroup {
   type: string
 }
 
+// Each control's name beside its icon, where the icon doesn't already say it (Select, Start, L1 and so on do)
+const labelKeys: Record<string, string> = {
+  input_player1_a: 'input.buttonA',
+  input_player1_b: 'input.buttonB',
+  input_player1_down: 'input.down',
+  input_player1_l_x_minus: 'input.left',
+  input_player1_l_x_plus: 'input.right',
+  input_player1_l_y_minus: 'input.down',
+  input_player1_l_y_plus: 'input.up',
+  input_player1_left: 'input.left',
+  input_player1_r_x_minus: 'input.left',
+  input_player1_r_x_plus: 'input.right',
+  input_player1_r_y_minus: 'input.down',
+  input_player1_r_y_plus: 'input.up',
+  input_player1_right: 'input.right',
+  input_player1_up: 'input.up',
+  input_player1_x: 'input.buttonX',
+  input_player1_y: 'input.buttonY',
+}
+
+// The groups' headings; a group with none continues the one before it
+const groupTitles: Record<string, string | undefined> = {
+  actions: 'input.buttons',
+  dpad: 'input.dpad',
+  l: 'input.shoulders',
+  'left-analog': 'input.leftStick',
+  'right-analog': 'input.rightStick',
+  time: 'input.whilePlaying',
+}
+
+// The d-pad and sticks in one column, the buttons in the other; one column on a phone
+const columns = [
+  ['dpad', 'left-analog', 'right-analog'],
+  ['actions', 'functions', 'l', 'r', 'time'],
+]
+
 export function KeyboardInputs() {
   const { t } = useTranslation()
 
@@ -119,13 +155,31 @@ export function KeyboardInputs() {
   return (
     <Card>
       <div className='flex flex-col gap-4 p-4'>
-        {buttonGroups.map(({ buttons, type }) => (
-          <div className='flex flex-col gap-4 lg:flex-row' key={type}>
-            {buttons.map((button) => (
-              <KeyboardInput button={button} key={button.name} />
-            ))}
-          </div>
-        ))}
+        <div className='grid grid-cols-1 gap-x-10 lg:grid-cols-2'>
+          {columns.map((types) => (
+            <div key={types[0]}>
+              {types.map((type) => {
+                const group = buttonGroups.find((candidate) => candidate.type === type)
+                const title = groupTitles[type]
+                return group ? (
+                  <div key={type}>
+                    {title ? (
+                      <div className='mt-4 mb-1 text-xs font-semibold tracking-wider text-(--gray-11) uppercase first:mt-0'>
+                        {t(title)}
+                      </div>
+                    ) : null}
+                    {group.buttons.map((button) => (
+                      <KeyboardInput
+                        button={{ ...button, text: labelKeys[button.name] ? t(labelKeys[button.name]) : button.text }}
+                        key={button.name}
+                      />
+                    ))}
+                  </div>
+                ) : null
+              })}
+            </div>
+          ))}
+        </div>
 
         <div className='flex justify-end'>
           <UpdateButton preference={{ input: { keyboardMapping: null } }}>

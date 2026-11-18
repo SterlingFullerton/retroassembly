@@ -1,5 +1,6 @@
 import { Button, Dialog, ScrollArea, Tabs } from '@radix-ui/themes'
 import { clsx } from 'clsx'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettingsDialogTabName } from '#@/pages/library/atoms.ts'
 import { DialogRoot } from '../../../dialog-root.tsx'
@@ -25,6 +26,9 @@ if (typeof document !== 'undefined') {
 export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProps>) {
   const { t } = useTranslation()
   const [tabName, setTabName] = useSettingsDialogTabName()
+  // Opened with the mouse or a finger, the tabs show no focus ring until a key is pressed: the first tab may still be
+  // given the focus, ready for the arrow keys, but showing it would look like a stray red box
+  const [pointerOpened, setPointerOpened] = useState(false)
   const { content: TabContent } = settingsTabs.find((tab) => tab.name === tabName) || settingsTabs[0]
 
   function handleOpenChange(open: boolean) {
@@ -39,11 +43,17 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
     <DialogRoot {...props} onOpenChange={handleOpenChange}>
       <Dialog.Content
         aria-describedby={undefined}
-        className='lg:w-5xl!'
+        // On a phone it fills the screen, like a page of its own (see globals.css for the space around it)
+        className={clsx(
+          'settings-dialog max-sm:flex max-sm:h-dvh max-sm:max-w-none! max-sm:flex-col max-sm:rounded-none! lg:w-5xl!',
+          { 'no-tab-focus-ring': pointerOpened },
+        )}
         maxWidth='calc(100vw - var(--space-8))'
+        onKeyDown={() => setPointerOpened(false)}
         onOpenAutoFocus={(event) => {
           // Opened with the mouse or a finger, nothing inside is focused, so no focus ring shows on the first tab; from
           // the keyboard or a controller, the first tab is focused as usual
+          setPointerOpened(lastInput === 'pointer')
           if (lastInput === 'pointer') {
             event.preventDefault()
             if (event.currentTarget instanceof HTMLElement) {
@@ -57,9 +67,9 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
           {t('nav.settings')}
         </Dialog.Title>
 
-        <div>
+        <div className='max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col'>
           <Tabs.Root asChild onValueChange={handleValueChange} value={tabName}>
-            <div>
+            <div className='max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col'>
               <Tabs.List>
                 {settingsTabs.map(({ iconClass, name }) => (
                   <Tabs.Trigger aria-label={t(`settings.${name}`)} key={name} value={name}>
@@ -77,7 +87,7 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
                 ))}
               </Tabs.List>
 
-              <div className='h-[60vh]'>
+              <div className='h-[60vh] max-sm:h-auto max-sm:min-h-0 max-sm:flex-1'>
                 <ScrollArea size='2'>
                   <div className='motion-preset-slide-up-sm p-4' key={tabName}>
                     <TabContent />

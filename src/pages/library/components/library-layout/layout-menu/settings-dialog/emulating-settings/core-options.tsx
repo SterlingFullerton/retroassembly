@@ -29,12 +29,12 @@ export function CoreOptions({
   }
 
   return (
-    <div className='flex flex-col items-start'>
+    <div className='flex flex-col'>
       <SettingsTitle>
         <span className='icon-[mdi--wrench]' /> {t('common.options')}
       </SettingsTitle>
 
-      <div className='mt-3 flex flex-1 flex-col gap-2 px-6'>
+      <div className='mt-3 flex w-full flex-1 flex-col gap-2 px-6'>
         <Callout.Root size='1'>
           <Callout.Icon>
             <span className='icon-[mdi--warning]' />
@@ -42,12 +42,16 @@ export function CoreOptions({
           <Callout.Text>{t('settings.advancedOptionsWarning')}</Callout.Text>
         </Callout.Root>
 
-        <div className='mb-2 flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:gap-6'>
+        {/* A list: each option's name on the left and its choice on the right, in two columns on a computer */}
+        <div className='mb-2 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8'>
           {coreOptions.map(({ defaultOption, name, options, title }) => (
-            <label className='flex w-fit flex-col gap-1 lg:flex-row' key={name}>
+            <label
+              className='flex min-h-11 items-center justify-between gap-4 border-b border-(--gray-4) py-1.5'
+              key={name}
+            >
               <span className='text-sm'>{title || name}</span>
 
-              <div>
+              <div className='shrink-0'>
                 <Select.Root
                   onValueChange={(value) => handleValueChange(name, value)}
                   size='1'

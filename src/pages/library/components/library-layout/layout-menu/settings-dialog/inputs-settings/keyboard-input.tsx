@@ -44,32 +44,33 @@ export function KeyboardInput({ button }: Readonly<KeyboardInputProps>) {
     await update({ input: { keyboardMapping: { ...keyboardMapping, [button.name]: null } } })
   }
 
+  // A row: the control's icon and name on the left, its key on the right
   return (
-    <label className='flex items-center gap-2'>
-      <div className='flex w-14 justify-end text-xs font-semibold text-(--color-text)/70'>
-        {button.iconClass ? <span className={clsx('size-7', button.iconClass)} /> : button.iconNode}
-      </div>
-      <div>
-        <TextField.Root
-          className='w-28'
-          onChange={handleChange}
-          onFocus={(event) => event.target.select()}
-          onKeyDown={handleKeyDown}
-          readOnly={isLoading}
-          size='2'
-          value={value ?? ''}
-        >
-          <TextField.Slot />
-          <TextField.Slot>
-            {clearable ? (
-              <Button className='-translate-x-1!' onClick={handleClickClear} size='1' title='Clear' variant='ghost'>
-                <span className='icon-[mdi--close]' />
-              </Button>
-            ) : null}
-          </TextField.Slot>
-        </TextField.Root>
-        {button.text ? <span className='absolute mt-0.5 ml-2 text-xs opacity-50'>{button.text}</span> : null}
-      </div>
+    <label className='flex items-center justify-between gap-3 border-b border-(--gray-4) py-1.5'>
+      <span className='flex min-w-0 items-center gap-2 text-sm'>
+        <span className='flex w-12 shrink-0 justify-center text-xs font-semibold text-(--color-text)/70'>
+          {button.iconClass ? <span className={clsx('size-6', button.iconClass)} /> : button.iconNode}
+        </span>
+        {button.text ? <span className='truncate'>{button.text}</span> : null}
+      </span>
+      <TextField.Root
+        className='w-28 shrink-0'
+        onChange={handleChange}
+        onFocus={(event) => event.target.select()}
+        onKeyDown={handleKeyDown}
+        readOnly={isLoading}
+        size='2'
+        value={value ?? ''}
+      >
+        <TextField.Slot />
+        <TextField.Slot>
+          {clearable ? (
+            <Button className='-translate-x-1!' onClick={handleClickClear} size='1' title='Clear' variant='ghost'>
+              <span className='icon-[mdi--close]' />
+            </Button>
+          ) : null}
+        </TextField.Slot>
+      </TextField.Root>
     </label>
   )
 }

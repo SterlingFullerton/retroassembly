@@ -158,3 +158,15 @@ a.pending:focus {
   filter: brightness(0.9);
   scale: 0.97;
 }
+
+/* On a phone Settings fills the screen, so the dialog's usual space around it goes */
+@media (width < 40rem) {
+  .rt-BaseDialogScrollPadding:has(> .settings-dialog) {
+    padding: 0;
+  }
+}
+
+/* Settings opened with the mouse or a finger: no focus ring on its tabs until a key is pressed (see settings-dialog.tsx) */
+.no-tab-focus-ring .rt-BaseTabListTrigger:focus-visible .rt-BaseTabListTriggerInner {
+  outline: none;
+}
