@@ -6,9 +6,11 @@ import { pipeline } from 'node:stream/promises'
 import { attemptAsync } from 'es-toolkit'
 import { customCoresPackage, retroarchBuild, shadersRepository } from '#@/consoles/assets.ts'
 import { getDirectories } from '#@/constants/env.ts'
-import { cdnCacheHosts, cdnHost, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
+import { cdnCacheHosts, cdnHost, libretroThumbnailsHost, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
 import { fonts } from '#@/utils/isomorphic/fonts.ts'
+import { moveFile } from './move-file.ts'
 import { nanoid } from './nanoid.ts'
+import { getStoragePath } from './storage-path.ts'
 
 const fetchTimeout = 120_000
 // A host that doesn't answer within this long is treated as unreachable
@@ -85,10 +87,84 @@ function getCacheDirectory() {
   return path.join(getDirectories().cacheDirectory, 'cdn')
 }
 
+// libretro's art folders: Named_Boxarts, Named_Titles, Named_Snaps and Named_Logos
+const libretroArtFolder = /^Named_[A-Z][a-z]+s$/u
+
+/**
+ * Where a libretro cover, title screen or screenshot goes in the artwork folder, by libretro's own layout, as in
+ * "Nintendo - Game Boy/Named_Boxarts/Tetris (World).png"; the same layout RetroArch keeps its thumbnails in, so art put
+ * there by hand is found too. Undefined for anything else, or when no artwork folder is set
+ */
+export function getArtworkPath(url: string) {
+  const { artworkDirectory } = getDirectories()
+  if (!artworkDirectory) {
+    return
+  }
+  const { pathname } = new URL(url)
+  const parts = pathname.slice(1).split('/')
+  let segments: string[] = []
+  if (url.startsWith(libretroThumbnailsHost)) {
+    segments = parts
+  } else if (url.startsWith(cdnHost) && parts[0] === 'gh' && parts[1] === 'libretro-thumbnails') {
+    // jsDelivr's copy of libretro's GitHub repositories, named after the console with underscores for spaces
+    const [repository] = decodeURIComponent(parts[2] || '').split('@')
+    segments = [repository.replaceAll('_', ' '), ...parts.slice(3)]
+  }
+  const [consoleName, folder, file] = segments.map((segment) => decodeURIComponent(segment))
+  if (
+    segments.length !== 3 ||
+    !consoleName ||
+    !libretroArtFolder.test(folder) ||
+    !file?.toLowerCase().endsWith('.png')
+  ) {
+    return
+  }
+  if ([consoleName, file].some((name) => name.includes('/') || name.includes('\\') || name.startsWith('.'))) {
+    return
+  }
+  return getStoragePath(artworkDirectory, path.join(consoleName, folder, file))
+}
+
 function getCachePaths(url: string) {
   const key = createHash('sha256').update(url).digest('hex')
   const directory = getCacheDirectory()
-  return { file: path.join(directory, key), meta: path.join(directory, `${key}.json`) }
+  const cached = { file: path.join(directory, key), meta: path.join(directory, `${key}.json`) }
+  const artworkPath = getArtworkPath(url)
+  if (!artworkPath) {
+    return { ...cached, webP: `${cached.file}.webp` }
+  }
+  // Art keeps its readable name; what the cache notes about it, and its smaller WebP copy, are kept out of sight
+  const { artworkDirectory } = getDirectories()
+  const relative = path.relative(artworkDirectory, artworkPath)
+  return {
+    file: artworkPath,
+    meta: path.join(artworkDirectory, '.meta', `${relative}.json`),
+    // Where it was cached before the artwork folder was set, to be moved from the first time it's needed
+    previous: cached,
+    webP: path.join(artworkDirectory, '.webp', `${relative}.webp`),
+  }
+}
+
+async function exists(filePath: string) {
+  const [, stats] = await attemptAsync(() => fs.promises.stat(filePath))
+  return Boolean(stats?.isFile())
+}
+
+/** Art cached before the artwork folder was set is moved into it, with its note and WebP copy */
+async function movePreviouslyCached(paths: ReturnType<typeof getCachePaths>) {
+  if (!('previous' in paths) || !paths.previous || !(await exists(paths.previous.meta))) {
+    return
+  }
+  const { previous } = paths
+  for (const [from, to] of [
+    [previous.file, paths.file],
+    [`${previous.file}.webp`, paths.webP],
+    [previous.meta, paths.meta],
+  ]) {
+    if ((await exists(from)) && !(await exists(to))) {
+      await attemptAsync(() => moveFile(from, to))
+    }
+  }
 }
 
 function isPinned(url: string) {
@@ -97,17 +173,24 @@ function isPinned(url: string) {
 
 async function readCacheEntry(url: string) {
   const paths = getCachePaths(url)
+  await movePreviouslyCached(paths)
   const [, text] = await attemptAsync(() => fs.promises.readFile(paths.meta, 'utf8'))
-  if (!text) {
+  const [, stats] = await attemptAsync(() => fs.promises.stat(paths.file))
+  const file = stats?.isFile() ? { path: paths.file, size: stats.size, stale: false, webPPath: paths.webP } : undefined
+  const entry: CacheEntry | undefined = text ? JSON.parse(text) : undefined
+  // Art in the artwork folder that wasn't downloaded there was put there by hand, and is used whatever the cache knew
+  // before, even that libretro has none
+  if ('previous' in paths && file && entry?.status !== 200) {
+    return { ...file, contentType: 'image/png', status: 200, time: stats?.mtimeMs ?? 0 }
+  }
+  if (!entry) {
     return
   }
-  const entry: CacheEntry = JSON.parse(text)
-  if (entry.status === 404) {
+  if (entry.status === 404 && !file) {
     const stale = !isPinned(url) && Date.now() - entry.time >= notFoundTtl
-    return { ...entry, path: paths.file, size: 0, stale }
+    return { ...entry, path: paths.file, size: 0, stale, webPPath: paths.webP }
   }
-  const [, stats] = await attemptAsync(() => fs.promises.stat(paths.file))
-  return stats?.isFile() ? { ...entry, path: paths.file, size: stats.size, stale: false } : undefined
+  return file ? { ...entry, ...file, status: 200 } : undefined
 }
 
 /** An error response from the CDN, as opposed to the CDN being unreachable */
@@ -118,6 +201,7 @@ class UpstreamError extends Error {
 async function download(url: string) {
   const paths = getCachePaths(url)
   await fs.promises.mkdir(path.dirname(paths.file), { recursive: true })
+  await fs.promises.mkdir(path.dirname(paths.meta), { recursive: true })
   const controller = new AbortController()
   const headersTimer = setTimeout(() => controller.abort(new Error(`No response from ${url}`)), headersTimeout)
   const totalTimer = setTimeout(() => controller.abort(new Error(`Timed out fetching ${url}`)), fetchTimeout)
@@ -229,8 +313,7 @@ export function createCachedFileStream(filePath: string) {
 const webPSourceTypes = new Set(['image/jpeg', 'image/png'])
 const webPConversions = new Map<string, Promise<string | undefined>>()
 
-async function convertToWebP(filePath: string) {
-  const webPPath = `${filePath}.webp`
+async function convertToWebP(filePath: string, webPPath: string) {
   const [, source] = await attemptAsync(() => fs.promises.stat(filePath))
   const [, copy] = await attemptAsync(() => fs.promises.stat(webPPath))
   if (!source) {
@@ -241,6 +324,7 @@ async function convertToWebP(filePath: string) {
     return webPPath
   }
   const { default: sharp } = await import('sharp')
+  await fs.promises.mkdir(path.dirname(webPPath), { recursive: true })
   const temporaryPath = `${webPPath}.${nanoid()}.tmp`
   await sharp(filePath).webp({ quality: 82 }).toFile(temporaryPath)
   await fs.promises.rename(temporaryPath, webPPath)
@@ -248,7 +332,7 @@ async function convertToWebP(filePath: string) {
 }
 
 /** The path and size of a WebP copy of a cached image, or nothing if the file isn't an image that can be converted */
-export async function getCachedWebPCopy(cached: { contentType: string; path: string }) {
+export async function getCachedWebPCopy(cached: { contentType: string; path: string; webPPath?: string }) {
   if (!webPSourceTypes.has(cached.contentType.split(';')[0].trim().toLowerCase())) {
     return
   }
@@ -257,7 +341,9 @@ export async function getCachedWebPCopy(cached: { contentType: string; path: str
   if (!conversion) {
     conversion = (async () => {
       try {
-        const [, result] = await attemptAsync(() => convertToWebP(cached.path))
+        const [, result] = await attemptAsync(() =>
+          convertToWebP(cached.path, cached.webPPath ?? `${cached.path}.webp`),
+        )
         return result ?? undefined
       } finally {
         webPConversions.delete(cached.path)

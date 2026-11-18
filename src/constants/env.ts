@@ -31,6 +31,7 @@ export function getRunTimeEnv() {
  * A kind with no folder set is kept where it always was: in the storage folder, or the cache in the data folder
  */
 export const directorySettings = {
+  artworkDirectory: 'RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY',
   biosesDirectory: 'RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY',
   cacheDirectory: 'RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY',
   gameSavesDirectory: 'RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY',
@@ -45,7 +46,14 @@ export function getDirectories() {
   function own(setting: keyof typeof directorySettings, fallback: string) {
     return runTimeEnv[directorySettings[setting]] || fallback
   }
+  // Box art uploaded for a game, and libretro's covers, title screens and screenshots, when set (see getArtworkPath).
+  // Unset, uploaded box art stays in the storage folder and libretro's art in the cache with the emulator files
+  const artworkDirectory = own('artworkDirectory', '')
   return {
+    artworkDirectory,
+    attachmentsDirectory: artworkDirectory
+      ? path.join(artworkDirectory, 'attachments')
+      : path.join(storageDirectory, 'attachments'),
     biosesDirectory: own('biosesDirectory', path.join(storageDirectory, 'bioses')),
     cacheDirectory: own('cacheDirectory', path.join(dataDirectory, 'cache')),
     dataDirectory,

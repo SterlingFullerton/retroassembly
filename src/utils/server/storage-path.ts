@@ -17,6 +17,7 @@ export function getStoragePath(storageDirectory: string, id: string) {
 
 // The kinds of stored file that can have a folder of their own, by the first part of their id, as in "roms/nes/<id>.nes"
 const kindDirectories = {
+  attachments: 'attachmentsDirectory',
   bioses: 'biosesDirectory',
   'game-saves': 'gameSavesDirectory',
   roms: 'romsDirectory',

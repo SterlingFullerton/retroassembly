@@ -1,9 +1,11 @@
+import path from 'node:path'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import fs from 'fs-extra'
 import isDocker from 'is-docker'
 import { directorySettings, getDirectories, getRunTimeEnv } from '../../../constants/env.ts'
 import { updateDiscGroups } from '../disc-groups.ts'
 import { getDatabase } from '../drizzle.ts'
+import { moveFolderContents } from '../move-file.ts'
 
 async function testDataDirectory() {
   const { dataDirectory } = getDirectories()
@@ -59,6 +61,29 @@ async function testFileDirectories() {
   }
 }
 
+/**
+ * Box art uploaded before an artwork folder was set is moved into it, once: the first time the server starts with the
+ * setting. Its ids stay the same, so nothing in the database changes
+ */
+async function moveUploadedArtwork() {
+  const { artworkDirectory, attachmentsDirectory, storageDirectory } = getDirectories()
+  if (artworkDirectory && getRunTimeEnv().RETROASSEMBLY_RUN_TIME_CDN_CACHE !== 'true') {
+    console.warn(
+      'RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY holds only uploaded box art unless RETROASSEMBLY_RUN_TIME_CDN_CACHE=true: libretro art is otherwise loaded by the browser straight from libretro',
+    )
+  }
+  const previous = path.join(storageDirectory, 'attachments')
+  if (
+    !artworkDirectory ||
+    path.resolve(previous) === path.resolve(attachmentsDirectory) ||
+    !(await fs.exists(previous))
+  ) {
+    return
+  }
+  const moved = await moveFolderContents(previous, attachmentsDirectory)
+  console.info(`Moved ${moved} uploaded box art files into the artwork folder`)
+}
+
 function migrateDatabase() {
   const db = getDatabase().library
   migrate(db, {
@@ -72,6 +97,7 @@ function migrateDatabase() {
 export async function initializeDatabase() {
   await testDataDirectory()
   await testFileDirectories()
+  await moveUploadedArtwork()
   migrateDatabase()
   updateDiscGroups(getDatabase().library)
 }
