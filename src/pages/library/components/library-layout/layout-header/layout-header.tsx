@@ -1,6 +1,7 @@
 import { Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
+import { metadata } from '#@/constants/metadata.ts'
 import { Logo } from '#@/pages/components/logo.tsx'
 import { useViewport } from '#@/pages/library/hooks/use-viewport.ts'
 import { routes } from '#@/pages/routes.ts'
@@ -13,18 +14,17 @@ import { HeaderLinkItem } from './header-link-item.tsx'
 
 export function LayoutHeader() {
   const navitate = useNavigate()
-  const { consolesLink, groups, isActive } = useNavigationLinks()
+  const { groups, isActive } = useNavigationLinks()
   const { isNotLargeScreen } = useViewport()
   const { t } = useTranslation()
   const { clear, query } = useLibrarySearch()
   const openSearch = useOpenPhoneSearch()
 
-  // The menu here picks a console: Home, Games, Consoles, Favorites and History are in the bar at the bottom
+  // On a console's page, and a game's, the bar shows that console and switches to another. Elsewhere it shows the app's
+  // name: consoles are chosen from the Consoles tab in the bar at the bottom, the one way to them on a phone
   const consoleLinks = groups.at(-1)?.links ?? []
   const currentLink = consoleLinks.find(({ to }) => isActive(to))
   const currentRouteName = currentLink?.name
-  // Off a console's page it reads as a prompt, not as the page's name
-  const pickerLabel = currentLink ?? { ...consolesLink, text: t('nav.pickConsole') }
 
   async function handleValueChange(value: string) {
     const link = consoleLinks.find(({ name }) => name === value)
@@ -68,26 +68,30 @@ export function LayoutHeader() {
           </div>
         ) : (
           <>
-            <div className='flex h-5 flex-1 justify-center'>
-              <Select.Root onValueChange={handleValueChange} size='2' value={currentRouteName ?? ''}>
-                {/* Shown as the placeholder too, for when the page isn't a console's (typed as text, but shown as given) */}
-                <Select.Trigger
-                  // White as a console's name is, though shown as a placeholder (which is otherwise grey, lost on red)
-                  className='text-white! [&_.rt-SelectTriggerInner]:text-white!'
-                  placeholder={(<HeaderLinkItem link={pickerLabel} />) as unknown as string}
-                  variant='ghost'
-                >
-                  <HeaderLinkItem link={pickerLabel} />
-                </Select.Trigger>
-                <Select.Content>
-                  {consoleLinks.map((link) => (
-                    <Select.Item key={link.name} value={link.name}>
-                      <HeaderLinkItem link={link} />
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </div>
+            {currentLink ? (
+              <div className='flex h-5 flex-1 justify-center'>
+                <Select.Root onValueChange={handleValueChange} size='2' value={currentRouteName ?? ''}>
+                  {/* Shown as the placeholder too (typed as text, but shown as given) */}
+                  <Select.Trigger
+                    // White as a console's name is, though shown as a placeholder (which is otherwise grey, lost on red)
+                    className='text-white! [&_.rt-SelectTriggerInner]:text-white!'
+                    placeholder={(<HeaderLinkItem link={currentLink} />) as unknown as string}
+                    variant='ghost'
+                  >
+                    <HeaderLinkItem link={currentLink} />
+                  </Select.Trigger>
+                  <Select.Content>
+                    {consoleLinks.map((link) => (
+                      <Select.Item key={link.name} value={link.name}>
+                        <HeaderLinkItem link={link} />
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+              </div>
+            ) : (
+              <div className='flex flex-1 justify-center font-serif font-semibold text-white'>{metadata.title}</div>
+            )}
 
             <button
               aria-label={t('common.search')}
