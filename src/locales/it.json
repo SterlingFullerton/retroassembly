@@ -212,6 +212,7 @@
   "emulator.saves": "Istantanee",
   "emulator.snapshots": "Istantanee",
   "emulator.takeSnapshot": "Scatta istantanea",
+  "emulator.snapshotFailed": "Salvataggio non riuscito. Riprova",
   "emulator.saveCount_one": "{{count}} istantanea",
   "emulator.saveCount_other": "{{count}} istantanee",
   "emulator.start": "Inizia",

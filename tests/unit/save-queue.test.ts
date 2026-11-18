@@ -119,4 +119,19 @@ await describe('save queue', async () => {
     )
     assert.equal(saves.size, 0)
   })
+
+  await it("uploads a save straight away when the browser's store never answers", async () => {
+    // A promise nothing ever settles: its resolve is kept and never called
+    let unused: unknown
+    const never = new Promise<never>((resolve) => {
+      unused = resolve
+    })
+    assert.ok(unused)
+    const stuck: SaveStore = { delete: () => never, getAll: () => never, put: () => never }
+    const server = recorder()
+    const queue = createSaveQueue(stuck, server.upload, { timeoutMs: 20 })
+    const saved = await queue.save(input('rom-1', 'auto'))
+    assert.equal(server.uploaded[0].id, saved.id)
+    assert.equal(await queue.flush(), 0)
+  })
 })

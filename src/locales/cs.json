@@ -212,6 +212,7 @@
   "emulator.saves": "Snímky",
   "emulator.snapshots": "Snímky",
   "emulator.takeSnapshot": "Pořídit snímek",
+  "emulator.snapshotFailed": "Uložení se nezdařilo. Zkuste to znovu",
   "emulator.saveCount_one": "{{count}} snímek",
   "emulator.saveCount_few": "{{count}} snímky",
   "emulator.saveCount_many": "{{count}} snímků",

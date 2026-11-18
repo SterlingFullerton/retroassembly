@@ -212,6 +212,7 @@
   "emulator.saves": "Снимки",
   "emulator.snapshots": "Снимки",
   "emulator.takeSnapshot": "Сделать снимок",
+  "emulator.snapshotFailed": "Не удалось сохранить. Попробуйте ещё раз",
   "emulator.saveCount_one": "{{count}} снимок",
   "emulator.saveCount_few": "{{count}} снимка",
   "emulator.saveCount_many": "{{count}} снимков",

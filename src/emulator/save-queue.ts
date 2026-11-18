@@ -49,6 +49,20 @@ const databaseName = 'retroassembly-pending-saves'
 const storeName = 'queue'
 const oldStoreName = 'saves'
 
+// How long the browser's store of saves may take for each thing asked of it. It can wait forever, for one when another
+// tab of the library, open from an older version, blocks it from being opened; the save is then uploaded straight away
+// instead of waiting for it
+const storeTimeoutMs = 3000
+
+/** Rejects if `promise` hasn't settled within `ms` */
+export function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 function newId() {
   return globalThis.crypto.randomUUID()
 }
@@ -73,6 +87,8 @@ function openDatabase() {
     })
     request.addEventListener('success', () => resolve(request.result))
     request.addEventListener('error', () => reject(new Error(request.error?.message ?? 'IndexedDB request failed')))
+    // Another tab has it open at an older version, and the upgrade waits for that tab to close
+    request.addEventListener('blocked', () => reject(new Error('IndexedDB is blocked by another tab')))
   })
 }
 
@@ -118,7 +134,18 @@ export async function uploadSaveToServer(save: QueuedSave) {
   }
 }
 
-export function createSaveQueue(store: SaveStore = indexedDBSaveStore, upload: SaveUploader = uploadSaveToServer) {
+export function createSaveQueue(
+  givenStore: SaveStore = indexedDBSaveStore,
+  upload: SaveUploader = uploadSaveToServer,
+  { timeoutMs = storeTimeoutMs } = {},
+) {
+  // Each thing asked of the store gives up after a while, rather than holding the save up
+  const store: SaveStore = {
+    delete: (id) => withTimeout(givenStore.delete(id), timeoutMs, 'The save store took too long'),
+    getAll: () => withTimeout(givenStore.getAll(), timeoutMs, 'The save store took too long'),
+    put: (save) => withTimeout(givenStore.put(save), timeoutMs, 'The save store took too long'),
+  }
+
   async function remove(save: QueuedSave) {
     try {
       await store.delete(save.id)

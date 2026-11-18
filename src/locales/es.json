@@ -212,6 +212,7 @@
   "emulator.saves": "Instantáneas",
   "emulator.snapshots": "Instantáneas",
   "emulator.takeSnapshot": "Tomar instantánea",
+  "emulator.snapshotFailed": "No se pudo guardar. Inténtalo de nuevo",
   "emulator.saveCount_one": "{{count}} instantánea",
   "emulator.saveCount_other": "{{count}} instantáneas",
   "emulator.start": "Iniciar",

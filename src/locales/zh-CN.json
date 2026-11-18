@@ -212,6 +212,7 @@
   "emulator.saves": "快照",
   "emulator.snapshots": "快照",
   "emulator.takeSnapshot": "拍摄快照",
+  "emulator.snapshotFailed": "保存失败，请重试",
   "emulator.saveCount_other": "{{count}} 个快照",
   "emulator.start": "开始",
   "emulator.starting": "启动中",

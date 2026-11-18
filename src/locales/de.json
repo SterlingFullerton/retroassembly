@@ -212,6 +212,7 @@
   "emulator.saves": "Snapshots",
   "emulator.snapshots": "Snapshots",
   "emulator.takeSnapshot": "Snapshot erstellen",
+  "emulator.snapshotFailed": "Speichern fehlgeschlagen. Erneut versuchen",
   "emulator.saveCount_one": "{{count}} Snapshot",
   "emulator.saveCount_other": "{{count}} Snapshots",
   "emulator.start": "Start",
