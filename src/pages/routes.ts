@@ -31,4 +31,7 @@ export default [
   route(routes.loginOidc, 'routes/login-oidc.ts'),
   route(routes.loginOidcCallback, 'routes/login-oidc-callback.ts'),
   route(routes.logout, 'routes/logout.ts'),
+  // A test-only page showing one console's on-screen controls without a game, for checking they look and press the
+  // same after a change. Left out of production builds
+  ...(process.env.NODE_ENV === 'production' ? [] : [route('/dev/controls/:kind', 'routes/dev-controls.tsx')]),
 ] satisfies RouteConfig

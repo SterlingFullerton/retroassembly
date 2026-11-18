@@ -40,6 +40,21 @@ export function useEmulatorGamepadMapping() {
   return gamepadMapping
 }
 
+/**
+ * For the test-only controls page (src/pages/routes/dev-controls.tsx): a session with no game, whose emulator is a
+ * stand-in that records the buttons pressed
+ */
+export function TestSessionProvider({
+  children,
+  emulator,
+}: Readonly<{
+  children: ReactNode
+  emulator: { getStatus: () => string; pressDown: (button: string) => void; pressUp: (button: string) => void }
+}>) {
+  const session = { emulator } as unknown as ReturnType<typeof useEmulatorSessionController>
+  return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
+}
+
 /** The game session around this component */
 export function useSession() {
   const session = useContext(SessionContext)

@@ -160,7 +160,7 @@ function useFitGameAboveControls(enabled: boolean, controls: RefObject<HTMLDivEl
 // the bottom between the d-pad and the face buttons in portrait, and after Start in landscape: DeSmuME can't hear a real microphone, so while it's held the game hears the sound of blowing instead.
 const dsButton = 'bg-white/9 text-white/80 data-[touching=true]:bg-white/85 data-[touching=true]:text-black'
 
-function DSControls({
+export function DSControls({
   controls,
   visible,
 }: Readonly<{

@@ -29,6 +29,12 @@ export function connectOnScreenGamepad(emulator: Nostalgist) {
   return gamepad
 }
 
+/** For the test-only controls page: an on-screen gamepad with no emulator, so a test can read what the controls set */
+export function connectTestOnScreenGamepad() {
+  running = createOnScreenGamepad()
+  return running
+}
+
 /** Lets go of a session's on-screen gamepad when it exits */
 export function disconnectOnScreenGamepad(gamepad: EmulatorGamepad | undefined) {
   if (gamepad && running === gamepad) {
