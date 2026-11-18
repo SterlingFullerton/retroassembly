@@ -67,7 +67,13 @@ function Controls({ kind }: Readonly<{ kind: string }>) {
     <>
       {all[kind] ?? <p className='p-4 text-white'>No controls called {kind}</p>}
       {/* Opens the ColecoVision's and Atari 5200's keypads, as the button beside pause does */}
-      <button className='hidden' data-testid='open-keypad' onClick={() => setKeypadOpen(true)} type='button' />
+      <button
+        aria-label='Open keypad'
+        className='hidden'
+        data-testid='open-keypad'
+        onClick={() => setKeypadOpen(true)}
+        type='button'
+      />
     </>
   )
 }
