@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { Thumbstick } from './thumbstick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -72,30 +72,15 @@ export function Atari5200Controls({
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            fire,
-            'right-27 bottom-19 size-19.5 landscape:right-21 landscape:bottom-17.5 landscape:size-15.5',
-          )}
+        <SlantedPair
+          buttons={[
+            { buttonName: 'a', label: '1' },
+            { buttonName: 'b', label: '2' },
+          ]}
+          className={fire}
           group='fire'
           style={fireStyle}
-          title='1'
-        >
-          1
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            fire,
-            'right-4.5 bottom-29 size-19.5 landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
-          )}
-          group='fire'
-          style={fireStyle}
-          title='2'
-        >
-          2
-        </VirtualGamepadButton>
+        />
       </Corner>
 
       <TopBarButtons afterKeypad visible={visible}>

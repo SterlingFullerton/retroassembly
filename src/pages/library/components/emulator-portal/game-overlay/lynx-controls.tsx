@@ -2,11 +2,10 @@ import { clsx } from 'clsx'
 import type { CSSProperties, RefObject } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { refitGame } from './refit-game.ts'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
-import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari Lynx's controls, in the WonderSwan's style: the d-pad every console shares, dark grey B and A slanted along
 // the arc the thumb makes rolling from one to the other, and Option 1, Option 2, Pause and Rotate in the top bar
@@ -34,30 +33,15 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            round,
-            'right-27 bottom-19 size-19.5 text-2xl landscape:right-15 landscape:bottom-15.5 landscape:size-12 landscape:text-lg',
-          )}
-          group='face'
+        <SlantedPair
+          buttons={[
+            { buttonName: 'a', label: 'B' },
+            { buttonName: 'b', label: 'A' },
+          ]}
+          className={round}
+          spots='narrow'
           style={buttonStyle}
-          title='B'
-        >
-          B
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            round,
-            'right-4.5 bottom-29 size-19.5 text-2xl landscape:right-2 landscape:bottom-22.5 landscape:size-12 landscape:text-lg',
-          )}
-          group='face'
-          style={buttonStyle}
-          title='A'
-        >
-          A
-        </VirtualGamepadButton>
+        />
       </Corner>
 
       {/* Marks the top of the controls, so that in portrait the game, upright or not, fits above them */}

@@ -2,7 +2,7 @@ import type { CSSProperties, RefObject } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { refitGame } from './refit-game.ts'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
@@ -59,30 +59,15 @@ export function WonderSwanControls({
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            round,
-            'right-27 bottom-19 size-19.5 text-2xl landscape:right-15 landscape:bottom-15.5 landscape:size-12 landscape:text-lg',
-          )}
-          group='face'
+        <SlantedPair
+          buttons={[
+            { buttonName: 'b', label: 'B' },
+            { buttonName: 'a', label: 'A' },
+          ]}
+          className={round}
+          spots='narrow'
           style={buttonStyle}
-          title='B'
-        >
-          B
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            round,
-            'right-4.5 bottom-29 size-19.5 text-2xl landscape:right-2 landscape:bottom-22.5 landscape:size-12 landscape:text-lg',
-          )}
-          group='face'
-          style={buttonStyle}
-          title='A'
-        >
-          A
-        </VirtualGamepadButton>
+        />
       </Corner>
 
       <TopBarButtons visible={visible}>

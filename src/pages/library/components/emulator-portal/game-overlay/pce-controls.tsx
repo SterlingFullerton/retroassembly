@@ -1,10 +1,9 @@
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
-import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The PC Engine's controls drawn like its controller: the d-pad every console shares, dark grey buttons II and I with
 // their numerals printed beside them in white, and Select and Run in the top bar
@@ -23,7 +22,6 @@ export function PcEngineControls({ visible }: Readonly<{ visible: boolean }>) {
     background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
     boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006, 0 0 0 2px #3a3a42',
   }
-  const number = 'absolute font-black text-lg landscape:text-base'
 
   return (
     <>
@@ -34,38 +32,15 @@ export function PcEngineControls({ visible }: Readonly<{ visible: boolean }>) {
 
       {/* II and I, slanted, with their numerals printed below and to the right */}
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            pressed,
-            'absolute right-27 bottom-19 size-19.5 rounded-full landscape:right-21 landscape:bottom-17.5 landscape:size-15.5',
-          )}
-          group='face'
+        <SlantedPair
+          buttons={[
+            { buttonName: 'b', label: 'II' },
+            { buttonName: 'a', label: 'I' },
+          ]}
+          className={twMerge(pressed, 'absolute rounded-full')}
+          printed={white}
           style={buttonStyle}
-          title='II'
         />
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            pressed,
-            'absolute right-4.5 bottom-29 size-19.5 rounded-full landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
-          )}
-          group='face'
-          style={buttonStyle}
-          title='I'
-        />
-        <span
-          className={twMerge(number, 'right-35 bottom-12.5 landscape:right-27 landscape:bottom-11.5')}
-          style={{ color: white }}
-        >
-          II
-        </span>
-        <span
-          className={twMerge(number, 'right-12.5 bottom-22.5 landscape:right-9.5 landscape:bottom-20')}
-          style={{ color: white }}
-        >
-          I
-        </span>
       </Corner>
 
       <TopBarButtons visible={visible}>

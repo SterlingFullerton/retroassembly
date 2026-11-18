@@ -1,10 +1,9 @@
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { Joystick } from './joystick.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
-import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Atari 7800's controls, like the 2600's: the joystick, which presses eight directions, its two red buttons, 1 and
 // 2, slanted along the arc the thumb makes rolling from one to the other, and the console's Select, Pause and Reset in
@@ -31,30 +30,15 @@ export function Atari7800Controls({ visible }: Readonly<{ visible: boolean }>) {
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            fire,
-            'right-27 bottom-19 size-19.5 landscape:right-21 landscape:bottom-17.5 landscape:size-15.5',
-          )}
+        <SlantedPair
+          buttons={[
+            { buttonName: 'b', label: '1' },
+            { buttonName: 'a', label: '2' },
+          ]}
+          className={fire}
           group='fire'
           style={fireStyle}
-          title='1'
-        >
-          1
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            fire,
-            'right-4.5 bottom-29 size-19.5 landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
-          )}
-          group='fire'
-          style={fireStyle}
-          title='2'
-        >
-          2
-        </VirtualGamepadButton>
+        />
       </Corner>
 
       <TopBarButtons visible={visible}>

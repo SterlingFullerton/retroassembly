@@ -2,10 +2,9 @@ import { type CSSProperties, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
-import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The NES's controls drawn like its controller: the d-pad every console shares, round B and A buttons with their
 // letters printed beside them, and Select and Start in the top bar beside pause. B and A are slanted along the arc the thumb makes rolling from one to the other. Every NES emulator reads
@@ -76,7 +75,6 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
     background: 'radial-gradient(circle at 40% 30%, #ff5a5a, #d01818 60%, #8a0c0c)',
     boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ff9a9a, inset 0 -3px 0 #0004',
   }
-  const letter = 'absolute font-black text-lg landscape:text-base'
 
   return (
     <>
@@ -87,38 +85,15 @@ export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string;
 
       {/* B and A, slanted, with their letters printed below and to the right as on the controller */}
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            pressed,
-            'absolute right-27 bottom-19 size-19.5 rounded-full landscape:right-21 landscape:bottom-17.5 landscape:size-15.5',
-          )}
-          group='face'
+        <SlantedPair
+          buttons={[
+            { buttonName: 'b', label: 'B' },
+            { buttonName: 'a', label: 'A' },
+          ]}
+          className={twMerge(pressed, 'absolute rounded-full')}
+          printed={red}
           style={buttonStyle}
-          title='B'
         />
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            pressed,
-            'absolute right-4.5 bottom-29 size-19.5 rounded-full landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
-          )}
-          group='face'
-          style={buttonStyle}
-          title='A'
-        />
-        <span
-          className={twMerge(letter, 'right-35 bottom-12.5 landscape:right-27 landscape:bottom-11.5')}
-          style={{ color: red }}
-        >
-          B
-        </span>
-        <span
-          className={twMerge(letter, 'right-12.5 bottom-22.5 landscape:right-9.5 landscape:bottom-20')}
-          style={{ color: red }}
-        >
-          A
-        </span>
       </Corner>
 
       <TopBarButtons visible={visible}>

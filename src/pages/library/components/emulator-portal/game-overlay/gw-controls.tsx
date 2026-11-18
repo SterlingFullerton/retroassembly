@@ -1,10 +1,9 @@
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { Corner, pressedLook } from './controls-kit.tsx'
+import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
-import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // The Game & Watch's controls. Its emulator draws each game as the whole handheld and plays it with the d-pad, plus A or
 // B in games with an action button; which of those a game uses varies. So these are the d-pad every console shares and
@@ -30,30 +29,14 @@ export function GwControls({ visible }: Readonly<{ visible: boolean }>) {
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
-        <VirtualGamepadButton
-          buttonName='b'
-          className={twMerge(
-            round,
-            'right-27 bottom-19 size-19.5 landscape:right-21 landscape:bottom-17.5 landscape:size-15.5',
-          )}
-          group='face'
+        <SlantedPair
+          buttons={[
+            { buttonName: 'b', label: 'B' },
+            { buttonName: 'a', label: 'A' },
+          ]}
+          className={round}
           style={buttonStyle}
-          title='B'
-        >
-          B
-        </VirtualGamepadButton>
-        <VirtualGamepadButton
-          buttonName='a'
-          className={twMerge(
-            round,
-            'right-4.5 bottom-29 size-19.5 landscape:right-3.5 landscape:bottom-26 landscape:size-15.5',
-          )}
-          group='face'
-          style={buttonStyle}
-          title='A'
-        >
-          A
-        </VirtualGamepadButton>
+        />
       </Corner>
 
       <TopBarButtons visible={visible}>
