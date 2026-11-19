@@ -41,23 +41,24 @@ export function CoresSettings() {
 
   return (
     <div>
-      <SettingsTitle className='justify-between'>
-        {t('common.emulationFor')}
-        <div className='flex flex-col gap-2'>
+      {/* On a small phone the console picker goes under the heading, and a long console name is shortened */}
+      <SettingsTitle className='flex-wrap justify-between gap-y-1'>
+        <span className='whitespace-nowrap'>{t('common.emulationFor')}</span>
+        <div className='flex max-w-full min-w-0 flex-col gap-2'>
           <Select.Root
             onValueChange={(value: typeof selectedPlatform) => setSelectedPlatform(value)}
             size='3'
             value={selectedPlatform}
           >
-            <Select.Trigger disabled={isLoading} variant='ghost'>
-              <div className='flex items-center gap-2'>
+            <Select.Trigger className='max-w-full' disabled={isLoading} variant='ghost'>
+              <div className='flex min-w-0 items-center gap-2'>
                 <img
                   alt={t(platformMap[selectedPlatform].displayNameI18nKey)}
-                  className='size-5 object-contain object-center'
+                  className='size-5 shrink-0 object-contain object-center'
                   loading='lazy'
                   src={getPlatformIcon(platformMap[selectedPlatform].name)}
                 />
-                {t(platformMap[selectedPlatform].displayNameI18nKey)}
+                <span className='truncate'>{t(platformMap[selectedPlatform].displayNameI18nKey)}</span>
               </div>
             </Select.Trigger>
             <Select.Content>

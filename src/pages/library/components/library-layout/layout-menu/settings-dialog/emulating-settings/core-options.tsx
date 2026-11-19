@@ -49,7 +49,7 @@ export function CoreOptions({
               className='flex min-h-11 items-center justify-between gap-4 border-b border-(--gray-4) py-1.5'
               key={name}
             >
-              <span className='text-sm'>{title || name}</span>
+              <span className='min-w-0 text-sm [overflow-wrap:anywhere]'>{title || name}</span>
 
               <div className='shrink-0'>
                 <Select.Root
