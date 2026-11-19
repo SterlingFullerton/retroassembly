@@ -165,40 +165,61 @@ function isMostlyShown(element: HTMLElement) {
   return across >= rect.width / 2
 }
 
-async function bringIntoView(element: unknown) {
-  if (element instanceof HTMLElement) {
-    // What the highlight is drawn around: a game's whole entry, with its console line, not only its link
-    const box = (element.dataset.snFocusParent !== undefined && element.parentElement) || element
-    await scrollIntoView(box, {
-      block: 'center',
-      duration: 300,
-      scrollMode: 'if-needed',
-      // Only what really scrolls: a clipped box, like Home's banner behind its art, would otherwise be nudged
-      skipOverflowHiddenElements: true,
-    })
-    keepClearOfBottomBar(box)
+/**
+ * Brings what has the focus into view: a game's whole entry, with its console line, not only its link. The browser
+ * scrolls smoothly by itself, so another press can head somewhere else straight away and the scrolling changes course,
+ * rather than each press waiting for the last to finish
+ */
+function bringIntoView(element: unknown) {
+  if (!(element instanceof HTMLElement)) {
+    return
   }
+  const box = (element.dataset.snFocusParent !== undefined && element.parentElement) || element
+  const behavior: ScrollBehavior = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? 'auto'
+    : 'smooth'
+  scrollIntoView(box, {
+    behavior(actions) {
+      let pageTop: number | undefined
+      for (const { el, left, top } of actions) {
+        if (el === document.scrollingElement || el === document.documentElement) {
+          pageTop = top
+        } else {
+          el.scroll({ behavior, left, top })
+        }
+      }
+      // Where the page is heading, moved on so what has the focus is clear of a bar pinned to the bottom of the screen
+      const target = pageTop ?? globalThis.scrollY
+      const top = target + Math.max(0, coveredByBottomBar(box, target - globalThis.scrollY))
+      if (Math.round(top) !== Math.round(globalThis.scrollY)) {
+        globalThis.scrollTo({ behavior, top })
+      }
+    },
+    block: 'center',
+    scrollMode: 'if-needed',
+    // Only what really scrolls: a clipped box, like Home's banner behind its art, would otherwise be nudged
+    skipOverflowHiddenElements: true,
+  })
 }
 
 /**
- * A bar pinned to the bottom of the screen (the controller hints on a computer, the tabs on a phone) covers what's under
- * it, though that still counts as on screen, so the page scrolls on until what has the focus is clear of it
+ * How much of a box a bar pinned to the bottom of the screen (the controller hints on a computer, the tabs on a phone)
+ * would cover once the page has scrolled by `pageShift`; that still counts as on screen otherwise
  */
-function keepClearOfBottomBar(box: HTMLElement) {
+function coveredByBottomBar(box: HTMLElement, pageShift: number) {
   const bar = [...document.querySelectorAll<HTMLElement>('[data-sn-bottom-bar]')].find(
     (element) => element.getBoundingClientRect().height > 0,
   )
   if (!bar || box.closest('[data-sn-bottom-bar], [role="dialog"], [role="alertdialog"]')) {
-    return
+    return 0
   }
   const rect = box.getBoundingClientRect()
   const barRect = bar.getBoundingClientRect()
   // Only what's beside the bar, not the sidebar to its left
-  const besideBar = rect.right > barRect.left && rect.left < barRect.right
-  const covered = rect.bottom + 8 - barRect.top
-  if (besideBar && covered > 0) {
-    globalThis.scrollBy({ behavior: 'smooth', top: covered })
+  if (rect.right <= barRect.left || rect.left >= barRect.right) {
+    return 0
   }
+  return rect.bottom - pageShift + 8 - barRect.top
 }
 
 let moving = false
@@ -226,7 +247,7 @@ export function move(direction?: Direction) {
   return new Promise<void>((resolve) => {
     const abortController = new AbortController()
     let found = false
-    async function handleWillFocus(event: Event) {
+    function handleWillFocus(event: Event) {
       found = true
       moving = true
       focus(currentActiveElement)
@@ -242,7 +263,7 @@ export function move(direction?: Direction) {
       // The focus moves first, so the highlight heads straight for what's next while a row or the page scrolls it into
       // view, rather than riding along with what was focused and jumping once the scrolling stops
       focus(nextActiveElement)
-      await bringIntoView(nextActiveElement)
+      bringIntoView(nextActiveElement)
       moving = false
       abortController.abort()
       resolve()
@@ -482,8 +503,6 @@ export async function jump(direction?: Direction) {
     }
     return
   }
-  moving = true
-  await bringIntoView(target)
   focus(target)
-  moving = false
+  bringIntoView(target)
 }
