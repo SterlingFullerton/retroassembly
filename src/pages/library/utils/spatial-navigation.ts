@@ -143,26 +143,42 @@ function isBeside(element: HTMLElement) {
   return to.bottom > from.top + 1 && to.top < from.bottom - 1
 }
 
-/** Whether a move is up or down, while it's looking for where to go */
-let movingVertically = false
+/** How much of a picture its row shows, across */
+function shownFraction(rect: DOMRect, shown: DOMRect) {
+  return (Math.min(rect.right, shown.right) - Math.max(rect.left, shown.left)) / Math.max(rect.width, 1)
+}
 
 /**
- * Up and down land only on something mostly in view: in a row that scrolls sideways, a picture cut off at its edge is
- * passed over for one beside it, rather than for whatever is below the row. Left and right still reach it, scrolling it
- * into view
+ * Up and down go to the nearest row, then land on something mostly in view in it: a picture cut off at a sideways row's
+ * edge gives way to the nearest one beside it that's shown. Leaving cut-off pictures out of the search instead could pass
+ * over the whole row for one further down. Left and right still reach a cut-off picture, scrolling it into view
  */
-function isMostlyShown(element: HTMLElement) {
-  if (!movingVertically) {
-    return true
+function shownInRow(element: unknown) {
+  if (!(element instanceof HTMLElement)) {
+    return element
   }
   const row = element.parentElement?.closest<HTMLElement>('.overflow-x-auto, .overflow-x-scroll')
   if (!row) {
-    return true
+    return element
   }
   const shown = row.getBoundingClientRect()
   const rect = element.getBoundingClientRect()
-  const across = Math.min(rect.right, shown.right) - Math.max(rect.left, shown.left)
-  return across >= rect.width / 2
+  if (shownFraction(rect, shown) >= 0.5) {
+    return element
+  }
+  const center = rect.left + rect.width / 2
+  let best: HTMLElement | undefined
+  let bestDistance = Infinity
+  for (const candidate of row.querySelectorAll<HTMLElement>(navigableSelector)) {
+    const candidateRect = candidate.getBoundingClientRect()
+    const level = candidateRect.bottom > rect.top && candidateRect.top < rect.bottom
+    const distance = Math.abs(candidateRect.left + candidateRect.width / 2 - center)
+    if (isNavigable(candidate) && level && shownFraction(candidateRect, shown) >= 0.5 && distance < bestDistance) {
+      best = candidate
+      bestDistance = distance
+    }
+  }
+  return best ?? element
 }
 
 /**
@@ -265,7 +281,7 @@ export function move(direction?: Direction) {
       found = true
       moving = true
       focus(currentActiveElement)
-      const nextActiveElement = event.target
+      const nextActiveElement = vertical ? shownInRow(event.target) : event.target
       event.preventDefault()
       // Up and down from the sidebar stay in it; left and right go to the page
       if (vertical && inSidebar(currentActiveElement) && !inSidebar(nextActiveElement)) {
@@ -286,10 +302,8 @@ export function move(direction?: Direction) {
     // Up and down from the page look only in the page: past its end isn't the sidebar's Settings
     document.documentElement.classList.toggle('sn-in-page', vertical && !inSidebar(currentActiveElement))
     sidewaysFrom = vertical || !(currentActiveElement instanceof HTMLElement) ? undefined : currentActiveElement
-    movingVertically = vertical
     SpatialNavigation.move(direction)
     sidewaysFrom = undefined
-    movingVertically = false
     document.documentElement.classList.remove('sn-in-page')
     // Nothing more that way: what's there is scrolled to its edge, so a heading or the end of a row can be seen
     if (!found) {
@@ -390,7 +404,7 @@ export function resetFocus({ force }: { force?: boolean } = {}) {
 
 export function init() {
   SpatialNavigation.set({
-    navigableFilter: (element: HTMLElement) => !holdsControls(element) && isBeside(element) && isMostlyShown(element),
+    navigableFilter: (element: HTMLElement) => !holdsControls(element) && isBeside(element),
   })
 
   SpatialNavigation.add({
