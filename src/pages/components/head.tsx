@@ -28,7 +28,6 @@ export function Head() {
 
       {/* metadata related */}
       <meta content={t(metadata.descriptionI18nKey)} name='description' />
-      <link href={metadata.link} rel='canonical' />
 
       <link href='/assets/logo/logo-192x192.png' rel='icon' sizes='any' />
       <link href='/assets/logo/logo.svg' rel='icon' type='image/svg+xml' />
@@ -39,16 +38,12 @@ export function Head() {
       <style dangerouslySetInnerHTML={{ __html: getFontFaces() }} />
 
       <meta content='website' property='og:type' />
-      <meta content={metadata.link} property='og:url' />
       <meta content={metadata.title} property='og:title' />
       <meta content={t(metadata.descriptionI18nKey)} property='og:description' />
-      <meta content={new URL('/assets/screenshots/library.jpeg', metadata.link).href} property='og:image' />
 
-      <meta content='summary_large_image' name='twitter:card' />
-      <meta content={metadata.link} name='twitter:url' />
+      <meta content='summary' name='twitter:card' />
       <meta content={metadata.title} name='twitter:title' />
       <meta content={t(metadata.descriptionI18nKey)} name='twitter:description' />
-      <meta content={new URL('/assets/screenshots/library.jpeg', metadata.link).href} name='twitter:image' />
 
       {/* perfermance */}
       {(isCDNCacheEnabled() ? [] : [cdnHost, libretroThumbnailsHost]).map((host) => (

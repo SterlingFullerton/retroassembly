@@ -1,6 +1,6 @@
 {
   "private": true,
-  "repository": "arianrhodsandlot/retroassembly",
+  "repository": "SterlingFullerton/retroassembly",
   "type": "module",
   "imports": {
     "#@/*": "./src/*"

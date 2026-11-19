@@ -1,7 +1,6 @@
 import { styleText } from 'node:util'
 import { $ } from 'execa'
 import isDocker from 'is-docker'
-import { links } from '../src/constants/links.ts'
 import { metadata } from '../src/constants/metadata.ts'
 
 export const exec = $({ env: { FORCE_COLOR: 'true' }, verbose: 'short' })
@@ -27,9 +26,5 @@ export function logServerInfo(hostname: string, port: number | string, isDev = f
     messages.push(styleText('blue', 'inside a Docker container'))
   }
   console.info(banner)
-  console.info('Get involved in our community:')
-  for (const link of links) {
-    console.info('•', link.text, styleText(['blue', 'underline'], link.url))
-  }
   console.info('\n', messages.join(' '), '\n')
 }

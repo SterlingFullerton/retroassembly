@@ -1,7 +1,5 @@
 import { Button, Dialog, VisuallyHidden } from '@radix-ui/themes'
-import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
-import { linkMap, links } from '#@/constants/links.ts'
 import { metadata } from '#@/constants/metadata.ts'
 import { Logo } from '#@/pages/components/logo.tsx'
 import { DialogRoot } from '../../dialog-root.tsx'
@@ -21,57 +19,18 @@ export function AboutDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProp
         </VisuallyHidden>
         <div className='flex flex-col items-center gap-2 p-2 text-center'>
           <Logo height='56' width='56' />
-          <a
-            className='font-serif text-xl font-semibold text-(--accent-11)'
-            href={metadata.link}
-            rel='noreferrer noopener'
-            target='_blank'
-          >
-            {metadata.title}
-          </a>
+          <div className='font-serif text-xl font-semibold text-(--accent-11)'>{metadata.title}</div>
           <div className='font-serif text-sm'>{t(metadata.descriptionI18nKey)}</div>
-          <div className='flex flex-col gap-2 py-2 text-xs opacity-70'>
+          <div className='flex flex-col gap-2 pt-2 pb-4 text-xs opacity-70'>
             {metadata.version ? (
               <div>
                 {t('common.version')}:
-                <a
-                  className='ml-0.5 underline'
-                  href={`${linkMap.github.url}/tree/${metadata.version}`}
-                  rel='noreferrer noopener'
-                  target='_blank'
-                >
-                  {metadata.version}
-                </a>
+                <span className='ml-0.5'>{metadata.version}</span>
               </div>
             ) : null}
             <div>
               {t('common.date')}: <span className='ml-0.5'>{metadata.buildDate}</span>
             </div>
-          </div>
-          <div className='mt-1 mb-4 flex items-center justify-center gap-2 text-xs'>
-            <span>&copy; 2025</span>
-            <a
-              className='underline'
-              href='https://github.com/arianrhodsandlot'
-              rel='noreferrer noopener'
-              target='_blank'
-            >
-              arianrhodsandlot
-            </a>
-            ·
-            {links.map((link) => (
-              <a
-                aria-label={link.name}
-                className='flex-center gap-1'
-                href={link.url}
-                key={link.name}
-                rel='noreferrer noopener'
-                target='_blank'
-                title={link.name}
-              >
-                <span className={clsx(link.icon, 'mr-1 size-4')} />
-              </a>
-            ))}
           </div>
         </div>
 
