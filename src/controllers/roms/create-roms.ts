@@ -9,6 +9,7 @@ import { compressPspGame, getCsoFileId, isCompressible } from '#@/utils/server/c
 import { getDiscFields, updateDiscGroups } from '#@/utils/server/disc-groups.ts'
 import { DomainError } from '#@/utils/server/domain-error.ts'
 import { getFilePartialDigest } from '#@/utils/server/file.ts'
+import { findLaunchboxAgain } from '#@/utils/server/find-launchbox-again.ts'
 import { assertCanWriteLibrary, type LibraryScope } from '#@/utils/server/library-scope.ts'
 import { msleuth } from '#@/utils/server/msleuth.ts'
 import { countRoms } from './count-roms.ts'
@@ -91,6 +92,16 @@ export async function createRom(
     gameInfo = gameInfoList?.[0] || {}
   } catch (error) {
     console.warn(error)
+  }
+
+  // Known to libretro but not matched in LaunchBox, which has the description: often only a revision or dump tag in the
+  // name is in the way, so it's looked up again without them
+  if (gameInfo.libretro && !gameInfo.launchbox) {
+    gameInfo.launchbox = await findLaunchboxAgain({
+      fileName: file.name,
+      libretroName: gameInfo.libretro.name,
+      platform,
+    })
   }
 
   for (const key of Object.keys(gameInfo)) {
