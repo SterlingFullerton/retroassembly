@@ -232,3 +232,23 @@ a.pending:focus {
 body:fullscreen:not(.overflow-hidden) {
   overflow-y: auto;
 }
+
+/* Settings' console list: a plain list of checkboxes, no box around each console; a light background on hover */
+.platform-list {
+  margin-inline: calc(var(--space-2) * -1);
+}
+.platform-list .rt-CheckboxCardsItem {
+  --checkbox-cards-item-padding-left: var(--space-2);
+  --checkbox-cards-item-padding-top: var(--space-2);
+  --checkbox-cards-item-padding-bottom: var(--space-2);
+  box-shadow: none;
+}
+.platform-list .rt-CheckboxCardsItem::after {
+  box-shadow: none !important;
+}
+.platform-list .rt-CheckboxCardsItem::before {
+  background-color: transparent !important;
+}
+.platform-list .rt-CheckboxCardsItem:hover::before {
+  background-color: var(--gray-a3) !important;
+}

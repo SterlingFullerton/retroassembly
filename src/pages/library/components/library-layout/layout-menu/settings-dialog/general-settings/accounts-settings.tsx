@@ -1,4 +1,4 @@
-import { Badge, Callout, Card, Tabs } from '@radix-ui/themes'
+import { Badge, Callout, Tabs } from '@radix-ui/themes'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouteLoaderData } from 'react-router'
@@ -31,23 +31,17 @@ export function AccountsSettings() {
   if (!isSuperUser) {
     return (
       <div>
-        <SettingsTitle>
-          <span className='icon-[mdi--account-multiple]' />
-          {t('common.accounts')}
-        </SettingsTitle>
-        <Card>
+        <SettingsTitle>{t('common.accounts')}</SettingsTitle>
+        <div>
           <UserTabContent canDelete={false} user={currentUser} />
-        </Card>
+        </div>
       </div>
     )
   }
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--account-multiple]' />
-        {t('common.accounts')}
-      </SettingsTitle>
+      <SettingsTitle>{t('common.accounts')}</SettingsTitle>
 
       {usersError ? (
         <Callout.Root className='mb-4' color='red'>
@@ -59,7 +53,7 @@ export function AccountsSettings() {
       ) : null}
 
       {/* Super users: Show tabs with users */}
-      <Card>
+      <div>
         <Tabs.Root onValueChange={setSelectedUserId} value={selectedUserId || currentUser.id}>
           <Tabs.List wrap='wrap'>
             {users?.map((user) => (
@@ -93,7 +87,7 @@ export function AccountsSettings() {
             </Tabs.Content>
           ))}
         </Tabs.Root>
-      </Card>
+      </div>
 
       <CreateUserDialog
         onOpenChange={setCreateDialogOpen}

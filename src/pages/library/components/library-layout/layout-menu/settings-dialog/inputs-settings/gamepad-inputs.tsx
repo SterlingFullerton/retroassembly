@@ -1,4 +1,4 @@
-import { Callout, Card } from '@radix-ui/themes'
+import { Callout } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -161,10 +161,9 @@ export function GamepadInputs() {
         </Callout.Text>
       </Callout.Root>
 
-      <Card className='mt-2'>
+      <div className='mt-2'>
         {gamepad?.id ? (
           <SettingsTitle>
-            <span className='icon-[mdi--google-gamepad]' />
             <div className='flex items-baseline gap-2'>
               <GamepadTitle id={gamepad.id} />
             </div>
@@ -173,7 +172,7 @@ export function GamepadInputs() {
         {gamepad?.id ? <GamepadLiveButtons id={gamepad.id} index={gamepad.index} /> : null}
 
         {connected ? (
-          <div className='flex flex-col gap-4 p-4'>
+          <div className='flex flex-col gap-4 py-2'>
             {buttonGroups.map(({ buttons, type, className }) => (
               <div className={clsx('flex flex-col gap-4 lg:flex-row', className)} key={type}>
                 {buttons.map((button) => (
@@ -195,7 +194,7 @@ export function GamepadInputs() {
             <span className='lg:text-2xl'>{t('gamepad.pressAnyKey')}</span>
           </div>
         )}
-      </Card>
+      </div>
     </>
   )
 }

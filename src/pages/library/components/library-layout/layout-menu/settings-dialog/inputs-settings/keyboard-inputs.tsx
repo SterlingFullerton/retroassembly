@@ -1,4 +1,3 @@
-import { Card } from '@radix-ui/themes'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Preference } from '#@/constants/preference.ts'
@@ -153,8 +152,8 @@ export function KeyboardInputs() {
     },
   ]
   return (
-    <Card>
-      <div className='flex flex-col gap-4 p-4'>
+    <div>
+      <div className='flex flex-col gap-4 py-2'>
         <div className='grid grid-cols-1 gap-x-10 lg:grid-cols-2'>
           {columns.map((types) => (
             <div key={types[0]}>
@@ -188,6 +187,6 @@ export function KeyboardInputs() {
           </UpdateButton>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }

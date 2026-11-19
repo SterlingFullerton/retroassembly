@@ -1,4 +1,4 @@
-import { Card, Switch } from '@radix-ui/themes'
+import { Switch } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { goesFullscreen } from '#@/constants/preference.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
@@ -23,16 +23,12 @@ export function ShaderSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--video]' />
-        {t('settings.video')}
-      </SettingsTitle>
+      <SettingsTitle>{t('settings.video')}</SettingsTitle>
 
-      <Card>
-        <div className='flex flex-col gap-2 py-2'>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
           <div>
-            <SettingsTitle className='text-base'>
-              <span className='icon-[mdi--monitor-shimmer]' />
+            <SettingsTitle className='mb-0 justify-between text-base font-normal'>
               {t('settings.shader')}
               <ShaderSelect
                 disabled={isLoading}
@@ -44,10 +40,7 @@ export function ShaderSettings() {
 
           <div>
             <label className='flex items-center justify-between gap-2'>
-              <SettingsTitle className='mb-0 text-base'>
-                <span className='icon-[mdi--blur]' />
-                {t('settings.bilinearFiltering')}
-              </SettingsTitle>
+              <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.bilinearFiltering')}</SettingsTitle>
               <Switch
                 checked={preference.emulator.videoSmooth}
                 disabled={isLoading}
@@ -61,7 +54,7 @@ export function ShaderSettings() {
                 }
               />
             </label>
-            <div className='px-6 text-xs opacity-80'>
+            <div className='text-xs text-(--gray-11)'>
               {t('settings.blurDescription')}
               <br />
               {t('settings.cannotEnableWithShaders')}
@@ -70,10 +63,7 @@ export function ShaderSettings() {
 
           <div>
             <label className='flex items-center justify-between gap-2'>
-              <SettingsTitle className='mb-0 text-base'>
-                <span className='icon-[mdi--fullscreen]' />
-                {t('settings.goFullscreenOnLaunch')}
-              </SettingsTitle>
+              <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.goFullscreenOnLaunch')}</SettingsTitle>
               <Switch
                 checked={goesFullscreen(preference.emulator.fullscreen)}
                 disabled={isLoading}
@@ -86,10 +76,10 @@ export function ShaderSettings() {
                 }
               />
             </label>
-            <div className='px-6 text-xs opacity-80'>{t('emulator.fullscreenNotSupported')}</div>
+            <div className='text-xs text-(--gray-11)'>{t('emulator.fullscreenNotSupported')}</div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

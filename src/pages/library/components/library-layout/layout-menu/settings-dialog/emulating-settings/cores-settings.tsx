@@ -1,4 +1,4 @@
-import { Card, Select } from '@radix-ui/themes'
+import { Select } from '@radix-ui/themes'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { coreDisplayNameMap, type CoreName, coreOptionsMap } from '#@/constants/core.ts'
@@ -41,10 +41,9 @@ export function CoresSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--computer-classic]' />
+      <SettingsTitle className='justify-between'>
         {t('common.emulationFor')}
-        <div className='ml-2 flex flex-col gap-2'>
+        <div className='flex flex-col gap-2'>
           <Select.Root
             onValueChange={(value: typeof selectedPlatform) => setSelectedPlatform(value)}
             size='3'
@@ -79,19 +78,17 @@ export function CoresSettings() {
         </div>
       </SettingsTitle>
 
-      <Card>
-        <div className='flex flex-col gap-4'>
-          <RewindSettings platform={selectedPlatform} />
+      <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
+        <RewindSettings platform={selectedPlatform} />
 
-          <BIOSOptions platform={selectedPlatform} />
+        <BIOSOptions platform={selectedPlatform} />
 
-          <PlatformShaderSettings platform={selectedPlatform} />
-        </div>
+        <PlatformShaderSettings platform={selectedPlatform} />
 
-        <div className='mt-2'>
-          <label className='mt-2 flex flex-wrap items-center gap-x-2'>
-            <SettingsTitle as='h4'>
-              <span className='icon-[mdi--monitor-screenshot]' /> {t('common.emulator')}
+        <div>
+          <label className='flex flex-wrap items-center justify-between gap-x-2'>
+            <SettingsTitle as='h4' className='mb-0 text-base font-normal'>
+              {t('common.emulator')}
             </SettingsTitle>
 
             <Select.Root onValueChange={handleValueChange} size='2' value={core}>
@@ -129,7 +126,7 @@ export function CoresSettings() {
             </div>
           ) : null}
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

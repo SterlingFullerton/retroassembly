@@ -1,4 +1,4 @@
-import { Card, CheckboxCards } from '@radix-ui/themes'
+import { CheckboxCards } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { platforms as allPlatforms } from '#@/constants/platform.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
@@ -14,13 +14,16 @@ export function PlatformSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--order-checkbox-ascending]' />
-        {t('settings.enabledPlatforms')}
-      </SettingsTitle>
-      <Card>
+      <SettingsTitle>{t('settings.enabledPlatforms')}</SettingsTitle>
+      <div>
         {/* One column on a phone held upright, two when there's room, four on a computer */}
-        <CheckboxCards.Root columns={{ initial: '1', md: '4', xs: '2' }} size='1' value={preference.ui.platforms}>
+        <CheckboxCards.Root
+          className='platform-list'
+          columns={{ initial: '1', md: '4', xs: '2' }}
+          gap='0'
+          size='1'
+          value={preference.ui.platforms}
+        >
           {platforms.map((platform) => (
             <PlatformCheckboxItem
               disabled={preference.ui.platforms.length < 2 && preference.ui.platforms.includes(platform.name)}
@@ -43,7 +46,7 @@ export function PlatformSettings() {
             {t('emulator.resetToDefaults')}
           </UpdateButton>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

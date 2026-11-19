@@ -1,4 +1,4 @@
-import { Card, Switch } from '@radix-ui/themes'
+import { Switch } from '@radix-ui/themes'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { SettingsTitle } from '../settings-title.tsx'
 
@@ -7,17 +7,11 @@ export function LayoutSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--order-checkbox-ascending]' />
-        Layout
-      </SettingsTitle>
-      <Card>
-        <div className='flex flex-col gap-2 py-2'>
+      <SettingsTitle>Layout</SettingsTitle>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='text-base'>
-              <span className='icon-[mdi--page-layout-sidebar-left]' />
-              Show Sidebar
-            </SettingsTitle>
+            <SettingsTitle className='text-base font-normal'>Show Sidebar</SettingsTitle>
             <Switch
               checked={preference.ui.showSidebar}
               disabled={isLoading}
@@ -25,7 +19,7 @@ export function LayoutSettings() {
             />
           </label>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

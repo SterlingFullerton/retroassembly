@@ -1,4 +1,4 @@
-import { Card, Select } from '@radix-ui/themes'
+import { Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { locales } from '#@/locales/locales.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
@@ -13,15 +13,11 @@ export function LanguageSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--translate-variant]' />
-        {t('settings.language')}
-      </SettingsTitle>
-      <Card>
-        <div className='flex flex-col gap-2 py-2'>
+      <SettingsTitle>{t('settings.language')}</SettingsTitle>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='mb-0 min-w-0 text-base'>
-              <span className='icon-[mdi--web]' />
+            <SettingsTitle className='mb-0 min-w-0 text-base font-normal'>
               {t('settings.interfaceLanguage')}
             </SettingsTitle>
             <Select.Root
@@ -48,10 +44,7 @@ export function LanguageSettings() {
           </label>
 
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='mb-0 min-w-0 text-base'>
-              <span className='icon-[mdi--calendar-clock]' />
-              {t('settings.dateFormat')}
-            </SettingsTitle>
+            <SettingsTitle className='mb-0 min-w-0 text-base font-normal'>{t('settings.dateFormat')}</SettingsTitle>
             <Select.Root
               onValueChange={async (value) => {
                 await update({ ui: { dateFormat: value } })
@@ -73,7 +66,7 @@ export function LanguageSettings() {
             </Select.Root>
           </label>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

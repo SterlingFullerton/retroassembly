@@ -1,4 +1,4 @@
-import { Card, Select, Switch } from '@radix-ui/themes'
+import { Select, Switch } from '@radix-ui/themes'
 import { range } from 'es-toolkit'
 import { useTranslation } from 'react-i18next'
 import type { ResolvedPreference } from '#@/constants/preference.ts'
@@ -19,44 +19,38 @@ export function AccessibilitySettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--accessibility]' />
-        {t('settings.accessibility')}
-      </SettingsTitle>
-      <Card>
-        <div className='flex flex-col gap-4 py-2 lg:flex-row'>
-          <label className='flex items-center gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
-              <span className='icon-[mdi--water-opacity]' />
-              {t('settings.saturation')}
-            </SettingsTitle>
-            <Select.Root
-              onValueChange={async (value) => {
-                const saturation = Math.trunc(Number(value))
-                const resolvedPreference = await update({ ui: { saturation } })
-                if (resolvedPreference) {
-                  updateGlobalSaturation(resolvedPreference)
-                }
-              }}
-              size='2'
-              value={String(preference.ui.saturation)}
-            >
-              <Select.Trigger disabled={isLoading} />
-              <Select.Content>
-                {saturationOptions.map((option) => (
-                  <Select.Item key={option} value={String(option)}>
-                    {option}%
-                  </Select.Item>
-                ))}
-              </Select.Content>
-            </Select.Root>
-          </label>
+      <SettingsTitle>{t('settings.accessibility')}</SettingsTitle>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
+          <div>
+            <label className='flex items-center justify-between gap-2'>
+              <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.saturation')}</SettingsTitle>
+              <Select.Root
+                onValueChange={async (value) => {
+                  const saturation = Math.trunc(Number(value))
+                  const resolvedPreference = await update({ ui: { saturation } })
+                  if (resolvedPreference) {
+                    updateGlobalSaturation(resolvedPreference)
+                  }
+                }}
+                size='2'
+                value={String(preference.ui.saturation)}
+              >
+                <Select.Trigger disabled={isLoading} />
+                <Select.Content>
+                  {saturationOptions.map((option) => (
+                    <Select.Item key={option} value={String(option)}>
+                      {option}%
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </label>
+            <div className='text-xs text-(--gray-11)'>{t('settings.saturationDescription')}</div>
+          </div>
 
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
-              <span className='icon-[mdi--image]' />
-              {t('settings.applyToImages')}
-            </SettingsTitle>
+            <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.applyToImages')}</SettingsTitle>
             <Switch
               checked={preference.ui.saturationApplyToImages}
               disabled={isLoading}
@@ -70,10 +64,7 @@ export function AccessibilitySettings() {
           </label>
 
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
-              <span className='icon-[mdi--monitor-eye]' />
-              {t('settings.applyToGame')}
-            </SettingsTitle>
+            <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.applyToGame')}</SettingsTitle>
             <Switch
               checked={preference.ui.saturationApplyToGame}
               disabled={isLoading}
@@ -86,8 +77,7 @@ export function AccessibilitySettings() {
             />
           </label>
         </div>
-        <div className='text-xs opacity-50 lg:pl-6'>{t('settings.saturationDescription')}</div>
-      </Card>
+      </div>
     </div>
   )
 }

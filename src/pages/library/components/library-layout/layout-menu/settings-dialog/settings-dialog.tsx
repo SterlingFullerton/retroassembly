@@ -59,10 +59,7 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
           }
         }}
       >
-        <Dialog.Title className='flex items-center gap-2'>
-          <span className='icon-[mdi--cog]' />
-          {t('nav.settings')}
-        </Dialog.Title>
+        <Dialog.Title className='flex items-center gap-2'>{t('nav.settings')}</Dialog.Title>
 
         <div className='settings-fill'>
           <Tabs.Root asChild onValueChange={handleValueChange} value={tabName}>

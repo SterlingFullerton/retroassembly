@@ -1,4 +1,4 @@
-import { Button, Callout, Card } from '@radix-ui/themes'
+import { Button, Callout } from '@radix-ui/themes'
 import type { SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
@@ -60,11 +60,8 @@ export function AccountSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--account]' />
-        {t('common.account')}
-      </SettingsTitle>
-      <Card>
+      <SettingsTitle>{t('common.account')}</SettingsTitle>
+      <div>
         <form className='flex flex-col gap-2 lg:w-xl' onSubmit={handleSubmit}>
           <div className='grid-cols-2 grid-rows-2 gap-4 lg:grid'>
             {accountFormFields.map((field) => (
@@ -95,7 +92,7 @@ export function AccountSettings() {
             </Callout.Root>
           ) : null}
         </form>
-      </Card>
+      </div>
     </div>
   )
 }

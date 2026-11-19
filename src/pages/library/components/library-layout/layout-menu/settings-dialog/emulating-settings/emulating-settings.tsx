@@ -4,7 +4,7 @@ import { ShaderSettings } from './shader-settings.tsx'
 
 export function EmulatingSettings() {
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col divide-y divide-(--gray-a4) *:py-5 *:first:pt-0 *:last:pb-0'>
       <AutosaveSettings />
       <ShaderSettings />
       <CoresSettings />

@@ -29,12 +29,12 @@ export function CoreOptions({
   }
 
   return (
-    <div className='flex flex-col'>
-      <SettingsTitle>
-        <span className='icon-[mdi--wrench]' /> {t('common.options')}
+    <div className='mt-4 flex flex-col'>
+      <SettingsTitle as='h4' className='mb-0 text-base font-normal'>
+        {t('common.options')}
       </SettingsTitle>
 
-      <div className='mt-3 flex w-full flex-1 flex-col gap-2 px-6'>
+      <div className='mt-3 flex w-full flex-1 flex-col gap-2'>
         <Callout.Root size='1'>
           <Callout.Icon>
             <span className='icon-[mdi--warning]' />

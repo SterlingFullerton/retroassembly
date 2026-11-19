@@ -98,11 +98,10 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
 
   return (
     <div>
-      <SettingsTitle as='h4'>
-        <span className='icon-[mdi--chip]' />{' '}
+      <SettingsTitle as='h4' className='text-base font-normal'>
         {t('bios.titleWithPlatform', { platform: t(platformMap[platform].displayNameI18nKey) })}
       </SettingsTitle>
-      <div className='flex flex-col gap-2 px-6'>
+      <div className='flex flex-col gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {bioses.map(({ fileName }) => (
             <Badge key={fileName} size='3' variant='surface'>

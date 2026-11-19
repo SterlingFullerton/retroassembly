@@ -1,4 +1,4 @@
-import { Card, Select } from '@radix-ui/themes'
+import { Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
@@ -33,15 +33,11 @@ export function AutosaveSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--content-save]' />
-        {t('emulator.saveState')}
-      </SettingsTitle>
-      <Card>
-        <div className='flex flex-col gap-2 py-2'>
+      <SettingsTitle>{t('emulator.saveState')}</SettingsTitle>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
           <div>
-            <SettingsTitle className='text-base'>
-              <span className='icon-[mdi--clock]' />
+            <SettingsTitle className='mb-0 justify-between text-base font-normal'>
               {t('settings.autoSaveInterval')}
               <Select.Root onValueChange={handleIntervalChange} value={String(interval)}>
                 <Select.Trigger disabled={isLoading} />
@@ -54,14 +50,14 @@ export function AutosaveSettings() {
                 </Select.Content>
               </Select.Root>
             </SettingsTitle>
-            <div className='px-6 text-xs opacity-80'>
+            <div className='text-xs text-(--gray-11)'>
               {t('emulator.autoSaveSlotsDescription', {
                 count: Number(env.RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM),
               })}
             </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

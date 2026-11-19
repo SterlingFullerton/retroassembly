@@ -15,16 +15,13 @@ export function RewindSettings({ platform }: Readonly<{ platform: PlatformName }
 
   return (
     <div>
-      <SettingsTitle className='text-base'>
+      <SettingsTitle className='mb-0 text-base font-normal'>
         <label className='flex w-full items-center justify-between gap-2'>
-          <SettingsTitle className='mb-0 text-base'>
-            <span className='icon-[mdi--rewind]' />
-            {t('settings.rewind')}
-          </SettingsTitle>
+          <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.rewind')}</SettingsTitle>
           <Switch checked={rewindEnabled} disabled={isLoading} onCheckedChange={handleRewindChange} />
         </label>
       </SettingsTitle>
-      <div className='px-6 text-xs opacity-80'>{t('settings.rewindDescription')}</div>
+      <div className='text-xs text-(--gray-11)'>{t('settings.rewindDescription')}</div>
     </div>
   )
 }

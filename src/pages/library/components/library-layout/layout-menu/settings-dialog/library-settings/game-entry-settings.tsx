@@ -1,4 +1,4 @@
-import { Card, RadioCards, Select, Switch } from '@radix-ui/themes'
+import { RadioCards, Select, Switch } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { camelCase } from 'es-toolkit'
 import { useTranslation } from 'react-i18next'
@@ -11,18 +11,12 @@ export function GameEntrySettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--eye]' />
-        {t('settings.display')}
-      </SettingsTitle>
-      <Card>
-        <div className='flex flex-col gap-2 py-2'>
+      <SettingsTitle>{t('settings.display')}</SettingsTitle>
+      <div>
+        <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
           <label className='flex flex-col gap-2'>
-            <SettingsTitle className='text-base'>
-              <span className='icon-[mdi--grid]' />
-              {t('settings.gameCoverSize')}
-            </SettingsTitle>
-            <div className='px-6'>
+            <SettingsTitle className='text-base font-normal'>{t('settings.gameCoverSize')}</SettingsTitle>
+            <div>
               <RadioCards.Root
                 // One row of five on every screen; on a phone each shows only its size letters, and the chosen one is named
                 // below
@@ -60,10 +54,7 @@ export function GameEntrySettings() {
           </label>
 
           <label className='flex items-center justify-between gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
-              <span className='icon-[mdi--text-long]' />
-              {t('settings.showGameTitles')}
-            </SettingsTitle>
+            <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.showGameTitles')}</SettingsTitle>
             <Switch
               checked={preference.ui.showTitle}
               disabled={isLoading}
@@ -73,10 +64,7 @@ export function GameEntrySettings() {
 
           {preference.ui.showTitle ? (
             <label className='flex items-center justify-between gap-2'>
-              <SettingsTitle className='mb-0 text-base'>
-                <span className='icon-[mdi--earth]' />
-                {t('settings.showDistrict')}
-              </SettingsTitle>
+              <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.showDistrict')}</SettingsTitle>
               <Switch
                 checked={preference.ui.showDistrictOnTitle}
                 disabled={isLoading}
@@ -85,11 +73,8 @@ export function GameEntrySettings() {
             </label>
           ) : null}
 
-          <label className='flex items-center gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
-              <span className='icon-[mdi--text-long]' />
-              {t('settings.showFocusIndicators')}
-            </SettingsTitle>
+          <label className='flex items-center justify-between gap-2'>
+            <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.showFocusIndicators')}</SettingsTitle>
             <Select.Root
               onValueChange={(value) => update({ ui: { showFocusIndicators: value } })}
               size='2'
@@ -104,7 +89,7 @@ export function GameEntrySettings() {
             </Select.Root>
           </label>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

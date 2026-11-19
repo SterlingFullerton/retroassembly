@@ -27,12 +27,9 @@ export function PlatformShaderSettings({ platform }: Readonly<{ platform: Platfo
 
   return (
     <div>
-      <SettingsTitle className='text-base'>
+      <SettingsTitle className='mb-0 text-base font-normal'>
         <label className='flex w-full items-center justify-between gap-2'>
-          <SettingsTitle className='mb-0 text-base'>
-            <span className='icon-[mdi--monitor-shimmer]' />
-            {t('settings.platformShader')}
-          </SettingsTitle>
+          <SettingsTitle className='mb-0 text-base font-normal'>{t('settings.platformShader')}</SettingsTitle>
           <Switch
             checked={platformPreference.shader !== 'inherit'}
             disabled={isLoading}
@@ -40,7 +37,7 @@ export function PlatformShaderSettings({ platform }: Readonly<{ platform: Platfo
           />
         </label>
       </SettingsTitle>
-      <div className={clsx('px-6', { hidden: platformPreference.shader === 'inherit' })}>
+      <div className={clsx('mt-2', { hidden: platformPreference.shader === 'inherit' })}>
         <ShaderSelect
           disabled={isLoading}
           onValueChange={handleShaderChange}

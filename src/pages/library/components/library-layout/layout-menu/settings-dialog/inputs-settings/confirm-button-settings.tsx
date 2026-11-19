@@ -20,11 +20,8 @@ export function ConfirmButtonSettings() {
 
   return (
     <div>
-      <SettingsTitle>
-        <span className='icon-[mdi--gamepad-circle]' />
-        {t('settings.confirmCancelButtons')}
-      </SettingsTitle>
-      <div className='px-6 lg:w-sm'>
+      <SettingsTitle>{t('settings.confirmCancelButtons')}</SettingsTitle>
+      <div className='lg:w-sm'>
         <RadioCards.Root
           columns='1'
           defaultValue='1'
