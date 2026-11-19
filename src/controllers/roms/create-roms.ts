@@ -10,8 +10,8 @@ import { getDiscFields, updateDiscGroups } from '#@/utils/server/disc-groups.ts'
 import { DomainError } from '#@/utils/server/domain-error.ts'
 import { getFilePartialDigest } from '#@/utils/server/file.ts'
 import { findLaunchboxAgain } from '#@/utils/server/find-launchbox-again.ts'
+import { identifyGames } from '#@/utils/server/game-info/lookup.ts'
 import { assertCanWriteLibrary, type LibraryScope } from '#@/utils/server/library-scope.ts'
-import { msleuth } from '#@/utils/server/msleuth.ts'
 import { countRoms } from './count-roms.ts'
 
 function getGenres({ launchbox, libretro }) {
@@ -85,7 +85,7 @@ export async function createRom(
   // Look up game info
   let gameInfo: Record<string, any> = {}
   try {
-    const gameInfoList = await msleuth.identify({
+    const gameInfoList = identifyGames({
       files: [{ md5: md5 || '', name: file.name }],
       platform,
     })
@@ -97,7 +97,7 @@ export async function createRom(
   // Known to libretro but not matched in LaunchBox, which has the description: often only a revision or dump tag in the
   // name is in the way, so it's looked up again without them
   if (gameInfo.libretro && !gameInfo.launchbox) {
-    gameInfo.launchbox = await findLaunchboxAgain({
+    gameInfo.launchbox = findLaunchboxAgain({
       fileName: file.name,
       libretroName: gameInfo.libretro.name,
       platform,

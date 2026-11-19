@@ -288,6 +288,9 @@ importers:
       '@types/react-dom':
         specifier: 19.3.0
         version: 19.3.0(@types/react@19.3.0)
+      '@types/sax':
+        specifier: 1.2.7
+        version: 1.2.7
       '@types/spark-md5':
         specifier: 3.0.5
         version: 3.0.5
@@ -357,15 +360,15 @@ importers:
       jotai-ssr:
         specifier: 0.2.0
         version: 0.2.0(jotai@3.0.1(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      libretrodb:
+        specifier: 1.0.0
+        version: 1.0.0
       luxon:
         specifier: 3.7.2
         version: 3.7.2
       motion:
         specifier: 14.1.0
         version: 14.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      msleuth:
-        specifier: github:arianrhodsandlot/msleuth
-        version: https://codeload.github.com/arianrhodsandlot/msleuth/tar.gz/37b98e8b48687f3a68487c6bbb1b58d4dd9078e9(better-sqlite3@13.0.3)(zod@4.6.5)
       nanoid:
         specifier: 6.0.2
         version: 6.0.2
@@ -402,6 +405,9 @@ importers:
       react-router:
         specifier: 8.4.0
         version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      sax:
+        specifier: 1.5.0
+        version: 1.5.0
       smooth-scroll-into-view-if-needed:
         specifier: 2.0.2
         version: 2.0.2
@@ -461,11 +467,6 @@ packages:
     hasBin: true
     peerDependencies:
       vite-plus: '*'
-
-  '@asteasolutions/zod-to-openapi@8.5.0':
-    resolution: {integrity: sha512-SABbKiObg5dLRiTFnqiW1WWwGcg1BJfmHtT2asIBnBHg6Smy/Ms2KHc650+JI4Hw7lSkdiNebEGXpwoxfben8Q==}
-    peerDependencies:
-      zod: ^4.0.0
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1118,19 +1119,6 @@ packages:
         optional: true
       wrangler:
         optional: true
-
-  '@hono/zod-openapi@1.2.2':
-    resolution: {integrity: sha512-va6vsL23wCJ1d0Vd+vGL1XOt+wPwItxirYafuhlW9iC2MstYr2FvsI7mctb45eBTjZfkqB/3LYDJEppPjOEiHw==}
-    engines: {node: '>=16.0.0'}
-    peerDependencies:
-      hono: '>=4.3.6'
-      zod: ^4.0.0
-
-  '@hono/zod-validator@0.7.6':
-    resolution: {integrity: sha512-Io1B6d011Gj1KknV4rXYz4le5+5EubcWEU/speUjuw9XMMIaP3n78yXLhjd2A3PXaXaUwEAluOiAyLqhBEJgsw==}
-    peerDependencies:
-      hono: '>=3.9.0'
-      zod: ^3.25.0 || ^4.0.0
 
   '@hono/zod-validator@0.9.1':
     resolution: {integrity: sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw==}
@@ -2659,24 +2647,6 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@scalar/core@0.4.3':
-    resolution: {integrity: sha512-Fp/J5RyajknwZrDG5/nsJRxL07cS2gJ9wvnvIWcFgsR8HWy/7qMQ+PtpYhdBmMYiBAql1JJobKTu/7ZWqnHaFA==}
-    engines: {node: '>=22'}
-
-  '@scalar/helpers@0.4.1':
-    resolution: {integrity: sha512-XfyYqSUA597wfzS8lmMY1xvYv4si2WytuoBWj7JDpx3E/lVq7YEsticXF/Q30ttFVRBfgQErg8MQI6b6IkZr2Q==}
-    engines: {node: '>=22'}
-
-  '@scalar/hono-api-reference@0.10.3':
-    resolution: {integrity: sha512-bdueh25lDTx8US5qJux4L3LlkXwqe64kUnPEGqFmjAYfNfDJI3KknCgq43P9aikO07wnqpPNRYGj8sxOEubidw==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      hono: ^4.12.5
-
-  '@scalar/types@0.7.3':
-    resolution: {integrity: sha512-9ThydMH28aA5DMm8Q/nTKXKnAKejG7Awlj7IC99oXkq5aOJ60Sn0kS1RWaqQosaWI3ezyPJ7/sUglssAEMA6EA==}
-    engines: {node: '>=22'}
-
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
@@ -2852,6 +2822,9 @@ packages:
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
+  '@types/sax@1.2.7':
+    resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
 
   '@types/spark-md5@3.0.5':
     resolution: {integrity: sha512-lWf05dnD42DLVKQJZrDHtWFidcLrHuip01CtnC2/S6AMhX4t9ZlEUj4iuRlAnts0PQk7KESOqKxeGE/b6sIPGg==}
@@ -3563,98 +3536,6 @@ packages:
     resolution: {integrity: sha512-YCYqxTLIB2OCqf6w9/Vef13baBVbwQIPcbT4Y56AfO6B9ajZhDhD8Jkveg/hJvT/iuMloKD/IYYkyMMNhr7Kqg==}
     hasBin: true
 
-  drizzle-orm@0.45.1:
-    resolution: {integrity: sha512-Te0FOdKIistGNPMq2jscdqngBRfBpC8uMFVwqjf6gtTVJHIQ/dosgV/CLBU2N4ZJBsXL5savCba9b0YJskKdcA==}
-    peerDependencies:
-      '@aws-sdk/client-rds-data': '>=3'
-      '@cloudflare/workers-types': '>=4'
-      '@electric-sql/pglite': '>=0.2.0'
-      '@libsql/client': '>=0.10.0'
-      '@libsql/client-wasm': '>=0.10.0'
-      '@neondatabase/serverless': '>=0.10.0'
-      '@op-engineering/op-sqlite': '>=2'
-      '@opentelemetry/api': ^1.4.1
-      '@planetscale/database': '>=1.13'
-      '@prisma/client': '*'
-      '@tidbcloud/serverless': '*'
-      '@types/better-sqlite3': '*'
-      '@types/pg': '*'
-      '@types/sql.js': '*'
-      '@upstash/redis': '>=1.34.7'
-      '@vercel/postgres': '>=0.8.0'
-      '@xata.io/client': '*'
-      better-sqlite3: '>=7'
-      bun-types: '*'
-      expo-sqlite: '>=14.0.0'
-      gel: '>=2'
-      knex: '*'
-      kysely: '*'
-      mysql2: '>=2'
-      pg: '>=8'
-      postgres: '>=3'
-      prisma: '*'
-      sql.js: '>=1'
-      sqlite3: '>=5'
-    peerDependenciesMeta:
-      '@aws-sdk/client-rds-data':
-        optional: true
-      '@cloudflare/workers-types':
-        optional: true
-      '@electric-sql/pglite':
-        optional: true
-      '@libsql/client':
-        optional: true
-      '@libsql/client-wasm':
-        optional: true
-      '@neondatabase/serverless':
-        optional: true
-      '@op-engineering/op-sqlite':
-        optional: true
-      '@opentelemetry/api':
-        optional: true
-      '@planetscale/database':
-        optional: true
-      '@prisma/client':
-        optional: true
-      '@tidbcloud/serverless':
-        optional: true
-      '@types/better-sqlite3':
-        optional: true
-      '@types/pg':
-        optional: true
-      '@types/sql.js':
-        optional: true
-      '@upstash/redis':
-        optional: true
-      '@vercel/postgres':
-        optional: true
-      '@xata.io/client':
-        optional: true
-      better-sqlite3:
-        optional: true
-      bun-types:
-        optional: true
-      expo-sqlite:
-        optional: true
-      gel:
-        optional: true
-      knex:
-        optional: true
-      kysely:
-        optional: true
-      mysql2:
-        optional: true
-      pg:
-        optional: true
-      postgres:
-        optional: true
-      prisma:
-        optional: true
-      sql.js:
-        optional: true
-      sqlite3:
-        optional: true
-
   drizzle-orm@0.45.4:
     resolution: {integrity: sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==}
     peerDependencies:
@@ -3749,12 +3630,6 @@ packages:
         optional: true
       sqlite3:
         optional: true
-
-  drizzle-zod@0.8.3:
-    resolution: {integrity: sha512-66yVOuvGhKJnTdiqj1/Xaaz9/qzOdRJADpDa68enqS6g3t0kpNkwNYjUuaeXgZfO/UWuIM9HIhSlJ6C5ZraMww==}
-    peerDependencies:
-      drizzle-orm: '>=0.36.0'
-      zod: ^3.25.0 || ^4.0.0
 
   dts-resolver@3.0.0:
     resolution: {integrity: sha512-1T1f+z+4tl9XD+m+0HBgWoL/nm0bOIffyWaUuUSBlFg/86IWvfx+wjNaO/ybU0AJzG9/Mi5hBUgGV6zCmWEN7Q==}
@@ -3915,10 +3790,6 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  hono@4.12.8:
-    resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
-    engines: {node: '>=16.9.0'}
-
   hono@4.13.13:
     resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
     engines: {node: '>=16.9.0'}
@@ -4017,6 +3888,9 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  libretrodb@1.0.0:
+    resolution: {integrity: sha512-o8WJ5iR2nyA7JOVZT/HV0xHp+paHw1jqjLMc875HQrYVEP4GaQS0ZlzGNunOjSth0hdUpV+X8YD8L3/cUsx6Eg==}
 
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
@@ -4233,22 +4107,12 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  msleuth@https://codeload.github.com/arianrhodsandlot/msleuth/tar.gz/37b98e8b48687f3a68487c6bbb1b58d4dd9078e9:
-    resolution: {gitHosted: true, integrity: sha512-hmKMH10Ya0g6+xxhp0fcLFA0WroroX3xw1YsgIClI2y4qPY9TWz2sJhA+bN+va10Qvog3xJO0/xWM/E0F9SN8g==, tarball: https://codeload.github.com/arianrhodsandlot/msleuth/tar.gz/37b98e8b48687f3a68487c6bbb1b58d4dd9078e9}
-    version: 1.0.0
-    engines: {bun: '>=1.3.10'}
-
   nanoid-dictionary@5.0.0:
     resolution: {integrity: sha512-/iCyQHwt36XkaIvSE9fcC8p6DiMPCZMTSMj9UT56Cv6T7f5CuxvOMhpNncaNieQ4z4d32p7ruEtAfRsb7Ya8Gw==}
 
   nanoid@3.3.19:
     resolution: {integrity: sha512-Y2tUNy4ouw6tq5oDSKeQYGOyhkUBhNOcGV/02KC+6kd9eDGqdZd++mjMiIDilrBYvjEnCYvVtsuHCuP+okSfug==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@5.1.7:
-    resolution: {integrity: sha512-ua3NDgISf6jdwezAheMOk4mbE1LXjm1DfMUDMuJf4AqxLFK3ccGpgWizwa5YV7Yz9EpXwEaWoRXSb/BnV0t5dQ==}
-    engines: {node: ^18 || >=20}
     hasBin: true
 
   nanoid@6.0.2:
@@ -4293,9 +4157,6 @@ packages:
   obug@3.0.0:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
     engines: {node: '>=12.20.0'}
-
-  openapi3-ts@4.6.1:
-    resolution: {integrity: sha512-XW9MOldkhoICNeXVzzmXzmOW5G73ppOEGmh7fLCqHjgfdEYCGGN+00MlVCeUZgovjjfC56j9tvtDt1zGabNjjA==}
 
   openid-client@6.8.8:
     resolution: {integrity: sha512-ZsucJA5Ad04Uv7YN4ql+s4GXNmb9uAYQwyJTsJx7CH/MX3JZioLE2pVKi1SC+YrbSLA4Px3Gi30dMjgOZtb6pA==}
@@ -4532,6 +4393,10 @@ packages:
     resolution: {integrity: sha512-/5apOkwWxtACcQtZ5WlrAsKS4JwXVThQPJZ3RqIruRY9UG9M8e0VlXN068xum/JRKA4aIUoJ13ghe/kGCvidiQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
+
+  sax@1.5.0:
+    resolution: {integrity: sha512-21IYA3Q5cQf089Z6tgaUTr7lDAyzoTPx5HRtbhsME8Udispad8dC/+sziTNugOEx54ilvatQ9YCzl4KQLPcRHA==}
+    engines: {node: '>=11.0.0'}
 
   sax@1.6.1:
     resolution: {integrity: sha512-42tBVwLWnaQvW5zc4HbZrTuWccECCZfBi92FDuwtqxasH+JbPB3/FOKb1m222K42R4WxuxzzMsTswfzgtSu64Q==}
@@ -5043,11 +4908,6 @@ snapshots:
       '@types/node': 26.6.5
       vite-plus: 1.1.0(@types/node@26.6.5)(@vitest/ui@5.0.3)(esbuild@0.28.2)(jiti@2.7.0)(playwright@1.64.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
 
-  '@asteasolutions/zod-to-openapi@8.5.0(zod@4.6.5)':
-    dependencies:
-      openapi3-ts: 4.6.1
-      zod: 4.6.5
-
   '@babel/code-frame@7.29.7':
     dependencies:
       '@babel/helper-validator-identifier': 7.29.7
@@ -5473,19 +5333,6 @@ snapshots:
     optionalDependencies:
       miniflare: 4.20260730.0
       wrangler: 4.149.0(@types/node@26.6.5)
-
-  '@hono/zod-openapi@1.2.2(hono@4.12.8)(zod@4.6.5)':
-    dependencies:
-      '@asteasolutions/zod-to-openapi': 8.5.0(zod@4.6.5)
-      '@hono/zod-validator': 0.7.6(hono@4.12.8)(zod@4.6.5)
-      hono: 4.12.8
-      openapi3-ts: 4.6.1
-      zod: 4.6.5
-
-  '@hono/zod-validator@0.7.6(hono@4.12.8)(zod@4.6.5)':
-    dependencies:
-      hono: 4.12.8
-      zod: 4.6.5
 
   '@hono/zod-validator@0.9.1(hono@4.13.13)(zod@4.6.5)':
     dependencies:
@@ -6792,24 +6639,6 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@scalar/core@0.4.3':
-    dependencies:
-      '@scalar/types': 0.7.3
-
-  '@scalar/helpers@0.4.1': {}
-
-  '@scalar/hono-api-reference@0.10.3(hono@4.12.8)':
-    dependencies:
-      '@scalar/core': 0.4.3
-      hono: 4.12.8
-
-  '@scalar/types@0.7.3':
-    dependencies:
-      '@scalar/helpers': 0.4.1
-      nanoid: 5.1.7
-      type-fest: 5.10.0
-      zod: 4.6.5
-
   '@sec-ant/readable-stream@0.4.1': {}
 
   '@sindresorhus/is@7.2.0':
@@ -6957,6 +6786,10 @@ snapshots:
   '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
+
+  '@types/sax@1.2.7':
+    dependencies:
+      '@types/node': 26.6.5
 
   '@types/spark-md5@3.0.5': {}
 
@@ -7419,18 +7252,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.1(better-sqlite3@13.0.3):
-    optionalDependencies:
-      better-sqlite3: 13.0.3
-
   drizzle-orm@0.45.4(better-sqlite3@13.0.3):
     optionalDependencies:
       better-sqlite3: 13.0.3
-
-  drizzle-zod@0.8.3(drizzle-orm@0.45.1(better-sqlite3@13.0.3))(zod@4.6.5):
-    dependencies:
-      drizzle-orm: 0.45.1(better-sqlite3@13.0.3)
-      zod: 4.6.5
 
   dts-resolver@3.0.0: {}
 
@@ -7634,8 +7458,6 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  hono@4.12.8: {}
-
   hono@4.13.13: {}
 
   hookable@6.1.2: {}
@@ -7692,6 +7514,8 @@ snapshots:
 
   kleur@4.1.5:
     optional: true
+
+  libretrodb@1.0.0: {}
 
   lightningcss-android-arm64@1.32.0:
     optional: true
@@ -7864,55 +7688,9 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msleuth@https://codeload.github.com/arianrhodsandlot/msleuth/tar.gz/37b98e8b48687f3a68487c6bbb1b58d4dd9078e9(better-sqlite3@13.0.3)(zod@4.6.5):
-    dependencies:
-      '@hono/zod-openapi': 1.2.2(hono@4.12.8)(zod@4.6.5)
-      '@hono/zod-validator': 0.7.6(hono@4.12.8)(zod@4.6.5)
-      '@scalar/hono-api-reference': 0.10.3(hono@4.12.8)
-      drizzle-orm: 0.45.1(better-sqlite3@13.0.3)
-      drizzle-zod: 0.8.3(drizzle-orm@0.45.1(better-sqlite3@13.0.3))(zod@4.6.5)
-      goodcodes-parser: 2.5.0(patch_hash=0d6b63ddf0231e5a7643df8e6fce96b8eb7f167de7fe13b28159cf77c2a13873)
-      hono: 4.12.8
-      json5: 2.2.3
-      nanoid: 5.1.7
-      nanoid-dictionary: 5.0.0
-    transitivePeerDependencies:
-      - '@aws-sdk/client-rds-data'
-      - '@cloudflare/workers-types'
-      - '@electric-sql/pglite'
-      - '@libsql/client'
-      - '@libsql/client-wasm'
-      - '@neondatabase/serverless'
-      - '@op-engineering/op-sqlite'
-      - '@opentelemetry/api'
-      - '@planetscale/database'
-      - '@prisma/client'
-      - '@tidbcloud/serverless'
-      - '@types/better-sqlite3'
-      - '@types/pg'
-      - '@types/sql.js'
-      - '@upstash/redis'
-      - '@vercel/postgres'
-      - '@xata.io/client'
-      - better-sqlite3
-      - bun-types
-      - expo-sqlite
-      - gel
-      - knex
-      - kysely
-      - mysql2
-      - pg
-      - postgres
-      - prisma
-      - sql.js
-      - sqlite3
-      - zod
-
   nanoid-dictionary@5.0.0: {}
 
   nanoid@3.3.19: {}
-
-  nanoid@5.1.7: {}
 
   nanoid@6.0.2: {}
 
@@ -7947,10 +7725,6 @@ snapshots:
   obug@2.2.1: {}
 
   obug@3.0.0: {}
-
-  openapi3-ts@4.6.1:
-    dependencies:
-      yaml: 2.9.1
 
   openid-client@6.8.8:
     dependencies:
@@ -8241,6 +8015,8 @@ snapshots:
       '@rolldown/binding-openharmony-arm64': 1.2.13
       '@rolldown/binding-win32-arm64-msvc': 1.2.13
       '@rolldown/binding-win32-x64-msvc': 1.2.13
+
+  sax@1.5.0: {}
 
   sax@1.6.1: {}
 
@@ -8692,7 +8468,8 @@ snapshots:
 
   yallist@3.1.1: {}
 
-  yaml@2.9.1: {}
+  yaml@2.9.1:
+    optional: true
 
   yoctocolors@2.2.0: {}
 

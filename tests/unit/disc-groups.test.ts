@@ -10,8 +10,8 @@ import { parseDisc } from '#@/utils/isomorphic/discs.ts'
 const directory = await mkdtemp(path.join(os.tmpdir(), 'retroassembly-discs-'))
 process.env.RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY = path.join(directory, 'data')
 process.env.RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY = path.join(directory, 'data', 'storage')
-process.env.RETROASSEMBLY_RUN_TIME_MSLEUTH_HOST = 'http://127.0.0.1:9/'
-process.env.RETROASSEMBLY_RUN_TIME_MSLEUTH_FALLBACK_HOST = ''
+// No game info database, so games are added by their file names alone
+process.env.RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE = path.join(directory, 'game-info.sqlite')
 
 const { initializeDatabase } = await import('#@/utils/server/migration/initalization.ts')
 const { createServer } = await import('#@/server/create-server.ts')

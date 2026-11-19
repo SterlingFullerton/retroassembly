@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { msleuth } from './msleuth.ts'
+import { identifyGames } from './game-info/lookup.ts'
 
 /**
  * A name without its revision and dump tags: "Castlevania Rev PRG1 (USA)" and "Castlevania (U) (PRG1) [!]" both become
@@ -18,7 +18,7 @@ export function getNameForLaunchbox(name: string) {
  * LaunchBox's data (with the description) for a game libretro knows but LaunchBox didn't match: libretro's name, then
  * the file's, each without the tags that stop the match
  */
-export async function findLaunchboxAgain({
+export function findLaunchboxAgain({
   fileName,
   libretroName,
   platform,
@@ -32,7 +32,7 @@ export async function findLaunchboxAgain({
       continue
     }
     try {
-      const [result] = (await msleuth.identify({ files: [{ name: candidate }], platform })) || []
+      const [result] = identifyGames({ files: [{ name: candidate }], platform }) || []
       if (result?.launchbox) {
         return result.launchbox
       }

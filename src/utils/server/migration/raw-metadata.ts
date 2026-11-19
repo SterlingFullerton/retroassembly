@@ -1,8 +1,8 @@
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
-import { attemptAsync, chunk } from 'es-toolkit'
+import { attempt, chunk } from 'es-toolkit'
 import { romTable, statusEnum } from '#@/databases/schema.ts'
 import { getDatabase } from '../drizzle.ts'
-import { msleuth } from '../msleuth.ts'
+import { queryGames } from '../game-info/lookup.ts'
 
 interface MigrateRomMetadataOptions {
   library: any
@@ -16,7 +16,7 @@ async function migrateRomMetadata({ library, roms }: MigrateRomMetadataOptions) 
 
   console.info(`Starting metadata migration for ${roms.length} ROMs...`)
 
-  // Process in batches of 100 to avoid overwhelming msleuth
+  // Process in batches of 100
   const batches = chunk(roms, 100)
   let totalSuccess = 0
   let totalSkipped = 0
@@ -25,14 +25,14 @@ async function migrateRomMetadata({ library, roms }: MigrateRomMetadataOptions) 
   for (const [batchIndex, batch] of batches.entries()) {
     console.info(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} ROMs)...`)
 
-    // Prepare conditions for msleuth
+    // Prepare conditions for the game info lookup
     const conditions = batch.map(({ launchboxGameId, libretroGameId }) => ({
       launchboxId: launchboxGameId,
       libretroId: libretroGameId,
     }))
 
-    // Fetch metadata from msleuth
-    const [error, metadataList] = await attemptAsync(() => msleuth.query({ conditions }))
+    // Fetch metadata from the game info database
+    const [error, metadataList] = attempt(() => queryGames({ conditions }))
 
     if (error) {
       console.error(`Failed to fetch metadata for batch ${batchIndex + 1}:`, error)
@@ -79,8 +79,8 @@ async function migrateRomMetadata({ library, roms }: MigrateRomMetadataOptions) 
   console.info(`Failed: ${totalFailed} ROMs`)
 }
 
-// Stores the game info for ROMs matched before it was kept in the database. Asks msleuth over the internet, so it runs
-// in the background after the server has started
+// Stores the game info for ROMs matched before it was kept in the database, from the game info database. Runs in the
+// background after the server has started
 export async function backfillRawMetadata() {
   const { library } = getDatabase()
 

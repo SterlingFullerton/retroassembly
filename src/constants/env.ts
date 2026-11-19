@@ -8,11 +8,11 @@ export function getRunTimeEnv() {
     { ...runTimeEnv },
     {
       RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY: path.resolve('data'),
+      // Built with the app by scripts/game-info.ts
+      RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE: path.resolve('game-info', 'game-info.sqlite'),
       RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM: '20',
       RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT: '',
       RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE: '1000',
-      RETROASSEMBLY_RUN_TIME_MSLEUTH_FALLBACK_HOST: 'https://msleuth.fly.dev/',
-      RETROASSEMBLY_RUN_TIME_MSLEUTH_HOST: 'https://msleuth.arianrhodsandlot.workers.dev/',
       RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID: '',
       RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET: '',
       RETROASSEMBLY_RUN_TIME_OIDC_ISSUER: '',

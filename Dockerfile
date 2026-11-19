@@ -23,6 +23,19 @@ COPY src/consoles src/consoles
 COPY src/input src/input
 RUN node scripts/retroarch-cores.ts /cores
 
+# The game info database the app looks games up in (scripts/game-info.ts), built from libretro's and LaunchBox's own
+# databases. Each build asks both servers whether their files changed, and rebuilds it with their latest data if so
+FROM deps AS game-info
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libarchive-tools \
+    && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm i --offline --frozen-lockfile --ignore-scripts
+ADD https://buildbot.libretro.com/assets/frontend/database-rdb.zip /inputs/database-rdb.zip
+ADD https://gamesdb.launchbox-app.com/Metadata.zip /inputs/Metadata.zip
+COPY scripts/game-info.ts scripts/
+COPY src/utils/server/game-info src/utils/server/game-info
+RUN node scripts/game-info.ts /inputs/database-rdb.zip /inputs/Metadata.zip /game-info/game-info.sqlite
+
 FROM deps AS builder
 ARG RETROASSEMBLY_BUILD_TIME_VITE_VERSION
 ENV RETROASSEMBLY_BUILD_TIME_VITE_VERSION=$RETROASSEMBLY_BUILD_TIME_VITE_VERSION
@@ -47,6 +60,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src/databases ./src/databases
 COPY --from=builder /app/dist ./dist
+COPY --from=game-info /game-info ./game-info
 COPY --from=deps-production /app/node_modules ./node_modules
 
 VOLUME ["/app/data"]
