@@ -6,8 +6,12 @@ export async function loader() {
   const c = getContext()
 
   const { token } = c.var
+  // The session cookie is sent on links from other sites too (SameSite=Lax), so only the app itself may log out: a link
+  // to /logout elsewhere would otherwise sign the player out
+  const site = c.req.header('Sec-Fetch-Site')
+  const fromElsewhere = site === 'cross-site' || site === 'same-site'
 
-  if (token) {
+  if (token && !fromElsewhere) {
     await invalidateSession()
     deleteCookie(c, 'token')
   }

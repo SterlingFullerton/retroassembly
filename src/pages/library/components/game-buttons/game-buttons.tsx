@@ -1,10 +1,11 @@
 import { Button, HoverCard } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { noop } from 'es-toolkit'
-import { type MouseEvent, useEffect, useState, useSyncExternalStore } from 'react'
+import { type MouseEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { generatePath, useLoaderData, useLocation, useNavigate } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
+import { goesFullscreen } from '#@/constants/preference.ts'
 import { useLaunchButton } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { useFocusIndicator } from '#@/pages/library/hooks/use-focus-indicator.ts'
@@ -59,6 +60,8 @@ function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; sav
   // Which button was pressed, while its game loads, and whether it's taken long enough to show how far it's got.
   // Loads under half a second show nothing, so a small game doesn't flash anything up
   const [pressed, setPressed] = useState<'continue' | 'start'>()
+  // Continue and Start, found again when the page goes fullscreen: each is drawn anew as it starts showing progress
+  const buttonsRef = useRef<HTMLDivElement>(null)
   const [progressShown, setProgressShown] = useState(false)
   const [launchError, setLaunchError] = useState<unknown>()
   const error = prepareError ?? launchError
@@ -129,6 +132,13 @@ function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; sav
       setLaunchButton(button)
       button.blur()
       syncStyle()
+      // The page goes fullscreen as the game starts loading, which can leave it showing the top of the page; the button,
+      // with how far the download has got, is brought back into view
+      if (goesFullscreen(preference.emulator.fullscreen) && !document.fullscreenElement) {
+        document.addEventListener('fullscreenchange', () => buttonsRef.current?.scrollIntoView({ block: 'center' }), {
+          once: true,
+        })
+      }
     }
   }
 
@@ -238,6 +248,7 @@ function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; sav
 
   const buttons = (
     <div
+      ref={buttonsRef}
       className={clsx(
         'flex w-full',
         compact

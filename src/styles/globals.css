@@ -223,3 +223,12 @@ a.pending:focus {
   width: 100%;
   min-width: 0 !important;
 }
+
+/*
+ * The page goes fullscreen as a game starts loading (see use-emulator.ts). The browser pins a fullscreen element in
+ * place, so without this the page couldn't be scrolled until the game was ready, and Start, with how far the download
+ * has got, could be out of sight below. Once the game is on screen the page is kept still again (overflow-hidden)
+ */
+body:fullscreen:not(.overflow-hidden) {
+  overflow-y: auto;
+}

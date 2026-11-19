@@ -12,7 +12,7 @@ export function setSessionCookie(token: string, expires: Date, secure = isSecure
     expires,
     httpOnly: true,
     path: '/',
-    sameSite: 'Strict',
+    sameSite: 'Lax',
     secure,
   })
 }
