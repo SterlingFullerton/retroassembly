@@ -225,7 +225,9 @@ export function move(direction?: Direction) {
   const vertical = direction === 'up' || direction === 'down'
   return new Promise<void>((resolve) => {
     const abortController = new AbortController()
+    let found = false
     async function handleWillFocus(event: Event) {
+      found = true
       moving = true
       focus(currentActiveElement)
       const nextActiveElement = event.target
@@ -252,7 +254,45 @@ export function move(direction?: Direction) {
     sidewaysFrom = undefined
     movingVertically = false
     document.documentElement.classList.remove('sn-in-page')
+    // Nothing more that way: what's there is scrolled to its edge, so a heading or the end of a row can be seen
+    if (!found) {
+      abortController.abort()
+      scrollToEdge(currentActiveElement, direction)
+      resolve()
+    }
   })
+}
+
+function scrollsAlong(element: HTMLElement, vertical: boolean) {
+  const overflow = getComputedStyle(element)[vertical ? 'overflowY' : 'overflowX']
+  const room = vertical ? element.scrollHeight - element.clientHeight : element.scrollWidth - element.clientWidth
+  return room > 1 && (overflow === 'auto' || overflow === 'scroll')
+}
+
+/**
+ * Scrolls what holds the focus as far as it goes in a direction: a row that scrolls sideways for left and right, a
+ * scrolling box (a dialog, the sidebar) or else the page for up and down. Nothing scrolls where nothing can
+ */
+function scrollToEdge(from: Element, direction: Direction) {
+  const vertical = direction === 'up' || direction === 'down'
+  const toStart = direction === 'up' || direction === 'left'
+  let box: HTMLElement | undefined
+  for (let node = from.parentElement; node && node !== document.body; node = node.parentElement) {
+    if (scrollsAlong(node, vertical)) {
+      box = node
+      break
+    }
+    // Something fixed, like the sidebar or a game's menu, doesn't move with the page
+    if (getComputedStyle(node).position === 'fixed') {
+      return
+    }
+  }
+  if (box) {
+    const end = vertical ? box.scrollHeight : box.scrollWidth
+    box.scrollTo({ behavior: 'smooth', [vertical ? 'top' : 'left']: toStart ? 0 : end })
+  } else if (vertical) {
+    globalThis.scrollTo({ behavior: 'smooth', top: toStart ? 0 : document.documentElement.scrollHeight })
+  }
 }
 
 export function resetFocus({ force }: { force?: boolean } = {}) {
