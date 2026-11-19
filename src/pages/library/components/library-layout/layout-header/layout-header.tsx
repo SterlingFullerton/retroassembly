@@ -1,6 +1,6 @@
 import { Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { metadata } from '#@/constants/metadata.ts'
 import { Logo } from '#@/pages/components/logo.tsx'
 import { useViewport } from '#@/pages/library/hooks/use-viewport.ts'
@@ -26,6 +26,17 @@ export function LayoutHeader() {
   const currentLink = consoleLinks.find(({ to }) => isActive(to))
   const currentRouteName = currentLink?.name
 
+  // On the lists of games, of consoles, favorites and history, the bar names the page: on a phone they have no title of
+  // their own. Elsewhere it shows the app's name
+  const { pathname } = useLocation()
+  const pageNames: Record<string, string> = {
+    [routes.libraryConsoles]: t('nav.consoles'),
+    [routes.libraryFavorites]: t('nav.favorites'),
+    [routes.libraryHistory]: t('nav.history'),
+    [routes.libraryRoms]: t('common.games'),
+  }
+  const pageName = pageNames[pathname.replace(/\/$/u, '')]
+
   async function handleValueChange(value: string) {
     const link = consoleLinks.find(({ name }) => name === value)
     if (link?.to) {
@@ -38,9 +49,12 @@ export function LayoutHeader() {
       <header className='px-safe-offset-2 fixed inset-x-0 top-0 z-2 flex items-center gap-1 bg-(--accent-9) py-1 lg:hidden'>
         <UploadBadge className='absolute inset-x-0 top-full flex items-center justify-center gap-2 bg-(--accent-9) py-1 text-xs text-white' />
 
-        <Link className='flex shrink-0 items-center gap-2 font-bold' data-sn-skip='' to={routes.libraryHome}>
-          <Logo height='32' width='32' />
-        </Link>
+        {/* The logo's side is as wide as the buttons' side, so what's between them is centred on the screen */}
+        <div className='flex w-20 shrink-0'>
+          <Link className='flex shrink-0 items-center gap-2 font-bold' data-sn-skip='' to={routes.libraryHome}>
+            <Logo height='32' width='32' />
+          </Link>
+        </div>
 
         {query ? (
           // A search is on: shown in the bar so it's never on unseen. Tapping it opens the search screen with it, the x
@@ -69,16 +83,17 @@ export function LayoutHeader() {
         ) : (
           <>
             {currentLink ? (
-              <div className='flex h-5 flex-1 justify-center'>
+              <div className='flex h-5 min-w-0 flex-1 justify-center'>
                 <Select.Root onValueChange={handleValueChange} size='2' value={currentRouteName ?? ''}>
                   {/* Shown as the placeholder too (typed as text, but shown as given) */}
                   <Select.Trigger
                     // White as a console's name is, though shown as a placeholder (which is otherwise grey, lost on red)
-                    className='text-white! [&_.rt-SelectTriggerInner]:text-white!'
-                    placeholder={(<HeaderLinkItem link={currentLink} />) as unknown as string}
+                    // A long console name is shortened on a small phone, so it stays clear of the buttons
+                    className='max-w-full! shrink! text-white! [&_.rt-SelectTriggerInner]:min-w-0 [&_.rt-SelectTriggerInner]:text-white! [&_.rt-SelectTriggerInner>span]:block'
+                    placeholder={(<HeaderLinkItem inBar link={currentLink} />) as unknown as string}
                     variant='ghost'
                   >
-                    <HeaderLinkItem link={currentLink} />
+                    <HeaderLinkItem inBar link={currentLink} />
                   </Select.Trigger>
                   <Select.Content>
                     {consoleLinks.map((link) => (
@@ -90,9 +105,19 @@ export function LayoutHeader() {
                 </Select.Root>
               </div>
             ) : (
-              <div className='flex flex-1 justify-center font-serif font-semibold text-white'>{metadata.title}</div>
+              <div className='flex min-w-0 flex-1 justify-center font-semibold text-white'>
+                {pageName ? (
+                  <span className='truncate text-lg'>{pageName}</span>
+                ) : (
+                  <span className='font-serif'>{metadata.title}</span>
+                )}
+              </div>
             )}
+          </>
+        )}
 
+        <div className='flex w-20 shrink-0 justify-end'>
+          {query ? null : (
             <button
               aria-label={t('common.search')}
               className='grid size-10 shrink-0 place-items-center text-white'
@@ -102,10 +127,9 @@ export function LayoutHeader() {
             >
               <span className='icon-[mdi--magnify] size-6' />
             </button>
-          </>
-        )}
-
-        <div className='size-10 shrink-0'>{isNotLargeScreen ? <LayoutMenu inBar /> : null}</div>
+          )}
+          <div className='size-10 shrink-0'>{isNotLargeScreen ? <LayoutMenu inBar /> : null}</div>
+        </div>
       </header>
       <div className='h-12 w-full bg-(--accent-9) lg:hidden' />
     </>

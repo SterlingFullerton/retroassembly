@@ -10,8 +10,16 @@ import { SelectionActions } from './selection-actions.tsx'
 import { SelectionInfo } from './selection-info.tsx'
 import { useGameListActions } from './use-game-list-actions.ts'
 
-/** Favorites and Sort, or what to do with the selected games; `leading` goes at the start of the line, as a console's page puts its game count and Add there */
-export function GameListActions({ className, leading }: Readonly<{ className?: string; leading?: ReactNode }>) {
+/**
+ * Favorites and Sort, or what to do with the selected games; `leading` goes before them, as a console's page puts its
+ * game count and Add there, and `trailing` after. `summary`, on a phone, is the page's count at the far left of the line
+ */
+export function GameListActions({
+  className,
+  leading,
+  summary,
+  trailing,
+}: Readonly<{ className?: string; leading?: ReactNode; summary?: ReactNode; trailing?: ReactNode }>) {
   const { roms, selectedGames, setSelectedGames, shouldHideActions, hasSelectedGames, canSelectAll } =
     useGameListActions()
 
@@ -20,8 +28,9 @@ export function GameListActions({ className, leading }: Readonly<{ className?: s
 
   // A shared library's players can search it (with the search in the sidebar), but not change it or filter by favorites
   if (shouldHideActions) {
-    return leading ? (
+    return leading || summary ? (
       <div className={twMerge('flex items-center gap-2 px-4', className)} data-sn-section=''>
+        <PhoneSummary>{summary}</PhoneSummary>
         {leading}
       </div>
     ) : null
@@ -33,9 +42,11 @@ export function GameListActions({ className, leading }: Readonly<{ className?: s
         clsx('group/actions flex flex-wrap items-center gap-2 px-4', className, {
           'justify-between': hasSelectedGames,
           'justify-end': !hasSelectedGames,
+          // Starting the page on a phone, it lines up with the page's edges
+          'max-lg:px-0': summary,
         }),
       )}
-      data-crowded={leading ? '' : undefined}
+      data-crowded={leading || trailing ? '' : undefined}
       data-sn-section=''
     >
       {hasSelectedGames ? (
@@ -66,8 +77,18 @@ export function GameListActions({ className, leading }: Readonly<{ className?: s
           />
         </>
       ) : (
-        <FilterActions leading={leading} />
+        <>
+          <PhoneSummary>{summary}</PhoneSummary>
+          <FilterActions leading={leading} trailing={trailing} />
+        </>
       )}
     </div>
   )
+}
+
+/** The page's count on a phone, at the left of the line; a computer shows it with the page's title instead */
+function PhoneSummary({ children }: Readonly<{ children?: ReactNode }>) {
+  return children ? (
+    <span className='mr-auto text-sm whitespace-nowrap text-(--gray-11) lg:hidden'>{children}</span>
+  ) : null
 }

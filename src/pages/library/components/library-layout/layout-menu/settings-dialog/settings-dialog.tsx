@@ -62,7 +62,11 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
         <Dialog.Title className='flex items-center gap-2'>{t('nav.settings')}</Dialog.Title>
 
         <div className='settings-fill'>
-          <Tabs.Root asChild onValueChange={handleValueChange} value={tabName}>
+          {/*
+            A tab opens when clicked, or with Enter or a controller's confirm button: the arrow keys and a controller only
+            move between them, and so does the mouse, which moves the focus as it passes over them
+          */}
+          <Tabs.Root activationMode='manual' asChild onValueChange={handleValueChange} value={tabName}>
             <div className='settings-fill'>
               <Tabs.List>
                 {settingsTabs.map(({ iconClass, name }) => (

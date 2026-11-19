@@ -14,7 +14,15 @@ export default function HistoryPage() {
   }
 
   return (
-    <GameListMain>
+    <GameListMain
+      phoneSummary={
+        <Trans
+          components={{ 1: <span /> }}
+          i18nKey='stats.playedGames'
+          values={{ game: gameLabel, gameCount: pagination.total }}
+        />
+      }
+    >
       <h1 className='text-5xl font-semibold'>{title}</h1>
       <PageStats>
         <span className='icon-[mdi--bar-chart] text-(--color-text)' />

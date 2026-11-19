@@ -530,5 +530,6 @@
   "storage.remove": "Odebrat",
   "storage.clearAll": "Vymazat vše",
   "storage.onDevice": "V zařízení",
-  "storage.unknownGame": "Neznámá hra"
+  "storage.unknownGame": "Neznámá hra",
+  "common.numberOfGames": "Počet her"
 }

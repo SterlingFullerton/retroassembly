@@ -3,7 +3,7 @@ import { FavoriteButton } from './favorite-button.tsx'
 import { SortDropdown } from './sort-dropdown.tsx'
 import { useGameListActions } from './use-game-list-actions.ts'
 
-export function FilterActions({ leading }: Readonly<{ leading?: ReactNode }>) {
+export function FilterActions({ leading, trailing }: Readonly<{ leading?: ReactNode; trailing?: ReactNode }>) {
   const {
     showFavoriteButton,
     showSortDropdown,
@@ -29,6 +29,7 @@ export function FilterActions({ leading }: Readonly<{ leading?: ReactNode }>) {
           searching={Boolean(query)}
         />
       )}
+      {trailing}
     </div>
   )
 }

@@ -530,5 +530,6 @@
   "storage.remove": "Удалить",
   "storage.clearAll": "Очистить всё",
   "storage.onDevice": "На устройстве",
-  "storage.unknownGame": "Неизвестная игра"
+  "storage.unknownGame": "Неизвестная игра",
+  "common.numberOfGames": "Количество игр"
 }

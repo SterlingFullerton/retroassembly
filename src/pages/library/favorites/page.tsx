@@ -5,7 +5,7 @@ import { GameListMain } from '../components/game-list-main.tsx'
 import { PageStats } from '../components/page-stats.tsx'
 
 export default function FavoritesPage() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { pagination, roms } = useLoaderData<typeof loader>()
   const gameLabel = t('common.game', { count: pagination.total })
 
@@ -14,7 +14,12 @@ export default function FavoritesPage() {
   }
 
   return (
-    <GameListMain>
+    <GameListMain
+      phoneSummary={t('home.gameCount', {
+        count: pagination.total,
+        formatted: pagination.total.toLocaleString(i18n.language),
+      })}
+    >
       <h1 className='text-5xl font-semibold'>{t('nav.favorites')}</h1>
       <PageStats>
         <span className='icon-[mdi--heart] text-(--color-text)' />

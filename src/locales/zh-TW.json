@@ -512,5 +512,6 @@
   "storage.remove": "移除",
   "storage.clearAll": "全部清除",
   "storage.onDevice": "已存於裝置",
-  "storage.unknownGame": "未知遊戲"
+  "storage.unknownGame": "未知遊戲",
+  "common.numberOfGames": "遊戲數量"
 }

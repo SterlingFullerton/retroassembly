@@ -7,7 +7,7 @@ import { PageStats } from '../components/page-stats.tsx'
 import { UploadSelectButton } from '../platform/components/upload-select-button.tsx'
 
 export default function LibraryROMsPage() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { pagination, platformCount, roms, search } = useLoaderData<typeof loader>()
   const gameLabel = t('common.game', { count: pagination.total })
   const platformLabel = t('common.platform', { count: platformCount })
@@ -18,7 +18,18 @@ export default function LibraryROMsPage() {
 
   return (
     // Favorites and Sort sit in the header on a computer, as on a console's page
-    <GameListMain actionsInHeader>
+    <GameListMain
+      actionsInHeader
+      actionsTrailing={<UploadSelectButton />}
+      // While searching, how many match is above the results instead
+      phoneSummary={
+        search ? (
+          <></>
+        ) : (
+          t('home.gameCount', { count: pagination.total, formatted: pagination.total.toLocaleString(i18n.language) })
+        )
+      }
+    >
       <div>
         <h1 className='text-5xl font-semibold'>{t('common.games')}</h1>
       </div>

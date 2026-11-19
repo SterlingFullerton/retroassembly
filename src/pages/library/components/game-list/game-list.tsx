@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { type ReactNode, useEffect } from 'react'
 import { useSelectedGames } from '../../atoms.ts'
 import { usePreference } from '../../hooks/use-preference.ts'
@@ -12,11 +13,18 @@ import { GameListSearching } from './game-list-searching.tsx'
 export interface GameListProps {
   /** At the start of the Favorites and Sort line */
   actionsLeading?: ReactNode
+  /** After Favorites and Sort */
+  actionsTrailing?: ReactNode
+  /**
+   * On a phone, the page's count at the left of the Favorites and Sort line, which then starts the page: the page's own
+   * title and count are left out there, its name being in the red bar
+   */
+  phoneSummary?: ReactNode
   /** On a computer the page shows that line in its own header, so the list leaves it out there */
   actionsInHeader?: boolean
 }
 
-export function GameList({ actionsInHeader, actionsLeading }: Readonly<GameListProps>) {
+export function GameList({ actionsInHeader, actionsLeading, actionsTrailing, phoneSummary }: Readonly<GameListProps>) {
   const { preference } = usePreference()
   const { roms } = useRoms()
   const [, setSelectedGames] = useSelectedGames()
@@ -30,9 +38,18 @@ export function GameList({ actionsInHeader, actionsLeading }: Readonly<GameListP
   const gridTemplateColumns = `repeat(auto-fill,minmax(min(calc(var(--spacing)*${size}),var(--min-width)),1fr))`
 
   return (
-    <div className='flex flex-col border border-transparent border-t-(--gray-6) pt-4'>
+    <div
+      className={clsx('flex flex-col border border-transparent border-t-(--gray-6) pt-4', {
+        'max-lg:border-t-transparent max-lg:pt-0': phoneSummary,
+      })}
+    >
       <GameListSearching />
-      <GameListActions className={actionsInHeader ? 'lg:hidden' : undefined} leading={actionsLeading} />
+      <GameListActions
+        className={actionsInHeader ? 'lg:hidden' : undefined}
+        leading={actionsLeading}
+        summary={phoneSummary}
+        trailing={actionsTrailing}
+      />
       {roms?.length ? (
         <div className='mt-4 flex gap-2' data-sn-section=''>
           <div

@@ -512,5 +512,6 @@
   "storage.remove": "삭제",
   "storage.clearAll": "모두 지우기",
   "storage.onDevice": "기기에 저장됨",
-  "storage.unknownGame": "알 수 없는 게임"
+  "storage.unknownGame": "알 수 없는 게임",
+  "common.numberOfGames": "게임 수"
 }

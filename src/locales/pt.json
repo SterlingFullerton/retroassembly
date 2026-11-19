@@ -518,5 +518,6 @@
   "storage.remove": "Remover",
   "storage.clearAll": "Limpar tudo",
   "storage.onDevice": "No dispositivo",
-  "storage.unknownGame": "Jogo desconhecido"
+  "storage.unknownGame": "Jogo desconhecido",
+  "common.numberOfGames": "Número de jogos"
 }

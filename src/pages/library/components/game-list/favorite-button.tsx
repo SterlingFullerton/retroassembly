@@ -12,7 +12,12 @@ export function FavoriteButton({ isViewingFavorites, getToggleLink }: FavoriteBu
   const { t } = useTranslation()
 
   return (
-    <Button asChild variant={isViewingFavorites ? 'solid' : 'soft'}>
+    <Button
+      aria-label={t('nav.favorites')}
+      asChild
+      title={t('nav.favorites')}
+      variant={isViewingFavorites ? 'solid' : 'soft'}
+    >
       <NavLink end to={getToggleLink()} className='group'>
         {({ isPending }) => (
           <>
@@ -26,7 +31,8 @@ export function FavoriteButton({ isViewingFavorites, getToggleLink }: FavoriteBu
                 })}
               />
             )}
-            {t('nav.favorites')}
+            {/* On a phone's crowded line, only the heart */}
+            <span className='group-data-crowded/actions:max-lg:hidden'>{t('nav.favorites')}</span>
           </>
         )}
       </NavLink>

@@ -4,7 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { getDefaultRomsDirection, searchOrder } from '#@/constants/roms-order.ts'
 
+export interface SortOption {
+  icon: string
+  label: string
+  value: string
+}
+
 interface SortDropdownProps {
+  /** What it sorts by, in place of the game list's orders, as the Consoles page has its own */
+  options?: SortOption[]
+  /** Which way each order starts, in place of the game list's */
+  getDefaultDirection?: (sort: string) => string
   currentSort: string
   currentDirection: string
   buildSortLink: (params: Record<string, string>) => string
@@ -12,10 +22,17 @@ interface SortDropdownProps {
   searching?: boolean
 }
 
-export function SortDropdown({ currentSort, currentDirection, buildSortLink, searching }: SortDropdownProps) {
+export function SortDropdown({
+  currentSort,
+  currentDirection,
+  buildSortLink,
+  getDefaultDirection = getDefaultRomsDirection,
+  options,
+  searching,
+}: SortDropdownProps) {
   const { t } = useTranslation()
 
-  const sortOptions = [
+  const sortOptions = options ?? [
     ...(searching ? [{ icon: 'icon-[mdi--magnify]', label: t('common.bestMatch'), value: searchOrder }] : []),
     { icon: 'icon-[mdi--pencil]', label: t('common.name'), value: 'name' },
     { icon: 'icon-[mdi--clock]', label: t('common.dateAdded'), value: 'added' },
@@ -26,8 +43,8 @@ export function SortDropdown({ currentSort, currentDirection, buildSortLink, sea
 
   // Popular and Most played start from the top. Leaving them goes back to A to Z, oldest first and so on
   function getDirection(sort: string) {
-    const direction = getDefaultRomsDirection(sort)
-    return direction === 'desc' || getDefaultRomsDirection(currentSort) === 'desc' ? direction : currentDirection
+    const direction = getDefaultDirection(sort)
+    return direction === 'desc' || getDefaultDirection(currentSort) === 'desc' ? direction : currentDirection
   }
 
   const directionOptions = [
