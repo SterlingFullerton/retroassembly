@@ -123,6 +123,19 @@ Go in the picture.
 - Run it on another port against a copy of a real data folder
 - **Done when:** Go signs in a user created by Node, reads their files, and leaves the database as Node expects it
 
+**Status: done.** See [server/README.md](../server/README.md).
+
+- Also ported: `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `GET /api/v1/users/current`, `/logout`, and
+  `/` redirecting to the library. Any other `/api/` address answers 501
+- `server/test/shared-data.sh` runs both servers on one data folder at once: each signs in the other's accounts, knows
+  the other's sessions and sends the other's files with the same headers, and the database stays as Node expects it
+- Answers match the Node server's byte for byte for the ported routes, but for the order of the attributes in the
+  cookie cleared on logout, and a stored file that's missing on disk, which Go answers with 404 where Node answers 500
+- Password hashes are made in a short-lived child process, so the 64 MiB each takes is given back at once
+- Preference and language aren't loaded per request yet: nothing ported needs them. They come with the API groups that do
+- Memory (macOS physical footprint): idle about 7 MB, 12 MB at the most after 27 logins, 6 of them at once. The Node
+  server, which also renders nothing now: 43 MB after a few logins and uploads, 130 MB at the most
+
 ### Phase 2: Port the API, group by group
 
 Put Go in front: it answers what it has ported and passes everything else to Node (`httputil.ReverseProxy`), so each
