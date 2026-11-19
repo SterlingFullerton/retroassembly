@@ -19,6 +19,10 @@ export async function loader({ params }: Route.LoaderArgs) {
   const platform = params.platform as PlatformName
   const rom = await getRom(getLibraryScope(), { fileName: params.fileName, platform })
   if (!rom) {
+    // The library's SNES games were once filed as Super Famicom; a link from then leads to the same game under SNES
+    if (platform === 'sfc') {
+      throw redirect(generatePath(routes.libraryPlatformRom, { fileName: params.fileName, platform: 'snes' }))
+    }
     throw new Response('Not Found', { status: 404 })
   }
   // A game on several discs has one page, its first disc's; another disc's address leads there
