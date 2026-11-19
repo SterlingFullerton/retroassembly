@@ -74,7 +74,7 @@ export function DeviceInfo({ actions, platform }: Readonly<{ actions?: ReactNode
       </div>
 
       {aboutOpen ? (
-        <div className='mt-3 flex items-center gap-6 rounded bg-(--gray-a3) p-4'>
+        <div className='mt-3 flex items-center gap-6 rounded-lg bg-(--gray-a3) p-4'>
           <div className='flex min-w-0 flex-1 flex-col gap-4'>
             <div className='flex flex-wrap gap-x-8 gap-y-3 lg:*:min-w-36'>
               <div>

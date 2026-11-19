@@ -55,7 +55,7 @@ export default function RomPage() {
             <div className='max-w-[48%] shrink-0 max-[359px]:max-w-[40%] md:sticky md:top-4 md:max-w-full'>
               <GameCover
                 className='block'
-                imgClassName='block h-auto max-h-42 w-auto max-w-full rounded-md shadow-md md:mx-auto md:max-h-88'
+                imgClassName='block h-auto max-h-42 w-auto max-w-full rounded-lg shadow-md md:mx-auto md:max-h-88'
                 parallax={isLargeScreen}
                 placeholderClassName='block h-auto w-24 opacity-80 md:mx-auto md:w-40'
                 rom={rom}

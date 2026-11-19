@@ -60,7 +60,11 @@ export function PhoneSearchResult({ keyword, onOpen, rom }: Readonly<PhoneSearch
             <Skeleton className={skeletonClassnames[platform] || 'aspect-square! size-full!'} loading />
           </div>
         ) : (
-          <img alt={title} className='size-12 shrink-0 rounded object-contain object-center' src={cover?.src || ''} />
+          <img
+            alt={title}
+            className='size-12 shrink-0 rounded-lg object-contain object-center'
+            src={cover?.src || ''}
+          />
         )}
         <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
           <div className='truncate text-(--gray-12)'>

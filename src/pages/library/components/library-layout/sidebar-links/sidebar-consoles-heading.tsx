@@ -14,7 +14,7 @@ export function SidebarConsolesHeading() {
   return (
     <NavigatableLink
       data-sn-section=''
-      className={clsx('mb-2 flex w-64 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white', {
+      className={clsx('mb-2 flex w-64 items-center gap-2 rounded px-4 py-2 text-sm font-semibold text-white', {
         'bg-black/50': active,
         'hover:bg-white/10': !active,
       })}

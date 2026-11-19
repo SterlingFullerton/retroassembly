@@ -142,7 +142,7 @@ export function GameListLetters({ current }: Readonly<{ current: RomLetter }>) {
         {pointedPage ? (
           <div
             aria-hidden
-            className='pointer-events-none absolute right-full mr-3 flex h-14 w-18 flex-col items-center justify-center rounded-xl bg-(--accent-9) text-white shadow-lg'
+            className='pointer-events-none absolute right-full mr-3 flex h-14 w-18 flex-col items-center justify-center rounded-lg bg-(--accent-9) text-white shadow-lg'
             style={{ top: `calc(${((pointedIndex + 0.5) / letters.length) * 100}% - 1.75rem)` }}
           >
             <span className='text-2xl leading-none font-bold'>

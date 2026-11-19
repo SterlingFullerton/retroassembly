@@ -82,7 +82,7 @@ export function SearchField() {
   return (
     <div
       className={clsx(
-        'group/search flex items-center gap-2 rounded-md border px-3 transition-colors',
+        'group/search flex items-center gap-2 rounded border px-3 transition-colors',
         'h-10',
         // White with dark text in light and dark themes alike, standing out against the red around it
         active && 'border-transparent bg-white text-[#1d1d20]',

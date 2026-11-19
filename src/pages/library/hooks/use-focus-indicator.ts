@@ -23,6 +23,35 @@ function getPlacement(element: Element): Placement {
   return 'page'
 }
 
+function getCorners(element: Element) {
+  const { borderBottomLeftRadius, borderBottomRightRadius, borderTopLeftRadius, borderTopRightRadius } =
+    getComputedStyle(element)
+  const corners = [borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius]
+  return corners.some((corner) => Number.parseFloat(corner) > 0) ? corners.join(' ') : undefined
+}
+
+/**
+ * The corners the indicator takes, so it has the shape of what it's around: the element's own, or those of what fills
+ * it, such as the Radix button inside Continue. A tile with a picture and a title, like a game or a snapshot, takes the
+ * picture's. Otherwise the small corners of a control
+ */
+function getFocusCorners(box: Element, rect: DOMRect) {
+  let level: Element[] = [box]
+  for (let depth = 0; depth < 4 && level.length > 0; depth++) {
+    for (const element of level) {
+      const inner = element.getBoundingClientRect()
+      const fills = Math.abs(inner.width - rect.width) <= 2 && Math.abs(inner.height - rect.height) <= 2
+      const corners = fills ? getCorners(element) : undefined
+      if (corners) {
+        return corners
+      }
+    }
+    level = level.flatMap((element) => [...element.children])
+  }
+  const picture = box.querySelector('img, video')
+  return (picture && getCorners(picture)) || 'var(--radius-2)'
+}
+
 function prefersReducedMotion() {
   return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 }
@@ -39,12 +68,14 @@ export function useFocusIndicator() {
       }
       // A control inside a larger one, such as the volume slider in its row, can have the indicator drawn around that
       const box = (activeElement.dataset.snFocusParent && activeElement.parentElement) || activeElement
-      const { height, left, top, width } = box.getBoundingClientRect()
+      const rect = box.getBoundingClientRect()
+      const { height, left, top, width } = rect
       placement = getPlacement(box)
       const onPage = placement !== 'fixed'
       const x = left + (onPage ? scrollX : 0)
       const y = top + (onPage ? scrollY : 0)
       const style: CSSProperties = {
+        borderRadius: getFocusCorners(box, rect),
         height,
         left: 0,
         position: onPage ? 'absolute' : 'fixed',
@@ -53,7 +84,7 @@ export function useFocusIndicator() {
         transform: `translate(${x}px, ${y}px)`,
         transition:
           transition && !prefersReducedMotion()
-            ? 'transform 150ms ease-out, width 150ms ease-out, height 150ms ease-out'
+            ? 'transform 150ms ease-out, width 150ms ease-out, height 150ms ease-out, border-radius 150ms ease-out'
             : 'none',
         width,
       }

@@ -35,7 +35,7 @@ export function GamepadLiveButtons({ index, id }: Readonly<{ id: string; index: 
         {names.map((name, button) => (
           <span
             className={clsx(
-              'min-w-9 rounded-md border px-2 py-1 text-center text-xs font-semibold transition-colors',
+              'min-w-9 rounded border px-2 py-1 text-center text-xs font-semibold transition-colors',
               pressed[button] ? 'border-(--accent-9) bg-(--accent-9) text-white' : 'border-(--gray-6) text-(--gray-11)',
             )}
             key={name}

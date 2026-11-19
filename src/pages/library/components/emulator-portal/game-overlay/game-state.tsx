@@ -67,7 +67,7 @@ export function GameState({
     <div className='group relative'>
       <button
         className={clsx(
-          'game-state flex h-36 w-48 shrink-0 flex-col overflow-hidden rounded border-4 border-(--color-background) bg-(--color-background) shadow',
+          'game-state flex h-36 w-48 shrink-0 flex-col overflow-hidden rounded-lg border-4 border-(--color-background) bg-(--color-background) shadow',
           { 'cursor-default': isMutating },
         )}
         data-sn-enabled

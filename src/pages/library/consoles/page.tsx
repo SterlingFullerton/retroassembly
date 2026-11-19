@@ -112,7 +112,7 @@ export default function ConsolesPage() {
       >
         {cards.map(({ count, name, platform }) => (
           <NavigatableLink
-            className='group flex flex-col overflow-hidden rounded-xl border border-(--gray-5) bg-(--color-background) hover:border-(--accent-7)'
+            className='group flex flex-col overflow-hidden rounded-lg border border-(--gray-5) bg-(--color-background) hover:border-(--accent-7)'
             key={platform}
             to={generatePath(routes.libraryPlatform, { platform })}
           >

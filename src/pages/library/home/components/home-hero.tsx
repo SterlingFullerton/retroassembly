@@ -25,9 +25,9 @@ function romPath(rom: { fileName: string; platform: string }) {
 function SmallCover({ rom }: Readonly<{ rom: InProgressRom }>) {
   const { data: cover } = useRomCover(rom as never)
   return cover?.src ? (
-    <img alt='' className='size-10 shrink-0 rounded object-cover' loading='lazy' src={cover.src} />
+    <img alt='' className='size-10 shrink-0 rounded-lg object-cover' loading='lazy' src={cover.src} />
   ) : (
-    <span className='size-10 shrink-0 rounded bg-white/15' />
+    <span className='size-10 shrink-0 rounded-lg bg-white/15' />
   )
 }
 
@@ -44,7 +44,7 @@ function AlsoInProgress({ layout, roms }: Readonly<{ layout: 'panel' | 'row'; ro
         <div className='mb-1 text-xs tracking-wider uppercase opacity-75'>{t('home.alsoInProgress')}</div>
         {roms.slice(0, 3).map((rom) => (
           <Link
-            className='-mx-2 flex items-center gap-3 rounded-md border-t border-white/15 px-2 py-2 first-of-type:border-t-0 hover:bg-white/10'
+            className='-mx-2 flex items-center gap-3 rounded border-t border-white/15 px-2 py-2 first-of-type:border-t-0 hover:bg-white/10'
             key={rom.id}
             to={romPath(rom)}
           >

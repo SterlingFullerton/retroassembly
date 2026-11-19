@@ -16,7 +16,7 @@ export function PageContainer({ children, description, title }: Readonly<PageCon
     <>
       <title>{t('auth.loginToTitle', { title: metadata.title })}</title>
       <div className='min-h-dvh bg-(--accent-9) px-4 py-20'>
-        <div className='mx-auto w-full max-w-full rounded bg-(--color-background) p-10 md:w-3xl'>
+        <div className='mx-auto w-full max-w-full rounded-xl bg-(--color-background) p-10 md:w-3xl'>
           <div className='flex items-center justify-center gap-4'>
             <Link className='flex items-center justify-center' reloadDocument to='/'>
               <Logo height='32' width='32' />

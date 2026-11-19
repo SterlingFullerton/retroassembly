@@ -28,13 +28,13 @@ export function ErrorPage({ error }: Readonly<Route.ErrorBoundaryProps>) {
     <>
       <title>{`${status} - ${metadata.title}`}</title>
       <div className='min-h-dvh bg-(--accent-9) py-20'>
-        <main className='mx-8 flex max-w-full flex-col rounded bg-(--color-background) p-10 md:mx-auto md:w-3xl'>
+        <main className='mx-8 flex max-w-full flex-col rounded-xl bg-(--color-background) p-10 md:mx-auto md:w-3xl'>
           <h1 className='mt-4 flex items-center gap-2 text-4xl font-semibold'>
             <span className='icon-[mdi--robot-confused]' /> {message}
           </h1>
           <p className='py-4 text-lg'>{details}</p>
           {stack && (
-            <pre className='mb-4 w-full overflow-x-auto rounded bg-neutral-900 p-4 text-xs text-neutral-100'>
+            <pre className='mb-4 w-full overflow-x-auto rounded-lg bg-neutral-900 p-4 text-xs text-neutral-100'>
               <code>{stack}</code>
             </pre>
           )}

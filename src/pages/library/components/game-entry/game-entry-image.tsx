@@ -24,7 +24,7 @@ export function GameEntryImage({ centered = false, rom }: Readonly<{ centered?: 
   const image = (
     <img
       alt={goodcodes.rom}
-      className={clsx('max-h-full max-w-full rounded object-contain', centered ? 'object-center' : 'object-bottom')}
+      className={clsx('max-h-full max-w-full rounded-lg object-contain', centered ? 'object-center' : 'object-bottom')}
       loading='lazy'
       onError={handleLoad}
       onLoad={handleLoad}

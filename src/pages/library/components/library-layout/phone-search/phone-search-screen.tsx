@@ -152,7 +152,7 @@ export function PhoneSearchScreen() {
         >
           <span className='icon-[mdi--arrow-left] size-6' />
         </button>
-        <div className='flex h-9 flex-1 items-center gap-2 rounded-md bg-white px-3 text-[#1d1d20]'>
+        <div className='flex h-9 flex-1 items-center gap-2 rounded bg-white px-3 text-[#1d1d20]'>
           <span className='icon-[mdi--magnify] size-5 shrink-0 opacity-70' />
           <input
             aria-label={t('common.search')}

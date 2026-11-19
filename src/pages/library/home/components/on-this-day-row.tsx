@@ -21,9 +21,9 @@ function DayCard({ rom, year }: Readonly<{ rom: any; year: number }>) {
       to={generatePath(routes.libraryPlatformRom, { fileName: rom.fileName, platform: rom.platform })}
     >
       {cover?.src ? (
-        <img alt='' className='size-16 shrink-0 rounded object-cover' loading='lazy' src={cover.src} />
+        <img alt='' className='size-16 shrink-0 rounded-lg object-cover' loading='lazy' src={cover.src} />
       ) : (
-        <span className='size-16 shrink-0 rounded bg-(--gray-4)' />
+        <span className='size-16 shrink-0 rounded-lg bg-(--gray-4)' />
       )}
       <div className='min-w-0 text-sm'>
         <div className='font-semibold text-(--accent-11)'>{t('home.yearsAgoToday', { count: years })}</div>

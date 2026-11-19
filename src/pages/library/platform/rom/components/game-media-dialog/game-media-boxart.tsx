@@ -53,7 +53,7 @@ export function GameMediaBoxart() {
     <div className='flex flex-col gap-2'>
       <GameCover
         className='block w-28 sm:w-full'
-        imgClassName='block h-auto max-h-56 w-full rounded object-contain object-left-top'
+        imgClassName='block h-auto max-h-56 w-full rounded-lg object-contain object-left-top'
         placeholderClassName='block h-auto w-20 opacity-70'
         rom={rom}
         viewable={false}

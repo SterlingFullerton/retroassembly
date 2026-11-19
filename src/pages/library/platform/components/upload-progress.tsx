@@ -55,7 +55,7 @@ export function UploadProgress({ progress, total }: Readonly<{ progress?: Upload
       </div>
 
       {progress?.active.length ? (
-        <ul className='mt-3 flex flex-col gap-1.5 rounded-md bg-(--gray-3) px-3 py-2 text-xs'>
+        <ul className='mt-3 flex flex-col gap-1.5 rounded-lg bg-(--gray-3) px-3 py-2 text-xs'>
           {progress.active.map(({ file, sentBytes, stage }) => (
             <li className='flex items-center gap-2' key={`${file.name}-${file.size}-${file.lastModified}`}>
               <span className='icon-[svg-spinners--180-ring] shrink-0 text-(--gray-10)' />

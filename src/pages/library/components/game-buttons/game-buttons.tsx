@@ -223,7 +223,7 @@ function GameButtonsContent({
   if (cannotIsolate) {
     return (
       <>
-        <div className='flex min-h-16 w-full items-center justify-center gap-2 rounded bg-(--accent-3) p-3 lg:w-80'>
+        <div className='flex min-h-16 w-full items-center justify-center gap-2 rounded-lg bg-(--accent-3) p-3 lg:w-80'>
           <span className='icon-[mdi--warning-decagram] shrink-0' />
           <span className='text-sm opacity-60'>
             {t('error.browserCannotRunPlatform', { platform: t(platformMap[rom.platform].displayNameI18nKey) })}
@@ -237,7 +237,7 @@ function GameButtonsContent({
   if (!isPreparing && error) {
     return (
       <>
-        <div className='flex h-16 w-full items-center justify-center gap-2 rounded bg-(--accent-3) lg:w-80'>
+        <div className='flex h-16 w-full items-center justify-center gap-2 rounded-lg bg-(--accent-3) lg:w-80'>
           <span className='icon-[mdi--warning-decagram]' />
           <span className='text-sm opacity-60'>
             {error instanceof DownloadError
@@ -297,7 +297,7 @@ function GameButtonsContent({
               <img
                 alt={t('common.state')}
                 className={clsx(
-                  'absolute rounded-sm border-2 border-white bg-neutral-200 object-cover shadow',
+                  'absolute rounded border-2 border-white bg-neutral-200 object-cover shadow',
                   compact ? 'right-1.5 size-7' : 'right-3 size-10',
                 )}
                 src={getFileUrl(state.thumbnailFileId)}
@@ -306,7 +306,7 @@ function GameButtonsContent({
             <HoverCard.Content align='center' hideWhenDetached side='top' size='1'>
               <img
                 alt={t('common.state')}
-                className='size-48 cursor-pointer rounded-sm border-2 border-white bg-neutral-200 object-cover shadow'
+                className='size-48 cursor-pointer rounded-lg border-2 border-white bg-neutral-200 object-cover shadow'
                 src={getFileUrl(state.thumbnailFileId)}
               />
             </HoverCard.Content>

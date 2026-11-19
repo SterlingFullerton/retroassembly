@@ -92,7 +92,7 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
               <div
                 {...getRootProps()}
                 className={clsx(
-                  'mt-4 flex h-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-(--accent-9) outline-none',
+                  'mt-4 flex h-48 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-(--accent-9) outline-none',
                   { 'bg-(--accent-3)': isDragActive },
                 )}
               >
@@ -131,7 +131,7 @@ export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: Plat
               {failures.length > 0 ? (
                 <div className='text-sm'>
                   <p className='text-(--gray-11)'>{t('upload.failedRoms')}</p>
-                  <ul className='mt-2 max-h-48 overflow-y-auto rounded-md bg-(--gray-3) px-3 py-2'>
+                  <ul className='mt-2 max-h-48 overflow-y-auto rounded-lg bg-(--gray-3) px-3 py-2'>
                     {failures.map(({ file, message }) => (
                       <li className='py-0.5 break-all' key={`${file.name}-${file.size}-${file.lastModified}`}>
                         <span className='font-medium'>{file.name}</span>

@@ -12,7 +12,7 @@ interface DialogThumbnailProps {
 
 export function DialogThumbnail({ disabled, fileId, deleteLabel, onDelete }: Readonly<DialogThumbnailProps>) {
   return (
-    <div className='group relative size-20 overflow-hidden rounded bg-neutral-200' key={fileId}>
+    <div className='group relative size-20 overflow-hidden rounded-lg bg-neutral-200' key={fileId}>
       <button
         aria-label={deleteLabel}
         className='absolute top-0 right-0 z-1 flex items-center justify-center rounded bg-(--accent-9) p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100'

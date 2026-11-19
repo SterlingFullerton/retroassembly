@@ -34,7 +34,7 @@ export function FocusIndicator({ children }: { readonly children?: ReactNode }) 
     <RadixThemePortal>
       <div
         className={clsx(
-          'pointer-events-none z-10 rounded bg-(--accent-9)/10 ring-2 ring-(--accent-11)/70 in-[.dark]:bg-white/10',
+          'pointer-events-none z-10 bg-(--accent-9)/10 ring-2 ring-(--accent-11)/70 in-[.dark]:bg-white/10',
           { 'hidden lg:block': !connected },
         )}
         style={style}

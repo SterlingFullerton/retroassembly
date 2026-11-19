@@ -12,6 +12,36 @@ body {
   text-autospace: normal;
 }
 
+/*
+ * One set of corners across the app: small (4px) for controls such as buttons, inputs, menu items and tabs; medium (8px)
+ * for pictures, cards, menus and Continue and Start; large (12px) for dialogs and bars; and fully round. Radix's
+ * components take theirs from these, whatever their size or radius setting (a round one stays round). The on-screen game
+ * controls keep their own console shapes
+ */
+[data-radius] {
+  --radius-1: 4px;
+  --radius-2: 4px;
+  --radius-3: 4px;
+  --radius-4: 8px;
+  --radius-5: 12px;
+  --radius-6: 12px;
+}
+
+/* Cards (Settings' consoles) and the smallest menus would otherwise take a control's corners */
+.rt-CheckboxCardsItem,
+.rt-RadioCardsItem {
+  --base-card-border-radius: var(--radius-4);
+}
+
+.rt-BaseMenuContent.rt-r-size-1,
+.rt-SelectContent.rt-r-size-1 {
+  border-radius: var(--radius-4);
+}
+
+.rt-Kbd {
+  border-radius: var(--radius-1);
+}
+
 .saturate {
   filter: saturate(var(--saturate, 100%));
 }

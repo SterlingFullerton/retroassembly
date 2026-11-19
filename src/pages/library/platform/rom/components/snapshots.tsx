@@ -97,7 +97,7 @@ function SnapshotButton({
     >
       <img
         alt=''
-        className='mb-1 block aspect-4/3 w-28 rounded-md bg-black object-cover ring-(--accent-9) group-hover:ring-2'
+        className='mb-1 block aspect-4/3 w-28 rounded-lg bg-black object-cover ring-(--accent-9) group-hover:ring-2'
         loading='lazy'
         src={getFileUrl(snapshot.thumbnailFileId)}
       />
@@ -188,7 +188,7 @@ function SnapshotCard({
       >
         <img
           alt=''
-          className='mb-1 block aspect-4/3 w-full rounded-md bg-black object-cover ring-(--accent-9) group-hover:ring-2'
+          className='mb-1 block aspect-4/3 w-full rounded-lg bg-black object-cover ring-(--accent-9) group-hover:ring-2'
           loading='lazy'
           src={getFileUrl(snapshot.thumbnailFileId)}
         />

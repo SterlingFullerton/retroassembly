@@ -95,7 +95,7 @@ function PageBox({ current, pages }: Readonly<{ current: number; pages: number }
   }
 
   return (
-    <label className='mx-1 flex h-10 items-center gap-2 rounded-md bg-(--accent-3) px-3 text-[15px] font-semibold text-(--accent-11)'>
+    <label className='mx-1 flex h-10 items-center gap-2 rounded bg-(--accent-3) px-3 text-[15px] font-semibold text-(--accent-11)'>
       {t('pagination.page')}
       <input
         aria-label={t('pagination.page')}

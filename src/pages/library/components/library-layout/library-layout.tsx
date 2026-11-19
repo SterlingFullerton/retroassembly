@@ -51,7 +51,7 @@ export default function LibraryLayout({ children }: Readonly<PropsWithChildren>)
         <SidebarContainer>
           <div className='flex items-center justify-between px-4 pb-4'>
             <Link
-              className='-m-1 flex items-center gap-2 rounded-md p-1 font-bold transition-opacity hover:opacity-80'
+              className='-m-1 flex items-center gap-2 rounded p-1 font-bold transition-opacity hover:opacity-80'
               data-sn-skip=''
               to={routes.libraryHome}
             >
