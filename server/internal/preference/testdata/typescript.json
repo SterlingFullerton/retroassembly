@@ -1,0 +1,3637 @@
+{
+  "merge": [
+    {
+      "result": {
+        "a": 1,
+        "b": {
+          "d": 3,
+          "e": 4
+        }
+      },
+      "source": {
+        "b": {
+          "c": null,
+          "e": 4
+        }
+      },
+      "target": {
+        "a": 1,
+        "b": {
+          "c": 2,
+          "d": 3
+        }
+      }
+    },
+    {
+      "result": {
+        "a": [
+          3
+        ]
+      },
+      "source": {
+        "a": [
+          3
+        ]
+      },
+      "target": {
+        "a": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "result": {
+        "a": "x"
+      },
+      "source": {
+        "a": "x"
+      },
+      "target": {
+        "a": {
+          "b": 1
+        }
+      }
+    },
+    {
+      "result": {
+        "a": {
+          "b": 1
+        }
+      },
+      "source": {
+        "a": {
+          "b": 1
+        }
+      },
+      "target": {
+        "a": null
+      }
+    },
+    {
+      "result": {
+        "a": 0,
+        "b": false,
+        "c": ""
+      },
+      "source": {
+        "a": 0,
+        "b": false,
+        "c": ""
+      },
+      "target": {
+        "a": 1
+      }
+    },
+    {
+      "result": {
+        "a": {
+          "b": {}
+        }
+      },
+      "source": {
+        "a": {
+          "b": {
+            "c": null
+          }
+        }
+      },
+      "target": {}
+    }
+  ],
+  "resolve": [
+    {
+      "input": null,
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {},
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "emulator": null,
+        "input": null,
+        "ui": null
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "ui": {
+          "platforms": null
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "ui": {
+          "platforms": []
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "ui": {
+          "language": "de",
+          "platforms": [
+            "nes",
+            "gba"
+          ]
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "de",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "nes",
+            "gba"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "ui": {
+          "saturation": 0,
+          "showTitle": false
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 0,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": false
+        }
+      }
+    },
+    {
+      "input": {
+        "input": {
+          "keyboardMapping": {
+            "input_player1_a": "k"
+          }
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "input_player1_a": "k"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "input": {
+          "gamepadMappings": {
+            "pad": {
+              "$pause": "start"
+            }
+          }
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {
+            "pad": {
+              "$pause": "start"
+            }
+          },
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "emulator": {
+          "platform": {
+            "nes": {
+              "bioses": [
+                {
+                  "fileId": "bioses/nes/x.bin",
+                  "fileName": "x.bin"
+                }
+              ],
+              "core": "nestopia"
+            }
+          }
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [
+                {
+                  "fileId": "bioses/nes/x.bin",
+                  "fileName": "x.bin"
+                }
+              ],
+              "core": "nestopia",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "emulator": {
+          "core": {
+            "fceumm": null
+          },
+          "shader": "crt"
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 0,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "crt",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    },
+    {
+      "input": {
+        "emulator": {
+          "autoSaveInterval": 1.5
+        }
+      },
+      "result": {
+        "emulator": {
+          "autoSaveInterval": 1.5,
+          "core": {
+            "desmume2015": {
+              "desmume_pointer_type": "touch"
+            },
+            "fceumm": {
+              "fceumm_turbo_enable": "Both"
+            },
+            "mame2003_plus": {
+              "mame2003-plus_skip_disclaimer": "enabled"
+            },
+            "mgba": {
+              "mgba_gb_colors": "DMG Green",
+              "mgba_skip_bios": "ON"
+            },
+            "ppsspp": {
+              "ppsspp_auto_frameskip": "enabled",
+              "ppsspp_frameskip": "1"
+            }
+          },
+          "fullscreen": "auto",
+          "platform": {
+            "arcade": {
+              "bioses": [],
+              "core": "fbneo",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari2600": {
+              "bioses": [],
+              "core": "stella2014",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari5200": {
+              "bioses": [],
+              "core": "a5200",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atari7800": {
+              "bioses": [],
+              "core": "prosystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "atarilynx": {
+              "bioses": [],
+              "core": "mednafen_lynx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswan": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "wonderswancolor": {
+              "bioses": [],
+              "core": "mednafen_wswan",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "pcengine": {
+              "bioses": [],
+              "core": "mednafen_pce_fast",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "famicom": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "fds": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gameandwatch": {
+              "bioses": [],
+              "core": "gw",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gb": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gba": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gbc": {
+              "bioses": [],
+              "core": "mgba",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "n64": {
+              "bioses": [],
+              "core": "mupen64plus_next",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "nds": {
+              "bioses": [],
+              "core": "desmume2015",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "nes": {
+              "bioses": [],
+              "core": "fceumm",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sfc": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "snes": {
+              "bioses": [],
+              "core": "snes9x",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "vb": {
+              "bioses": [],
+              "core": "mednafen_vb",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "channelf": {
+              "bioses": [],
+              "core": "freechaf",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "colecovision": {
+              "bioses": [],
+              "core": "gearcoleco",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "odyssey2": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "videopac": {
+              "bioses": [],
+              "core": "o2em",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "gamegear": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "genesis": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "megadrive": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sega32x": {
+              "bioses": [],
+              "core": "picodrive",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sg-1000": {
+              "bioses": [],
+              "core": "gearsystem",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "sms": {
+              "bioses": [],
+              "core": "genesis_plus_gx",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngp": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "ngpc": {
+              "bioses": [],
+              "core": "mednafen_ngp",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            },
+            "psp": {
+              "bioses": [],
+              "core": "ppsspp",
+              "rewindEnabled": false,
+              "shader": "inherit"
+            },
+            "psx": {
+              "bioses": [],
+              "core": "pcsx_rearmed",
+              "rewindEnabled": true,
+              "shader": "inherit"
+            }
+          },
+          "shader": "",
+          "videoSmooth": false
+        },
+        "input": {
+          "confirmButtonStyle": "auto",
+          "gamepadMappings": {},
+          "keyboardMapping": {
+            "$pause": "escape",
+            "input_hold_fast_forward": "space",
+            "input_player1_a": "x",
+            "input_player1_b": "z",
+            "input_player1_down": "down",
+            "input_player1_l_x_minus": "",
+            "input_player1_l_x_plus": "",
+            "input_player1_l_y_minus": "",
+            "input_player1_l_y_plus": "",
+            "input_player1_l1": "q",
+            "input_player1_l2": "",
+            "input_player1_l3": "",
+            "input_player1_left": "left",
+            "input_player1_r_x_minus": "",
+            "input_player1_r_x_plus": "",
+            "input_player1_r_y_minus": "",
+            "input_player1_r_y_plus": "",
+            "input_player1_r1": "w",
+            "input_player1_r2": "",
+            "input_player1_r3": "",
+            "input_player1_right": "right",
+            "input_player1_select": "rshift",
+            "input_player1_start": "enter",
+            "input_player1_up": "up",
+            "input_player1_x": "s",
+            "input_player1_y": "a",
+            "input_rewind": "r"
+          }
+        },
+        "ui": {
+          "dateFormat": "auto",
+          "language": "auto",
+          "libraryCoverSize": "medium",
+          "libraryCoverType": "boxart",
+          "platforms": [
+            "arcade",
+            "atari2600",
+            "gb",
+            "gba",
+            "gbc",
+            "genesis",
+            "nes",
+            "snes"
+          ],
+          "saturation": 100,
+          "saturationApplyToGame": false,
+          "saturationApplyToImages": false,
+          "showDistrictOnTitle": false,
+          "showFocusIndicators": "auto",
+          "showSidebar": true,
+          "showTitle": true
+        }
+      }
+    }
+  ]
+}

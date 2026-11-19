@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -12,29 +13,40 @@ import (
 
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/config"
+	"retroassembly/server/internal/preference"
+	"retroassembly/server/internal/shared"
 )
 
 type Server struct {
-	authMode string
-	config   config.Config
-	database *sql.DB
+	authMode   string
+	config     config.Config
+	database   *sql.DB
+	preference *preference.Settings
 	// The consoles whose game pages are sent with cross-origin isolation headers
 	threadedConsoles map[string]bool
 }
 
-func New(c config.Config, database *sql.DB, authMode string, threadedConsoles []string) *Server {
+func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (*Server, error) {
 	threaded := map[string]bool{}
-	for _, name := range threadedConsoles {
+	for _, name := range data.ThreadedConsoles {
 		threaded[name] = true
 	}
-	return &Server{authMode: authMode, config: c, database: database, threadedConsoles: threaded}
+	settings, err := preference.New(data.DefaultPreference, data.Platforms)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{
+		authMode: authMode, config: c, database: database, preference: settings, threadedConsoles: threaded,
+	}, nil
 }
 
 // What a request carries once it's known who sent it
 type state struct {
 	libraryOwnerID string
-	token          string
-	user           *auth.User
+	// Passed on to the Node server, which logs it itself
+	proxied bool
+	token   string
+	user    *auth.User
 }
 
 type stateKey struct{}
@@ -92,22 +104,51 @@ func (s *Server) Handler() (http.Handler, error) {
 		return nil, err
 	}
 
-	// Stored files are mostly binary, and compressing them would drop their size from downloads for no gain
 	compress, err := gzhttp.NewWrapper(gzhttp.MinSize(1024))
 	if err != nil {
 		return nil, err
 	}
 
+	// What the Go server doesn't answer yet: the Node server's, when there is one to pass it to
+	notPorted := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeMessage(w, http.StatusNotImplemented, "Not served by the Go server yet")
+	}))
+	if s.config.NodeURL != "" {
+		node, err := url.Parse(s.config.NodeURL)
+		if err != nil {
+			return nil, err
+		}
+		proxy := nodeProxy(node)
+		notPorted = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			stateOf(r).proxied = true
+			proxy.ServeHTTP(w, r)
+		})
+	}
+
 	api := http.NewServeMux()
-	api.Handle("POST /api/v1/auth/login", compress(http.HandlerFunc(s.login)))
-	api.Handle("POST /api/v1/auth/register", compress(http.HandlerFunc(s.register)))
-	api.Handle("GET /api/v1/users/current", compress(http.HandlerFunc(s.currentUser)))
+	for pattern, handler := range map[string]http.HandlerFunc{
+		"POST /api/v1/auth/login":                 s.login,
+		"POST /api/v1/auth/register":              s.register,
+		"PATCH /api/v1/auth/password":             s.updatePassword,
+		"GET /api/v1/users/current":               s.currentUser,
+		"POST /api/v1/favorites":                  s.signedIn(s.addFavorite),
+		"DELETE /api/v1/favorites/{romId}":        s.signedIn(s.removeFavorite),
+		"POST /api/v1/launch_records":             s.signedIn(s.addLaunchRecord),
+		"DELETE /api/v1/roms/{id}/launch_records": s.signedIn(s.removeLaunchRecords),
+		"GET /api/v1/preference":                  s.signedIn(s.getPreference),
+		"POST /api/v1/preference":                 s.signedIn(s.updatePreference),
+		"POST /api/v1/preference/bioses":          s.signedIn(s.addBIOS),
+		"DELETE /api/v1/preference/bioses":        s.signedIn(s.deleteBIOS),
+	} {
+		api.Handle(pattern, compress(handler))
+	}
+	// Stored files are mostly binary, and compressing them would drop their size from downloads for no gain
 	api.HandleFunc("GET /api/v1/files/{id...}", s.file)
 	api.HandleFunc("GET /logout", s.logout)
-	// Not served by Go yet: answered as unavailable rather than with the page
-	api.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
-		writeMessage(w, http.StatusNotImplemented, "Not served by the Go server yet")
-	})
+	api.Handle("/api/", notPorted)
+	api.Handle("/cdn/", notPorted)
+	api.Handle("GET /login/oidc", notPorted)
+	api.Handle("GET /login/oidc/callback", notPorted)
 	api.Handle("/", page)
 
 	signedIn := s.globals(logger(api))

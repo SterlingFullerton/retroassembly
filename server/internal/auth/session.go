@@ -10,20 +10,11 @@ import (
 	"time"
 
 	"retroassembly/server/internal/db"
+	"retroassembly/server/internal/failure"
 	"retroassembly/server/internal/ids"
 )
 
-// Error is a failure answered with its status and message, as the Node server's HTTPException
-type Error struct {
-	Message string
-	Status  int
-}
-
-func (e *Error) Error() string {
-	return e.Message
-}
-
-var errInvalidLogin = &Error{Message: "Invalid username or password", Status: http.StatusUnauthorized}
+var errInvalidLogin = failure.New(http.StatusUnauthorized, "Invalid username or password")
 
 const (
 	MethodOIDC     = "oidc"
@@ -224,16 +215,16 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password, authM
 	err := database.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
 		username, db.StatusNormal).Scan(&existing)
 	if err == nil {
-		return nil, &Error{Message: "Username already exists", Status: http.StatusConflict}
+		return nil, failure.New(http.StatusConflict, "Username already exists")
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	if authMode == "local" && password == "" {
-		return nil, &Error{Message: "Password is required", Status: http.StatusBadRequest}
+		return nil, failure.New(http.StatusBadRequest, "Password is required")
 	}
 	if authMode == "oidc" && password != "" {
-		return nil, &Error{Message: "Passwords are unavailable with OIDC authentication", Status: http.StatusBadRequest}
+		return nil, failure.New(http.StatusBadRequest, "Passwords are unavailable with OIDC authentication")
 	}
 	var passwordHash *string
 	if password != "" {
@@ -275,4 +266,55 @@ func LibraryOwnerID(ctx context.Context, database *sql.DB, user *User) (string, 
 		return "", err
 	}
 	return adminID, nil
+}
+
+// UpdatePassword changes the signed-in user's password, once their current one is checked, and ends their other
+// sessions; the one they changed it in goes on
+func UpdatePassword(ctx context.Context, database *sql.DB, user *User, token, currentPassword, newPassword, authMode string) error {
+	if authMode != "local" {
+		return failure.New(http.StatusForbidden, "Password changes are unavailable with external authentication")
+	}
+	var passwordHash sql.NullString
+	err := sql.ErrNoRows
+	if user != nil {
+		err = database.QueryRowContext(ctx, `SELECT password_hash FROM users WHERE id = ? LIMIT 1`, user.ID).Scan(&passwordHash)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return failure.New(http.StatusNotFound, "User not found")
+	}
+	if err != nil {
+		return err
+	}
+	valid := false
+	if passwordHash.Valid && passwordHash.String != "" {
+		if valid, err = VerifyPassword(passwordHash.String, currentPassword); err != nil {
+			return err
+		}
+	}
+	if !valid {
+		return failure.New(http.StatusUnauthorized, "Invalid current password")
+	}
+	newHash, err := HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	now := db.Millis(time.Now())
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`, newHash, now, user.ID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE sessions SET status = ?, updated_at = ? WHERE user_id = ?`, db.StatusDeleted, now, user.ID); err != nil {
+		return err
+	}
+	if token != "" {
+		if _, err := tx.ExecContext(ctx, `UPDATE sessions SET status = ?, updated_at = ? WHERE token = ? AND user_id = ?`,
+			db.StatusNormal, now, token, user.ID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

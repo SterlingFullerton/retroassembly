@@ -7,6 +7,8 @@ import path from 'node:path'
 import { emulators } from '#@/consoles/emulators.ts'
 import { consoles } from '#@/consoles/registry.ts'
 import type { EmulatorDefinition } from '#@/consoles/types.ts'
+import { platforms } from '#@/constants/platform.ts'
+import { defaultPreference } from '#@/constants/preference.ts'
 
 export const goSharedDataPath = path.join('server', 'internal', 'shared', 'shared.json')
 
@@ -18,7 +20,13 @@ export function getGoSharedData() {
     )
     .map(([name]) => name)
     .toSorted()
-  return { threadedConsoles }
+  return {
+    // The settings a user starts with, before their own (src/constants/preference.ts)
+    defaultPreference,
+    // Every console, in the app's usual order (src/constants/platform.ts)
+    platforms: platforms.map(({ name }) => name),
+    threadedConsoles,
+  }
 }
 
 export function formatGoSharedData() {

@@ -90,7 +90,9 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 func (s *Server) currentUser(w http.ResponseWriter, r *http.Request) {
 	user := stateOf(r).user
 	if user == nil {
-		writeJSON(w, http.StatusOK, nil)
+		// Nothing at all, not null: the Node server answers JSON of undefined
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	writeJSON(w, http.StatusOK, user)

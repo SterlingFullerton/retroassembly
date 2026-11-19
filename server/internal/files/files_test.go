@@ -1,10 +1,12 @@
 package files
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +27,41 @@ func TestKindOf(t *testing.T) {
 		if _, ok := KindOf(id); ok {
 			t.Errorf("KindOf(%q) should not be a stored file", id)
 		}
+	}
+}
+
+// The digests the Node server's getFilePartialDigest gives the same files
+func TestPartialDigest(t *testing.T) {
+	pattern := make([]byte, 3000)
+	for i := range pattern {
+		pattern[i] = byte(i % 251)
+	}
+	cases := map[string]struct {
+		content []byte
+		want    string
+	}{
+		"over 2 KB":       {pattern, "731ee4d7aa8aee4c"},
+		"under 1 KB":      {[]byte("small bios"), "99b0c2e3febbe798"},
+		"between 1 and 2": {make([]byte, 1500), "12636ad34eee18cd"},
+	}
+	for name, test := range cases {
+		got, err := PartialDigest(bytes.NewReader(test.content), int64(len(test.content)))
+		if err != nil || got != test.want {
+			t.Errorf("%s: %q, %v; want %q", name, got, err, test.want)
+		}
+	}
+}
+
+func TestPut(t *testing.T) {
+	filePath := filepath.Join(t.TempDir(), "bioses", "psx", "abc.bin")
+	if err := Put(filePath, strings.NewReader("bios")); err != nil {
+		t.Fatal(err)
+	}
+	if content, err := os.ReadFile(filePath); err != nil || string(content) != "bios" {
+		t.Fatalf("%q, %v", content, err)
+	}
+	if left, _ := filepath.Glob(filePath + ".*.partial"); len(left) > 0 {
+		t.Fatalf("partial files left behind: %v", left)
 	}
 }
 

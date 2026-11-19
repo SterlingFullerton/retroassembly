@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -78,13 +79,25 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	handler, err := web.New(c, database, authMode, data.ThreadedConsoles).Handler()
+	server, err := web.New(c, database, authMode, data)
 	if err != nil {
 		return err
 	}
+	handler, err := server.Handler()
+	if err != nil {
+		return err
+	}
+	if c.NodeURL != "" {
+		log.Printf("Passing what isn't ported yet to the Node server at %s", c.NodeURL)
+	}
+	// IPv4 only, as the Node server listens
 	address := fmt.Sprintf("0.0.0.0:%d", c.Port)
+	listener, err := net.Listen("tcp4", address)
+	if err != nil {
+		return err
+	}
 	log.Printf("RetroAssembly (Go) is running at http://%s/", address)
-	return http.ListenAndServe(address, handler)
+	return http.Serve(listener, handler)
 }
 
 func main() {

@@ -3,14 +3,20 @@
 The server being moved from Node to Go, a piece at a time (see [docs/go_migration_plan.md](../docs/go_migration_plan.md)).
 The browser app stays TypeScript; this serves it and its API.
 
-## What it serves so far (phase 1)
+## What it serves so far
 
 - The built browser app (`dist/client`): its files, compressed copies, and `index.html` for every page
 - `/robots.txt`, `/build-version`, `/` (to the library)
-- Signing in and out: `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `GET /api/v1/users/current`, `/logout`
+- Signing in and out: `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `PATCH /api/v1/auth/password`,
+  `GET /api/v1/users/current`, `/logout`
 - Stored files: `GET /api/v1/files/*`
+- Favorites: `POST /api/v1/favorites`, `DELETE /api/v1/favorites/{romId}`
+- Play history: `POST /api/v1/launch_records`, `DELETE /api/v1/roms/{id}/launch_records`
+- Settings: `GET` and `POST /api/v1/preference`, `POST` and `DELETE /api/v1/preference/bioses`
 
-Any other `/api/` address answers 501 for now.
+With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (the rest of `/api/`, `/cdn/`, logging
+in with OIDC) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
+Without it, those answer 501.
 
 It uses the same data folder, database and settings (`RETROASSEMBLY_RUN_TIME_*`) as the Node server, and can run on
 the same data folder at the same time. Password hashes, sessions, ids, file ids and the migrations Drizzle records are
@@ -22,7 +28,7 @@ Go 1.27 or later. From the repository root, after building the browser app with 
 
 ```sh
 go -C server build -o ../dist/retroassembly-go ./cmd/retroassembly
-RETROASSEMBLY_RUN_TIME_PORT=8001 dist/retroassembly-go
+RETROASSEMBLY_RUN_TIME_PORT=8001 RETROASSEMBLY_GO_NODE_URL=http://localhost:8000 dist/retroassembly-go
 ```
 
 It reads `dist/client` and `src/databases/migrations` from the folder it's started in (or
@@ -37,8 +43,12 @@ go -C server vet ./... && go -C server test ./...
 `server/test/shared-data.sh` checks the two servers against each other on one data folder: start the Node server and
 this one on the same empty data folder, then run it with `DATA_DIRECTORY`, `NODE_URL` and `GO_URL`.
 
-What the Go server needs from the TypeScript definitions (which consoles' game pages are cross-origin isolated) is in
-`internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`. A unit test fails when it's out of date.
+What the Go server needs from the TypeScript definitions (the default settings, the consoles in order, which consoles'
+game pages are cross-origin isolated) is in `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
+A unit test fails when it's out of date.
+
+How settings are resolved and merged is checked against the TypeScript code's own answers, in
+`internal/preference/testdata/typescript.json`, written by `node scripts/go-test-fixtures.ts`.
 
 ## Passwords
 

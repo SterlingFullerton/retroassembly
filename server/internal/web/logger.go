@@ -59,6 +59,9 @@ func logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		record := &recorder{ResponseWriter: w}
 		next.ServeHTTP(record, r)
+		if state := stateOf(r); state != nil && state.proxied {
+			return
+		}
 
 		remoteAddress := r.Header.Get("X-Forwarded-For")
 		if remoteAddress == "" {

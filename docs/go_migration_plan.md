@@ -157,6 +157,21 @@ Order, from least to most involved:
 API types: from step 1, generate an OpenAPI spec from the Go handlers and TypeScript types from it, and move the
 browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as each group lands.
 
+**Status: in progress.**
+
+- Go stands in front of Node when `RETROASSEMBLY_GO_NODE_URL` is set, passing on whatever it doesn't answer yet
+- Done: 1 (with `PATCH /api/v1/auth/password`); 2, except `GET /api/v1/launch_records`, which needs the search and
+  cover matching of step 4 and moves there
+- Checked by sending the same requests, errors included, to Node alone and to Go in front of Node, and with the
+  end-to-end tests through Go in front of Node: the same tests pass as on Node alone
+- The default settings and the consoles come from the TypeScript definitions (`scripts/go-shared-data.ts`), and how
+  settings are resolved and merged is checked against the TypeScript code's own answers (`scripts/go-test-fixtures.ts`)
+- API types: the browser app's types still come from the Node server's routes, which stay until phase 4. Generating
+  them from Go waits until then, when they would otherwise be lost
+- Two small differences, from Node's own quirks: Node remembers a library's consoles for a minute, so right after a
+  first game is added Go may already list a console Node doesn't yet; and a request the browser stops waiting for is
+  no longer logged as a proxy error
+
 ### Phase 3: Background jobs and the CDN cache
 
 - `/cdn/*` cache and its prefetch job (`cdn-cache.ts`, `cdn-prefetch.ts`), the WebP decision below
