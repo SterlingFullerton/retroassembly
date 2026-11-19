@@ -1,6 +1,7 @@
-import { IconButton } from '@radix-ui/themes'
+import { Button } from '@radix-ui/themes'
 import type { InferRequestType } from 'hono'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client, parseResponse } from '#@/api/client.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
@@ -11,6 +12,7 @@ const endpoint = 'roms/:id/boxart'
 const { $delete, $post } = client.roms[':id'].boxart
 
 export function GameMediaBoxart() {
+  const { t } = useTranslation()
   const initialRom = useRom()
   const [rom, setRom] = useState(initialRom)
   const param = { id: rom.id }
@@ -38,29 +40,36 @@ export function GameMediaBoxart() {
   }
 
   return (
-    <div className='flex gap-2'>
-      <GameCover className='flex w-20 items-center justify-center object-contain' rom={rom} />
-      <div className='flex flex-col justify-center gap-2'>
-        <IconButton
+    // The cover, then Upload and Reset under it: a phone shows it smaller, beside nothing else
+    <div className='flex flex-col gap-2'>
+      <GameCover
+        className='block w-28 sm:w-full'
+        imgClassName='block h-auto max-h-56 w-full rounded object-contain object-left-top'
+        rom={rom}
+      />
+      <div className='flex gap-2'>
+        <Button
           disabled={isResettingingBoxart}
           loading={isUploadingBoxart}
           onClick={handleClickUploadBoxart}
-          title='Upload'
+          size='1'
+          type='button'
           variant='soft'
         >
           <span className='icon-[mdi--upload]' />
-        </IconButton>
-
-        <IconButton
+          {t('common.upload')}
+        </Button>
+        <Button
           disabled={isUploadingBoxart}
           loading={isResettingingBoxart}
           onClick={handleClickResetBoxart}
-          title='Reset to defaults'
+          size='1'
           type='button'
           variant='soft'
         >
           <span className='icon-[mdi--restore]' />
-        </IconButton>
+          {t('common.reset')}
+        </Button>
       </div>
     </div>
   )

@@ -8,7 +8,6 @@ import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { imageLoaded } from '#@/utils/client/image.ts'
 import { getRomGoodcodes, getRomLibretroThumbnail } from '#@/utils/client/library.ts'
-import { GameMediaDialog } from '../game-media-dialog/game-media-dialog.tsx'
 import { isCbzFile, isImageFile, isPdfFile, isVideoFile } from '../game-media-dialog/utils.ts'
 import { GameMediaCarousel, type MediaItem } from './game-media-carousel.tsx'
 import { MediaThumbnail } from './media-thumbnail.tsx'
@@ -128,9 +127,6 @@ export function GameMedia() {
               thumbRefs={thumbRefs}
             />
           ))}
-          <div className='flex items-center justify-end p-1.5 lg:w-auto'>
-            <GameMediaDialog />
-          </div>
         </div>
       </ScrollArea>
       <GameMediaCarousel

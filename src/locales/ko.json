@@ -501,7 +501,6 @@
   "upload.uploadingForPlatform": "다음 플랫폼용 ROM을 업로드하고 있습니다:",
   "upload.uploadingRoms": "ROM 업로드 중",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}}개의 ROM이 업로드되었습니다.",
-  "game.media.edit": "미디어 편집",
   "game.media.boxArt": "박스 아트",
   "game.media.media": "미디어",
   "storage.title": "기기 저장 공간",
@@ -513,5 +512,8 @@
   "storage.clearAll": "모두 지우기",
   "storage.onDevice": "기기에 저장됨",
   "storage.unknownGame": "알 수 없는 게임",
-  "common.numberOfGames": "게임 수"
+  "common.numberOfGames": "게임 수",
+  "common.edit": "편집",
+  "common.reset": "초기화",
+  "game.editGame": "게임 편집"
 }

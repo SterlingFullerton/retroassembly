@@ -507,7 +507,6 @@
   "upload.uploadingForPlatform": "You are uploading ROMs for",
   "upload.uploadingRoms": "Uploading ROMs",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) have been uploaded.",
-  "game.media.edit": "Edit media",
   "game.media.boxArt": "Box Art",
   "game.media.media": "Media",
   "storage.title": "Device storage",
@@ -519,5 +518,8 @@
   "storage.clearAll": "Clear all",
   "storage.onDevice": "On device",
   "storage.unknownGame": "Unknown game",
-  "common.numberOfGames": "Number of games"
+  "common.numberOfGames": "Number of games",
+  "common.edit": "Edit",
+  "common.reset": "Reset",
+  "game.editGame": "Edit game"
 }

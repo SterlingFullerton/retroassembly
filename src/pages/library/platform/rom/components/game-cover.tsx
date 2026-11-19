@@ -8,7 +8,7 @@ import { useRomCover } from '../../../hooks/use-rom-cover.ts'
 import { GameMediaCarousel } from './game-media/game-media-carousel.tsx'
 
 /** The game's box art; tapped, it opens full size in the app's picture viewer */
-export function GameCover({ className = '', parallax = false, rom }) {
+export function GameCover({ className = '', imgClassName = 'block h-auto w-full', parallax = false, rom }) {
   const { data: cover, isLoading } = useRomCover(rom)
   const [open, setOpen] = useState(false)
   const [originRect, setOriginRect] = useState<DOMRect | null>(null)
@@ -17,7 +17,7 @@ export function GameCover({ className = '', parallax = false, rom }) {
   if (isLoading) {
     content = <Skeleton className={skeletonClassnames[rom.platform] || 'aspect-square! size-full!'} loading />
   } else if (cover) {
-    const img = <img alt={rom.name} className='block h-auto w-full' loading='lazy' src={cover.src} />
+    const img = <img alt={rom.name} className={imgClassName} loading='lazy' src={cover.src} />
     content = parallax ? <TiltCover className='size-full!'>{img}</TiltCover> : img
   }
 

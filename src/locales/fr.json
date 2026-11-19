@@ -507,7 +507,6 @@
   "upload.uploadingForPlatform": "Vous téléversez des ROMs pour",
   "upload.uploadingRoms": "Téléversement des ROMs",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) ont été téléversées.",
-  "game.media.edit": "Modifier les médias",
   "game.media.boxArt": "Pochette",
   "game.media.media": "Médias",
   "storage.title": "Stockage de l'appareil",
@@ -519,5 +518,8 @@
   "storage.clearAll": "Tout effacer",
   "storage.onDevice": "Sur l'appareil",
   "storage.unknownGame": "Jeu inconnu",
-  "common.numberOfGames": "Nombre de jeux"
+  "common.numberOfGames": "Nombre de jeux",
+  "common.edit": "Modifier",
+  "common.reset": "Réinitialiser",
+  "game.editGame": "Modifier le jeu"
 }

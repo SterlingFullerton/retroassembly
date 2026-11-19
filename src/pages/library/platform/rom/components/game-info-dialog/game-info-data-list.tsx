@@ -1,8 +1,7 @@
-import { DataList, Select, TextArea, TextField } from '@radix-ui/themes'
+import { Select, TextArea, TextField } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { range } from 'es-toolkit'
 import { useTranslation } from 'react-i18next'
-import { platformMap } from '#@/constants/platform.ts'
 import { useDate } from '#@/pages/library/hooks/use-date.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 
@@ -13,39 +12,33 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
 
   const dataListFields = [
     {
-      icon: 'icon-[mdi--calendar]',
       label: t('common.released'),
       name: 'gameReleaseDate',
       placeholder: `e.g. ${formatDate('1990-03-15')}`,
       type: 'input' as const,
     },
     {
-      icon: 'icon-[mdi--tag-multiple]',
-      label: t('common.genres'),
-      name: 'gameGenres',
-      type: 'input' as const,
-    },
-    {
-      icon: 'icon-[mdi--person-multiple]',
       label: t('common.players'),
       name: 'gamePlayers',
       options: [...range(1, 11).map((v) => `${v}`), 'unknown'],
       type: 'select' as const,
     },
     {
-      icon: 'icon-[mdi--chip]',
       label: t('common.developer'),
       name: 'gameDeveloper',
       type: 'input' as const,
     },
     {
-      icon: 'icon-[mdi--earth]',
       label: t('common.publisher'),
       name: 'gamePublisher',
       type: 'input' as const,
     },
     {
-      icon: 'icon-[mdi--note]',
+      label: t('common.genres'),
+      name: 'gameGenres',
+      type: 'input' as const,
+    },
+    {
       label: t('common.description'),
       name: 'gameDescription',
       type: 'textarea' as const,
@@ -68,62 +61,50 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
     gameInfo.gamePlayers = Math.trunc(Number(`${gameInfo.gamePlayers}`)) ? `${gameInfo.gamePlayers}` : 'unknown'
   }
 
+  // Released and Players, Developer and Publisher side by side where there's room; Genres and Description across
+  const wide = new Set(['gameDescription', 'gameGenres'])
+
   return (
-    <DataList.Root className='py-4' orientation={{ initial: 'vertical', md: 'horizontal' }} size='3'>
-      <DataList.Item>
-        <DataList.Label className='-ml-2 flex items-center gap-2 text-sm capitalize lg:ml-0' minWidth='32px'>
-          <span className='icon-[mdi--computer-classic]' />
-          {t('common.platform')}
-        </DataList.Label>
-        <DataList.Value>{t(platformMap[rom.platform].displayNameI18nKey)}</DataList.Value>
-      </DataList.Item>
-      {dataListFields.map(({ icon, label, name, options, type, ...valueProps }) => (
-        <DataList.Item key={name}>
-          <DataList.Label className='-ml-2 flex items-center gap-2 text-sm lg:ml-0' minWidth='32px'>
-            <span className={icon} />
-            {label}
-          </DataList.Label>
-          <DataList.Value>
+    <div className='grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2'>
+      {dataListFields.map(({ label, name, options, type, ...valueProps }) => (
+        <label className={clsx('flex flex-col gap-1', { 'sm:col-span-2': wide.has(name) })} key={name}>
+          <span className='text-xs text-(--gray-11)'>{label}</span>
+          {
             {
-              {
-                input: (
-                  <TextField.Root
-                    aria-label={label}
-                    autoFocus={autoFocusField === name}
-                    className={clsx({ 'w-full': name === 'gameGenres' })}
-                    defaultValue={gameInfo[name]}
-                    name={name}
-                    {...valueProps}
-                  />
-                ),
-                select: (
-                  <Select.Root defaultValue={`${gameInfo[name]}`} name={name}>
-                    <Select.Trigger aria-label={label} autoFocus={autoFocusField === name} />
-                    <Select.Content>
-                      {options?.map((opt) => (
-                        <Select.Item key={opt} value={opt}>
-                          {opt}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Root>
-                ),
-                textarea: (
-                  <TextArea
-                    aria-label={label}
-                    autoFocus={autoFocusField === name}
-                    className='w-full text-justify font-serif!'
-                    defaultValue={gameInfo[name]}
-                    name={name}
-                    resize='vertical'
-                    rows={10}
-                  />
-                ),
-              }[type]
-            }
-          </DataList.Value>
-        </DataList.Item>
+              input: (
+                <TextField.Root
+                  autoFocus={autoFocusField === name}
+                  defaultValue={gameInfo[name]}
+                  name={name}
+                  {...valueProps}
+                />
+              ),
+              select: (
+                <Select.Root defaultValue={`${gameInfo[name]}`} name={name}>
+                  <Select.Trigger aria-label={label} autoFocus={autoFocusField === name} />
+                  <Select.Content>
+                    {options?.map((opt) => (
+                      <Select.Item key={opt} value={opt}>
+                        {opt === 'unknown' ? t('common.unknown') : opt}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+              ),
+              textarea: (
+                <TextArea
+                  autoFocus={autoFocusField === name}
+                  className='w-full'
+                  defaultValue={gameInfo[name]}
+                  name={name}
+                  resize='vertical'
+                  rows={6}
+                />
+              ),
+            }[type]
+          }
+        </label>
       ))}
-    </DataList.Root>
+    </div>
   )
 }

@@ -507,7 +507,6 @@
   "upload.uploadingForPlatform": "Estás subiendo ROMs para",
   "upload.uploadingRoms": "Subiendo ROMs",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) han sido subidas.",
-  "game.media.edit": "Editar multimedia",
   "game.media.boxArt": "Carátula",
   "game.media.media": "Multimedia",
   "storage.title": "Almacenamiento del dispositivo",
@@ -519,5 +518,8 @@
   "storage.clearAll": "Borrar todo",
   "storage.onDevice": "En el dispositivo",
   "storage.unknownGame": "Juego desconocido",
-  "common.numberOfGames": "Número de juegos"
+  "common.numberOfGames": "Número de juegos",
+  "common.edit": "Editar",
+  "common.reset": "Restablecer",
+  "game.editGame": "Editar juego"
 }

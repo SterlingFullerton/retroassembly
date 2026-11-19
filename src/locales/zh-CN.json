@@ -501,7 +501,6 @@
   "upload.uploadingForPlatform": "您正在为以下平台上传ROM：",
   "upload.uploadingRoms": "正在上传ROM",
   "upload.uploadSuccessMessage": "🎉 已上传{{successCount}}/{{totalCount}}个ROM。",
-  "game.media.edit": "编辑媒体",
   "game.media.boxArt": "封面",
   "game.media.media": "媒体",
   "storage.title": "设备存储",
@@ -513,5 +512,8 @@
   "storage.clearAll": "全部清除",
   "storage.onDevice": "已存于设备",
   "storage.unknownGame": "未知游戏",
-  "common.numberOfGames": "游戏数量"
+  "common.numberOfGames": "游戏数量",
+  "common.edit": "编辑",
+  "common.reset": "重置",
+  "game.editGame": "编辑游戏"
 }

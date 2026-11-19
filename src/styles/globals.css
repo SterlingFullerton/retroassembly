@@ -165,11 +165,13 @@ a.pending:focus {
  */
 @media (width < 40rem), (height < 32rem) {
   .rt-BaseDialogScrollPadding:has(> .settings-dialog),
-  .rt-BaseDialogScrollPadding:has(> .device-storage-dialog) {
+  .rt-BaseDialogScrollPadding:has(> .device-storage-dialog),
+  .rt-BaseDialogScrollPadding:has(> .edit-game-dialog) {
     padding: 0;
   }
   .settings-dialog,
-  .device-storage-dialog {
+  .device-storage-dialog,
+  .edit-game-dialog {
     display: flex;
     flex-direction: column;
     width: 100vw !important;
@@ -199,13 +201,15 @@ a.pending:focus {
     }
   }
   /* Device storage's list scrolls under its title */
-  .device-storage-dialog .device-storage-scroll {
+  .device-storage-dialog .device-storage-scroll,
+  .edit-game-dialog .edit-game-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
   }
   .settings-dialog .settings-close,
-  .device-storage-dialog .settings-close {
+  .device-storage-dialog .settings-close,
+  .edit-game-dialog .settings-close {
     top: max(var(--space-4), env(safe-area-inset-top));
     right: max(var(--space-4), env(safe-area-inset-right));
   }

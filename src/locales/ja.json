@@ -501,7 +501,6 @@
   "upload.uploadingForPlatform": "次のプラットフォーム用のROMをアップロードしています：",
   "upload.uploadingRoms": "ROMアップロード中",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}}個のROMがアップロードされました。",
-  "game.media.edit": "メディアを編集",
   "game.media.boxArt": "ボックスアート",
   "game.media.media": "メディア",
   "storage.title": "デバイスのストレージ",
@@ -513,5 +512,8 @@
   "storage.clearAll": "すべて消去",
   "storage.onDevice": "このデバイスに保存済み",
   "storage.unknownGame": "不明なゲーム",
-  "common.numberOfGames": "ゲーム数"
+  "common.numberOfGames": "ゲーム数",
+  "common.edit": "編集",
+  "common.reset": "リセット",
+  "game.editGame": "ゲームを編集"
 }

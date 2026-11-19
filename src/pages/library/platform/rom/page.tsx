@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useLoaderData } from 'react-router'
+import { platformMap } from '#@/constants/platform.ts'
 import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { FavoriteButton } from '../../components/favorite-button.tsx'
@@ -7,86 +8,85 @@ import { GameButtons } from '../../components/game-buttons/game-buttons.tsx'
 import { RomBackground } from '../../components/rom-background.tsx'
 import { useViewport } from '../../hooks/use-viewport.ts'
 import { DownloadButton } from './components/download-button.tsx'
+import { GameAbout, useGameFacts } from './components/game-about.tsx'
 import { GameCover } from './components/game-cover.tsx'
 import { GameInfoDialog } from './components/game-info-dialog/game-info-dialog.tsx'
-import { GameInfo } from './components/game-info.tsx'
-import { GameMediaDialog } from './components/game-media-dialog/game-media-dialog.tsx'
-import { GameMedia } from './components/game-media/game-media.tsx'
 
+/**
+ * A game's page. The box art keeps its own shape within a fixed height: on a phone beside the title, so Continue and
+ * Start are on the first screen; on a computer in a column of its own. Under the title, its console, year and genre, and
+ * Favorite, Download and Edit. About, folded away, holds the rest
+ */
 export default function RomPage() {
   const { t } = useTranslation()
   const { isLargeScreen } = useViewport()
   const { discs, rom } = useLoaderData<typeof loader>()
+  const facts = useGameFacts(rom)
 
   const goodcodes = getRomGoodcodes(rom)
-  const launchboxGame = rom.rawGameMetadata?.launchbox
+  const factLine = [
+    t(platformMap[rom.platform].displayNameI18nKey),
+    facts.released ? String(facts.released.getUTCFullYear()) : '',
+    facts.genres[0] ?? '',
+    discs.length > 1 ? t('emulator.discCount', { count: discs.length }) : '',
+  ].filter(Boolean)
 
-  const overview = rom.gameDescription || launchboxGame?.overview
+  const buttons = (
+    <div className='flex shrink-0 items-center gap-2'>
+      <FavoriteButton rom={rom} variant='inline' />
+      <DownloadButton rom={rom} />
+      <GameInfoDialog />
+    </div>
+  )
 
   return (
     <>
       <RomBackground rom={rom} />
 
       <div className='relative'>
-        <div className='flex min-h-full w-full flex-col gap-4 p-4 md:flex-row'>
-          <div className='group md:sticky'>
+        <div className='flex min-h-full w-full flex-col gap-4 p-4 md:flex-row md:gap-8 lg:p-6'>
+          <div className='flex items-start gap-4 md:block md:w-56 md:shrink-0 lg:w-64'>
             <GameCover
-              className='top-4 mx-auto block w-full max-w-72 md:mx-0 md:w-56 lg:w-64'
+              className='max-w-[48%] shrink-0 md:sticky md:top-4 md:max-w-full'
+              imgClassName='block h-auto max-h-42 w-auto max-w-full rounded-md shadow-md md:mx-auto md:max-h-88'
               parallax={isLargeScreen}
               rom={rom}
             />
 
-            <div className='mt-2 flex justify-end px-1'>
-              <GameMediaDialog />
+            {/* On a phone, the title and the rest of the top sit beside the cover */}
+            <div className='flex min-w-0 flex-1 flex-col gap-1.5 md:hidden'>
+              <h1 className='text-xl leading-tight font-bold'>{goodcodes.rom}</h1>
+              <FactLine facts={factLine} />
+              <div className='mt-1'>{buttons}</div>
             </div>
           </div>
 
-          <div className='flex min-w-0 flex-1 flex-col gap-8'>
-            <div className='flex items-center gap-3 pt-4 lg:px-8'>
-              <h1 className='text-3xl font-bold'>
-                {goodcodes.rom}
-                {discs.length > 1 ? (
-                  <span className='ml-3 text-base font-normal text-(--gray-11)'>
-                    · {t('emulator.discCount', { count: discs.length })}
-                  </span>
-                ) : null}
-              </h1>
-              <FavoriteButton rom={rom} variant='inline' />
-              <DownloadButton rom={rom} />
+          <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+            <div className='hidden items-center gap-4 md:flex'>
+              <h1 className='text-3xl font-bold'>{goodcodes.rom}</h1>
+              {buttons}
+            </div>
+            <div className='hidden md:block'>
+              <FactLine facts={factLine} />
             </div>
 
-            <div className='flex flex-col gap-8 lg:flex-col-reverse'>
-              <div className='lg:px-4'>
-                <GameButtons lazy saves />
-              </div>
-              <GameInfo rom={rom} />
-            </div>
-
-            <div className='flex flex-col gap-6'>
-              <GameMedia />
-              <div className='prose group max-w-[70ch] font-serif text-pretty whitespace-pre-line text-(--color-text)/90 lg:pl-4'>
-                {overview}
-                <div className='mt-1 flex justify-end'>
-                  <GameInfoDialog autoFocusField='gameDescription' />
-                </div>
-              </div>
-
-              {launchboxGame?.wikipediaUrl ? (
-                <div>
-                  <a
-                    className='inline-flex items-center gap-2 text-(--accent-11) underline'
-                    href={launchboxGame.wikipediaUrl}
-                    rel='noreferrer noopener'
-                    target='_blank'
-                  >
-                    <span className='icon-[mdi--wikipedia] size-6' /> {t('common.readMoreWikipedia')}
-                  </a>
-                </div>
-              ) : null}
+            <div className='mt-1 md:mt-4 md:max-w-3xl'>
+              {/* On a phone, Continue and Start side by side and smaller, as on Home, so the first screen holds more */}
+              <GameButtons beforeSaves={<GameAbout rom={rom} />} compact={!isLargeScreen} lazy saves />
             </div>
           </div>
         </div>
       </div>
     </>
+  )
+}
+
+function FactLine({ facts }: Readonly<{ facts: string[] }>) {
+  return (
+    <div className='flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-(--gray-11)'>
+      {facts.map((fact) => (
+        <span key={fact}>{fact}</span>
+      ))}
+    </div>
   )
 }

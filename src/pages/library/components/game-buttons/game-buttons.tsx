@@ -1,7 +1,7 @@
 import { Button, HoverCard } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { noop } from 'es-toolkit'
-import { type MouseEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { generatePath, useLoaderData, useLocation, useNavigate } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
@@ -40,20 +40,25 @@ function subscribeNever() {
  * picked there continues the game from it
  */
 export function GameButtons({
+  beforeSaves,
   compact = false,
   lazy = false,
   saves = false,
-}: Readonly<{ compact?: boolean; lazy?: boolean; saves?: boolean }>) {
+}: Readonly<{ beforeSaves?: ReactNode; compact?: boolean; lazy?: boolean; saves?: boolean }>) {
   return (
     <EmulatorSessionProvider lazy={lazy}>
       <div>
-        <GameButtonsContent compact={compact} saves={saves} />
+        <GameButtonsContent beforeSaves={beforeSaves} compact={compact} saves={saves} />
       </div>
     </EmulatorSessionProvider>
   )
 }
 
-function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; saves: boolean }>) {
+function GameButtonsContent({
+  beforeSaves,
+  compact,
+  saves,
+}: Readonly<{ beforeSaves?: ReactNode; compact: boolean; saves: boolean }>) {
   const { rom, state } = useLoaderData()
   const { i18n, t } = useTranslation()
   const { error: prepareError, isDownloading, isPreparing, launch, loadingProgress, prepare, warmUp } = useSession()
@@ -195,6 +200,7 @@ function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; sav
   const savesShown = saves ? (
     <>
       <OnDeviceLine rom={rom} />
+      {beforeSaves}
       <Snapshots
         disabled={isPreparing || Boolean(missingBioses?.length) || cannotIsolate}
         onPick={handlePickSnapshot}

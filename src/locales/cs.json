@@ -519,7 +519,6 @@
   "upload.uploadingForPlatform": "Nahráváte ROM pro",
   "upload.uploadingRoms": "Nahrávání ROM",
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(ů) bylo nahráno.",
-  "game.media.edit": "Upravit média",
   "game.media.boxArt": "Obal",
   "game.media.media": "Média",
   "storage.title": "Úložiště zařízení",
@@ -531,5 +530,8 @@
   "storage.clearAll": "Vymazat vše",
   "storage.onDevice": "V zařízení",
   "storage.unknownGame": "Neznámá hra",
-  "common.numberOfGames": "Počet her"
+  "common.numberOfGames": "Počet her",
+  "common.edit": "Upravit",
+  "common.reset": "Obnovit",
+  "game.editGame": "Upravit hru"
 }
