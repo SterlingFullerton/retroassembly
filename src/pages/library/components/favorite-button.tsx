@@ -6,11 +6,13 @@ import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import { metadata } from '#@/constants/metadata.ts'
 import type { Rom } from '#@/controllers/roms/get-roms.ts'
+import { usePristine } from '../atoms.ts'
 import { useLibraryRefresh } from '../hooks/use-library-refresh.ts'
 
 interface FavoriteButtonProps {
   rom: Rom
-  variant: 'inline' | 'overlay'
+  /** On a game's page (`inline`) or on a game entry's console line (`entry`) */
+  variant: 'entry' | 'inline'
 }
 
 const heartPath =
@@ -39,7 +41,6 @@ function showConfetti(element: HTMLElement, isTop: boolean) {
 export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) {
   const { t } = useTranslation()
   const refresh = useLibraryRefresh()
-  const isOverlay = variant === 'overlay'
   const [isPending, startTransition] = useTransition()
   const [optimisticIsFavorite, setOptimisticIsFavorite] = useOptimistic(
     rom.isFavorite,
@@ -72,36 +73,54 @@ export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) 
     })
   }
 
+  // Whether the arrow keys or a controller have been used, so the focus is being shown
+  const [pristine] = usePristine()
+  const label = optimisticIsFavorite ? t('game.removeFromFavorites') : t('game.addToFavorites')
+
+  // On a game entry, a small heart at the end of its console line: filled for a favourite; empty, it shows on a computer
+  // only while the pointer is over the game, or the game has the focus while moving with the keys, and on a phone always
+  if (variant === 'entry') {
+    return (
+      <button
+        aria-label={label}
+        className={clsx(
+          'taps-in-pass-through -mr-1.5 ml-auto flex size-8 shrink-0 items-center justify-center rounded-full transition-opacity hover:bg-(--accent-3)',
+          optimisticIsFavorite
+            ? 'text-(--accent-9)'
+            : [
+                'text-(--gray-9) hover:text-(--accent-9) lg:opacity-0 lg:group-hover:opacity-100',
+                { 'lg:group-focus-within:opacity-100': !pristine },
+              ],
+        )}
+        data-sn-skip=''
+        onClick={handleClick}
+        title={label}
+        type='button'
+      >
+        <span
+          className={clsx(
+            'size-5 lg:size-[18px]',
+            optimisticIsFavorite ? 'icon-[mdi--heart]' : 'icon-[mdi--heart-outline]',
+          )}
+        />
+      </button>
+    )
+  }
+
   return (
-    <div
-      className={clsx({
-        'group-hover:opacity-100 lg:opacity-0': isOverlay && !optimisticIsFavorite,
-        'pointer-events-none absolute inset-0 transition-opacity': isOverlay,
-      })}
+    <button
+      className='taps-in-pass-through relative z-1 flex size-10 shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3) md:size-auto md:p-1.5'
+      aria-label={label}
+      onClick={handleClick}
+      title={label}
+      type='button'
     >
-      <div className={isOverlay ? 'absolute aspect-square w-full' : ''}>
-        <div className={isOverlay ? 'absolute right-1 bottom-6' : ''}>
-          <button
-            data-sn-skip={isOverlay ? '' : undefined}
-            type='button'
-            className={clsx(
-              'taps-in-pass-through relative z-1 flex shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)',
-              // On a game's page, 40 points on a phone, for a finger
-              isOverlay ? 'p-1.5' : 'size-10 md:size-auto md:p-1.5',
-            )}
-            aria-label={optimisticIsFavorite ? t('game.removeFromFavorites') : t('game.addToFavorites')}
-            onClick={handleClick}
-            title={optimisticIsFavorite ? t('game.removeFromFavorites') : t('game.addToFavorites')}
-          >
-            <span
-              className={clsx('text-lg text-(--accent-9)', {
-                'icon-[mdi--heart-outline]': !optimisticIsFavorite,
-                'icon-[mdi--heart]': optimisticIsFavorite,
-              })}
-            />
-          </button>
-        </div>
-      </div>
-    </div>
+      <span
+        className={clsx('text-lg text-(--accent-9)', {
+          'icon-[mdi--heart-outline]': !optimisticIsFavorite,
+          'icon-[mdi--heart]': optimisticIsFavorite,
+        })}
+      />
+    </button>
   )
 }

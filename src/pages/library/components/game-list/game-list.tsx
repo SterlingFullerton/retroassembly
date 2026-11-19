@@ -53,7 +53,7 @@ export function GameList({ actionsInHeader, actionsLeading, actionsTrailing, pho
       {roms?.length ? (
         <div className='mt-4 flex gap-2' data-sn-section=''>
           <div
-            className='grid flex-1 gap-x-3 [--min-width:120px] sm:[--min-width:150px] lg:gap-x-0 lg:[--min-width:100%]'
+            className='grid flex-1 gap-x-4 gap-y-6 [--min-width:120px] sm:[--min-width:150px] lg:gap-x-3 lg:[--min-width:100%]'
             style={{ gridTemplateColumns }}
           >
             {roms.map((rom) => (
