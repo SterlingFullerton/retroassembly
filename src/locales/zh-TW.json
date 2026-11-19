@@ -503,5 +503,14 @@
   "upload.uploadSuccessMessage": "🎉 已上傳{{successCount}}/{{totalCount}}個ROM。",
   "game.media.edit": "編輯媒體",
   "game.media.boxArt": "封面",
-  "game.media.media": "媒體"
+  "game.media.media": "媒體",
+  "storage.title": "裝置儲存空間",
+  "storage.used": "已用 {{used}}，共 {{limit}}",
+  "storage.available": "可用 {{size}}",
+  "storage.note": "已快取的遊戲載入更快。移除的遊戲會在遊玩時重新下載。",
+  "storage.empty": "沒有已快取的遊戲",
+  "storage.remove": "移除",
+  "storage.clearAll": "全部清除",
+  "storage.onDevice": "已存於裝置",
+  "storage.unknownGame": "未知遊戲"
 }

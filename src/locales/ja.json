@@ -503,5 +503,14 @@
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}}個のROMがアップロードされました。",
   "game.media.edit": "メディアを編集",
   "game.media.boxArt": "ボックスアート",
-  "game.media.media": "メディア"
+  "game.media.media": "メディア",
+  "storage.title": "デバイスのストレージ",
+  "storage.used": "{{limit}} 中 {{used}} 使用",
+  "storage.available": "空き容量 {{size}}",
+  "storage.note": "キャッシュされたゲームは速く読み込まれます。削除したゲームはプレイ時に再ダウンロードされます。",
+  "storage.empty": "キャッシュされたゲームはありません",
+  "storage.remove": "削除",
+  "storage.clearAll": "すべて消去",
+  "storage.onDevice": "このデバイスに保存済み",
+  "storage.unknownGame": "不明なゲーム"
 }

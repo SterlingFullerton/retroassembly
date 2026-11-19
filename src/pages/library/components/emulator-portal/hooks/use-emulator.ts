@@ -216,9 +216,9 @@ export function useEmulatorSessionController({
             })),
           ]
         : // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
-          (launchProfile.threads
+          launchProfile.threads
           ? { fileContent: new Uint8Array(1), fileName: rom?.fileName }
-          : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName }),
+          : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName },
     [discs, download, launchProfile.threads, multiDisc, rom, romUrl],
   )
   const { bioses } = preference.emulator.platform[rom.platform]
@@ -350,7 +350,7 @@ export function useEmulatorSessionController({
         const name = getStoredName(rom.fileId)
         try {
           if (!(await hasStoredGame(name, romUrl))) {
-            await storeGame(name, romUrl, reportGameProgress)
+            await storeGame(name, romUrl, reportGameProgress, { fileName: rom.fileName, platform: rom.platform })
           }
           return { name }
         } catch (error) {
@@ -426,7 +426,7 @@ export function useEmulatorSessionController({
         } catch (error) {
           throw new DownloadError('game', error)
         }
-        markPlayed(game.name)
+        markPlayed(game.name, { fileName: rom.fileName, platform: rom.platform })
         installGame(emulator, { reader: gameReader.current })
       } else {
         installGame(emulator, game)

@@ -21,6 +21,7 @@ import { type Snapshot, Snapshots } from '../../platform/rom/components/snapshot
 import { EmulatorPortal } from '../emulator-portal/emulator-portal.tsx'
 import { EmulatorSessionProvider } from '../emulator-portal/emulator-session-provider.tsx'
 import { BioseMissingMessage } from './biose-missing-message.tsx'
+import { OnDeviceLine } from './on-device-line.tsx'
 
 const isAppleMobile = /iphone|ipad|ipod/iu.test(navigator.userAgent)
 const isChromeLike = /chrome/iu.test(navigator.userAgent)
@@ -183,6 +184,7 @@ function GameButtonsContent({ compact, saves }: Readonly<{ compact: boolean; sav
   // The game's snapshots and own save, on its page. They stay when the game can't be played here, for downloading
   const savesShown = saves ? (
     <>
+      <OnDeviceLine rom={rom} />
       <Snapshots
         disabled={isPreparing || Boolean(missingBioses?.length) || cannotIsolate}
         onPick={handlePickSnapshot}

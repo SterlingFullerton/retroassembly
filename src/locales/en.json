@@ -509,5 +509,14 @@
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) have been uploaded.",
   "game.media.edit": "Edit media",
   "game.media.boxArt": "Box Art",
-  "game.media.media": "Media"
+  "game.media.media": "Media",
+  "storage.title": "Device storage",
+  "storage.used": "{{used}} of {{limit}} used",
+  "storage.available": "{{size}} available",
+  "storage.note": "Cached games load faster. Removed games download again when played.",
+  "storage.empty": "No cached games",
+  "storage.remove": "Remove",
+  "storage.clearAll": "Clear all",
+  "storage.onDevice": "On device",
+  "storage.unknownGame": "Unknown game"
 }

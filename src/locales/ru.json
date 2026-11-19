@@ -521,5 +521,14 @@
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM загружено.",
   "game.media.edit": "Редактировать медиа",
   "game.media.boxArt": "Обложка",
-  "game.media.media": "Медиа"
+  "game.media.media": "Медиа",
+  "storage.title": "Хранилище устройства",
+  "storage.used": "Занято {{used}} из {{limit}}",
+  "storage.available": "Доступно {{size}}",
+  "storage.note": "Кэшированные игры загружаются быстрее. Удалённые игры будут скачаны заново при запуске.",
+  "storage.empty": "Нет кэшированных игр",
+  "storage.remove": "Удалить",
+  "storage.clearAll": "Очистить всё",
+  "storage.onDevice": "На устройстве",
+  "storage.unknownGame": "Неизвестная игра"
 }

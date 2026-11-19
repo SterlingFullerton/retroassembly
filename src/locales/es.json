@@ -509,5 +509,14 @@
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) han sido subidas.",
   "game.media.edit": "Editar multimedia",
   "game.media.boxArt": "Carátula",
-  "game.media.media": "Multimedia"
+  "game.media.media": "Multimedia",
+  "storage.title": "Almacenamiento del dispositivo",
+  "storage.used": "{{used}} de {{limit}} usados",
+  "storage.available": "{{size}} disponibles",
+  "storage.note": "Los juegos en caché cargan más rápido. Los juegos eliminados se descargan de nuevo al jugar.",
+  "storage.empty": "No hay juegos en caché",
+  "storage.remove": "Quitar",
+  "storage.clearAll": "Borrar todo",
+  "storage.onDevice": "En el dispositivo",
+  "storage.unknownGame": "Juego desconocido"
 }

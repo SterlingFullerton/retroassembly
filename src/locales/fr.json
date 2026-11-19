@@ -509,5 +509,14 @@
   "upload.uploadSuccessMessage": "🎉 {{successCount}}/{{totalCount}} ROM(s) ont été téléversées.",
   "game.media.edit": "Modifier les médias",
   "game.media.boxArt": "Pochette",
-  "game.media.media": "Médias"
+  "game.media.media": "Médias",
+  "storage.title": "Stockage de l'appareil",
+  "storage.used": "{{used}} sur {{limit}} utilisés",
+  "storage.available": "{{size}} disponibles",
+  "storage.note": "Les jeux en cache se chargent plus vite. Les jeux supprimés sont retéléchargés au lancement.",
+  "storage.empty": "Aucun jeu en cache",
+  "storage.remove": "Supprimer",
+  "storage.clearAll": "Tout effacer",
+  "storage.onDevice": "Sur l'appareil",
+  "storage.unknownGame": "Jeu inconnu"
 }

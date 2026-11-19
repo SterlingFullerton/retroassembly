@@ -10,17 +10,29 @@ import {
 // part of the disc it needs as it plays. A cache: the NAS keeps the real copy, and the browser may clear it any time
 
 /** The most the stored games may take together; the least recently played go to make room */
-const storageLimit = 4 * 1024 ** 3
+export const storageLimit = 4 * 1000 ** 3
 const indexKey = 'retroassembly:stored-games'
 // The most read at once through shared memory; larger reads take several turns
 const readChunk = 4 * 1024 * 1024
 
-interface StoredGame {
+export interface StoredGame {
   /** The NAS's tag for the version stored, to tell when it's changed */
   etag?: string
+  /** The game's file name and console, to name it and link to it. Games stored before these were kept have neither */
+  fileName?: string
   lastPlayed: number
+  platform?: string
   size: number
 }
+
+/** Which game a stored file is, kept beside it in the index */
+export interface StoredGameAbout {
+  fileName: string
+  platform: string
+}
+
+// Told whenever the index changes, here or in another tab
+const changes = new EventTarget()
 
 /** Whether this browser can keep games in storage and read them as they play: on pages isolated for threads */
 export function canStoreGames() {
@@ -36,7 +48,15 @@ export function getStoredName(fileId: string) {
   return fileId.replaceAll(/[^\w.-]/gu, '_')
 }
 
-function readIndex(): Record<string, StoredGame> {
+/** The file id a stored name came from, as in roms_psp_0b8b3d73.cso from roms/psp/0b8b3d73.cso */
+export function parseStoredName(name: string) {
+  const match = /^roms_(?<platform>.+)_(?<file>[^_]+)$/u.exec(name)
+  return match?.groups
+    ? { fileId: `roms/${match.groups.platform}/${match.groups.file}`, platform: match.groups.platform }
+    : undefined
+}
+
+export function readIndex(): Record<string, StoredGame> {
   try {
     return JSON.parse(localStorage.getItem(indexKey) || '{}') as Record<string, StoredGame>
   } catch {
@@ -48,6 +68,80 @@ function writeIndex(index: Record<string, StoredGame>) {
   try {
     localStorage.setItem(indexKey, JSON.stringify(index))
   } catch {}
+  changes.dispatchEvent(new Event('change'))
+}
+
+/** For useSyncExternalStore: calls back when the stored games change */
+export function subscribeStoredGames(callback: () => void) {
+  function onStorage(event: StorageEvent) {
+    if (event.key === indexKey) {
+      callback()
+    }
+  }
+  changes.addEventListener('change', callback)
+  globalThis.addEventListener('storage', onStorage)
+  return () => {
+    changes.removeEventListener('change', callback)
+    globalThis.removeEventListener('storage', onStorage)
+  }
+}
+
+/** The index as it's kept, a string that only changes when the index does, for useSyncExternalStore */
+export function getStoredGamesSnapshot() {
+  try {
+    return localStorage.getItem(indexKey) || '{}'
+  } catch {
+    return '{}'
+  }
+}
+
+/** The stored games, after dropping any whose file the browser has cleared */
+export async function listStoredGames() {
+  const index = readIndex()
+  if (typeof navigator.storage?.getDirectory !== 'function') {
+    return []
+  }
+  const directory = await getDirectory()
+  let changed = false
+  for (const name of Object.keys(index)) {
+    try {
+      await directory.getFileHandle(name)
+    } catch {
+      delete index[name]
+      changed = true
+    }
+  }
+  if (changed) {
+    writeIndex(index)
+  }
+  return Object.entries(index)
+    .map(([name, game]) => ({ ...game, name }))
+    .toSorted((a, b) => b.lastPlayed - a.lastPlayed)
+}
+
+/** Removes a stored game; it downloads again the next time it's played */
+export async function removeStoredGame(name: string) {
+  const directory = await getDirectory()
+  await directory.removeEntry(name).catch(() => {})
+  forget(name)
+}
+
+export async function removeAllStoredGames() {
+  const directory = await getDirectory()
+  for (const name of Object.keys(readIndex())) {
+    await directory.removeEntry(name).catch(() => {})
+  }
+  writeIndex({})
+}
+
+/** Fills in which game a stored file is, for one stored before that was kept */
+export function describeStoredGame(name: string, about: StoredGameAbout) {
+  const index = readIndex()
+  const entry = index[name]
+  if (entry && (entry.fileName !== about.fileName || entry.platform !== about.platform)) {
+    index[name] = { ...entry, ...about }
+    writeIndex(index)
+  }
 }
 
 async function getDirectory() {
@@ -117,10 +211,10 @@ async function makeRoom(keep: string, needed = 0) {
 }
 
 /** Marks a stored game as just played, so it's the last to be removed */
-export function markPlayed(name: string) {
+export function markPlayed(name: string, about?: StoredGameAbout) {
   const index = readIndex()
   if (index[name]) {
-    index[name].lastPlayed = Date.now()
+    index[name] = { ...index[name], ...about, lastPlayed: Date.now() }
     writeIndex(index)
   }
 }
@@ -134,6 +228,7 @@ export async function storeGame(
   name: string,
   url: string,
   onProgress?: (loaded: number, total: number | undefined) => void,
+  about?: StoredGameAbout,
 ) {
   forget(name)
   function attempt() {
@@ -168,7 +263,7 @@ export async function storeGame(
     await makeRoom(name, Number.POSITIVE_INFINITY)
     stored = await attempt()
   }
-  writeIndex({ ...readIndex(), [name]: { ...stored, lastPlayed: Date.now() } })
+  writeIndex({ ...readIndex(), [name]: { ...stored, ...about, lastPlayed: Date.now() } })
   await makeRoom(name).catch(() => {})
   return stored.size
 }

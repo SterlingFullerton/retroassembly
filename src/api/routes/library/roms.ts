@@ -10,6 +10,7 @@ import { countSearchMatches } from '#@/controllers/roms/count-search-matches.ts'
 import { createRom } from '#@/controllers/roms/create-roms.ts'
 import { deleteRom } from '#@/controllers/roms/delete-rom.ts'
 import { deleteRoms } from '#@/controllers/roms/delete-roms.ts'
+import { findRomsByFiles } from '#@/controllers/roms/find-roms-by-files.ts'
 import { getOnThisDayPicks, getPlayTogetherPicks, getRediscoverPicks } from '#@/controllers/roms/get-home-picks.ts'
 import { getRomContent } from '#@/controllers/roms/get-rom-content.ts'
 import { searchRoms } from '#@/controllers/roms/search-roms.ts'
@@ -166,6 +167,17 @@ export const roms = new Hono()
       return c.json(updatedRom.gameThumbnailFileIds)
     },
   )
+
+  // Which games are in the given files (comma separated), to name games kept on a device
+  .get('by_files', zValidator('query', z.object({ ids: z.string().min(1).max(4000) })), async (c) => {
+    const ids = c.req
+      .valid('query')
+      .ids.split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 100)
+    return c.json(await findRomsByFiles(c.var.scope, ids))
+  })
 
   .get(':id/content', async (c) => {
     const object = await getRomContent(c.var.scope, c.req.param('id'))
