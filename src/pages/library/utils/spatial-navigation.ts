@@ -243,6 +243,14 @@ export function move(direction?: Direction) {
     currentActiveElement.dispatchEvent(new CustomEvent('sn:adjust', { detail: direction }))
     return
   }
+  // Along a row that scrolls sideways, the next game in it, even while it's still hidden past the row's edge because the
+  // row is catching up with quick presses; the sidebar or the edge only once the row has no more that way
+  const inRow = nextInRow(currentActiveElement, direction)
+  if (inRow) {
+    focus(inRow)
+    bringIntoView(inRow)
+    return
+  }
   const vertical = direction === 'up' || direction === 'down'
   return new Promise<void>((resolve) => {
     const abortController = new AbortController()
@@ -284,6 +292,34 @@ export function move(direction?: Direction) {
       resolve()
     }
   })
+}
+
+/** For left and right in a row that scrolls sideways: its nearest game (or picture) that way, level with this one */
+function nextInRow(from: Element, direction: Direction) {
+  if ((direction !== 'left' && direction !== 'right') || !(from instanceof HTMLElement)) {
+    return
+  }
+  const row = from.parentElement?.closest<HTMLElement>('.overflow-x-auto, .overflow-x-scroll, .rt-ScrollAreaViewport')
+  if (!row || !scrollsAlong(row, false)) {
+    return
+  }
+  const here = from.getBoundingClientRect()
+  const center = here.left + here.width / 2
+  let best: HTMLElement | undefined
+  let bestDistance = Infinity
+  for (const candidate of row.querySelectorAll<HTMLElement>(navigableSelector)) {
+    if (candidate === from || !isNavigable(candidate) || candidate.dataset.snSkip !== undefined) {
+      continue
+    }
+    const rect = candidate.getBoundingClientRect()
+    const level = rect.bottom > here.top && rect.top < here.bottom
+    const distance = (rect.left + rect.width / 2 - center) * (direction === 'right' ? 1 : -1)
+    if (level && distance > 1 && distance < bestDistance) {
+      best = candidate
+      bestDistance = distance
+    }
+  }
+  return best
 }
 
 function scrollsAlong(element: HTMLElement, vertical: boolean) {
