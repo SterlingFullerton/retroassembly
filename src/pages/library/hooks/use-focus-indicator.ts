@@ -60,7 +60,8 @@ export function useFocusIndicator() {
   const [focusIndicatorStyle, setFocusIndicatorStyle] = useFocusIndicatorStyle()
 
   const syncStyle = useCallback(
-    ({ transition = true }: { transition?: boolean } = {}) => {
+    // `follow` keeps up with something scrolling under it, with only a brief easing, so it doesn't trail behind
+    ({ transition = true }: { transition?: 'follow' | boolean } = {}) => {
       const { activeElement } = document
       if (!isNavigable(activeElement)) {
         setFocusIndicatorStyle({})
@@ -84,7 +85,9 @@ export function useFocusIndicator() {
         transform: `translate(${x}px, ${y}px)`,
         transition:
           transition && !prefersReducedMotion()
-            ? 'transform 150ms ease-out, width 150ms ease-out, height 150ms ease-out, border-radius 150ms ease-out'
+            ? ['transform', 'width', 'height', 'border-radius']
+                .map((property) => `${property} ${transition === 'follow' ? '60ms linear' : '150ms ease-out'}`)
+                .join(', ')
             : 'none',
         width,
       }
@@ -99,7 +102,7 @@ export function useFocusIndicator() {
     [setFocusIndicatorStyle],
   )
 
-  // Once a frame at most. A row scrolling sideways moves its games under the indicator, which follows them smoothly. The
+  // Once a frame at most. A row scrolling sideways moves its games under the indicator, which follows them closely. The
   // page scrolling needs nothing unless the focus is in a sticky box
   const syncAfterScroll = useCallback(
     (target: EventTarget | null) => {
@@ -108,7 +111,7 @@ export function useFocusIndicator() {
         return
       }
       cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => syncStyle({ transition: !pageScrolled }))
+      frame = requestAnimationFrame(() => syncStyle({ transition: pageScrolled ? false : 'follow' }))
     },
     [syncStyle],
   )

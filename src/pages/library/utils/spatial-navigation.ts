@@ -239,8 +239,10 @@ export function move(direction?: Direction) {
         resolve()
         return
       }
-      await bringIntoView(nextActiveElement)
+      // The focus moves first, so the highlight heads straight for what's next while a row or the page scrolls it into
+      // view, rather than riding along with what was focused and jumping once the scrolling stops
       focus(nextActiveElement)
+      await bringIntoView(nextActiveElement)
       moving = false
       abortController.abort()
       resolve()
