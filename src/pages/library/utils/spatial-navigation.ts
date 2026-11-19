@@ -323,8 +323,9 @@ function nextInRow(from: Element, direction: Direction) {
     return
   }
   const row = from.parentElement?.closest<HTMLElement>('.overflow-x-auto, .overflow-x-scroll, .rt-ScrollAreaViewport')
-  // A row that fits without scrolling is still a row
-  if (!row) {
+  // Home's rows count even when they fit without scrolling. A Radix scrolling box only when it scrolls sideways, like a
+  // game's screenshots: one that scrolls up and down, like the sidebar's consoles or a dialog, isn't a row
+  if (!row || inSidebar(from) || (row.matches('.rt-ScrollAreaViewport') && !scrollsAlong(row, false))) {
     return
   }
   const here = from.getBoundingClientRect()
