@@ -251,6 +251,12 @@ export function move(direction?: Direction) {
     bringIntoView(inRow)
     return
   }
+  // Right past a row's last game stays on it, with the row at its end, rather than looking around the page for
+  // something further right, which can land below the row. Left past the first still goes to the sidebar
+  if (inRow === null && direction === 'right') {
+    scrollToEdge(currentActiveElement, direction)
+    return
+  }
   const vertical = direction === 'up' || direction === 'down'
   return new Promise<void>((resolve) => {
     const abortController = new AbortController()
@@ -294,13 +300,17 @@ export function move(direction?: Direction) {
   })
 }
 
-/** For left and right in a row that scrolls sideways: its nearest game (or picture) that way, level with this one */
+/**
+ * For left and right in a row that scrolls sideways: its nearest game (or picture) that way, level with this one; `null`
+ * at the row's end
+ */
 function nextInRow(from: Element, direction: Direction) {
   if ((direction !== 'left' && direction !== 'right') || !(from instanceof HTMLElement)) {
     return
   }
   const row = from.parentElement?.closest<HTMLElement>('.overflow-x-auto, .overflow-x-scroll, .rt-ScrollAreaViewport')
-  if (!row || !scrollsAlong(row, false)) {
+  // A row that fits without scrolling is still a row
+  if (!row) {
     return
   }
   const here = from.getBoundingClientRect()
@@ -319,7 +329,8 @@ function nextInRow(from: Element, direction: Direction) {
       bestDistance = distance
     }
   }
-  return best
+  // None that way in the row: `null`, as against `undefined` for not being in a row at all
+  return best ?? null
 }
 
 function scrollsAlong(element: HTMLElement, vertical: boolean) {
