@@ -4,7 +4,7 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { attempt, attemptAsync } from 'es-toolkit'
-import { customCoresPackage, retroarchBuild, shadersRepository } from '#@/consoles/assets.ts'
+import { shadersRepository } from '#@/consoles/assets.ts'
 import { getDirectories } from '#@/constants/env.ts'
 import { cdnCacheHosts, cdnHost, libretroThumbnailsHost, repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
 import { fonts } from '#@/utils/isomorphic/fonts.ts'
@@ -20,13 +20,11 @@ const notFoundTtl = 30 * 24 * 60 * 60 * 1000
 // After a host fails to answer, requests to it are skipped for this long, so pages load quickly while offline
 const unreachableBackoff = 5 * 60 * 1000
 
-// Pinned repositories, plus the ones whose URLs are built elsewhere (emulator cores and shaders)
+// Pinned repositories, plus the one whose URLs are built elsewhere (shaders)
 const pinnedRepositories: Record<string, string> = {
   ...repositoryVersions,
-  [retroarchBuild.repository]: retroarchBuild.version,
   [shadersRepository.repository]: shadersRepository.version,
 }
-const pinnedPackages: Record<string, string> = { [customCoresPackage.name]: customCoresPackage.version }
 const fontPaths = new Set(fonts.map(({ path }) => `/${path}`))
 
 export interface CDNCacheTarget {
@@ -66,12 +64,6 @@ export function resolveCDNCacheTarget(cachePath: string): CDNCacheTarget | undef
       return { requiresLogin: true, url: url.href }
     }
     if (pinnedRepositories[fullName] && pinnedRepositories[fullName] === version) {
-      return { requiresLogin: false, url: url.href }
-    }
-  }
-  if (type === 'npm') {
-    const [packageName, version] = decodeURIComponent(scope || '').split('@')
-    if (pinnedPackages[packageName] && pinnedPackages[packageName] === version) {
       return { requiresLogin: false, url: url.href }
     }
   }

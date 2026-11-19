@@ -118,5 +118,5 @@ export interface EmulatorDefinition {
   saveFileType?: string
   launch?: LaunchProfile
   /** Shipped with the app, built for this fork, or from the RetroArch Emscripten build */
-  source: 'bundled' | 'custom' | 'retroarch'
+  source: 'bundled' | 'retroarch'
 }

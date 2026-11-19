@@ -1,4 +1,4 @@
-import { customCoresPackage, retroarchBuild, shadersRepository } from '../../consoles/assets.ts'
+import { officialRetroArch, shadersRepository } from '../../consoles/assets.ts'
 import { type CoreName, emulators } from '../../consoles/emulators.ts'
 import { cdnHost } from './cdn.ts'
 
@@ -12,12 +12,11 @@ export function isBundledCore(core: string) {
   return getSource(core) === 'bundled'
 }
 
+// Every emulator is served by the app: RetroArch's official ones packed into public/cores, in a folder that carries the
+// version, so a browser keeps each file for good and picks up a new version at its new address; the rest built for this
+// fork and bundled (bundled-cores.ts)
 export function getCoreUrl(core: string) {
-  const segments =
-    getSource(core) === 'custom'
-      ? ['npm', `${customCoresPackage.name}@${customCoresPackage.version}`, 'dist', 'cores', `${core}_libretro.zip`]
-      : ['gh', `${retroarchBuild.repository}@${retroarchBuild.version}`, 'retroarch', `${core}_libretro.zip`]
-  return new URL(segments.join('/'), cdnHost).href
+  return `/cores/retroarch-${officialRetroArch.version}/${core}_libretro.zip`
 }
 
 const shaderPrefix = new URL(`gh/${shadersRepository.repository}@${shadersRepository.version}`, cdnHost).href

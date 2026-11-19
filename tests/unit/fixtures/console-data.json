@@ -1,174 +1,174 @@
 {
   "emulators": {
     "a5200": {
-      "bundled": false,
+      "bundled": true,
       "displayName": "a5200",
-      "url": "https://cdn.jsdelivr.net/npm/retroassembly-custom-cores@1.22.2-20260719172358/dist/cores/a5200_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/a5200_libretro.zip"
     },
     "desmume2015": {
       "bundled": true,
       "displayName": "DeSmuME 2015",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/desmume2015_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/desmume2015_libretro.zip"
     },
     "fbneo": {
       "bundled": false,
       "displayName": "FinalBurn Neo",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/fbneo_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/fbneo_libretro.zip"
     },
     "fceumm": {
       "bundled": false,
       "displayName": "FCEUmm",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/fceumm_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/fceumm_libretro.zip"
     },
     "freechaf": {
       "bundled": false,
       "displayName": "FreeChaF",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/freechaf_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/freechaf_libretro.zip"
     },
     "gambatte": {
       "bundled": false,
       "displayName": "Gambatte",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/gambatte_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/gambatte_libretro.zip"
     },
     "gearboy": {
       "bundled": false,
       "displayName": "Gearboy",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/gearboy_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/gearboy_libretro.zip"
     },
     "gearcoleco": {
       "bundled": false,
       "displayName": "Gearcoleco",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/gearcoleco_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/gearcoleco_libretro.zip"
     },
     "gearsystem": {
       "bundled": false,
       "displayName": "Gearsystem",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/gearsystem_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/gearsystem_libretro.zip"
     },
     "genesis_plus_gx": {
       "bundled": false,
       "displayName": "Genesis Plus GX",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/genesis_plus_gx_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/genesis_plus_gx_libretro.zip"
     },
     "gw": {
       "bundled": false,
       "displayName": "GW",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/gw_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/gw_libretro.zip"
     },
     "handy": {
       "bundled": false,
       "displayName": "Handy",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/handy_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/handy_libretro.zip"
     },
     "mame2003_plus": {
       "bundled": false,
       "displayName": "MAME 2003-Plus",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mame2003_plus_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mame2003_plus_libretro.zip"
     },
     "mednafen_lynx": {
       "bundled": false,
       "displayName": "Beetle Lynx",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mednafen_lynx_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mednafen_lynx_libretro.zip"
     },
     "mednafen_ngp": {
       "bundled": false,
       "displayName": "Beetle NeoPop",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mednafen_ngp_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mednafen_ngp_libretro.zip"
     },
     "mednafen_pce_fast": {
       "bundled": false,
       "displayName": "Beetle PC Engine Fast",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mednafen_pce_fast_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mednafen_pce_fast_libretro.zip"
     },
     "mednafen_vb": {
       "bundled": false,
       "displayName": "Beetle VB",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mednafen_vb_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mednafen_vb_libretro.zip"
     },
     "mednafen_wswan": {
       "bundled": false,
       "displayName": "Beetle Wonderswan",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mednafen_wswan_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mednafen_wswan_libretro.zip"
     },
     "mgba": {
       "bundled": false,
       "displayName": "mGBA",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/mgba_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mgba_libretro.zip"
     },
     "mupen64plus_next": {
-      "bundled": false,
+      "bundled": true,
       "displayName": "Mupen64Plus-Next",
-      "url": "https://cdn.jsdelivr.net/npm/retroassembly-custom-cores@1.22.2-20260719172358/dist/cores/mupen64plus_next_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/mupen64plus_next_libretro.zip"
     },
     "nestopia": {
       "bundled": false,
       "displayName": "Nestopia",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/nestopia_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/nestopia_libretro.zip"
     },
     "o2em": {
       "bundled": false,
       "displayName": "O2EM",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/o2em_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/o2em_libretro.zip"
     },
     "pcsx_rearmed": {
       "bundled": false,
       "displayName": "PCSX ReARMed",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/pcsx_rearmed_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/pcsx_rearmed_libretro.zip"
     },
     "picodrive": {
       "bundled": false,
       "displayName": "PicoDrive",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/picodrive_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/picodrive_libretro.zip"
     },
     "prosystem": {
-      "bundled": false,
+      "bundled": true,
       "displayName": "ProSystem",
-      "url": "https://cdn.jsdelivr.net/npm/retroassembly-custom-cores@1.22.2-20260719172358/dist/cores/prosystem_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/prosystem_libretro.zip"
     },
     "ppsspp": {
       "bundled": true,
       "displayName": "PPSSPP",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/ppsspp_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/ppsspp_libretro.zip"
     },
     "quicknes": {
       "bundled": false,
       "displayName": "QuickNES",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/quicknes_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/quicknes_libretro.zip"
     },
     "snes9x": {
       "bundled": false,
       "displayName": "Snes9x",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/snes9x_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/snes9x_libretro.zip"
     },
     "snes9x2002": {
       "bundled": false,
       "displayName": "Snes9x 2002",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/snes9x2002_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/snes9x2002_libretro.zip"
     },
     "snes9x2005": {
       "bundled": false,
       "displayName": "Snes9x 2005",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/snes9x2005_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/snes9x2005_libretro.zip"
     },
     "snes9x2010": {
       "bundled": false,
       "displayName": "Snes9x 2010",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/snes9x2010_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/snes9x2010_libretro.zip"
     },
     "stella2014": {
-      "bundled": false,
+      "bundled": true,
       "displayName": "Stella 2014",
-      "url": "https://cdn.jsdelivr.net/npm/retroassembly-custom-cores@1.22.2-20260719172358/dist/cores/stella2014_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/stella2014_libretro.zip"
     },
     "tgbdual": {
       "bundled": false,
       "displayName": "TGB Dual",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/tgbdual_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/tgbdual_libretro.zip"
     },
     "vba_next": {
       "bundled": false,
       "displayName": "VBA Next",
-      "url": "https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/vba_next_libretro.zip"
+      "url": "/cores/retroarch-1.22.2/vba_next_libretro.zip"
     }
   },
   "platformMap": {

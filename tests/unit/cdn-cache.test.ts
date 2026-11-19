@@ -61,11 +61,14 @@ await describe('CDN cache', async () => {
   })
 
   await it('rewrites CDN URLs to the cache route only when enabled', () => {
-    const coreUrl = getCoreUrl('fceumm')
+    const coreUrl =
+      'https://cdn.jsdelivr.net/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt-geom.glslp'
     assert.equal(
       toCDNCacheUrl(coreUrl),
-      '/cdn/jsdelivr/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/fceumm_libretro.zip',
+      '/cdn/jsdelivr/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt-geom.glslp',
     )
+    // Emulators are served by the app itself, not through the cache
+    assert.equal(toCDNCacheUrl(getCoreUrl('fceumm')), '/cores/retroarch-1.22.2/fceumm_libretro.zip')
     assert.equal(
       toCDNCacheUrl('https://thumbnails.libretro.com/Nintendo - Nintendo 64/Named_Boxarts/a.png'),
       '/cdn/libretro-thumbnails/Nintendo - Nintendo 64/Named_Boxarts/a.png',
@@ -81,8 +84,6 @@ await describe('CDN cache', async () => {
   await it('only resolves files RetroAssembly loads', () => {
     const allowed = [
       `${assetsPath}/platforms/icons/nes.png`,
-      'jsdelivr/gh/arianrhodsandlot/retroarch-emscripten-build@v1.22.2-1/retroarch/fceumm_libretro.zip',
-      'jsdelivr/npm/retroassembly-custom-cores@1.22.2-20260719172358/dist/cores/a5200_libretro.zip',
       'jsdelivr/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt-geom.glslp',
       'jsdelivr/fontsource/fonts/inter:vf@5.2.8/latin-wght-normal.woff2',
     ]
@@ -132,7 +133,9 @@ await describe('CDN cache', async () => {
       await setTimeout(20)
       return new Response('core bytes', { headers: { 'Content-Type': 'application/zip' } })
     })
-    const url = getCoreUrl('nestopia')
+    // A shader file: RetroArch's emulators are served by the app itself, not through this cache
+    const url =
+      'https://cdn.jsdelivr.net/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt-geom.glslp'
     const [first, second] = await Promise.all([getCachedFile(url), getCachedFile(url)])
     assert.equal(fetchMock.mock.callCount(), 1)
     assert.equal(first?.status, 200)

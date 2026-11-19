@@ -5,7 +5,7 @@ import { shaders } from '#@/consoles/shaders.ts'
 import { platformMap } from '#@/constants/platform.ts'
 import { romTable, statusEnum } from '#@/databases/schema.ts'
 import { getCDNUrl, isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
-import { getCoreUrl, getShaderUrls, isBundledCore } from '#@/utils/isomorphic/emulator-files.ts'
+import { getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts'
 import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
 import {
   getLibretroConsoleFolder,
@@ -32,16 +32,7 @@ function toUpstreamUrl(url: string) {
 
 async function getPrefetchUrls(selected: Set<Category>) {
   const urls = new Set<string>()
-  if (selected.has('cores')) {
-    for (const { cores } of Object.values(platformMap)) {
-      for (const core of cores) {
-        // Cores bundled with the app are served locally and need no caching
-        if (!isBundledCore(core)) {
-          urls.add(getCoreUrl(core))
-        }
-      }
-    }
-  }
+  // `cores` is still accepted, but needs nothing now: every emulator is served by the app itself
   if (selected.has('shaders')) {
     for (const { id, thumbnail } of shaders) {
       for (const url of [...getShaderUrls(id), thumbnail]) {

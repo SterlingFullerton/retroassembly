@@ -1,11 +1,15 @@
 // The one copy of the versions of the files emulators need from the CDN. Emulator addresses, the offline cache's
 // allowlist and the offline downloader all read from here, so they can't disagree
 
-/** Emulators from the RetroArch Emscripten build, on GitHub */
-export const retroarchBuild = { repository: 'arianrhodsandlot/retroarch-emscripten-build', version: 'v1.22.2-1' }
-
-/** Emulators built for this fork, on npm */
-export const customCoresPackage = { name: 'retroassembly-custom-cores', version: '1.22.2-20260719172358' }
+/**
+ * RetroArch's official browser build, from libretro's build server. The emulators the app uses are packed from it into
+ * public/cores (scripts/retroarch-cores.ts) and served by the app itself
+ */
+export const officialRetroArch = {
+  sha256: '00e17fda8792ee15a9d9ea4fc769e9f937e525c722ae10dabba2c993941f55f4',
+  url: 'https://buildbot.libretro.com/stable/1.22.2/emscripten/RetroArch.7z',
+  version: '1.22.2',
+}
 
 /** Shaders, on GitHub */
 export const shadersRepository = {

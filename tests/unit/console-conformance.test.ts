@@ -42,13 +42,10 @@ await describe('console registry conformance', async () => {
     }
   })
 
-  await it("lets the offline cache keep every emulator that's downloaded", () => {
+  await it('serves every emulator from the app itself', () => {
     const used = new Set(entries.flatMap(([, { cores }]) => cores))
-    for (const core of [...used].filter((core) => !isBundledCore(core))) {
-      const url = getCoreUrl(core)
-      assert.ok(url.startsWith(cdnCacheHosts.jsdelivr), url)
-      const target = resolveCDNCacheTarget(`jsdelivr/${url.slice(cdnCacheHosts.jsdelivr.length)}`)
-      assert.equal(target?.url, url, `${core} isn't allowed by the offline cache`)
+    for (const core of [...used].filter((name) => !isBundledCore(name))) {
+      assert.ok(getCoreUrl(core).startsWith('/cores/retroarch-'), `${core} isn't served by the app`)
     }
   })
 
