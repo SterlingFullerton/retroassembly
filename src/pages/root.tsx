@@ -2,14 +2,24 @@ import '#@/styles/index.ts'
 import '#@/utils/client/global.ts'
 import type { ReactNode } from 'react'
 import { Outlet } from 'react-router'
-import { getCommonLoaderData } from '#@/utils/server/loader-data.ts'
+import { getPageRequestOptions, pagesClient, readPageData } from '#@/utils/client/page-data.ts'
+import { setCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
+import { i18n } from '#@/utils/isomorphic/i18n.ts'
 import type { Route } from './+types/root.ts'
 import { AppLayout } from './components/app-layout.tsx'
 import { ErrorPage } from './components/error-page.tsx'
 import { useReloadOnUpdate } from './hooks/use-reload-on-update.ts'
 
-export function loader() {
-  return getCommonLoaderData()
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  const response = pagesClient.common.$get(
+    { query: { path: new URL(request.url).pathname } },
+    getPageRequestOptions(request),
+  )
+  const data = await readPageData(request, response)
+  setCDNCacheEnabled(data.cdnCache)
+  // Switched before the page is drawn, so it never shows in another language first
+  await i18n.changeLanguage(data.language)
+  return data
 }
 
 export function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -19,6 +29,11 @@ export function Layout({ children }: Readonly<{ children: ReactNode }>) {
 export default function App() {
   useReloadOnUpdate()
   return <Outlet />
+}
+
+// Shown while the page's data loads
+export function HydrateFallback() {
+  return null
 }
 
 export function ErrorBoundary(props: Readonly<Route.ErrorBoundaryProps>) {

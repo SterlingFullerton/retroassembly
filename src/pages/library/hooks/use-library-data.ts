@@ -1,5 +1,5 @@
 import { useMatches, useRouteLoaderData } from 'react-router'
-import type { loader } from '#@/pages/routes/library-layout.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-layout.tsx'
 
 /** What the library layout loads once for every library page: the games played most recently */
 export function useLibraryData() {

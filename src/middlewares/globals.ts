@@ -35,11 +35,23 @@ function getDetectedLanguage(c: Context) {
   })
 }
 
+// The page a request is for: a page's data is asked for under /api/v1/pages, and the data every page shares names its
+// page in `path`
+function getPagePath(c: Context) {
+  const { path } = c.req
+  if (path === '/api/v1/pages/common') {
+    return c.req.query('path') ?? '/'
+  }
+  if (path.startsWith('/api/v1/pages/')) {
+    return path.slice('/api/v1/pages'.length)
+  }
+  return path
+}
+
 function getLanguage(c: Context) {
   const { detectedLanguage, preference } = c.var
 
-  const path = c.req.path.endsWith('.data') ? c.req.path.slice(0, -5) : c.req.path
-  const isLibrary = match('/library{/*path}')(path)
+  const isLibrary = match('/library{/*path}')(getPagePath(c))
 
   let language = detectedLanguage
   if (isLibrary) {

@@ -9,7 +9,7 @@ import { client } from '#@/api/client.ts'
 import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
-import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { useAgo } from './use-ago.ts'
 

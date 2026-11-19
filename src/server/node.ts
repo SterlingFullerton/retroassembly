@@ -1,13 +1,11 @@
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import { serve } from '@hono/node-server'
-import { RouterContextProvider, createRequestHandler } from 'react-router'
 import { getAuthMode } from '#@/utils/server/auth.ts'
 import { startCDNCachePrefetch } from '#@/utils/server/cdn-prefetch.ts'
 import { compressPspGames } from '#@/utils/server/compress-psp-games.ts'
 import { initializeDatabase } from '#@/utils/server/migration/initalization.ts'
 import { backfillRawMetadata } from '#@/utils/server/migration/raw-metadata.ts'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore we can not guarantee that this file exists
-import * as build from '../../dist/server/index.js'
 import { createServer } from './create-server.ts'
 
 interface BootOptions {
@@ -15,6 +13,8 @@ interface BootOptions {
   onListening: (port: number) => void
   port: number
 }
+
+const clientRoot = 'dist/client'
 
 function runInBackground(name: string, job: () => unknown) {
   setImmediate(async () => {
@@ -26,6 +26,15 @@ function runInBackground(name: string, job: () => unknown) {
   })
 }
 
+// The build's version is in the name of the manifest React Router writes, which index.html loads
+function getBuildVersion(indexHtml: string) {
+  const version = /\/assets\/manifest-(?<version>[\da-f]+)\.js/u.exec(indexHtml)?.groups?.version
+  if (!version) {
+    throw new Error(`No build version found in ${clientRoot}/index.html`)
+  }
+  return version
+}
+
 /**
  * Starts the app: checks the settings and brings the database up to date, then listens. Jobs that need the internet
  * (filling in game info, downloading emulator files for offline use) start only after that, so the library is up
@@ -35,10 +44,11 @@ export async function boot({ hostname, onListening, port }: BootOptions) {
   getAuthMode()
   await initializeDatabase()
 
-  const requestHandler = createRequestHandler(build, 'production')
+  // Every page is the same page, which draws itself in the browser
+  const indexHtml = await readFile(path.join(clientRoot, 'index.html'), 'utf8')
   const app = createServer({
-    client: { root: 'dist/client', version: String(build.assets.version) },
-    pages: (c) => requestHandler(c.req.raw, new RouterContextProvider()),
+    client: { root: clientRoot, version: getBuildVersion(indexHtml) },
+    pages: (c) => c.html(indexHtml, 200, { 'Cache-Control': 'no-cache' }),
   })
   serve({ fetch: app.fetch, hostname, port }, (info) => onListening(info.port))
 

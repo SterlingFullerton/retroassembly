@@ -8,7 +8,6 @@ import useSWRImmutable from 'swr/immutable'
 import { client } from '#@/api/client.ts'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { goesFullscreen } from '#@/constants/preference.ts'
-import type { Rom } from '#@/controllers/roms/get-roms.ts'
 import {
   closeAudioContexts,
   installGame,
@@ -47,13 +46,14 @@ import {
 } from '#@/pages/library/atoms.ts'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
+import type { Rom } from '#@/pages/library/types.ts'
 import { bundledSystemFiles } from '#@/pages/library/utils/bundled-cores.ts'
 import { DownloadError, type DownloadKind, downloadWithProgress } from '#@/pages/library/utils/download.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { type Download, getLoadingProgress } from '#@/pages/library/utils/loading-progress.ts'
 import { onCoreDownloadProgress } from '#@/pages/library/utils/nostalgist.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
-import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { createDiscList } from '#@/utils/isomorphic/discs.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
 import { usePreference } from '../../../hooks/use-preference.ts'
@@ -216,9 +216,9 @@ export function useEmulatorSessionController({
             })),
           ]
         : // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
-          launchProfile.threads
+          (launchProfile.threads
           ? { fileContent: new Uint8Array(1), fileName: rom?.fileName }
-          : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName },
+          : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName }),
     [discs, download, launchProfile.threads, multiDisc, rom, romUrl],
   )
   const { bioses } = preference.emulator.platform[rom.platform]

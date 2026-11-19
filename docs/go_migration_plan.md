@@ -19,15 +19,15 @@ browser app stays React and TypeScript. Based on `origin/main` at `6db66210`.
 
 ## What gets ported
 
-| Area | Today | Lines |
-| --- | --- | --- |
-| API routes | `src/api/routes/**` (Hono + zod) | ~770 |
-| Controllers | `src/controllers/**` (41 files) | ~2,200 |
-| Server utilities | `src/utils/server/**` | ~2,500 |
-| Middleware | `src/middlewares/*` (globals, vendors, logger, cdn cache, require user) | ~220 |
-| Server entry | `src/server/*` | ~180 |
-| Page loaders | 9 `loader()` functions in `src/pages/routes/*` | — |
-| Schema | `src/databases/schema.ts`, 9 tables, 12 SQL migrations | ~210 |
+| Area             | Today                                                                   | Lines  |
+| ---------------- | ----------------------------------------------------------------------- | ------ |
+| API routes       | `src/api/routes/**` (Hono + zod)                                        | ~770   |
+| Controllers      | `src/controllers/**` (41 files)                                         | ~2,200 |
+| Server utilities | `src/utils/server/**`                                                   | ~2,500 |
+| Middleware       | `src/middlewares/*` (globals, vendors, logger, cdn cache, require user) | ~220   |
+| Server entry     | `src/server/*`                                                          | ~180   |
+| Page loaders     | 9 `loader()` functions in `src/pages/routes/*`                          | —      |
+| Schema           | `src/databases/schema.ts`, 9 tables, 12 SQL migrations                  | ~210   |
 
 ## Target layout
 
@@ -49,21 +49,21 @@ server/                        Go module (go.mod at server/)
 
 ## Library choices
 
-| Need | Node today | Go |
-| --- | --- | --- |
-| HTTP routing | Hono | `net/http` (Go 1.22+ method and wildcard patterns) |
-| Request validation | zod | small hand-written checks per handler; the forms are simple |
-| SQLite driver | better-sqlite3 | `modernc.org/sqlite` (pure Go, no C compiler) |
-| Queries | Drizzle | `sqlc` against the existing SQL, plus `database/sql` for the few dynamic ones |
-| Migrations | Drizzle migrator | own small runner that reads Drizzle's `__drizzle_migrations` table (see below) |
-| Password hashes | `node:crypto` argon2id | `golang.org/x/crypto/argon2` |
-| OIDC | openid-client | `github.com/coreos/go-oidc/v3` + `golang.org/x/oauth2` |
-| WebP copies | sharp | decide: `govips` (needs libvips) or drop the conversion (see open questions) |
-| CSO compression | `node:zlib` deflateRaw | `compress/flate` |
-| Response compression | `hono/compress` | `github.com/klauspost/compress/gzhttp` |
-| Date formats | luxon | `time` plus a small translator for the luxon tokens used in `dateFormatMap` |
-| IDs | nanoid (`nolookalikes`, 10) | `github.com/matoous/go-nanoid/v2` `Generate` with the same alphabet and length |
-| API types for the browser | Hono `hc` client type | OpenAPI from Go (`huma` or hand-written spec) → `openapi-typescript` |
+| Need                      | Node today                  | Go                                                                             |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------ |
+| HTTP routing              | Hono                        | `net/http` (Go 1.22+ method and wildcard patterns)                             |
+| Request validation        | zod                         | small hand-written checks per handler; the forms are simple                    |
+| SQLite driver             | better-sqlite3              | `modernc.org/sqlite` (pure Go, no C compiler)                                  |
+| Queries                   | Drizzle                     | `sqlc` against the existing SQL, plus `database/sql` for the few dynamic ones  |
+| Migrations                | Drizzle migrator            | own small runner that reads Drizzle's `__drizzle_migrations` table (see below) |
+| Password hashes           | `node:crypto` argon2id      | `golang.org/x/crypto/argon2`                                                   |
+| OIDC                      | openid-client               | `github.com/coreos/go-oidc/v3` + `golang.org/x/oauth2`                         |
+| WebP copies               | sharp                       | decide: `govips` (needs libvips) or drop the conversion (see open questions)   |
+| CSO compression           | `node:zlib` deflateRaw      | `compress/flate`                                                               |
+| Response compression      | `hono/compress`             | `github.com/klauspost/compress/gzhttp`                                         |
+| Date formats              | luxon                       | `time` plus a small translator for the luxon tokens used in `dateFormatMap`    |
+| IDs                       | nanoid (`nolookalikes`, 10) | `github.com/matoous/go-nanoid/v2` `Generate` with the same alphabet and length |
+| API types for the browser | Hono `hc` client type       | OpenAPI from Go (`huma` or hand-written spec) → `openapi-typescript`           |
 
 ## Compatibility that must not slip
 
@@ -165,13 +165,13 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 
 About 30 server files import code the browser app also uses. What moves where:
 
-| Shared code | Plan |
-| --- | --- |
-| `src/locales/*.json` | Go embeds them; only the few server-side messages are read (`error.*`) |
-| `src/constants/preference.ts` (defaults) | Write the defaults to a JSON file at build time; both sides read it |
+| Shared code                                  | Plan                                                                       |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| `src/locales/*.json`                         | Go embeds them; only the few server-side messages are read (`error.*`)     |
+| `src/constants/preference.ts` (defaults)     | Write the defaults to a JSON file at build time; both sides read it        |
 | `src/constants/platform*.ts`, `src/consoles` | Generate a JSON of platform names and file extensions at build time for Go |
-| `utils/isomorphic/search.ts`, `discs.ts` | Port to Go; add a shared table of test cases (JSON) both test suites run |
-| `utils/isomorphic/i18n.ts` `dateFormatMap` | Port the map; same test cases on both sides |
+| `utils/isomorphic/search.ts`, `discs.ts`     | Port to Go; add a shared table of test cases (JSON) both test suites run   |
+| `utils/isomorphic/i18n.ts` `dateFormatMap`   | Port the map; same test cases on both sides                                |
 
 ## Open questions
 
@@ -187,11 +187,11 @@ About 30 server files import code the browser app also uses. What moves where:
 
 ## Rough effort
 
-| Phase | Estimate |
-| --- | --- |
-| 0. Server rendering off | 3–5 days |
-| 1. Go skeleton | 3–4 days |
-| 2. API port | 7–10 days |
-| 3. Jobs and CDN cache | 3–5 days |
-| 4. Remove Node | 1–2 days |
-| **Total** | **about 3–5 weeks** of focused work for one person |
+| Phase                   | Estimate                                           |
+| ----------------------- | -------------------------------------------------- |
+| 0. Server rendering off | 3–5 days                                           |
+| 1. Go skeleton          | 3–4 days                                           |
+| 2. API port             | 7–10 days                                          |
+| 3. Jobs and CDN cache   | 3–5 days                                           |
+| 4. Remove Node          | 1–2 days                                           |
+| **Total**               | **about 3–5 weeks** of focused work for one person |

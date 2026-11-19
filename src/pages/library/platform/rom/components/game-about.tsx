@@ -1,8 +1,8 @@
 import { clsx } from 'clsx'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Rom } from '#@/controllers/roms/get-roms.ts'
 import { useDate } from '#@/pages/library/hooks/use-date.ts'
+import type { Rom } from '#@/pages/library/types.ts'
 import { GameMedia } from './game-media/game-media.tsx'
 
 /**
@@ -26,7 +26,7 @@ export function useGameFacts(rom: Rom) {
     genres,
     players: Math.trunc(Number(rom.gamePlayers)) || undefined,
     publisher: (rom.gamePublisher || '').trim(),
-    releasedText: released ? formatDate(released) : year ? String(year) : '',
+    releasedText: released ? formatDate(released) : (year ? String(year) : ''),
     wikipediaUrl: launchboxGame.wikipediaUrl as string | undefined,
     year,
   }

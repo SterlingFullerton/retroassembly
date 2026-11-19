@@ -1,4 +1,5 @@
 import { getContext } from 'hono/context-storage'
+import { HTTPException } from 'hono/http-exception'
 import { platformMap, type PlatformName } from '#@/constants/platform.ts'
 import { getLaunchRecords } from '#@/controllers/launch-records/get-launch-records.ts'
 import { getRomLetters } from '#@/controllers/roms/get-rom-letters.ts'
@@ -55,7 +56,7 @@ export async function loadHistoryPage() {
 /** A console's games; a console the app doesn't know is not found */
 export async function loadPlatformPage(name: string | undefined) {
   if (!name || !(name in platformMap)) {
-    throw new Response('Not Found', { status: 404 })
+    throw new HTTPException(404, { message: 'Not Found' })
   }
   const platform = name as PlatformName
   const query = getRomsQuery()

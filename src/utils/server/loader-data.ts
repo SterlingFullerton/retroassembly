@@ -1,5 +1,6 @@
 import { getContext } from 'hono/context-storage'
 import { getRunTimeEnv } from '#@/constants/env.ts'
+import { isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
 import { getAuthMode } from '#@/utils/server/auth.ts'
 
 /* Used for non-library routes */
@@ -16,6 +17,7 @@ export function getCommonLoaderData<T>(data: T = {} as T) {
 
   return {
     authMode: getAuthMode(),
+    cdnCache: isCDNCacheEnabled(),
     currentUser,
     detectedLanguage,
     env,

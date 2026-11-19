@@ -13,6 +13,8 @@ export function LogInWithOidcButton({ redirectTo }: Readonly<{ redirectTo: strin
       <Button asChild disabled={clicked} onClick={() => setClicked(true)} size='3' variant='soft'>
         <Link
           className='flex items-center gap-2'
+          // Answered by the server, which sends the browser on to the identity provider
+          reloadDocument
           to={{
             pathname: generatePath(routes.loginOidc),
             search: `?redirect_to=${encodeURIComponent(redirectTo)}`,

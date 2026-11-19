@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useLoaderData } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
-import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { FavoriteButton } from '../../components/favorite-button.tsx'
 import { GameButtons } from '../../components/game-buttons/game-buttons.tsx'

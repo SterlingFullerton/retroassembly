@@ -3,12 +3,14 @@ import { HTTPException } from 'hono/http-exception'
 import { DomainError } from '#@/utils/server/domain-error.ts'
 import { app as auth } from './routes/auth.ts'
 import { app as library } from './routes/library/library.ts'
+import { pages } from './routes/pages.ts'
 import { users } from './routes/users.ts'
 
 export const app = new Hono()
   .basePath('api/v1')
   .route('auth', auth)
   .route('users', users)
+  .route('pages', pages)
   .route('', library)
 
   .onError((error, c) => {

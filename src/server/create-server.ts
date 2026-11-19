@@ -7,12 +7,13 @@ import { globals } from '#@/middlewares/globals.ts'
 import { logger } from '#@/middlewares/logger.ts'
 import { vendors } from '#@/middlewares/vendors.ts'
 import { crossOriginIsolationHeaders, needsCrossOriginIsolation } from '#@/utils/isomorphic/cross-origin-isolation.ts'
+import { homeRoute, redirectRoutes } from './redirect-routes.ts'
 import { staticFiles } from './static-files.ts'
 
 interface ServerOptions {
   /** The built client files and the build's version, in production. In development Vite serves the files itself */
   client?: { root: string; version: string }
-  /** Renders the pages */
+  /** Answers a page's address with the page, which draws itself in the browser */
   pages: Handler
 }
 
@@ -44,6 +45,7 @@ export function createServer({ client, pages }: ServerOptions) {
 
   // A private library, kept out of search engines
   app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /'))
+  app.route('', homeRoute)
   if (client) {
     // Which build is running, so pages that are already open can tell the site has been updated under them
     app.get('/build-version', (c) => {
@@ -61,6 +63,7 @@ export function createServer({ client, pages }: ServerOptions) {
   const compressText = compress()
   app.use((c, next) => (uncompressedPaths.some((path) => path.test(c.req.path)) ? next() : compressText(c, next)))
   app.route('', api)
+  app.route('', redirectRoutes)
   app.all('*', pages)
   return app
 }
