@@ -24,19 +24,20 @@ export function PlatformCheckboxItem({ disabled, platform }: Readonly<{ disabled
 
   return (
     <CheckboxCards.Item
+      className='max-md:py-2!'
       disabled={isLoading || disabled}
       key={platform.name}
       onClick={handleClick}
       value={platform.name}
     >
-      <div className='flex items-center gap-2 text-xs'>
+      <div className='flex min-w-0 items-center gap-2 text-xs'>
         <img
           alt={t(platform.displayNameI18nKey)}
           className='size-6 rounded object-contain object-center'
           loading='lazy'
           src={getPlatformIcon(platform.name)}
         />
-        {t(platform.displayNameI18nKey)}
+        <span className='min-w-0 leading-tight break-words'>{t(platform.displayNameI18nKey)}</span>
       </div>
     </CheckboxCards.Item>
   )

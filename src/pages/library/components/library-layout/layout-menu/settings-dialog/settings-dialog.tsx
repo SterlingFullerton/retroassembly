@@ -43,11 +43,8 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
     <DialogRoot {...props} onOpenChange={handleOpenChange}>
       <Dialog.Content
         aria-describedby={undefined}
-        // On a phone it fills the screen, like a page of its own (see globals.css for the space around it)
-        className={clsx(
-          'settings-dialog max-sm:flex max-sm:h-dvh max-sm:max-w-none! max-sm:flex-col max-sm:rounded-none! lg:w-5xl!',
-          { 'no-tab-focus-ring': pointerOpened },
-        )}
+        // On a phone, upright or sideways, it fills the screen like a page of its own (see globals.css)
+        className={clsx('settings-dialog lg:w-5xl!', { 'no-tab-focus-ring': pointerOpened })}
         maxWidth='calc(100vw - var(--space-8))'
         onKeyDown={() => setPointerOpened(false)}
         onOpenAutoFocus={(event) => {
@@ -67,9 +64,9 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
           {t('nav.settings')}
         </Dialog.Title>
 
-        <div className='max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col'>
+        <div className='settings-fill'>
           <Tabs.Root asChild onValueChange={handleValueChange} value={tabName}>
-            <div className='max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col'>
+            <div className='settings-fill'>
               <Tabs.List>
                 {settingsTabs.map(({ iconClass, name }) => (
                   <Tabs.Trigger aria-label={t(`settings.${name}`)} key={name} value={name}>
@@ -80,15 +77,17 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
                       })}
                     />
                     {/* On a phone only the open tab is named, so all four fit across */}
-                    <span className={clsx('text-lg capitalize', { 'max-sm:hidden': name !== tabName })}>
+                    <span
+                      className={clsx('text-lg capitalize max-sm:text-base', { 'max-sm:hidden': name !== tabName })}
+                    >
                       {t(`settings.${name}`)}
                     </span>
                   </Tabs.Trigger>
                 ))}
               </Tabs.List>
 
-              <div className='h-[60vh] max-sm:h-auto max-sm:min-h-0 max-sm:flex-1'>
-                <ScrollArea size='2'>
+              <div className='settings-scroll h-[60vh]'>
+                <ScrollArea scrollbars='vertical' size='2'>
                   <div className='motion-preset-slide-up-sm p-4' key={tabName}>
                     <TabContent />
                   </div>
@@ -98,14 +97,14 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
           </Tabs.Root>
         </div>
 
-        <div className='mt-4 flex justify-between'>
+        <div className='settings-note mt-4 flex justify-between'>
           <div className='flex items-center gap-2 text-xs text-(--gray-11)'>
             <span className='icon-[mdi--content-save-check-outline] shrink-0' />
             {t('settings.immediateEffect')}
           </div>
         </div>
 
-        <div className='absolute top-6 right-6'>
+        <div className='settings-close absolute top-6 right-6'>
           <Dialog.Close>
             <Button title={t('common.close')} variant='ghost'>
               <span className='icon-[mdi--close] size-5' />

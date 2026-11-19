@@ -48,13 +48,13 @@ export function KeyboardInput({ button }: Readonly<KeyboardInputProps>) {
   return (
     <label className='flex items-center justify-between gap-3 border-b border-(--gray-4) py-1.5'>
       <span className='flex min-w-0 items-center gap-2 text-sm'>
-        <span className='flex w-12 shrink-0 justify-center text-xs font-semibold text-(--color-text)/70'>
+        <span className='flex w-12 shrink-0 justify-center text-xs font-semibold text-(--color-text)/70 max-[360px]:w-9'>
           {button.iconClass ? <span className={clsx('size-6', button.iconClass)} /> : button.iconNode}
         </span>
-        {button.text ? <span className='truncate'>{button.text}</span> : null}
+        {button.text ? <span className='leading-tight break-words'>{button.text}</span> : null}
       </span>
       <TextField.Root
-        className='w-28 shrink-0'
+        className='w-28 shrink-0 max-[360px]:w-24'
         onChange={handleChange}
         onFocus={(event) => event.target.select()}
         onKeyDown={handleKeyDown}

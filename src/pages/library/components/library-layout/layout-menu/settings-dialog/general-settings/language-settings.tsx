@@ -19,8 +19,8 @@ export function LanguageSettings() {
       </SettingsTitle>
       <Card>
         <div className='flex flex-col gap-2 py-2'>
-          <label className='flex items-center gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
+          <label className='flex items-center justify-between gap-2'>
+            <SettingsTitle className='mb-0 min-w-0 text-base'>
               <span className='icon-[mdi--web]' />
               {t('settings.interfaceLanguage')}
             </SettingsTitle>
@@ -47,8 +47,8 @@ export function LanguageSettings() {
             </Select.Root>
           </label>
 
-          <label className='flex items-center gap-2'>
-            <SettingsTitle className='mb-0 text-base'>
+          <label className='flex items-center justify-between gap-2'>
+            <SettingsTitle className='mb-0 min-w-0 text-base'>
               <span className='icon-[mdi--calendar-clock]' />
               {t('settings.dateFormat')}
             </SettingsTitle>

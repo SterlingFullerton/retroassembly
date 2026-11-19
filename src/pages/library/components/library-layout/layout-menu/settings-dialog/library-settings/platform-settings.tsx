@@ -19,7 +19,8 @@ export function PlatformSettings() {
         {t('settings.enabledPlatforms')}
       </SettingsTitle>
       <Card>
-        <CheckboxCards.Root columns={{ initial: '1', md: '4' }} size='1' value={preference.ui.platforms}>
+        {/* One column on a phone held upright, two when there's room, four on a computer */}
+        <CheckboxCards.Root columns={{ initial: '1', md: '4', xs: '2' }} size='1' value={preference.ui.platforms}>
           {platforms.map((platform) => (
             <PlatformCheckboxItem
               disabled={preference.ui.platforms.length < 2 && preference.ui.platforms.includes(platform.name)}
@@ -29,7 +30,7 @@ export function PlatformSettings() {
           ))}
         </CheckboxCards.Root>
 
-        <div className='mt-4 flex justify-end gap-4'>
+        <div className='mt-4 flex flex-wrap justify-end gap-x-4 gap-y-2'>
           {platforms.length > preference.ui.platforms.length ? (
             <UpdateButton preference={{ ui: { platforms: platforms.map(({ name }) => name) } }}>
               <span className='icon-[mdi--checkbox-multiple-marked]' />

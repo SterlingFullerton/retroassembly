@@ -80,14 +80,16 @@ export function CoresSettings() {
       </SettingsTitle>
 
       <Card>
-        <RewindSettings platform={selectedPlatform} />
+        <div className='flex flex-col gap-4'>
+          <RewindSettings platform={selectedPlatform} />
 
-        <BIOSOptions platform={selectedPlatform} />
+          <BIOSOptions platform={selectedPlatform} />
 
-        <PlatformShaderSettings platform={selectedPlatform} />
+          <PlatformShaderSettings platform={selectedPlatform} />
+        </div>
 
         <div className='mt-2'>
-          <label className='mt-2 flex items-center gap-2'>
+          <label className='mt-2 flex flex-wrap items-center gap-x-2'>
             <SettingsTitle as='h4'>
               <span className='icon-[mdi--monitor-screenshot]' /> {t('common.emulator')}
             </SettingsTitle>
