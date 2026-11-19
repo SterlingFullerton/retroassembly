@@ -4,6 +4,7 @@ import { type PreferenceSnippet, resolveUserPreference } from '#@/constants/pref
 import { userPreferenceTable } from '#@/databases/schema.ts'
 import { mergePreference } from '#@/utils/isomorphic/preference.ts'
 import type { LibraryScope } from '#@/utils/server/library-scope.ts'
+import { withLibraryPlatforms } from './library-platforms.ts'
 
 function normalize(preference: any) {
   // sort platforms and remove invalid platforms
@@ -58,5 +59,10 @@ export async function updatePreference(scope: LibraryScope, preference: Preferen
       .returning(returning)
   }
 
-  return resolveUserPreference(newPreferenceResults[0])
+  const [saved] = newPreferenceResults
+  return await withLibraryPlatforms(resolveUserPreference(saved), {
+    chosen: Boolean(saved?.ui?.platforms),
+    db: scope.db,
+    libraryOwnerId: scope.libraryOwnerId,
+  })
 }
