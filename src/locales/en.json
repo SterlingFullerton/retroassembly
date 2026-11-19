@@ -521,5 +521,10 @@
   "common.numberOfGames": "Number of games",
   "common.edit": "Edit",
   "common.reset": "Reset",
-  "game.editGame": "Edit game"
+  "game.editGame": "Edit game",
+  "game.viewBoxArt": "View box art",
+  "game.resetBoxArt": "Reset box art?",
+  "game.saved": "Saved",
+  "game.saveFailed": "Couldn't save. Try again.",
+  "game.dateFormat": "Use a date like {{example}}"
 }

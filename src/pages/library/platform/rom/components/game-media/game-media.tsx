@@ -115,7 +115,7 @@ export function GameMedia() {
 
   return (
     <>
-      <ScrollArea className='rounded lg:bg-zinc-600/10 lg:p-4' scrollbars='both' size='2'>
+      <ScrollArea className='lg:pb-3' scrollbars='both' size='2'>
         <div className='group flex flex-col gap-4 lg:flex-row lg:p-0'>
           {mediaItems.map((item, index) => (
             <MediaThumbnail

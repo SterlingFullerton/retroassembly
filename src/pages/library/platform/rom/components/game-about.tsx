@@ -5,46 +5,75 @@ import type { Rom } from '#@/controllers/roms/get-roms.ts'
 import { useDate } from '#@/pages/library/hooks/use-date.ts'
 import { GameMedia } from './game-media/game-media.tsx'
 
-/** The game's facts as kept for it, or as found for it when it was added */
+/**
+ * The game's facts as stored for it, which includes what was found for it when it was added, so a detail cleared stays
+ * cleared. Libretro's data has only a year, used when there's no date. The description isn't stored on adding, so it
+ * comes from LaunchBox until one is saved
+ */
 export function useGameFacts(rom: Rom) {
   const { formatDate, isValidDate } = useDate()
   const launchboxGame = rom.rawGameMetadata?.launchbox || {}
-  const releaseDate = rom.gameReleaseDate ?? launchboxGame.releaseDate
-  const released = isValidDate(releaseDate) ? new Date(releaseDate) : undefined
+  const released = rom.gameReleaseDate && isValidDate(rom.gameReleaseDate) ? new Date(rom.gameReleaseDate) : undefined
+  const year = released ? released.getUTCFullYear() : rom.gameReleaseYear || undefined
   // Stored comma-separated, with or without spaces
-  const genres: string[] = ((rom.gameGenres ?? launchboxGame.genres) || '')
+  const genres: string[] = (rom.gameGenres || '')
     .split(',')
     .map((genre: string) => genre.trim())
     .filter(Boolean)
   return {
     description: (rom.gameDescription || launchboxGame.overview || '') as string,
-    developer: ((rom.gameDeveloper ?? launchboxGame.developer) || '').trim() as string,
+    developer: (rom.gameDeveloper || '').trim(),
     genres,
-    players: (rom.gamePlayers ?? launchboxGame.maxPlayers) as number | string | undefined,
-    publisher: ((rom.gamePublisher ?? launchboxGame.publisher) || '').trim() as string,
-    released,
-    releasedText: released ? formatDate(releaseDate) : '',
+    players: Math.trunc(Number(rom.gamePlayers)) || undefined,
+    publisher: (rom.gamePublisher || '').trim(),
+    releasedText: released ? formatDate(released) : year ? String(year) : '',
     wikipediaUrl: launchboxGame.wikipediaUrl as string | undefined,
+    year,
   }
 }
 
+/** When the game came out, its genres, players, and who made and published it: those that are known */
+export function GameDetails({ className, rom }: Readonly<{ className?: string; rom: Rom }>) {
+  const { t } = useTranslation()
+  const facts = useGameFacts(rom)
+
+  const details: [string, ReactNode][] = [
+    [t('common.released'), facts.releasedText],
+    [t('common.genres'), facts.genres.join(', ')],
+    [t('common.players'), facts.players],
+    [t('common.developer'), facts.developer],
+    [t('common.publisher'), facts.publisher],
+  ]
+  const known = details.filter(([, value]) => value)
+  if (!known.length) {
+    return null
+  }
+
+  return (
+    <dl className={clsx('gap-x-6 gap-y-2 text-sm', className)}>
+      {known.map(([label, value]) => (
+        <div key={label}>
+          <dt className='text-xs text-(--gray-11)'>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 /**
- * About the game, folded away until opened, as on a console's page: its description, the details (when it came out, its
- * genres, players, who made and published it), its screenshots and videos, and where to read more
+ * About the game, folded away until opened, as on a console's page. On a phone it holds everything: the description, the
+ * details, the screenshots and videos, and where to read more. A computer shows the details and media on the page, so
+ * About holds only the description and the link (`descriptionOnly`), and isn't there without them
  */
-export function GameAbout({ rom }: Readonly<{ rom: Rom }>) {
+export function GameAbout({ descriptionOnly = false, rom }: Readonly<{ descriptionOnly?: boolean; rom: Rom }>) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const facts = useGameFacts(rom)
 
-  const unknown = <span className='text-(--gray-9)'>{t('common.unknown')}</span>
-  const details: [string, ReactNode][] = [
-    [t('common.released'), facts.releasedText || unknown],
-    [t('common.genres'), facts.genres.join(', ') || unknown],
-    [t('common.players'), facts.players || unknown],
-    [t('common.developer'), facts.developer || unknown],
-    [t('common.publisher'), facts.publisher || unknown],
-  ]
+  if (descriptionOnly && !facts.description && !facts.wikipediaUrl) {
+    return null
+  }
 
   return (
     <div className='mt-4 border-y border-(--gray-a4)'>
@@ -65,16 +94,12 @@ export function GameAbout({ rom }: Readonly<{ rom: Rom }>) {
             <p className='max-w-[70ch] text-sm text-pretty whitespace-pre-line text-(--gray-12)'>{facts.description}</p>
           ) : null}
 
-          <dl className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm lg:grid-cols-3'>
-            {details.map(([label, value]) => (
-              <div key={label}>
-                <dt className='text-xs text-(--gray-11)'>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <GameMedia />
+          {descriptionOnly ? null : (
+            <>
+              <GameDetails className='grid grid-cols-2' rom={rom} />
+              <GameMedia />
+            </>
+          )}
 
           {facts.wikipediaUrl ? (
             <a

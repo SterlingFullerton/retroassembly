@@ -30,7 +30,10 @@ export function useGameListActions() {
   const hasSelectedGames = selectedGames.length > 0
   const canSelectAll = selectedGames.length < roms.length
 
-  const showFavoriteButton = (!isFavoritesPage && (hasRoms || Boolean(query))) || isViewingFavorites
+  // Not on the Games page, which Favorites in the menu already covers; an old link with the filter on still shows it, to
+  // turn it off
+  const isGamesPage = pathname === routes.libraryRoms
+  const showFavoriteButton = (!isFavoritesPage && !isGamesPage && (hasRoms || Boolean(query))) || isViewingFavorites
   const showSortDropdown = hasRoms
 
   function buildSortLink(params: Record<string, string>) {

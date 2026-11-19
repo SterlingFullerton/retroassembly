@@ -97,8 +97,13 @@ export function useSpatialNavigation() {
     } as const
     const keyName = getKeyNameFromCode(event.code)
     // In a text box, letters, Backspace, Enter and left and right are for typing; up and down still move out of it,
-    // unless the box handled them itself
-    if (isTypingIn(event.target) && ((keyName !== 'up' && keyName !== 'down') || event.defaultPrevented)) {
+    // unless the box handled them itself. A box of several lines keeps up and down, for moving between its lines
+    if (
+      isTypingIn(event.target) &&
+      (event.target instanceof HTMLTextAreaElement ||
+        (keyName !== 'up' && keyName !== 'down') ||
+        event.defaultPrevented)
+    ) {
       return
     }
     const direction = keyboardDirectionMap[keyName]

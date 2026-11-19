@@ -533,5 +533,10 @@
   "common.numberOfGames": "Количество игр",
   "common.edit": "Изменить",
   "common.reset": "Сбросить",
-  "game.editGame": "Изменить игру"
+  "game.editGame": "Изменить игру",
+  "game.viewBoxArt": "Открыть обложку",
+  "game.resetBoxArt": "Сбросить обложку?",
+  "game.saved": "Сохранено",
+  "game.saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+  "game.dateFormat": "Введите дату в виде {{example}}"
 }

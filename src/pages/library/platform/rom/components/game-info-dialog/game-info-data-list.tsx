@@ -1,20 +1,39 @@
 import { Select, TextArea, TextField } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { range } from 'es-toolkit'
+import { DateTime } from 'luxon'
+import { type ChangeEvent, type KeyboardEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDate } from '#@/pages/library/hooks/use-date.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 
+// Enter in a field doesn't save the window: only Save does
+function ignoreEnter(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+  }
+}
+
 export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?: string }>) {
   const { t } = useTranslation()
   const rom = useRom()
-  const { formatDate, isValidDate } = useDate()
+  const { dateFormat, formatDate, isValidDate } = useDate()
+  const example = formatDate('1990-03-15')
+  const [dateInvalid, setDateInvalid] = useState(false)
+
+  // A date the server couldn't read is refused before Save, as it's typed
+  function handleDateChange(event: ChangeEvent<HTMLInputElement>) {
+    const { value } = event.currentTarget
+    const invalid = Boolean(value.trim()) && !DateTime.fromFormat(value.trim(), dateFormat).isValid
+    event.currentTarget.setCustomValidity(invalid ? t('game.dateFormat', { example, interpolation: { escapeValue: false } }) : '')
+    setDateInvalid(invalid)
+  }
 
   const dataListFields = [
     {
       label: t('common.released'),
       name: 'gameReleaseDate',
-      placeholder: `e.g. ${formatDate('1990-03-15')}`,
+      placeholder: example,
       type: 'input' as const,
     },
     {
@@ -45,20 +64,15 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
     },
   ]
 
-  const launchboxGame = rom.rawGameMetadata?.launchbox
+  // What's stored for the game, which includes what was found for it when it was added. The description isn't stored
+  // then, so it still comes from LaunchBox until one is saved
   const gameInfo = {
-    gameDescription: rom.gameDescription ?? launchboxGame?.overview,
-    gameDeveloper: rom.gameDeveloper ?? launchboxGame?.developer,
-    gameGenres: rom.gameGenres ?? launchboxGame?.genres,
-    gamePlayers: rom.gamePlayers ?? launchboxGame?.maxPlayers ?? '',
-    gamePublisher: rom.gamePublisher ?? launchboxGame?.publisher,
-    gameReleaseDate: rom.gameReleaseDate ?? launchboxGame?.releaseDate,
-  }
-  if (gameInfo.gameReleaseDate) {
-    gameInfo.gameReleaseDate = isValidDate(gameInfo.gameReleaseDate) ? formatDate(gameInfo.gameReleaseDate) : ''
-  }
-  if (gameInfo.gamePlayers) {
-    gameInfo.gamePlayers = Math.trunc(Number(`${gameInfo.gamePlayers}`)) ? `${gameInfo.gamePlayers}` : 'unknown'
+    gameDescription: rom.gameDescription ?? rom.rawGameMetadata?.launchbox?.overview,
+    gameDeveloper: rom.gameDeveloper,
+    gameGenres: rom.gameGenres,
+    gamePlayers: Math.trunc(Number(rom.gamePlayers)) ? `${rom.gamePlayers}` : 'unknown',
+    gamePublisher: rom.gamePublisher,
+    gameReleaseDate: rom.gameReleaseDate && isValidDate(rom.gameReleaseDate) ? formatDate(rom.gameReleaseDate) : '',
   }
 
   // Released and Players, Developer and Publisher side by side where there's room; Genres and Description across
@@ -73,9 +87,13 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
             {
               input: (
                 <TextField.Root
+                  aria-invalid={name === 'gameReleaseDate' && dateInvalid ? true : undefined}
                   autoFocus={autoFocusField === name}
-                  defaultValue={gameInfo[name]}
+                  color={name === 'gameReleaseDate' && dateInvalid ? 'red' : undefined}
+                  defaultValue={gameInfo[name] ?? ''}
                   name={name}
+                  onChange={name === 'gameReleaseDate' ? handleDateChange : undefined}
+                  onKeyDown={ignoreEnter}
                   {...valueProps}
                 />
               ),
@@ -103,6 +121,9 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
               ),
             }[type]
           }
+          {name === 'gameReleaseDate' && dateInvalid ? (
+            <span className='text-xs text-(--red-11)'>{t('game.dateFormat', { example, interpolation: { escapeValue: false } })}</span>
+          ) : null}
         </label>
       ))}
     </div>

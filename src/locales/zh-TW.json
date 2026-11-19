@@ -515,5 +515,10 @@
   "common.numberOfGames": "遊戲數量",
   "common.edit": "編輯",
   "common.reset": "重設",
-  "game.editGame": "編輯遊戲"
+  "game.editGame": "編輯遊戲",
+  "game.viewBoxArt": "檢視封面",
+  "game.resetBoxArt": "重設封面？",
+  "game.saved": "已儲存",
+  "game.saveFailed": "儲存失敗，請再試一次。",
+  "game.dateFormat": "請按 {{example}} 的格式輸入日期"
 }

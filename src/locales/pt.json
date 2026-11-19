@@ -521,5 +521,10 @@
   "common.numberOfGames": "Número de jogos",
   "common.edit": "Editar",
   "common.reset": "Redefinir",
-  "game.editGame": "Editar jogo"
+  "game.editGame": "Editar jogo",
+  "game.viewBoxArt": "Ver capa",
+  "game.resetBoxArt": "Redefinir capa?",
+  "game.saved": "Salvo",
+  "game.saveFailed": "Não foi possível salvar. Tente novamente.",
+  "game.dateFormat": "Use uma data como {{example}}"
 }

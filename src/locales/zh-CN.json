@@ -515,5 +515,10 @@
   "common.numberOfGames": "游戏数量",
   "common.edit": "编辑",
   "common.reset": "重置",
-  "game.editGame": "编辑游戏"
+  "game.editGame": "编辑游戏",
+  "game.viewBoxArt": "查看封面",
+  "game.resetBoxArt": "重置封面？",
+  "game.saved": "已保存",
+  "game.saveFailed": "保存失败，请重试。",
+  "game.dateFormat": "请按 {{example}} 的格式输入日期"
 }

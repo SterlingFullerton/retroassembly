@@ -13,6 +13,7 @@ export async function updateRom(
     gamePlayers?: null | number
     gamePublisher?: null | string
     gameReleaseDate?: Date | null
+    gameReleaseYear?: null | number
     gameThumbnailFileIds?: null | string
     id: string
   },

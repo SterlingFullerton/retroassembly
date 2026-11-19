@@ -13,10 +13,22 @@ import { GameMediaBoxart } from '../game-media-dialog/game-media-boxart.tsx'
 import { GameMediaImages } from '../game-media-dialog/game-media-images.tsx'
 import { GameInfoDataList } from './game-info-data-list.tsx'
 
+// The first field has the focus as the window opens, not the box art. On a touch screen nothing does, so the keyboard
+// doesn't cover the window
+function handleOpenAutoFocus(event: Event) {
+  event.preventDefault()
+  const content = event.currentTarget as HTMLElement
+  if (matchMedia('(pointer: coarse)').matches) {
+    content.focus()
+  } else {
+    content.querySelector<HTMLElement>('#edit-game-form input')?.focus()
+  }
+}
+
 /**
  * The game page's one Edit button, round like Favorite and Download beside it, and its window for everything about the
  * game: box art, details, description, screenshots and videos. Box art and media are kept as soon as they're changed;
- * the details when Save is pressed. On a phone the window fills the screen
+ * the details when Save is pressed, and only then. On a phone the window fills the screen
  */
 export function GameInfoDialog() {
   const rom = useRom()
@@ -24,6 +36,7 @@ export function GameInfoDialog() {
   const { currentUser } = useGlobalLoaderData()
   const refresh = useLibraryRefresh()
   const [open, setOpen] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const { isMutating, trigger } = useSWRMutation(
     { endpoint: 'roms', method: 'patch', param: { id: rom.id } },
@@ -33,6 +46,7 @@ export function GameInfoDialog() {
 
   async function handleOpenChange(next: boolean) {
     setOpen(next)
+    setFailed(false)
     // Box art and media are kept as they change, so the page catches up when the window closes
     if (!next) {
       await refresh()
@@ -42,9 +56,22 @@ export function GameInfoDialog() {
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const formData = new FormData(event.target)
-    await trigger(Object.fromEntries(formData))
+    setFailed(false)
+    // A save that doesn't go through keeps the window open, with what was typed, to try again
+    try {
+      const response = await trigger(Object.fromEntries(formData))
+      if (!response.ok) {
+        setFailed(true)
+        return
+      }
+    } catch {
+      setFailed(true)
+      return
+    }
     await handleOpenChange(false)
   }
+
+
 
   // Players of a shared library can't change it
   if (currentUser?.libraryMode === libraryModeEnum.shared) {
@@ -56,7 +83,7 @@ export function GameInfoDialog() {
       <Dialog.Trigger>
         <button
           aria-label={t('common.edit')}
-          className='flex rounded-full bg-(--color-background) p-1.5 ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
+          className='flex size-10 shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 md:size-auto md:p-1.5 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
           title={t('common.edit')}
           type='button'
         >
@@ -64,7 +91,12 @@ export function GameInfoDialog() {
         </button>
       </Dialog.Trigger>
 
-      <Dialog.Content aria-describedby={undefined} className='edit-game-dialog' maxWidth='760px'>
+      <Dialog.Content
+        aria-describedby={undefined}
+        className='edit-game-dialog'
+        maxWidth='760px'
+        onOpenAutoFocus={handleOpenAutoFocus}
+      >
         <Dialog.Title>{t('game.editGame')}</Dialog.Title>
 
         <div className='edit-game-scroll'>
@@ -85,7 +117,12 @@ export function GameInfoDialog() {
           </div>
         </div>
 
-        <div className='mt-5 flex justify-end gap-3'>
+        <div className='mt-5 flex items-center justify-end gap-3'>
+          {failed ? (
+            <span className='mr-auto text-sm text-(--red-11)' role='alert'>
+              {t('game.saveFailed')}
+            </span>
+          ) : null}
           <Dialog.Close>
             <Button disabled={isMutating} type='button' variant='soft'>
               {t('common.cancel')}

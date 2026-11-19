@@ -84,7 +84,11 @@ export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) 
           <button
             data-sn-skip={isOverlay ? '' : undefined}
             type='button'
-            className='taps-in-pass-through relative z-1 flex rounded-full bg-(--color-background) p-1.5 ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
+            className={clsx(
+              'taps-in-pass-through relative z-1 flex shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)',
+              // On a game's page, 40 points on a phone, for a finger
+              isOverlay ? 'p-1.5' : 'size-10 md:size-auto md:p-1.5',
+            )}
             aria-label={optimisticIsFavorite ? t('game.removeFromFavorites') : t('game.addToFavorites')}
             onClick={handleClick}
             title={optimisticIsFavorite ? t('game.removeFromFavorites') : t('game.addToFavorites')}

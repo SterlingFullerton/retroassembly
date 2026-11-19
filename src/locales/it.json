@@ -521,5 +521,10 @@
   "common.numberOfGames": "Numero di giochi",
   "common.edit": "Modifica",
   "common.reset": "Ripristina",
-  "game.editGame": "Modifica gioco"
+  "game.editGame": "Modifica gioco",
+  "game.viewBoxArt": "Visualizza copertina",
+  "game.resetBoxArt": "Ripristinare la copertina?",
+  "game.saved": "Salvato",
+  "game.saveFailed": "Salvataggio non riuscito. Riprova.",
+  "game.dateFormat": "Usa una data come {{example}}"
 }

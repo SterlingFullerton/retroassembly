@@ -521,5 +521,10 @@
   "common.numberOfGames": "Número de juegos",
   "common.edit": "Editar",
   "common.reset": "Restablecer",
-  "game.editGame": "Editar juego"
+  "game.editGame": "Editar juego",
+  "game.viewBoxArt": "Ver portada",
+  "game.resetBoxArt": "¿Restablecer la portada?",
+  "game.saved": "Guardado",
+  "game.saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+  "game.dateFormat": "Usa una fecha como {{example}}"
 }

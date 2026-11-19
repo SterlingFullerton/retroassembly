@@ -1,3 +1,4 @@
+import { HTTPException } from 'hono/http-exception'
 import path from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { pull } from 'es-toolkit'
@@ -74,13 +75,21 @@ export const roms = new Hono()
       const form = c.req.valid('form')
       const id = c.req.param('id')
       const dateFormat = preference.ui.dateFormat === 'auto' ? dateFormatMap[language] : preference.ui.dateFormat
-      const gameReleaseDate = form.gameReleaseDate
-        ? DateTime.fromFormat(form.gameReleaseDate, dateFormat, { zone: 'utc' }).setZone('utc').toJSDate() || null
-        : null
+      // A date that can't be read is refused, rather than stored as none
+      const releaseDate = form.gameReleaseDate?.trim()
+        ? DateTime.fromFormat(form.gameReleaseDate.trim(), dateFormat, { zone: 'utc' })
+        : undefined
+      if (releaseDate && !releaseDate.isValid) {
+        throw new HTTPException(400, { message: 'Invalid release date' })
+      }
+      const gameReleaseDate = releaseDate ? releaseDate.toJSDate() : null
       const rom = {
         ...Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value || null])),
-        gamePlayers: form.gamePlayers ? Math.trunc(Number(form.gamePlayers)) : null,
+        // "Unknown" is stored as none
+        gamePlayers: Math.trunc(Number(form.gamePlayers)) || null,
         gameReleaseDate,
+        // A date saved sets the year with it; an empty one leaves the year that was found, for games with only a year
+        ...(releaseDate ? { gameReleaseYear: releaseDate.year } : {}),
       }
 
       const ret = await updateRom(c.var.scope, { id, ...rom })

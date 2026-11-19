@@ -515,5 +515,10 @@
   "common.numberOfGames": "게임 수",
   "common.edit": "편집",
   "common.reset": "초기화",
-  "game.editGame": "게임 편집"
+  "game.editGame": "게임 편집",
+  "game.viewBoxArt": "표지 보기",
+  "game.resetBoxArt": "표지를 초기화할까요?",
+  "game.saved": "저장됨",
+  "game.saveFailed": "저장하지 못했습니다. 다시 시도하세요.",
+  "game.dateFormat": "{{example}} 형식으로 입력하세요"
 }

@@ -44,11 +44,12 @@ export function GameButtons({
   compact = false,
   lazy = false,
   saves = false,
-}: Readonly<{ beforeSaves?: ReactNode; compact?: boolean; lazy?: boolean; saves?: boolean }>) {
+  stretch = false,
+}: Readonly<{ beforeSaves?: ReactNode; compact?: boolean; lazy?: boolean; saves?: boolean; stretch?: boolean }>) {
   return (
     <EmulatorSessionProvider lazy={lazy}>
       <div>
-        <GameButtonsContent beforeSaves={beforeSaves} compact={compact} saves={saves} />
+        <GameButtonsContent beforeSaves={beforeSaves} compact={compact} saves={saves} stretch={stretch} />
       </div>
     </EmulatorSessionProvider>
   )
@@ -58,7 +59,8 @@ function GameButtonsContent({
   beforeSaves,
   compact,
   saves,
-}: Readonly<{ beforeSaves?: ReactNode; compact: boolean; saves: boolean }>) {
+  stretch,
+}: Readonly<{ beforeSaves?: ReactNode; compact: boolean; saves: boolean; stretch: boolean }>) {
   const { rom, state } = useLoaderData()
   const { i18n, t } = useTranslation()
   const { error: prepareError, isDownloading, isPreparing, launch, loadingProgress, prepare, warmUp } = useSession()
@@ -259,14 +261,15 @@ function GameButtonsContent({
         'flex w-full',
         compact
           ? // Continue, with the save's picture, gets more of the row than Start; each stops at its usual width, so
-            // neither runs past a narrow banner
-            'flex-row gap-2 lg:gap-3 [&>button:first-of-type:not(:last-of-type)]:flex-[3] [&>button:last-of-type]:flex-[2]'
+            // neither runs past a narrow banner. On the smallest phones there's no room for both names, so they stack
+            'flex-row gap-2 max-[359px]:flex-col lg:gap-3 [&>button:first-of-type:not(:last-of-type)]:flex-[3] [&>button:last-of-type]:flex-[2]'
           : 'flex-col gap-4 xl:flex-row',
       )}
     >
       {state ? (
         <LaunchButton
           compact={compact}
+          stretch={stretch}
           disabled={isPreparing}
           onClick={handleClickContinue}
           progress={pressed === 'continue' ? progress : undefined}
@@ -313,6 +316,7 @@ function GameButtonsContent({
 
       <LaunchButton
         compact={compact}
+        stretch={stretch}
         disabled={isPreparing}
         onClick={handleClickStart}
         progress={pressed === 'start' ? progress : undefined}

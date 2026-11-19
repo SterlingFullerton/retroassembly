@@ -15,6 +15,8 @@ export interface LaunchButtonProgress {
 interface LaunchButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Smaller, for buttons side by side, as on Home */
   compact?: boolean
+  /** Shares the row's whole width with the button beside it, rather than stopping at its usual width */
+  stretch?: boolean
   progress?: LaunchButtonProgress
   variant?: ButtonProps['variant']
 }
@@ -23,6 +25,7 @@ export function LaunchButton({
   children,
   compact = false,
   disabled,
+  stretch = false,
   progress,
   variant = 'solid',
   ...props
@@ -31,7 +34,7 @@ export function LaunchButton({
     <button
       aria-busy={progress ? 'true' : undefined}
       aria-disabled={disabled ? 'true' : 'false'}
-      className={clsx('launch-button group block', compact ? 'min-w-0 flex-1 lg:max-w-56' : 'w-full lg:w-80', {
+      className={clsx('launch-button group block', stretch ? 'min-w-0 flex-1' : compact ? 'min-w-0 flex-1 lg:max-w-56' : 'w-full lg:w-80', {
         'opacity-50': disabled && !progress,
       })}
       data-sn-enabled

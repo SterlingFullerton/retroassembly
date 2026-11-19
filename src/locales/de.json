@@ -521,5 +521,10 @@
   "common.numberOfGames": "Anzahl der Spiele",
   "common.edit": "Bearbeiten",
   "common.reset": "Zurücksetzen",
-  "game.editGame": "Spiel bearbeiten"
+  "game.editGame": "Spiel bearbeiten",
+  "game.viewBoxArt": "Cover ansehen",
+  "game.resetBoxArt": "Cover zurücksetzen?",
+  "game.saved": "Gespeichert",
+  "game.saveFailed": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+  "game.dateFormat": "Datum wie {{example}} eingeben"
 }

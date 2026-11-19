@@ -12,7 +12,7 @@ export function DownloadButton({ rom }: Readonly<DownloadButtonProps>) {
   return (
     <a
       aria-label={t('game.downloadRom')}
-      className='flex rounded-full bg-(--color-background) p-1.5 ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
+      className='flex size-10 shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 md:size-auto md:p-1.5 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
       download={rom.fileName}
       href={getFileUrl(rom.fileId)}
       title={t('game.downloadRom')}

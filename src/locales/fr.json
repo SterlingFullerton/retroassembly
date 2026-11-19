@@ -521,5 +521,10 @@
   "common.numberOfGames": "Nombre de jeux",
   "common.edit": "Modifier",
   "common.reset": "Réinitialiser",
-  "game.editGame": "Modifier le jeu"
+  "game.editGame": "Modifier le jeu",
+  "game.viewBoxArt": "Voir la jaquette",
+  "game.resetBoxArt": "Réinitialiser la jaquette ?",
+  "game.saved": "Enregistré",
+  "game.saveFailed": "Échec de l'enregistrement. Réessayez.",
+  "game.dateFormat": "Saisissez une date comme {{example}}"
 }

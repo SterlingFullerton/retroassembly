@@ -515,5 +515,10 @@
   "common.numberOfGames": "ゲーム数",
   "common.edit": "編集",
   "common.reset": "リセット",
-  "game.editGame": "ゲームを編集"
+  "game.editGame": "ゲームを編集",
+  "game.viewBoxArt": "パッケージ画像を表示",
+  "game.resetBoxArt": "パッケージ画像をリセットしますか？",
+  "game.saved": "保存しました",
+  "game.saveFailed": "保存できませんでした。もう一度お試しください。",
+  "game.dateFormat": "{{example}} の形式で入力してください"
 }
