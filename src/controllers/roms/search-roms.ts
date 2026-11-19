@@ -101,6 +101,7 @@ export async function findSearchMatches(
       gameDeveloper: romTable.gameDeveloper,
       gameName: romTable.gameName,
       gamePublisher: romTable.gamePublisher,
+      gameTitle: romTable.gameTitle,
       id: romTable.id,
       isFavorite,
       platform: romTable.platform,
@@ -113,7 +114,7 @@ export async function findSearchMatches(
   const candidates = rows.map((row) =>
     Object.assign(row, {
       score: 0,
-      title: row.platform === 'arcade' && row.gameName ? row.gameName : getSearchTitle(row.fileName),
+      title: row.gameTitle || (row.platform === 'arcade' && row.gameName ? row.gameName : getSearchTitle(row.fileName)),
     }),
   )
   return { matches: rank(candidates, normalizeQuery(query)), searched: candidates.length }

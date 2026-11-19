@@ -1,6 +1,6 @@
 import useEmblaCarousel from 'embla-carousel-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RadixThemePortal } from '#@/pages/components/radix-theme-portal.tsx'
 import { CarouselSlide } from './carousel-slide.tsx'
 
@@ -16,9 +16,29 @@ interface GameMediaCarouselProps {
   open: boolean
   onClose: (currentIndex: number) => void
   onSlideChange: (index: number) => void
+  /** What it shows, for screen readers */
+  ariaLabel?: string
+}
+
+/** Tab and Shift+Tab go round the viewer's own buttons */
+function keepTabInside(event: KeyboardEvent<HTMLDivElement>) {
+  if (event.key !== 'Tab') {
+    return
+  }
+  const buttons = [...event.currentTarget.querySelectorAll<HTMLElement>('button, iframe, video[controls]')]
+  const first = buttons.at(0)
+  const last = buttons.at(-1)
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last?.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first?.focus()
+  }
 }
 
 export function GameMediaCarousel({
+  ariaLabel,
   items,
   initialIndex,
   originRect,
@@ -79,34 +99,46 @@ export function GameMediaCarousel({
     onClose(currentIndexRef.current)
   }, [onClose])
 
+  // Open, the viewer is a window of its own: its keys go to it before the page's (which would otherwise move the focus
+  // behind it, or leave the page on Back), the focus moves into it, and goes back where it was when it closes
+  const closeRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (!open) {
       return
     }
     const abortController = new AbortController()
+    const focusedBefore = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
 
-    document.addEventListener(
+    globalThis.addEventListener(
       'keydown',
       (event) => {
         if (event.key === 'Escape') {
           event.preventDefault()
+          event.stopImmediatePropagation()
           handleClose()
         } else if (event.key === 'ArrowLeft') {
           event.preventDefault()
+          event.stopImmediatePropagation()
           emblaApi?.scrollPrev()
         } else if (event.key === 'ArrowRight') {
           event.preventDefault()
+          event.stopImmediatePropagation()
           emblaApi?.scrollNext()
+        } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          event.preventDefault()
+          event.stopImmediatePropagation()
         }
       },
-      { signal: abortController.signal },
+      { capture: true, signal: abortController.signal },
     )
 
     document.body.style.overflow = 'hidden'
+    requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }))
 
     return () => {
       abortController.abort()
       document.body.style.overflow = ''
+      focusedBefore?.focus({ preventScroll: true })
     }
   }, [open, handleClose, emblaApi])
 
@@ -138,7 +170,16 @@ export function GameMediaCarousel({
     <RadixThemePortal>
       <AnimatePresence>
         {open ? (
-          <>
+          // The Back key closes it as it does a window; Tab stays in it
+          <motion.div
+            aria-label={ariaLabel}
+            aria-modal='true'
+            exit={{ opacity: 1 }}
+            key='viewer'
+            onKeyDown={keepTabInside}
+            // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a <dialog> would sit above the viewer's own animation
+            role='dialog'
+          >
             {/* Backdrop */}
             <motion.div
               animate={{ opacity: 1 }}
@@ -198,6 +239,7 @@ export function GameMediaCarousel({
             <motion.button
               animate={{ opacity: 1 }}
               aria-label='Close'
+              ref={closeRef}
               className='fixed top-4 right-4 z-50 cursor-pointer rounded-full bg-black/50 p-2 text-white hover:bg-black/70'
               exit={{ opacity: 0 }}
               initial={{ opacity: 0 }}
@@ -206,7 +248,7 @@ export function GameMediaCarousel({
             >
               <span className='icon-[mdi--close] block size-6' />
             </motion.button>
-          </>
+          </motion.div>
         ) : null}
       </AnimatePresence>
     </RadixThemePortal>

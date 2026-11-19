@@ -44,7 +44,7 @@
   "bios.fileNameNotExpected": "選択されたファイル名によると、これは期待されるBIOSファイルではありません。",
   "bios.requiredForLaunch": "必要な <tooltip/> がないとゲームを起動できません: <strong>{{biosList}}</strong>。",
   "bios.titleWithPlatform": "{{platform}}のBIOS",
-  "common.about": "について",
+  "common.about": "概要",
   "common.accept": "同意する",
   "common.account": "アカウント",
   "common.accountLower": "アカウント",

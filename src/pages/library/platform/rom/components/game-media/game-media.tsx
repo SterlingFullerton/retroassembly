@@ -130,6 +130,7 @@ export function GameMedia() {
         </div>
       </ScrollArea>
       <GameMediaCarousel
+        ariaLabel={getRomGoodcodes(rom).rom}
         initialIndex={carouselInitialIndex}
         items={mediaItems}
         onClose={handleClose}

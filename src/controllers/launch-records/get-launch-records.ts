@@ -41,6 +41,7 @@ export async function getLaunchRecords(
       fileName: romTable.fileName,
       gameBoxartFileIds: romTable.gameBoxartFileIds,
       gameName: romTable.gameName,
+      gameTitle: romTable.gameTitle,
       launchboxGameId: romTable.launchboxGameId,
       libretroGameId: romTable.libretroGameId,
       rawGameMetadata: romTable.rawGameMetadata,

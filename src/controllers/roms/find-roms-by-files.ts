@@ -8,7 +8,7 @@ export async function findRomsByFiles(scope: LibraryScope, fileIds: string[]) {
     return []
   }
   return await scope.db
-    .selectDistinct({ fileId: romTable.fileId, fileName: romTable.fileName, platform: romTable.platform })
+    .selectDistinct({ fileId: romTable.fileId, fileName: romTable.fileName, gameTitle: romTable.gameTitle, platform: romTable.platform })
     .from(romTable)
     .where(romsOf(scope, inArray(romTable.fileId, fileIds)))
 }

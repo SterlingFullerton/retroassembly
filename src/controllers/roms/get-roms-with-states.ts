@@ -22,6 +22,7 @@ export async function getRomsWithStates(scope: LibraryScope, { page = 1, pageSiz
       fileName: romTable.fileName,
       gameBoxartFileIds: romTable.gameBoxartFileIds,
       gameName: romTable.gameName,
+      gameTitle: romTable.gameTitle,
       id: romTable.id,
       isFavorite: favoriteTable.id,
       /** When this player last saved a state in it */
@@ -54,6 +55,7 @@ export async function getRomsWithStates(scope: LibraryScope, { page = 1, pageSiz
       romTable.fileName,
       romTable.gameBoxartFileIds,
       romTable.gameName,
+      romTable.gameTitle,
       romTable.launchboxGameId,
       romTable.libretroGameId,
       romTable.platform,

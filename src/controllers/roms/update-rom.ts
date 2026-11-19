@@ -10,6 +10,7 @@ export async function updateRom(
     gameDeveloper?: null | string
     gameGenres?: null | string
     gameName?: null | string
+    gameTitle?: null | string
     gamePlayers?: null | number
     gamePublisher?: null | string
     gameReleaseDate?: Date | null

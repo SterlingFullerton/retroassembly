@@ -40,7 +40,13 @@ export function getPlatformBluredBackground(platform: string) {
   return getPlatformAsset(platform, `blured-backgrounds/${platform}.jpg`)
 }
 
-export function getRomGoodcodes(rom: { fileName?: string; rawGameMetadata?: any; name?: string; platform?: string }) {
+export function getRomGoodcodes(rom: {
+  fileName?: string
+  gameTitle?: null | string
+  name?: string
+  platform?: string
+  rawGameMetadata?: any
+}) {
   let { name } = path.parse(rom?.fileName || '')
 
   if ('name' in rom) {
@@ -52,6 +58,10 @@ export function getRomGoodcodes(rom: { fileName?: string; rawGameMetadata?: any;
   }
   const goodcodes = parse(`0 - ${name}`)
   goodcodes.rom = moveArticleToFront(goodcodes.rom)
+  // A name the player gave the game is shown as they wrote it
+  if (rom.gameTitle?.trim()) {
+    goodcodes.rom = rom.gameTitle.trim()
+  }
   return goodcodes
 }
 

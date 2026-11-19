@@ -60,6 +60,7 @@ export function GameCover({
         {content}
       </button>
       <GameMediaCarousel
+        ariaLabel={name}
         initialIndex={0}
         items={[{ src: cover.src, type: 'image' }]}
         onClose={() => setOpen(false)}

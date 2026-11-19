@@ -7,6 +7,7 @@ export interface SearchableRom {
   gameDeveloper?: null | string
   gameName?: null | string
   gamePublisher?: null | string
+  gameTitle?: null | string
 }
 
 interface PreparedText {
@@ -93,7 +94,11 @@ export function scoreRom(rom: SearchableRom, query: string) {
   if (!preparedQuery) {
     return 0
   }
-  const names = [prepare(rom.fileName ? getSearchTitle(rom.fileName) : ''), prepare(rom.gameName)]
+  const names = [
+    prepare(rom.fileName ? getSearchTitle(rom.fileName) : ''),
+    prepare(rom.gameName),
+    prepare(rom.gameTitle),
+  ]
   let score = Math.max(0, ...names.map((name) => (name ? scoreText(name, preparedQuery) : 0)))
   if (!score) {
     const credits = [prepare(rom.gameDeveloper), prepare(rom.gamePublisher)]

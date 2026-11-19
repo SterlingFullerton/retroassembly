@@ -39,7 +39,7 @@ export default function RomPage() {
   const buttons = (
     <div className='flex shrink-0 items-center gap-1.5 md:gap-2'>
       <FavoriteButton rom={rom} variant='inline' />
-      <DownloadButton rom={rom} />
+      <DownloadButton discs={discs} rom={rom} />
       <GameInfoDialog />
     </div>
   )

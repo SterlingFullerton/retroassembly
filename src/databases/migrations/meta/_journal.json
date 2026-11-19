@@ -78,6 +78,13 @@
       "when": 1794777834769,
       "tag": "0010_petite_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1795097870176,
+      "tag": "0011_game_title",
+      "breakpoints": true
     }
   ]
 }

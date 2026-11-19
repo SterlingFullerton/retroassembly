@@ -99,6 +99,8 @@ export const romTable = sqliteTable(
     /** deprecated. use gameReleaseDate instead */
     gameReleaseYear: integer(),
     gameThumbnailFileIds: text(),
+    /** The name the player gave the game, shown in place of the title from its file name */
+    gameTitle: text(),
     launchboxGameId: integer(),
     libretroGameId: text(),
     platform: text().notNull().$type<PlatformName>(),

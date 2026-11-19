@@ -6,6 +6,7 @@ import { type ChangeEvent, type KeyboardEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDate } from '#@/pages/library/hooks/use-date.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
+import { getRomGoodcodes } from '#@/utils/client/library.ts'
 
 // Enter in a field doesn't save the window: only Save does
 function ignoreEnter(event: KeyboardEvent<HTMLInputElement>) {
@@ -30,6 +31,13 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
   }
 
   const dataListFields = [
+    {
+      // Empty, the title comes from the file name, shown as the hint
+      label: t('common.name'),
+      name: 'gameTitle',
+      placeholder: getRomGoodcodes({ ...rom, gameTitle: null }).rom,
+      type: 'input' as const,
+    },
     {
       label: t('common.released'),
       name: 'gameReleaseDate',
@@ -73,10 +81,11 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
     gamePlayers: Math.trunc(Number(rom.gamePlayers)) ? `${rom.gamePlayers}` : 'unknown',
     gamePublisher: rom.gamePublisher,
     gameReleaseDate: rom.gameReleaseDate && isValidDate(rom.gameReleaseDate) ? formatDate(rom.gameReleaseDate) : '',
+    gameTitle: rom.gameTitle,
   }
 
-  // Released and Players, Developer and Publisher side by side where there's room; Genres and Description across
-  const wide = new Set(['gameDescription', 'gameGenres'])
+  // Name across; Released and Players, Developer and Publisher side by side where there's room; Genres and Description across
+  const wide = new Set(['gameDescription', 'gameGenres', 'gameTitle'])
 
   return (
     <div className='grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2'>

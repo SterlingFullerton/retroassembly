@@ -1,4 +1,4 @@
-import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js'
+import { BlobReader, BlobWriter, HttpRangeReader, ZipReader } from '@zip.js/zip.js'
 import useSWRImmutable from 'swr/immutable'
 
 const imageExtensions = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
@@ -13,13 +13,18 @@ export function CbzCover({ src }: Readonly<CbzCoverProps>) {
     error,
     isLoading,
   } = useSWRImmutable(src, async (src) => {
-    const response = await fetch(src)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch CBZ: ${response.status}`)
+    // Only the comic's index and first page are read, a part at a time, not the whole file. A server that can't send
+    // parts of a file sends it whole
+    let entries
+    try {
+      entries = await new ZipReader(new HttpRangeReader(src)).getEntries()
+    } catch {
+      const response = await fetch(src)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch CBZ: ${response.status}`)
+      }
+      entries = await new ZipReader(new BlobReader(await response.blob())).getEntries()
     }
-    const blob = await response.blob()
-    const reader = new ZipReader(new BlobReader(blob))
-    const entries = await reader.getEntries()
     const firstImage = entries
       .filter((entry) => !entry.directory)
       .filter((entry) => {
