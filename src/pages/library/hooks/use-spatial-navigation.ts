@@ -33,6 +33,21 @@ function isTypingIn(target: EventTarget | null) {
   )
 }
 
+/**
+ * Whether up or down would leave a box of several lines: up with the cursor at its very start, down at its very end. Up on
+ * the top line puts the cursor at the start first, as down on the bottom line does at the end, so long text that wraps
+ * still moves line by line
+ */
+function leavesTextArea(box: HTMLTextAreaElement, keyName: string) {
+  if (keyName === 'up') {
+    return box.selectionStart === 0 && box.selectionEnd === 0
+  }
+  if (keyName === 'down') {
+    return box.selectionStart === box.value.length && box.selectionEnd === box.value.length
+  }
+  return false
+}
+
 export function useSpatialNavigation() {
   const { state } = useNavigation()
   const inputMapping = useInputMapping()
@@ -67,6 +82,33 @@ export function useSpatialNavigation() {
 
   useEffect(init, [])
 
+  // Back to the mouse (or a finger), the keyboard and controller highlight goes away until the arrow keys or a controller
+  // are used again. A few pixels of drift don't count, nor the moves a browser reports while the page scrolls under a
+  // still pointer. Only with the highlight set to show automatically
+  useEffect(() => {
+    if (showFocusIndicators !== 'auto' || pristine) {
+      return
+    }
+    const abortController = new AbortController()
+    let travelled = 0
+    function hide() {
+      setPristine(true)
+    }
+    function handleMove(event: PointerEvent) {
+      if (event.pointerType !== 'mouse') {
+        return
+      }
+      travelled += Math.abs(event.movementX) + Math.abs(event.movementY)
+      if (travelled > 12) {
+        hide()
+      }
+    }
+    document.addEventListener('pointermove', handleMove, { passive: true, signal: abortController.signal })
+    document.addEventListener('pointerdown', hide, { passive: true, signal: abortController.signal })
+    document.addEventListener('wheel', hide, { passive: true, signal: abortController.signal })
+    return () => abortController.abort()
+  }, [pristine, showFocusIndicators, setPristine])
+
   // keyboard navigation
   const handleKeydown = useEffectEvent(async (event: KeyboardEvent) => {
     if (isPaused()) {
@@ -97,10 +139,11 @@ export function useSpatialNavigation() {
     } as const
     const keyName = getKeyNameFromCode(event.code)
     // In a text box, letters, Backspace, Enter and left and right are for typing; up and down still move out of it,
-    // unless the box handled them itself. A box of several lines keeps up and down, for moving between its lines
+    // unless the box handled them itself. A box of several lines keeps up and down for moving between its lines, but up
+    // at its very start and down at its very end move out of it
     if (
       isTypingIn(event.target) &&
-      (event.target instanceof HTMLTextAreaElement ||
+      ((event.target instanceof HTMLTextAreaElement && !leavesTextArea(event.target, keyName)) ||
         (keyName !== 'up' && keyName !== 'down') ||
         event.defaultPrevented)
     ) {

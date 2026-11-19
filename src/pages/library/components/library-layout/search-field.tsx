@@ -105,6 +105,8 @@ export function SearchField() {
             : 'placeholder:text-white/85 group-focus-within/search:placeholder:text-[#8b8b93]',
         )}
         data-sn-enabled
+        // The keyboard and controller highlight goes around the whole box, with its magnifier, not only the text
+        data-sn-focus-parent
         enterKeyHint='search'
         name={fieldName}
         onChange={(event) => setText(event.currentTarget.value)}

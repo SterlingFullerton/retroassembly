@@ -6,6 +6,7 @@ import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
+import { usePristine } from '#@/pages/library/atoms.ts'
 import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
@@ -14,11 +15,11 @@ import { GameMediaImages } from '../game-media-dialog/game-media-images.tsx'
 import { GameInfoDataList } from './game-info-data-list.tsx'
 
 // The first field has the focus as the window opens, not the box art. On a touch screen nothing does, so the keyboard
-// doesn't cover the window
-function handleOpenAutoFocus(event: Event) {
+// doesn't cover the window, unless the arrow keys or a controller are being used (`pristine` is false), as on a Steam Deck
+function focusOnOpen(event: Event, pristine: boolean) {
   event.preventDefault()
   const content = event.currentTarget as HTMLElement
-  if (matchMedia('(pointer: coarse)').matches) {
+  if (pristine && matchMedia('(pointer: coarse)').matches) {
     content.focus()
   } else {
     content.querySelector<HTMLElement>('#edit-game-form input')?.focus()
@@ -36,6 +37,7 @@ export function GameInfoDialog() {
   const { currentUser } = useGlobalLoaderData()
   const refresh = useLibraryRefresh()
   const [open, setOpen] = useState(false)
+  const [pristine] = usePristine()
   const [failed, setFailed] = useState(false)
 
   const { isMutating, trigger } = useSWRMutation(
@@ -71,8 +73,6 @@ export function GameInfoDialog() {
     await handleOpenChange(false)
   }
 
-
-
   // Players of a shared library can't change it
   if (currentUser?.libraryMode === libraryModeEnum.shared) {
     return
@@ -83,7 +83,7 @@ export function GameInfoDialog() {
       <Dialog.Trigger>
         <button
           aria-label={t('common.edit')}
-          className='flex size-10 shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 md:size-auto md:p-1.5 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3)'
+          className='flex size-10 shrink-0 items-center justify-center rounded-full bg-(--color-background) ring-1 ring-(--gray-4) hover:bg-(--accent-3) hover:ring-(--accent-3) md:size-auto md:p-1.5'
           title={t('common.edit')}
           type='button'
         >
@@ -95,7 +95,7 @@ export function GameInfoDialog() {
         aria-describedby={undefined}
         className='edit-game-dialog'
         maxWidth='760px'
-        onOpenAutoFocus={handleOpenAutoFocus}
+        onOpenAutoFocus={(event) => focusOnOpen(event, pristine)}
       >
         <Dialog.Title>{t('game.editGame')}</Dialog.Title>
 

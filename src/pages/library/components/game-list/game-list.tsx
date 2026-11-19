@@ -1,5 +1,7 @@
 import { clsx } from 'clsx'
+import type { CSSProperties } from 'react'
 import { type ReactNode, useEffect } from 'react'
+import { getCoverSize } from '#@/constants/cover-sizes.ts'
 import { useSelectedGames } from '../../atoms.ts'
 import { usePreference } from '../../hooks/use-preference.ts'
 import { useRoms } from '../../hooks/use-roms.ts'
@@ -33,9 +35,9 @@ export function GameList({ actionsInHeader, actionsLeading, actionsTrailing, pho
     setSelectedGames([])
   }, [setSelectedGames])
 
-  const sizeMap = { 'extra-large': 60, 'extra-small': 36, large: 54, medium: 48, small: 42 }
-  const size = sizeMap[preference.ui.libraryCoverSize]
-  const gridTemplateColumns = `repeat(auto-fill,minmax(min(calc(var(--spacing)*${size}),var(--min-width)),1fr))`
+  // The cover size setting: how narrow a game may be, so more or fewer fit in a row, on a computer and on a phone
+  const { list, phoneList } = getCoverSize(preference.ui.libraryCoverSize)
+  const gridTemplateColumns = 'repeat(auto-fill,minmax(min(var(--cover-size),100%),1fr))'
 
   return (
     <div
@@ -53,8 +55,14 @@ export function GameList({ actionsInHeader, actionsLeading, actionsTrailing, pho
       {roms?.length ? (
         <div className='mt-4 flex gap-2' data-sn-section=''>
           <div
-            className='grid flex-1 gap-x-4 gap-y-6 [--min-width:120px] sm:[--min-width:150px] lg:gap-x-3 lg:[--min-width:100%]'
-            style={{ gridTemplateColumns }}
+            className='grid flex-1 gap-x-4 gap-y-6 [--cover-size:var(--phone-cover-size)] lg:gap-x-3 lg:[--cover-size:var(--computer-cover-size)]'
+            style={
+              {
+                '--computer-cover-size': `${list}px`,
+                '--phone-cover-size': `${phoneList}px`,
+                gridTemplateColumns,
+              } as CSSProperties
+            }
           >
             {roms.map((rom) => (
               <GameEntry key={rom.id} rom={rom} />

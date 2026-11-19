@@ -14,7 +14,7 @@ export function GameTitle({ rom }) {
   const districts = new Set(goodcodes.codes.countries?.map(({ code }) => code))
 
   return (
-    <div className='line-clamp-2 text-sm leading-snug font-semibold'>
+    <div className='game-title line-clamp-2 text-sm leading-snug font-semibold'>
       {preference.ui.showDistrictOnTitle
         ? [...districts].map((district) => <DistrictIcon district={district} key={district} />)
         : null}
