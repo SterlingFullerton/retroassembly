@@ -26,7 +26,10 @@ export function StatusBar() {
   ]
 
   return (
-    <div className='fixed right-0 bottom-0 left-72 z-11 hidden h-12 items-center justify-end gap-4 bg-(--accent-9) pr-8 text-sm font-medium text-white lg:flex'>
+    <div
+      data-sn-bottom-bar
+      className='fixed right-0 bottom-0 left-72 z-11 hidden h-12 items-center justify-end gap-4 bg-(--accent-9) pr-8 text-sm font-medium text-white lg:flex'
+    >
       <UploadBadge className='mr-auto ml-8 flex items-center gap-2 text-white' />
       {connected ? (
         <>

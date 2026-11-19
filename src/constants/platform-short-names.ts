@@ -9,6 +9,7 @@ const shortNames: Record<string, string> = {
   ngpc: 'NGPC',
   odyssey2: 'Odyssey 2',
   psp: 'PSP',
+  sfc: 'SFC',
   snes: 'SNES',
   videopac: 'Videopac+',
   wonderswancolor: 'WSC',

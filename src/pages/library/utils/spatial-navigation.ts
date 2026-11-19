@@ -167,13 +167,37 @@ function isMostlyShown(element: HTMLElement) {
 
 async function bringIntoView(element: unknown) {
   if (element instanceof HTMLElement) {
-    await scrollIntoView(element, {
+    // What the highlight is drawn around: a game's whole entry, with its console line, not only its link
+    const box = (element.dataset.snFocusParent !== undefined && element.parentElement) || element
+    await scrollIntoView(box, {
       block: 'center',
       duration: 300,
       scrollMode: 'if-needed',
       // Only what really scrolls: a clipped box, like Home's banner behind its art, would otherwise be nudged
       skipOverflowHiddenElements: true,
     })
+    keepClearOfBottomBar(box)
+  }
+}
+
+/**
+ * A bar pinned to the bottom of the screen (the controller hints on a computer, the tabs on a phone) covers what's under
+ * it, though that still counts as on screen, so the page scrolls on until what has the focus is clear of it
+ */
+function keepClearOfBottomBar(box: HTMLElement) {
+  const bar = [...document.querySelectorAll<HTMLElement>('[data-sn-bottom-bar]')].find(
+    (element) => element.getBoundingClientRect().height > 0,
+  )
+  if (!bar || box.closest('[data-sn-bottom-bar], [role="dialog"], [role="alertdialog"]')) {
+    return
+  }
+  const rect = box.getBoundingClientRect()
+  const barRect = bar.getBoundingClientRect()
+  // Only what's beside the bar, not the sidebar to its left
+  const besideBar = rect.right > barRect.left && rect.left < barRect.right
+  const covered = rect.bottom + 8 - barRect.top
+  if (besideBar && covered > 0) {
+    globalThis.scrollBy({ behavior: 'smooth', top: covered })
   }
 }
 

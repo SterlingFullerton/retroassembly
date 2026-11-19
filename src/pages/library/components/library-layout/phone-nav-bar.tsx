@@ -27,7 +27,10 @@ export function PhoneNavBar() {
   }
 
   return (
-    <nav className='px-safe pb-safe fixed inset-x-0 bottom-0 z-2 flex bg-(--accent-9) text-white shadow-[0_-2px_8px_rgb(0_0_0/0.12)] lg:hidden'>
+    <nav
+      data-sn-bottom-bar
+      className='px-safe pb-safe fixed inset-x-0 bottom-0 z-2 flex bg-(--accent-9) text-white shadow-[0_-2px_8px_rgb(0_0_0/0.12)] lg:hidden'
+    >
       {links.map(({ iconClass, name, text, to }) => {
         const active = isActive(to) || (name === 'consoles' && Boolean(platform))
         return (

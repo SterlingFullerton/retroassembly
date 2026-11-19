@@ -79,7 +79,16 @@ export function LibraryHomePage() {
           title={t('home.playTogether')}
         >
           <GameRow
-            note={(rom) => (rom.gamePlayers ? t('home.players', { count: rom.gamePlayers }) : undefined)}
+            // How many can play, as a people icon and the number, so the console's name still fits beside it
+            label={(rom) =>
+              rom.gamePlayers
+                ? {
+                    icon: 'icon-[mdi--account-multiple]',
+                    text: String(rom.gamePlayers),
+                    title: t('home.players', { count: rom.gamePlayers }),
+                  }
+                : undefined
+            }
             roms={playTogetherRoms}
           />
         </HomeRow>

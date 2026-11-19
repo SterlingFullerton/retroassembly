@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { compact } from 'es-toolkit'
 import type { MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +14,19 @@ import { GameEntryImage } from './game-entry-image.tsx'
 import { GamePlatform } from './game-platform.tsx'
 import { GameTitle } from './game-title.tsx'
 
-export function GameEntry({ rom }) {
+// The highlight around a game has a card's corners
+const focusStyle = JSON.stringify({ borderRadius: 'var(--radius-4)' })
+
+export interface GameEntryLabel {
+  /** An icon in place of words, where the label would be long */
+  icon?: string
+  text: string
+  /** What the label says in full, on hover */
+  title?: string
+}
+
+/** A game in a list or a row of Home; `label` adds one of its own to the console line, such as how many can play */
+export function GameEntry({ label, rom }: Readonly<{ label?: GameEntryLabel; rom: any }>) {
   const [selectedGames, setSelectedGames] = useSelectedGames()
   const { t } = useTranslation()
   const { formatDateRelative } = useDate()
@@ -34,20 +47,28 @@ export function GameEntry({ rom }) {
     }
   }
 
-  // Labels on the console line: the revision and version from the file name, and how many discs
+  // Labels on the console line: the revision and version from the file name, how many discs, and any of the row's own
   const { revision, version = {} } = getRomGoodcodes(rom).codes
-  const labels = compact([
-    revision ? `Rev ${revision}` : '',
-    ...Object.keys(version).filter((text) => text !== 'stable'),
-    rom.discCount > 1 ? t('emulator.discCount', { count: rom.discCount }) : '',
-  ])
+  const labels: GameEntryLabel[] = [
+    ...compact([
+      revision ? `Rev ${revision}` : '',
+      ...Object.keys(version)
+        .filter((text) => text !== 'stable')
+        .map((text) => text.charAt(0).toUpperCase() + text.slice(1)),
+      rom.discCount > 1 ? t('emulator.discCount', { count: rom.discCount }) : '',
+    ]).map((text) => ({ text })),
+    ...(label ? [label] : []),
+  ]
 
   // The cover and name open the game; under them, the console line with any labels and the heart, then when it was
   // last played
   return (
     <div className='group relative flex flex-col'>
+      {/* The highlight, and scrolling into view, take in the whole game: its console line and labels too */}
       <NavigatableLink
         className='game-entry group flex flex-col gap-2 lg:p-1'
+        data-sn-focus-parent
+        data-sn-focus-style={focusStyle}
         onClick={handleClick}
         title={selecting ? `Select ${rom.fileName}` : rom.fileName}
         to={url}
@@ -69,13 +90,15 @@ export function GameEntry({ rom }) {
         )}
       </NavigatableLink>
       <div className='flex min-h-8 min-w-0 items-center gap-1.5 text-xs text-(--gray-11) lg:px-1'>
-        <GamePlatform platform={rom.platform} />
-        {labels.map((label) => (
+        <GamePlatform iconOnly={Boolean(label)} platform={rom.platform} />
+        {labels.map(({ icon, text, title }) => (
           <span
-            className='shrink-0 rounded border border-(--gray-6) px-1.5 text-[11px] leading-4 capitalize'
-            key={label}
+            className='flex shrink-0 items-center gap-0.5 rounded border border-(--gray-6) px-1.5 text-[11px] leading-4'
+            key={text}
+            title={title}
           >
-            {label}
+            {icon ? <span className={clsx('size-3', icon)} /> : null}
+            {text}
           </span>
         ))}
         <FavoriteButton rom={rom} variant='entry' />
