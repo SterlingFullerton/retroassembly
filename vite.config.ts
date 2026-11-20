@@ -91,6 +91,8 @@ export default defineConfig(async (env) => {
     build: { chunkSizeWarningLimit: 1024 },
     clearScreen: false,
     envPrefix: 'RETROASSEMBLY_BUILD_TIME_VITE_',
+    // Written by tools, not by hand: drizzle-kit's snapshots in its own style, and the unit tests' recorded answers
+    fmt: { ignorePatterns: ['src/databases/migrations/meta/**', 'tests/unit/fixtures/**'] },
     plugins: plugins as UserConfig['plugins'],
     server: {
       allowedHosts: true,

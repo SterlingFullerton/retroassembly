@@ -15,7 +15,9 @@ const roundButton =
  * Saves the ROM file to the device, under the name it was uploaded with. A game on several discs asks which disc, from a
  * short menu
  */
-export function DownloadButton({ discs = [], rom }: Readonly<DownloadButtonProps>) {
+const noDiscs: NonNullable<DownloadButtonProps['discs']> = []
+
+export function DownloadButton({ discs = noDiscs, rom }: Readonly<DownloadButtonProps>) {
   const { t } = useTranslation()
   const icon = <span className='icon-[mdi--download] text-lg text-(--accent-11)' />
 
@@ -23,7 +25,12 @@ export function DownloadButton({ discs = [], rom }: Readonly<DownloadButtonProps
     return (
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <button aria-label={t('game.downloadRom')} className={roundButton} title={t('game.downloadRom')} type='button'>
+          <button
+            aria-label={t('game.downloadRom')}
+            className={roundButton}
+            title={t('game.downloadRom')}
+            type='button'
+          >
             {icon}
           </button>
         </DropdownMenu.Trigger>

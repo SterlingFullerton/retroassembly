@@ -1,4 +1,4 @@
-import { noop } from 'es-toolkit'
+import { attemptAsync } from 'es-toolkit'
 import { useEffect, useEffectEvent } from 'react'
 import { useEmulatorLaunched, useShowGameOverlayContent } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
@@ -17,7 +17,7 @@ export function useKeepGameSave() {
 
   // keepGameSave never throws: a save that doesn't upload stays queued
   const keep = useEffectEvent(() => {
-    keepGameSave().catch(noop)
+    queueMicrotask(() => attemptAsync(keepGameSave))
   })
 
   useEffect(() => {

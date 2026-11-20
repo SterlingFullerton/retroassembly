@@ -6,7 +6,14 @@ import { useEffect, useState } from 'react'
 // The bar with pause above the game in portrait
 const topBarHeight = 44
 
-function getControlsScale(sideWidth: number, gameAspectRatio: number, portraitHeight?: number, gameTop = 0) {
+interface Tall {
+  /** How far down the game starts in landscape */
+  gameTop?: number
+  /** How tall the controls are at full size in portrait */
+  portraitHeight?: number
+}
+
+function getControlsScale(sideWidth: number, gameAspectRatio: number, { gameTop = 0, portraitHeight }: Tall) {
   if (globalThis.innerWidth === undefined) {
     return 1
   }
@@ -27,12 +34,16 @@ function getControlsScale(sideWidth: number, gameAspectRatio: number, portraitHe
  * on a short phone, how tall they are at full size in portrait. `gameTop` is how far down the game starts in landscape,
  * where a game moved below the top bar is narrower and leaves more room beside it.
  */
-export function useControlsScale(sideWidth: number, gameAspectRatio = 4 / 3, portraitHeight?: number, gameTop = 0) {
-  const [scale, setScale] = useState(() => getControlsScale(sideWidth, gameAspectRatio, portraitHeight, gameTop))
+export function useControlsScale(
+  sideWidth: number,
+  gameAspectRatio = 4 / 3,
+  { gameTop = 0, portraitHeight }: Tall = {},
+) {
+  const [scale, setScale] = useState(() => getControlsScale(sideWidth, gameAspectRatio, { gameTop, portraitHeight }))
 
   useEffect(() => {
     function update() {
-      setScale(getControlsScale(sideWidth, gameAspectRatio, portraitHeight, gameTop))
+      setScale(getControlsScale(sideWidth, gameAspectRatio, { gameTop, portraitHeight }))
     }
     update()
     const abortController = new AbortController()

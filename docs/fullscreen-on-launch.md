@@ -18,11 +18,11 @@ Browsers only allow full screen just after a tap or a key press. In Chrome that 
 after that, a request is refused. On iPhone the page can't go full screen at all. Requesting full screen as soon as
 Start is tapped is the only way to be sure it's allowed.
 
-| Game | Ready within ~5 s? |
-|---|---|
-| Most consoles (small files) | Yes |
-| A PSP game already on the device | Yes |
-| A PSP game's first play, or after it's removed (hundreds of MB) | No |
+| Game                                                            | Ready within ~5 s? |
+| --------------------------------------------------------------- | ------------------ |
+| Most consoles (small files)                                     | Yes                |
+| A PSP game already on the device                                | Yes                |
+| A PSP game's first play, or after it's removed (hundreds of MB) | No                 |
 
 If the app waited for the game, every long download would end with full screen refused and the game playing with the
 browser's bars showing. A second request is already made when the game starts (`start()`); it only succeeds when the

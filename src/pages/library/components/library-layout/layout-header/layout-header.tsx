@@ -44,6 +44,39 @@ export function LayoutHeader() {
     }
   }
 
+  // The current console, to switch to another, or the page's name
+  const title = currentLink ? (
+    <div className='flex h-5 min-w-0 flex-1 justify-center'>
+      <Select.Root onValueChange={handleValueChange} size='2' value={currentRouteName ?? ''}>
+        {/* Shown as the placeholder too (typed as text, but shown as given) */}
+        <Select.Trigger
+          // White as a console's name is, though shown as a placeholder (which is otherwise grey, lost on red)
+          // A long console name is shortened on a small phone, so it stays clear of the buttons
+          className='max-w-full! shrink! text-white! [&_.rt-SelectTriggerInner]:min-w-0 [&_.rt-SelectTriggerInner]:text-white! [&_.rt-SelectTriggerInner>span]:block'
+          placeholder={(<HeaderLinkItem inBar link={currentLink} />) as unknown as string}
+          variant='ghost'
+        >
+          <HeaderLinkItem inBar link={currentLink} />
+        </Select.Trigger>
+        <Select.Content>
+          {consoleLinks.map((link) => (
+            <Select.Item key={link.name} value={link.name}>
+              <HeaderLinkItem link={link} />
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
+    </div>
+  ) : (
+    <div className='flex min-w-0 flex-1 justify-center font-semibold text-white'>
+      {pageName ? (
+        <span className='truncate text-lg'>{pageName}</span>
+      ) : (
+        <span className='font-serif'>{metadata.title}</span>
+      )}
+    </div>
+  )
+
   return (
     <>
       <header className='px-safe-offset-2 fixed inset-x-0 top-0 z-2 flex items-center gap-1 bg-(--accent-9) py-1 lg:hidden'>
@@ -81,39 +114,7 @@ export function LayoutHeader() {
             </div>
           </div>
         ) : (
-          <>
-            {currentLink ? (
-              <div className='flex h-5 min-w-0 flex-1 justify-center'>
-                <Select.Root onValueChange={handleValueChange} size='2' value={currentRouteName ?? ''}>
-                  {/* Shown as the placeholder too (typed as text, but shown as given) */}
-                  <Select.Trigger
-                    // White as a console's name is, though shown as a placeholder (which is otherwise grey, lost on red)
-                    // A long console name is shortened on a small phone, so it stays clear of the buttons
-                    className='max-w-full! shrink! text-white! [&_.rt-SelectTriggerInner]:min-w-0 [&_.rt-SelectTriggerInner]:text-white! [&_.rt-SelectTriggerInner>span]:block'
-                    placeholder={(<HeaderLinkItem inBar link={currentLink} />) as unknown as string}
-                    variant='ghost'
-                  >
-                    <HeaderLinkItem inBar link={currentLink} />
-                  </Select.Trigger>
-                  <Select.Content>
-                    {consoleLinks.map((link) => (
-                      <Select.Item key={link.name} value={link.name}>
-                        <HeaderLinkItem link={link} />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Root>
-              </div>
-            ) : (
-              <div className='flex min-w-0 flex-1 justify-center font-semibold text-white'>
-                {pageName ? (
-                  <span className='truncate text-lg'>{pageName}</span>
-                ) : (
-                  <span className='font-serif'>{metadata.title}</span>
-                )}
-              </div>
-            )}
-          </>
+          title
         )}
 
         <div className='flex w-20 shrink-0 justify-end'>

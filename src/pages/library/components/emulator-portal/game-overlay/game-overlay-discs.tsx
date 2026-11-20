@@ -27,10 +27,9 @@ export function GameOverlayDiscs() {
   }
 
   return (
-    <div
+    <fieldset
       aria-label={t('emulator.changeDisc')}
-      className='flex h-12 w-fit max-w-full shrink-0 items-center gap-2 overflow-x-auto rounded-full border border-solid border-white bg-black/30 pr-1.5 pl-4 text-white'
-      role='group'
+      className='m-0 flex h-12 w-fit max-w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto rounded-full border border-solid border-white bg-black/30 pr-1.5 pl-4 text-white'
     >
       <span className='icon-[mdi--disc] size-5 shrink-0' />
       {discs.map(({ number }) => (
@@ -50,6 +49,6 @@ export function GameOverlayDiscs() {
           {t('emulator.disc', { number })}
         </button>
       ))}
-    </div>
+    </fieldset>
   )
 }

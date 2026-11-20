@@ -34,8 +34,11 @@ export function LaunchButton({
     <button
       aria-busy={progress ? 'true' : undefined}
       aria-disabled={disabled ? 'true' : 'false'}
-      className={clsx('launch-button group block', stretch ? 'min-w-0 flex-1' : compact ? 'min-w-0 flex-1 lg:max-w-56' : 'w-full lg:w-80', {
+      className={clsx('launch-button group block', {
+        'lg:max-w-56': compact && !stretch,
+        'min-w-0 flex-1': stretch || compact,
         'opacity-50': disabled && !progress,
+        'w-full lg:w-80': !stretch && !compact,
       })}
       data-sn-enabled
       {...props}

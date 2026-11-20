@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useReducer } from 'react'
+import { createContext, type ReactNode, useContext, useMemo, useReducer } from 'react'
 import { useGamepadMapping, type GamepadMapping } from '#@/pages/library/hooks/use-gamepad-mapping.ts'
 import { useEmulatorSessionController } from './hooks/use-emulator.ts'
 
@@ -51,7 +51,10 @@ export function TestSessionProvider({
   children: ReactNode
   emulator: { getStatus: () => string; pressDown: (button: string) => void; pressUp: (button: string) => void }
 }>) {
-  const session = { emulator } as unknown as ReturnType<typeof useEmulatorSessionController>
+  const session = useMemo(
+    () => ({ emulator }) as unknown as ReturnType<typeof useEmulatorSessionController>,
+    [emulator],
+  )
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
 

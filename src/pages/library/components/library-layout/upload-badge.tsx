@@ -11,9 +11,9 @@ export function UploadBadge({ className }: Readonly<{ className?: string }>) {
   const done = upload.progress?.doneCount ?? 0
   const total = upload.progress?.totalCount ?? upload.files.length
   return (
-    <span className={className} role='status'>
+    <output className={className}>
       <span className='icon-[svg-spinners--180-ring]' />
       {t('upload.uploadingRoms')} {done} / {total}
-    </span>
+    </output>
   )
 }

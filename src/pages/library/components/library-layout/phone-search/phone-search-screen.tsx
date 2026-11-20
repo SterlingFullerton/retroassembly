@@ -1,4 +1,5 @@
 import { clsx } from 'clsx'
+import { noop } from 'es-toolkit'
 import { useAtom } from 'jotai'
 import { atomWithStorage, createJSONStorage } from 'jotai/utils'
 import { type KeyboardEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -23,7 +24,7 @@ import { addRecentSearch, readRecentSearches } from './recent-searches.ts'
 const searchHash = '#search'
 
 function subscribeNever() {
-  return () => {}
+  return noop
 }
 
 /** What's typed in the screen, and the console picked, kept while a game opened from it is shown */

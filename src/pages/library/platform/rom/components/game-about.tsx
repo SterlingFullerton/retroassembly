@@ -20,13 +20,17 @@ export function useGameFacts(rom: Rom) {
     .split(',')
     .map((genre: string) => genre.trim())
     .filter(Boolean)
+  let releasedText = year ? String(year) : ''
+  if (released) {
+    releasedText = formatDate(released)
+  }
   return {
     description: (rom.gameDescription || launchboxGame.overview || '') as string,
     developer: (rom.gameDeveloper || '').trim(),
     genres,
     players: Math.trunc(Number(rom.gamePlayers)) || undefined,
     publisher: (rom.gamePublisher || '').trim(),
-    releasedText: released ? formatDate(released) : (year ? String(year) : ''),
+    releasedText,
     wikipediaUrl: launchboxGame.wikipediaUrl as string | undefined,
     year,
   }

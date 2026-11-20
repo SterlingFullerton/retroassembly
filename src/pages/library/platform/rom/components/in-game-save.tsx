@@ -169,14 +169,13 @@ function InGameSaveDialog({ rom }: Readonly<{ rom: Rom }>) {
                   '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100',
                 )}
               >
-                <IconButton
-                  aria-label={t('common.download')}
-                  asChild
-                  radius='full'
-                  title={t('common.download')}
-                  variant='ghost'
-                >
-                  <a download={`${name}.${version.fileId.split('.').pop()}`} href={getFileUrl(version.fileId)}>
+                <IconButton asChild radius='full' variant='ghost'>
+                  <a
+                    aria-label={t('common.download')}
+                    download={`${name}.${version.fileId.split('.').pop()}`}
+                    href={getFileUrl(version.fileId)}
+                    title={t('common.download')}
+                  >
                     <span className='icon-[mdi--download] size-4' />
                   </a>
                 </IconButton>

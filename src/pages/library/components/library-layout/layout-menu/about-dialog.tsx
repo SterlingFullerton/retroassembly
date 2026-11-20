@@ -24,8 +24,7 @@ export function AboutDialog({ onOpenChange, ...props }: Readonly<Dialog.RootProp
           <div className='flex flex-col gap-2 pt-2 pb-4 text-xs opacity-70'>
             {metadata.version ? (
               <div>
-                {t('common.version')}:
-                <span className='ml-0.5'>{metadata.version}</span>
+                {t('common.version')}:<span className='ml-0.5'>{metadata.version}</span>
               </div>
             ) : null}
             <div>

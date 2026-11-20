@@ -541,7 +541,7 @@ function rowEnd(current: HTMLElement, area: HTMLElement, step: 1 | -1) {
   return row.find((element) => element.getBoundingClientRect().left === edge)
 }
 
-export async function jump(direction?: Direction) {
+export function jump(direction?: Direction) {
   if (moving || !direction) {
     return
   }

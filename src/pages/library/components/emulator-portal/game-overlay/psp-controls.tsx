@@ -65,7 +65,7 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 150 points wide, and 450 tall in portrait; they shrink on smaller screens. Sideways the
   // game fills the screen's height, under the top bar, and the controls sit over its edges: they keep the size they had
   // when the game was kept below the bar, rather than shrinking to stay clear of it
-  const scale = useControlsScale(150, 480 / 272, 450, topBarHeight)
+  const scale = useControlsScale(150, 480 / 272, { gameTop: topBarHeight, portraitHeight: 450 })
   // In landscape each side is centred in the height below the top bar; its tallest part, L or R, tops out at 336 points
   const side = { '--controls-height': `${336 * scale}px`, scale } as CSSProperties
 

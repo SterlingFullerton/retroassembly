@@ -13,14 +13,16 @@ if (isBrowser()) {
 const pressable =
   "a[href], button, [role='button'], [role='tab'], [role='combobox'], [role='menuitem'], [role='option'], summary"
 
-if (isBrowser()) {
-  let pressed: HTMLElement | undefined
-  function release() {
-    if (pressed) {
-      delete pressed.dataset.pressed
-    }
-    pressed = undefined
+let pressed: HTMLElement | undefined
+
+function release() {
+  if (pressed) {
+    delete pressed.dataset.pressed
   }
+  pressed = undefined
+}
+
+if (isBrowser()) {
   document.addEventListener(
     'pointerdown',
     (event) => {

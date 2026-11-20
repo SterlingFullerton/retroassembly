@@ -27,7 +27,7 @@ function getCorners(element: Element) {
   const { borderBottomLeftRadius, borderBottomRightRadius, borderTopLeftRadius, borderTopRightRadius } =
     getComputedStyle(element)
   const corners = [borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius]
-  return corners.some((corner) => Number.parseFloat(corner) > 0) ? corners.join(' ') : undefined
+  return corners.some((corner) => corner !== '0px') ? corners.join(' ') : undefined
 }
 
 /**
@@ -37,7 +37,7 @@ function getCorners(element: Element) {
  */
 function getFocusCorners(box: Element, rect: DOMRect) {
   let level: Element[] = [box]
-  for (let depth = 0; depth < 4 && level.length > 0; depth++) {
+  for (let depth = 0; depth < 4 && level.length > 0; depth += 1) {
     for (const element of level) {
       const inner = element.getBoundingClientRect()
       const fills = Math.abs(inner.width - rect.width) <= 2 && Math.abs(inner.height - rect.height) <= 2
@@ -46,7 +46,11 @@ function getFocusCorners(box: Element, rect: DOMRect) {
         return corners
       }
     }
-    level = level.flatMap((element) => [...element.children])
+    const next: Element[] = []
+    for (const element of level) {
+      next.push(...element.children)
+    }
+    level = next
   }
   const picture = box.querySelector('img, video')
   return (picture && getCorners(picture)) || 'var(--radius-2)'

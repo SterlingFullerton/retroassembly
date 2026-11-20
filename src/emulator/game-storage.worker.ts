@@ -3,6 +3,15 @@
 // - store: downloads a game straight into storage, so the whole game is never in memory, reporting its progress
 // - read: answers the emulator's reads of the game, as they come, through memory shared with the page
 
+import { attemptAsync } from 'es-toolkit'
+import {
+  dataOffset,
+  type ReadMessage,
+  readState,
+  type StoreMessage,
+  type WorkerReply,
+} from './game-storage-protocol.ts'
+
 interface SyncAccessHandle {
   close: () => void
   flush: () => void
@@ -11,14 +20,6 @@ interface SyncAccessHandle {
   truncate: (size: number) => void
   write: (buffer: Uint8Array, options: { at: number }) => number
 }
-
-import {
-  dataOffset,
-  type ReadMessage,
-  readState,
-  type StoreMessage,
-  type WorkerReply,
-} from './game-storage-protocol.ts'
 
 async function openHandle(name: string, create: boolean) {
   const root = await navigator.storage.getDirectory()
@@ -95,9 +96,13 @@ async function read({ buffer, name }: ReadMessage) {
   }
 }
 
-addEventListener('message', (event: MessageEvent<ReadMessage | StoreMessage>) => {
-  const job = event.data.type === 'store' ? store(event.data) : read(event.data)
-  job.catch((error: unknown) => {
+async function handle(message: ReadMessage | StoreMessage) {
+  const [error] = await attemptAsync(() => (message.type === 'store' ? store(message) : read(message)))
+  if (error) {
     reply({ error: error instanceof Error ? `${error.name}: ${error.message}` : String(error), type: 'error' })
-  })
+  }
+}
+
+addEventListener('message', (event: MessageEvent<ReadMessage | StoreMessage>) => {
+  queueMicrotask(() => handle(event.data))
 })

@@ -24,7 +24,7 @@ export default function LibraryROMsPage() {
       // While searching, how many match is above the results instead
       phoneSummary={
         search ? (
-          <></>
+          <span />
         ) : (
           t('home.gameCount', { count: pagination.total, formatted: pagination.total.toLocaleString(i18n.language) })
         )

@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { noop } from 'es-toolkit'
+import { attemptAsync } from 'es-toolkit'
 import { type KeyboardEvent, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from 'react-router'
@@ -31,7 +31,7 @@ export function SearchField() {
 
   const applyTyped = useEffectEvent((value: string) => {
     if (normalizeSearch(value) !== query) {
-      apply(value).catch(noop)
+      queueMicrotask(() => attemptAsync(() => apply(value)))
     }
   })
   useEffect(() => {
@@ -150,7 +150,7 @@ export function useSearchShortcut() {
       if (isLargeScreen) {
         focus(`input[name="${fieldName}"]`)
       } else {
-        openPhoneSearch().catch(noop)
+        queueMicrotask(() => attemptAsync(openPhoneSearch))
       }
     }
     globalThis.addEventListener('keydown', handleKeyDown)
