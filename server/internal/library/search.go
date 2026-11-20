@@ -48,10 +48,11 @@ func FindSearchMatches(ctx context.Context, scope Scope, narrow SearchScope, que
 	if narrow.Favorite {
 		where += ` AND favorites.id IS NOT NULL`
 	}
-	// Only what ranking needs is read for every game
+	// Only what matching needs is read for every game. How many people rated each, read from its LaunchBox data, is read
+	// for the matches alone, to sort them
 	rows, err := scope.Database.QueryContext(ctx, `
 		SELECT roms.file_name, roms.game_developer, roms.game_name, roms.game_publisher, roms.game_title, roms.id,
-			favorites.id IS NOT NULL, roms.platform, `+ratingCount+`
+			favorites.id IS NOT NULL, roms.platform
 		FROM roms `+favoriteJoin()+` WHERE `+where, arguments...)
 	if err != nil {
 		return nil, 0, err
@@ -62,22 +63,57 @@ func FindSearchMatches(ctx context.Context, scope Scope, narrow SearchScope, que
 		var (
 			candidate                                 search.Candidate
 			developer, gameName, publisher, gameTitle sql.NullString
-			popularity                                any
 		)
 		if err := rows.Scan(&candidate.FileName, &developer, &gameName, &publisher, &gameTitle, &candidate.ID,
-			&candidate.IsFavorite, &candidate.Platform, &popularity); err != nil {
+			&candidate.IsFavorite, &candidate.Platform); err != nil {
 			return nil, 0, err
 		}
 		candidate.GameDeveloper, candidate.GameName = nullString(developer), nullString(gameName)
 		candidate.GamePublisher, candidate.GameTitle = nullString(publisher), nullString(gameTitle)
-		candidate.Popularity = number(popularity)
 		candidate.Title = search.ShownTitle(candidate.GameTitle, candidate.Platform, candidate.GameName, candidate.FileName)
 		candidates = append(candidates, &candidate)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, err
 	}
-	return search.Rank(candidates, search.NormalizeQuery(query)), len(candidates), nil
+	rows.Close()
+	matches := search.Match(candidates, search.NormalizeQuery(query))
+	if err := readPopularity(ctx, scope, matches); err != nil {
+		return nil, 0, err
+	}
+	search.Sort(matches)
+	return matches, len(candidates), nil
+}
+
+// readPopularity reads how many people rated each match on LaunchBox
+func readPopularity(ctx context.Context, scope Scope, matches []*search.Candidate) error {
+	if len(matches) == 0 {
+		return nil
+	}
+	byID := make(map[string]*search.Candidate, len(matches))
+	ids := make([]string, len(matches))
+	for i, match := range matches {
+		byID[match.ID], ids[i] = match, match.ID
+	}
+	rows, err := scope.Database.QueryContext(ctx, `SELECT roms.id, `+ratingCount+` FROM roms
+		WHERE roms.id IN (SELECT value FROM json_each(?))`, string(mustJSON(ids)))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			id         string
+			popularity any
+		)
+		if err := rows.Scan(&id, &popularity); err != nil {
+			return err
+		}
+		if match := byID[id]; match != nil {
+			match.Popularity = number(popularity)
+		}
+	}
+	return rows.Err()
 }
 
 // SearchPage is a page of the games matching a search, as the quick search shows them

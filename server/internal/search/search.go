@@ -4,9 +4,11 @@
 package search
 
 import (
+	"bytes"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf16"
 
@@ -59,6 +61,10 @@ func NormalizeText(text string) string {
 
 // Title is a file's name as the library shows it: no extension, region or other tags in brackets
 func Title(fileName string) string {
+	return titles.get(fileName, title)
+}
+
+func title(fileName string) string {
 	base := extension.ReplaceAllString(fileName, "")
 	if title := jsTrim(bracketedTags.ReplaceAllString(base, "")); title != "" {
 		return title
@@ -74,14 +80,22 @@ var romanNumerals = map[string]string{
 type prepared struct {
 	compact  string
 	initials string
-	text     string
-	words    []string
+	// The text with a space before it, to find the words typed at the start of one of its words
+	spaced string
+	text   string
+	words  []string
 }
 
+// prepare is a name ready to be compared with what's typed. A search compares every game's names, so each is prepared
+// once and kept: the result depends on the text alone
 func prepare(text string) *prepared {
 	if text == "" {
 		return nil
 	}
+	return preparedNames.get(text, prepareText)
+}
+
+func prepareText(text string) *prepared {
 	// "Legend of Zelda, The - A Link to the Past" is read as "The Legend of Zelda - A Link to the Past"
 	normalized := NormalizeText(trailingArticle.ReplaceAllString(text, "$2 $1"))
 	if normalized == "" {
@@ -104,7 +118,10 @@ func prepare(text string) *prepared {
 			initials.WriteString(string(utf16.Decode(utf16.Encode([]rune(word))[:1])))
 		}
 	}
-	return &prepared{compact: strings.ReplaceAll(normalized, " ", ""), initials: initials.String(), text: normalized, words: all}
+	return &prepared{
+		compact: strings.ReplaceAll(normalized, " ", ""), initials: initials.String(), spaced: " " + normalized,
+		text: normalized, words: all,
+	}
 }
 
 // Tiers of how a name matches. Within a tier, better-known games come first
@@ -113,7 +130,7 @@ func scoreText(target, query *prepared) int {
 		return 100
 	}
 	// The words typed, together, at the start of a word of the name
-	if strings.Contains(" "+target.text, " "+query.text) {
+	if strings.Contains(target.spaced, query.spaced) {
 		return 80
 	}
 	// Every word typed starts a word of the name, in any order
@@ -158,10 +175,14 @@ type Game struct {
 // Score is how well a game matches a search, from 0 (not at all) to 100 (its exact name). Its name counts most; the
 // developer or publisher only when every word typed is found there
 func Score(game Game, query string) int {
-	preparedQuery := prepare(query)
+	preparedQuery := prepareText(query)
 	if preparedQuery == nil {
 		return 0
 	}
+	return score(game, preparedQuery)
+}
+
+func score(game Game, preparedQuery *prepared) int {
 	fileTitle := ""
 	if game.FileName != "" {
 		fileTitle = Title(game.FileName)
@@ -218,24 +239,51 @@ func ShownTitle(gameTitle, platform, gameName, fileName string) string {
 	return Title(fileName)
 }
 
-var collator = collate.New(language.Und)
+// A collator sorts as the browser's localeCompare does. One isn't safe to share between searches running at once, so
+// each search takes its own from these
+var collators = sync.Pool{New: func() any { return collate.New(language.Und) }}
 
-// Rank is the candidates that match a search, best first. Short searches like "ff" would match nearly anything by
-// typo, so only searches of more than 3 letters fall back to it, and only when no name has every word typed
+// Rank is the candidates that match a search, best first
 func Rank(candidates []*Candidate, query string) []*Candidate {
+	matches := Match(candidates, query)
+	Sort(matches)
+	return matches
+}
+
+// Match is the candidates that match a search, scored but in no order. Short searches like "ff" would match nearly
+// anything by typo, so only searches of more than 3 letters fall back to it, and only when no name has every word typed
+func Match(candidates []*Candidate, query string) []*Candidate {
 	var matches []*Candidate
-	for _, candidate := range candidates {
-		candidate.score = float64(Score(candidate.Game, query))
-		if candidate.score > 0 {
-			matches = append(matches, candidate)
+	if preparedQuery := prepareText(query); preparedQuery != nil {
+		for _, candidate := range candidates {
+			candidate.score = float64(score(candidate.Game, preparedQuery))
+			if candidate.score > 0 {
+				matches = append(matches, candidate)
+			}
 		}
 	}
 	if len(matches) == 0 && length(strings.ReplaceAll(query, " ", "")) > 3 {
 		matches = fuzzy(candidates, query)
 	}
-	// Best match first; among equals, favorites, then games more people have rated (so the well-known games come before
-	// hacks and demos with similar names), then the shortest name (the game itself before its spin-offs), then
-	// alphabetical, which keeps a game's regional versions together
+	return matches
+}
+
+// Sort puts matches in order once their popularity is known: best match first; among equals, favorites, then games more
+// people have rated (so the well-known games come before hacks and demos with similar names), then the shortest name
+// (the game itself before its spin-offs), then alphabetical, which keeps a game's regional versions together
+func Sort(matches []*Candidate) {
+	// Each name's sort key is made once, rather than at every comparison
+	collator := collators.Get().(*collate.Collator)
+	defer collators.Put(collator)
+	var buffer collate.Buffer
+	sortKeys := make(map[*Candidate][]byte, len(matches))
+	for _, match := range matches {
+		sortKeys[match] = collator.KeyFromString(&buffer, match.FileName)
+	}
+	titleLengths := make(map[*Candidate]int, len(matches))
+	for _, match := range matches {
+		titleLengths[match] = length(match.Title)
+	}
 	sort.SliceStable(matches, func(i, j int) bool {
 		a, b := matches[i], matches[j]
 		if a.score != b.score {
@@ -247,10 +295,9 @@ func Rank(candidates []*Candidate, query string) []*Candidate {
 		if a.Popularity != b.Popularity {
 			return a.Popularity > b.Popularity
 		}
-		if la, lb := length(a.Title), length(b.Title); la != lb {
+		if la, lb := titleLengths[a], titleLengths[b]; la != lb {
 			return la < lb
 		}
-		return collator.CompareString(a.FileName, b.FileName) < 0
+		return bytes.Compare(sortKeys[a], sortKeys[b]) < 0
 	})
-	return matches
 }

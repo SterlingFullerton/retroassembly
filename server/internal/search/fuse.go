@@ -2,6 +2,7 @@ package search
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"unicode/utf16"
@@ -45,8 +46,17 @@ func fieldNorm(text []uint16) float64 {
 }
 
 type chunk struct {
+	// Where each character of the pattern is, as bits: ASCII looked up directly, the rest in a map
+	ascii    [128]int32
 	alphabet map[uint16]int32
 	pattern  []uint16
+}
+
+func (c *chunk) mask(unit uint16) int32 {
+	if unit < 128 {
+		return c.ascii[unit]
+	}
+	return c.alphabet[unit]
 }
 
 type bitap struct {
@@ -61,11 +71,16 @@ func newBitap(query string) bitap {
 		return b
 	}
 	add := func(part []uint16) {
-		alphabet := map[uint16]int32{}
+		c := chunk{alphabet: map[uint16]int32{}, pattern: part}
 		for i, unit := range part {
-			alphabet[unit] |= int32(1) << (len(part) - i - 1)
+			bit := int32(1) << (len(part) - i - 1)
+			if unit < 128 {
+				c.ascii[unit] |= bit
+			} else {
+				c.alphabet[unit] |= bit
+			}
 		}
-		b.chunks = append(b.chunks, chunk{alphabet: alphabet, pattern: part})
+		b.chunks = append(b.chunks, c)
 	}
 	if len(pattern) > fuseMaxBits {
 		remainder := len(pattern) % fuseMaxBits
@@ -99,7 +114,21 @@ func indexOf(text, pattern []uint16, from int) int {
 }
 
 // bitapSearch is Fuse's search of one chunk of the pattern in a text, location ignored
-func bitapSearch(text []uint16, c chunk) (bool, float64) {
+// The two rows of bits a search works with, reused from one name to the next rather than made for every step
+type bitRows [2][]int32
+
+func (r *bitRows) row(i, size int) []int32 {
+	row := r[i%2]
+	if cap(row) < size {
+		row = make([]int32, size)
+	}
+	row = row[:size]
+	clear(row)
+	r[i%2] = row
+	return row
+}
+
+func bitapSearch(text []uint16, c *chunk, rows *bitRows) (bool, float64) {
 	pattern := c.pattern
 	patternLen, textLen := len(pattern), len(text)
 	expectedLocation := 0
@@ -134,13 +163,13 @@ func bitapSearch(text []uint16, c chunk) (bool, float64) {
 		binMax = binMid
 		start := max(1, expectedLocation-binMid+1)
 		finish := min(expectedLocation+binMid, textLen) + patternLen
-		bitArr := make([]int32, finish+2)
+		bitArr := rows.row(i, finish+2)
 		bitArr[finish+1] = (int32(1) << i) - 1
 		for j := finish; j >= start; j-- {
 			currentLocation := j - 1
 			var charMatch int32
 			if currentLocation < textLen {
-				charMatch = c.alphabet[text[currentLocation]]
+				charMatch = c.mask(text[currentLocation])
 			}
 			bitArr[j] = (bitArr[j+1]<<1 | 1) & charMatch
 			if i > 0 {
@@ -166,15 +195,27 @@ func bitapSearch(text []uint16, c chunk) (bool, float64) {
 	return bestLocation >= 0, math.Max(0.001, finalScore)
 }
 
-// searchIn is how well the pattern matches a text: whether it does, and Fuse's score (0 is exact, 1 none)
-func (b bitap) searchIn(text string) (bool, float64) {
-	lower := units(strings.ToLower(text))
-	if string(utf16.Decode(lower)) == string(utf16.Decode(b.pattern)) {
+// fuseText is a name as Fuse compares it: lowercase, in UTF-16 code units, and how much its length weighs
+type fuseText struct {
+	lower []uint16
+	norm  float64
+}
+
+func newFuseText(text string) fuseText {
+	return fuseText{lower: units(strings.ToLower(text)), norm: fieldNorm(units(text))}
+}
+
+var fuseTexts cache[fuseText]
+
+// searchIn is how well the pattern matches a text: whether it does, and Fuse's score (0 is exact, 1 none). Equal texts
+// are compared as JavaScript compares strings, by code unit
+func (b bitap) searchIn(text fuseText, rows *bitRows) (bool, float64) {
+	if slices.Equal(text.lower, b.pattern) {
 		return true, 0
 	}
 	total, matched := 0.0, false
-	for _, c := range b.chunks {
-		isMatch, score := bitapSearch(lower, c)
+	for i := range b.chunks {
+		isMatch, score := bitapSearch(text.lower, &b.chunks[i], rows)
 		if isMatch {
 			matched = true
 		}
@@ -195,6 +236,7 @@ type fuseResult struct {
 // fuzzy is the candidates Fuse finds for the query, best first, each with a score of 20 for an exact match down to 0
 func fuzzy(candidates []*Candidate, query string) []*Candidate {
 	searcher := newBitap(query)
+	var rows bitRows
 	var results []fuseResult
 	for index, candidate := range candidates {
 		total, matched := 1.0, false
@@ -202,7 +244,8 @@ func fuzzy(candidates []*Candidate, query string) []*Candidate {
 			if strings.TrimSpace(value) == "" {
 				continue
 			}
-			isMatch, score := searcher.searchIn(value)
+			text := fuseTexts.get(value, newFuseText)
+			isMatch, score := searcher.searchIn(text, &rows)
 			if !isMatch {
 				continue
 			}
@@ -211,7 +254,7 @@ func fuzzy(candidates []*Candidate, query string) []*Candidate {
 			if score == 0 {
 				base = 2.220446049250313e-16 // Number.EPSILON
 			}
-			total *= math.Pow(base, fuseKeyWeight*fieldNorm(units(value)))
+			total *= math.Pow(base, fuseKeyWeight*text.norm)
 		}
 		if matched {
 			results = append(results, fuseResult{candidate: candidate, index: index, score: total})
