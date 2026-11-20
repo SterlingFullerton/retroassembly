@@ -15,6 +15,7 @@ import { repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
 import { fonts } from '#@/utils/isomorphic/fonts.ts'
 import { dateFormatMap, defaultLanguage } from '#@/utils/isomorphic/i18n.ts'
 import { getFixedPrefetchUrls } from '#@/utils/server/cdn-prefetch.ts'
+import { gameInfoPlatforms } from '#@/utils/server/game-info/platforms.ts'
 
 // The messages the server writes itself: its errors, the titles of pages, and why logging in with OIDC failed
 const serverMessages = new Set([
@@ -71,6 +72,10 @@ export function getGoSharedData() {
     defaultLanguage,
     // The settings a user starts with, before their own (src/constants/preference.ts)
     defaultPreference,
+    // The file extensions each console's games may have, for checking uploads
+    fileExtensions: Object.fromEntries(platforms.map(({ fileExtensions, name }) => [name, fileExtensions])),
+    // Each console's names in the game info database (src/utils/server/game-info/platforms.ts)
+    gameInfoPlatforms,
     // The languages, in order, with the messages the server writes in each (src/locales)
     languages: locales.map(({ code, translation }) => ({
       code,

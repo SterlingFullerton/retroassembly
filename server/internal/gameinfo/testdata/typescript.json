@@ -1,0 +1,2332 @@
+{
+  "again": [
+    {
+      "input": {
+        "fileName": "Castlevania (U) (PRG1) [!].nes",
+        "libretroName": "Castlevania (USA) (Rev 1)",
+        "platform": "nes"
+      },
+      "result": {
+        "communityRating": null,
+        "communityRatingCount": null,
+        "compactName": "castlevania",
+        "cooperative": false,
+        "databaseId": 4,
+        "developer": null,
+        "dos": null,
+        "esrb": null,
+        "genres": null,
+        "goodcodesBaseCompactName": "castlevania",
+        "maxPlayers": null,
+        "name": "Castlevania",
+        "overview": null,
+        "platform": "Nintendo Entertainment System",
+        "publisher": null,
+        "releaseDate": null,
+        "releaseType": null,
+        "releaseYear": "1987",
+        "setupFile": null,
+        "setupMd5": null,
+        "startupFile": null,
+        "startupMd5": null,
+        "startupParameters": null,
+        "steamAppId": null,
+        "videoUrl": null,
+        "wikipediaUrl": null
+      }
+    },
+    {
+      "input": {
+        "fileName": "Donkey Kong Country (USA).sfc",
+        "libretroName": "Donkey Kong Country (USA) (Rev 2)",
+        "platform": "snes"
+      },
+      "result": {
+        "communityRating": null,
+        "communityRatingCount": null,
+        "compactName": "donkeykongcountry",
+        "cooperative": null,
+        "databaseId": 7,
+        "developer": null,
+        "dos": null,
+        "esrb": null,
+        "genres": null,
+        "goodcodesBaseCompactName": "donkeykongcountry",
+        "maxPlayers": 2,
+        "name": "Donkey Kong Country",
+        "overview": null,
+        "platform": "Super Nintendo Entertainment System",
+        "publisher": null,
+        "releaseDate": null,
+        "releaseType": null,
+        "releaseYear": null,
+        "setupFile": null,
+        "setupMd5": null,
+        "startupFile": null,
+        "startupMd5": null,
+        "startupParameters": null,
+        "steamAppId": null,
+        "videoUrl": null,
+        "wikipediaUrl": null
+      }
+    },
+    {
+      "input": {
+        "fileName": "Super Mario Land.gb",
+        "libretroName": "Super Mario Land (World) (Rev A)",
+        "platform": "gb"
+      },
+      "result": {
+        "communityRating": null,
+        "communityRatingCount": null,
+        "compactName": "supermarioland",
+        "cooperative": null,
+        "databaseId": 8,
+        "developer": null,
+        "dos": null,
+        "esrb": null,
+        "genres": null,
+        "goodcodesBaseCompactName": "supermarioland",
+        "maxPlayers": null,
+        "name": "Super Mario Land",
+        "overview": null,
+        "platform": "Nintendo Game Boy",
+        "publisher": null,
+        "releaseDate": null,
+        "releaseType": null,
+        "releaseYear": null,
+        "setupFile": null,
+        "setupMd5": null,
+        "startupFile": null,
+        "startupMd5": null,
+        "startupParameters": null,
+        "steamAppId": null,
+        "videoUrl": null,
+        "wikipediaUrl": null
+      }
+    },
+    {
+      "input": {
+        "fileName": "Only In Libretro (USA).nes",
+        "libretroName": "Only In Libretro (USA)",
+        "platform": "nes"
+      },
+      "result": null
+    },
+    {
+      "input": {
+        "fileName": ".nes",
+        "platform": "nes"
+      },
+      "result": null
+    }
+  ],
+  "lookups": [
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "whatever.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": 4.5,
+            "communityRatingCount": 120,
+            "compactName": "thelegendofzelda",
+            "cooperative": null,
+            "databaseId": 2,
+            "developer": "Nintendo",
+            "dos": null,
+            "esrb": null,
+            "genres": "Action;Adventure",
+            "goodcodesBaseCompactName": "thelegendofzelda",
+            "maxPlayers": 1,
+            "name": "The Legend of Zelda",
+            "overview": "Link & <Zelda>",
+            "platform": "Nintendo Entertainment System",
+            "publisher": "Nintendo",
+            "releaseDate": "1987-08-22T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "legendofzeldatheusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "legendofzeldathe",
+            "id": "zelda",
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "Legend of Zelda, The (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": null,
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Legend of Zelda, The (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Adventures of Lolo 3 (USA).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "adventuresoflolo3",
+            "cooperative": true,
+            "databaseId": 1,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": "Puzzle; Action ",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "maxPlayers": 1,
+            "name": "Adventures of Lolo 3",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": "1990-09-28T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "1990",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "adventuresoflolo3usa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "id": "lolo-us",
+            "md5": null,
+            "name": "Adventures of Lolo 3 (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Adventures of Lolo 3 (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Adventures of Lolo 3 (U).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "adventuresoflolo3",
+            "cooperative": true,
+            "databaseId": 1,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": "Puzzle; Action ",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "maxPlayers": 1,
+            "name": "Adventures of Lolo 3",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": "1990-09-28T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "1990",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "adventuresoflolo3usa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "id": "lolo-us",
+            "md5": null,
+            "name": "Adventures of Lolo 3 (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Adventures of Lolo 3 (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Adventures of Lolo 3 (E).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "adventuresoflolo3",
+            "cooperative": true,
+            "databaseId": 1,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": "Puzzle; Action ",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "maxPlayers": 1,
+            "name": "Adventures of Lolo 3",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": "1990-09-28T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "1990",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "adventuresoflolo3europe",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "id": "lolo-eu",
+            "md5": null,
+            "name": "Adventures of Lolo 3 (Europe)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Adventures of Lolo 3 (Europe).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "adventures of lolo 3.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "adventuresoflolo3",
+            "cooperative": true,
+            "databaseId": 1,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": "Puzzle; Action ",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "maxPlayers": 1,
+            "name": "Adventures of Lolo 3",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": "1990-09-28T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "1990",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "adventuresoflolo3europe",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "id": "lolo-eu",
+            "md5": null,
+            "name": "Adventures of Lolo 3 (Europe)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Adventures of Lolo 3 (Europe).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Legend of Zelda, The (USA).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": 4.5,
+            "communityRatingCount": 120,
+            "compactName": "thelegendofzelda",
+            "cooperative": null,
+            "databaseId": 2,
+            "developer": "Nintendo",
+            "dos": null,
+            "esrb": null,
+            "genres": "Action;Adventure",
+            "goodcodesBaseCompactName": "thelegendofzelda",
+            "maxPlayers": 1,
+            "name": "The Legend of Zelda",
+            "overview": "Link & <Zelda>",
+            "platform": "Nintendo Entertainment System",
+            "publisher": "Nintendo",
+            "releaseDate": "1987-08-22T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "legendofzeldatheusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "legendofzeldathe",
+            "id": "zelda",
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "Legend of Zelda, The (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": null,
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Legend of Zelda, The (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Legend of Zelda, The (U) (PRG1) [!].nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": 4.5,
+            "communityRatingCount": 120,
+            "compactName": "thelegendofzelda",
+            "cooperative": null,
+            "databaseId": 2,
+            "developer": "Nintendo",
+            "dos": null,
+            "esrb": null,
+            "genres": "Action;Adventure",
+            "goodcodesBaseCompactName": "thelegendofzelda",
+            "maxPlayers": 1,
+            "name": "The Legend of Zelda",
+            "overview": "Link & <Zelda>",
+            "platform": "Nintendo Entertainment System",
+            "publisher": "Nintendo",
+            "releaseDate": "1987-08-22T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "legendofzeldatheusarev1",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "legendofzeldathe",
+            "id": "zelda-r1",
+            "md5": null,
+            "name": "Legend of Zelda, The (USA) (Rev 1)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": null,
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Legend of Zelda, The (USA) (Rev 1).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Castlevania (U) (PRG1) [!].nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "castlevania",
+            "cooperative": false,
+            "databaseId": 4,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "castlevania",
+            "maxPlayers": null,
+            "name": "Castlevania",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": "1987",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "castlevaniausarev1",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "castlevania",
+            "id": "cv-r1",
+            "md5": null,
+            "name": "Castlevania (USA) (Rev 1)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Castlevania (USA) (Rev 1).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Castlevania (U) [!].nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "castlevania",
+            "cooperative": false,
+            "databaseId": 4,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "castlevania",
+            "maxPlayers": null,
+            "name": "Castlevania",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": "1987",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "castlevaniausa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "castlevania",
+            "id": "cv",
+            "md5": null,
+            "name": "Castlevania (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Castlevania (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Tetris.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "tetris",
+            "cooperative": null,
+            "databaseId": 9,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "tetris",
+            "maxPlayers": null,
+            "name": "Tetris",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": "1989",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "tetrisusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "tetris",
+            "id": "tetris",
+            "md5": null,
+            "name": "Tetris (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Tetris (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Fear Effect 2 - Retro Helix (USA) (Disc 4).cue"
+          }
+        ],
+        "platform": "psx"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "feareffect2retrohelix",
+            "cooperative": null,
+            "databaseId": 5,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "feareffect2retrohelix",
+            "maxPlayers": 1,
+            "name": "Fear Effect 2: Retro Helix",
+            "overview": null,
+            "platform": "Sony Playstation",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "feareffect2retrohelixusadisc4rev1",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "feareffect2retrohelix",
+            "id": "ff2-us4",
+            "md5": null,
+            "name": "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)",
+            "origin": null,
+            "platform": "Sony - PlayStation",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Fear Effect 2 - Retro Helix (USA) (Disc 3).cue"
+          }
+        ],
+        "platform": "psx"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "feareffect2retrohelix",
+            "cooperative": null,
+            "databaseId": 5,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "feareffect2retrohelix",
+            "maxPlayers": 1,
+            "name": "Fear Effect 2: Retro Helix",
+            "overview": null,
+            "platform": "Sony Playstation",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "feareffect2retrohelixusadisc3rev1",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "feareffect2retrohelix",
+            "id": "ff2-us3",
+            "md5": null,
+            "name": "Fear Effect 2 - Retro Helix (USA) (Disc 3) (Rev 1)",
+            "origin": null,
+            "platform": "Sony - PlayStation",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Fear Effect 2 - Retro Helix (USA) (Disc 3) (Rev 1).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "sf2.zip"
+          }
+        ],
+        "platform": "arcade"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "streetfighteriitheworldwarrior",
+            "cooperative": null,
+            "databaseId": 6,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "streetfighteriitheworldwarrior",
+            "maxPlayers": 2,
+            "name": "Street Fighter II: The World Warrior",
+            "overview": null,
+            "platform": "Arcade",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": "1991",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "streetfighteriitheworldwarriorworld910522",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "streetfighteriitheworldwarrior",
+            "id": "sf2",
+            "md5": null,
+            "name": "Street Fighter II - The World Warrior (World 910522)",
+            "origin": null,
+            "platform": "MAME 2003-Plus",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": 1991,
+            "romName": "sf2.zip",
+            "sha1": null,
+            "size": null,
+            "users": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Street Fighter II.zip"
+          }
+        ],
+        "platform": "arcade"
+      },
+      "result": [
+        {
+          "launchbox": null,
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Donkey Kong Country (USA).sfc"
+          }
+        ],
+        "platform": "snes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "donkeykongcountry",
+            "cooperative": null,
+            "databaseId": 7,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "donkeykongcountry",
+            "maxPlayers": 2,
+            "name": "Donkey Kong Country",
+            "overview": null,
+            "platform": "Super Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "donkeykongcountryusarev2",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "donkeykongcountry",
+            "id": "dkc",
+            "md5": null,
+            "name": "Donkey Kong Country (USA) (Rev 2)",
+            "origin": null,
+            "platform": "Nintendo - Super Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Donkey Kong Country (USA) (Rev 2).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "aaaa1111",
+            "name": "land.gb"
+          }
+        ],
+        "platform": "gb"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "supermarioland",
+            "cooperative": null,
+            "databaseId": 8,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "supermarioland",
+            "maxPlayers": null,
+            "name": "Super Mario Land",
+            "overview": null,
+            "platform": "Nintendo Game Boy",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "supermariolandworldreva",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "supermarioland",
+            "id": "marioland",
+            "md5": "aaaa1111",
+            "name": "Super Mario Land (World) (Rev A)",
+            "origin": null,
+            "platform": "Nintendo - Game Boy",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Super Mario Land (World) (Rev A).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Rockman 2 - Dr. Wily no Nazo (Japan).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "megaman2",
+            "cooperative": null,
+            "databaseId": 10,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "megaman2",
+            "maxPlayers": null,
+            "name": "Mega Man 2",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Lolo 3.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "adventuresoflolo3",
+            "cooperative": true,
+            "databaseId": 1,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": "Puzzle; Action ",
+            "goodcodesBaseCompactName": "adventuresoflolo3",
+            "maxPlayers": 1,
+            "name": "Adventures of Lolo 3",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": "1990-09-28T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "1990",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Mega Man 2 (USA).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "megaman2",
+            "cooperative": null,
+            "databaseId": 10,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "megaman2",
+            "maxPlayers": null,
+            "name": "Mega Man 2",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Only In Libretro (USA).nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": null,
+          "libretro": {
+            "compactName": "onlyinlibretrousa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "onlyinlibretro",
+            "id": "lonely",
+            "md5": null,
+            "name": "Only In Libretro (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Only In Libretro (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Nothing Like It.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": null,
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Castlevania: Order of Ecclesia.nds"
+          }
+        ],
+        "platform": "nds"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "castlevaniaorderofecclesia",
+            "cooperative": null,
+            "databaseId": 3,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "castlevaniaorderofecclesia",
+            "maxPlayers": null,
+            "name": "Castlevania: Order of Ecclesia",
+            "overview": null,
+            "platform": "Nintendo DS",
+            "publisher": null,
+            "releaseDate": "2008-10-21T03:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": "not a year",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Tetris.nes"
+          }
+        ],
+        "platform": "nowhere"
+      },
+      "result": [
+        {
+          "launchbox": null,
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": ".nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": null,
+          "libretro": null
+        }
+      ]
+    },
+    {
+      "input": {
+        "files": [
+          {
+            "md5": "",
+            "name": "Tetris (USA).nes"
+          },
+          {
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "x.nes"
+          },
+          {
+            "md5": "",
+            "name": "nope.nes"
+          }
+        ],
+        "platform": "nes"
+      },
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": null,
+            "communityRatingCount": null,
+            "compactName": "tetris",
+            "cooperative": null,
+            "databaseId": 9,
+            "developer": null,
+            "dos": null,
+            "esrb": null,
+            "genres": null,
+            "goodcodesBaseCompactName": "tetris",
+            "maxPlayers": null,
+            "name": "Tetris",
+            "overview": null,
+            "platform": "Nintendo Entertainment System",
+            "publisher": null,
+            "releaseDate": null,
+            "releaseType": null,
+            "releaseYear": "1989",
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "tetrisusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "tetris",
+            "id": "tetris",
+            "md5": null,
+            "name": "Tetris (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Tetris (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        },
+        {
+          "launchbox": {
+            "communityRating": 4.5,
+            "communityRatingCount": 120,
+            "compactName": "thelegendofzelda",
+            "cooperative": null,
+            "databaseId": 2,
+            "developer": "Nintendo",
+            "dos": null,
+            "esrb": null,
+            "genres": "Action;Adventure",
+            "goodcodesBaseCompactName": "thelegendofzelda",
+            "maxPlayers": 1,
+            "name": "The Legend of Zelda",
+            "overview": "Link & <Zelda>",
+            "platform": "Nintendo Entertainment System",
+            "publisher": "Nintendo",
+            "releaseDate": "1987-08-22T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "legendofzeldatheusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "legendofzeldathe",
+            "id": "zelda",
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "Legend of Zelda, The (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": null,
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Legend of Zelda, The (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        },
+        {
+          "launchbox": null,
+          "libretro": null
+        }
+      ]
+    }
+  ],
+  "names": [
+    {
+      "compactName": "supermariobros3",
+      "countries": [],
+      "goodcodesBase": "Super Mario Bros. 3",
+      "goodcodesBaseCompactName": "supermariobros3",
+      "name": "Super Mario Bros. 3",
+      "nameForLaunchbox": "Super Mario Bros. 3",
+      "restored": "Super Mario Bros. 3"
+    },
+    {
+      "compactName": "tetrisworld",
+      "countries": ["World"],
+      "goodcodesBase": "Tetris",
+      "goodcodesBaseCompactName": "tetris",
+      "name": "Tetris (World) [!]",
+      "nameForLaunchbox": "Tetris (World)",
+      "restored": "Tetris (World) [!]"
+    },
+    {
+      "compactName": "legendofzeldatheusa",
+      "countries": ["USA"],
+      "goodcodesBase": "Legend of Zelda, The",
+      "goodcodesBaseCompactName": "legendofzeldathe",
+      "name": "Legend of Zelda, The (USA)",
+      "nameForLaunchbox": "Legend of Zelda, The (USA)",
+      "restored": "The Legend of Zelda (USA)"
+    },
+    {
+      "compactName": "legendofzeldathealinktothepastusa",
+      "countries": ["USA"],
+      "goodcodesBase": "Legend of Zelda, The - A Link to the Past",
+      "goodcodesBaseCompactName": "legendofzeldathealinktothepast",
+      "name": "Legend of Zelda, The - A Link to the Past (USA)",
+      "nameForLaunchbox": "Legend of Zelda, The - A Link to the Past (USA)",
+      "restored": "The Legend of Zelda - A Link to the Past (USA)"
+    },
+    {
+      "compactName": "pokémonéditionrougefrance",
+      "countries": ["France"],
+      "goodcodesBase": "Pokémon - Édition Rouge",
+      "goodcodesBaseCompactName": "pokémonéditionrouge",
+      "name": "Pokémon - Édition Rouge (France)",
+      "nameForLaunchbox": "Pokémon - Édition Rouge (France)",
+      "restored": "Pokémon - Édition Rouge (France)"
+    },
+    {
+      "compactName": "streetfighteriichampioneditionusa",
+      "countries": ["USA"],
+      "goodcodesBase": "Street Fighter II' - Champion Edition",
+      "goodcodesBaseCompactName": "streetfighteriichampionedition",
+      "name": "Street Fighter II' - Champion Edition (USA)",
+      "nameForLaunchbox": "Street Fighter II' - Champion Edition (USA)",
+      "restored": "Street Fighter II' - Champion Edition (USA)"
+    },
+    {
+      "compactName": "megamanxuv11",
+      "countries": ["USA"],
+      "goodcodesBase": "Mega Man X",
+      "goodcodesBaseCompactName": "megamanx",
+      "name": "Mega Man X (U) (V1.1) [!]",
+      "nameForLaunchbox": "Mega Man X (U) (V1.1)",
+      "restored": "Mega Man X (U) (V1.1) [!]"
+    },
+    {
+      "compactName": "tetrisueh1",
+      "countries": ["USA", "Europe"],
+      "goodcodesBase": "Tetris",
+      "goodcodesBaseCompactName": "tetris",
+      "name": "Tetris (UE) [h1]",
+      "nameForLaunchbox": "Tetris (UE)",
+      "restored": "Tetris (UE) [h1]"
+    },
+    {
+      "compactName": "gameju",
+      "countries": ["Japan", "USA"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (JU)",
+      "nameForLaunchbox": "Game (JU)",
+      "restored": "Game (JU)"
+    },
+    {
+      "compactName": "gamejapankorea",
+      "countries": ["Japan", "Korea"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Japan, Korea)",
+      "nameForLaunchbox": "Game (Japan, Korea)",
+      "restored": "Game (Japan, Korea)"
+    },
+    {
+      "compactName": "gameusaeurope",
+      "countries": ["USA", "Europe"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (USA, Europe)",
+      "nameForLaunchbox": "Game (USA, Europe)",
+      "restored": "Game (USA, Europe)"
+    },
+    {
+      "compactName": "gameeuropeenfrde",
+      "countries": ["Europe"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Europe) (En,Fr,De)",
+      "nameForLaunchbox": "Game (Europe) (En,Fr,De)",
+      "restored": "Game (Europe) (En,Fr,De)"
+    },
+    {
+      "compactName": "gameuk",
+      "countries": ["United Kingdom"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (UK)",
+      "nameForLaunchbox": "Game (UK)",
+      "restored": "Game (UK)"
+    },
+    {
+      "compactName": "gameunl",
+      "countries": ["Unlicensed"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Unl)",
+      "nameForLaunchbox": "Game (Unl)",
+      "restored": "Game (Unl)"
+    },
+    {
+      "compactName": "gamepd",
+      "countries": ["Public domain"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (PD)",
+      "nameForLaunchbox": "Game (PD)",
+      "restored": "Game (PD)"
+    },
+    {
+      "compactName": "gamedisc4",
+      "countries": [],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Disc 4)",
+      "nameForLaunchbox": "Game (Disc 4)",
+      "restored": "Game (Disc 4)"
+    },
+    {
+      "compactName": "feareffect2retrohelixusadisc4rev1",
+      "countries": ["USA"],
+      "goodcodesBase": "Fear Effect 2 - Retro Helix",
+      "goodcodesBaseCompactName": "feareffect2retrohelix",
+      "name": "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)",
+      "nameForLaunchbox": "Fear Effect 2 - Retro Helix (USA) (Disc 4)",
+      "restored": "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)"
+    },
+    {
+      "compactName": "castlevaniauprg1",
+      "countries": ["USA"],
+      "goodcodesBase": "Castlevania",
+      "goodcodesBaseCompactName": "castlevania",
+      "name": "Castlevania (U) (PRG1) [!]",
+      "nameForLaunchbox": "Castlevania (U)",
+      "restored": "Castlevania (U) (PRG1) [!]"
+    },
+    {
+      "compactName": "vol2game",
+      "countries": [],
+      "goodcodesBase": "Vol.2 Game",
+      "goodcodesBaseCompactName": "vol2game",
+      "name": "Vol.2 Game",
+      "nameForLaunchbox": "Vol.2 Game",
+      "restored": "Vol.2 Game"
+    },
+    {
+      "compactName": "ysiiijapan",
+      "countries": ["Japan"],
+      "goodcodesBase": "Ys I & II",
+      "goodcodesBaseCompactName": "ysiii",
+      "name": "Ys I & II (Japan)",
+      "nameForLaunchbox": "Ys I & II (Japan)",
+      "restored": "Ys I & II (Japan)"
+    },
+    {
+      "compactName": "i̇stanbulοδυσσεύςgreece",
+      "countries": ["Greece"],
+      "goodcodesBase": "İstanbul Οδυσσεύς",
+      "goodcodesBaseCompactName": "i̇stanbulοδυσσεύς",
+      "name": "İstanbul Οδυσσεύς (Greece)",
+      "nameForLaunchbox": "İstanbul Οδυσσεύς (Greece)",
+      "restored": "İstanbul Οδυσσεύς (Greece)"
+    },
+    {
+      "compactName": "1942japanusa",
+      "countries": ["Japan", "USA"],
+      "goodcodesBase": "1942",
+      "goodcodesBaseCompactName": "1942",
+      "name": "1942 (Japan, USA)",
+      "nameForLaunchbox": "1942 (Japan, USA)",
+      "restored": "1942 (Japan, USA)"
+    },
+    {
+      "compactName": "athe",
+      "countries": [],
+      "goodcodesBase": "A, The",
+      "goodcodesBaseCompactName": "athe",
+      "name": "A, The",
+      "nameForLaunchbox": "A, The",
+      "restored": "The A"
+    },
+    {
+      "compactName": "gameansubtitle",
+      "countries": [],
+      "goodcodesBase": "Game, An - Subtitle",
+      "goodcodesBaseCompactName": "gameansubtitle",
+      "name": "Game, An - Subtitle",
+      "nameForLaunchbox": "Game, An - Subtitle",
+      "restored": "A Gamen - Subtitle"
+    },
+    {
+      "compactName": "gametheusa",
+      "countries": ["USA"],
+      "goodcodesBase": "Game,The",
+      "goodcodesBaseCompactName": "gamethe",
+      "name": "Game,The (USA)",
+      "nameForLaunchbox": "Game,The (USA)",
+      "restored": "The Game (USA)"
+    },
+    {
+      "compactName": "japanonlytags",
+      "countries": ["Japan"],
+      "goodcodesBase": "Only Tags",
+      "goodcodesBaseCompactName": "onlytags",
+      "name": "(Japan) Only Tags",
+      "nameForLaunchbox": "(Japan) Only Tags",
+      "restored": "(Japan) Only Tags"
+    },
+    {
+      "compactName": "gamehongkong",
+      "countries": ["Hong Kong"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Hong Kong)",
+      "nameForLaunchbox": "Game (Hong Kong)",
+      "restored": "Game (Hong Kong)"
+    },
+    {
+      "compactName": "gameueb",
+      "countries": ["USA", "Europe", "Brazil"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (UEB)",
+      "nameForLaunchbox": "Game (UEB)",
+      "restored": "Game (UEB)"
+    },
+    {
+      "compactName": "gamebetausa",
+      "countries": ["USA"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (Beta) (USA)",
+      "nameForLaunchbox": "Game (Beta) (USA)",
+      "restored": "Game (Beta) (USA)"
+    },
+    {
+      "compactName": "gameusabeta",
+      "countries": ["USA"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (USA) (Beta)",
+      "nameForLaunchbox": "Game (USA) (Beta)",
+      "restored": "Game (USA) (Beta)"
+    },
+    {
+      "compactName": "gamepal",
+      "countries": [],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (PAL)",
+      "nameForLaunchbox": "Game (PAL)",
+      "restored": "Game (PAL)"
+    },
+    {
+      "compactName": "gameuxj",
+      "countries": [],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game (UXJ)",
+      "nameForLaunchbox": "Game (UXJ)",
+      "restored": "Game (UXJ)"
+    },
+    {
+      "compactName": "gameteng10someonej",
+      "countries": ["Japan"],
+      "goodcodesBase": "Game",
+      "goodcodesBaseCompactName": "game",
+      "name": "Game [T+Eng1.0_Someone] (J)",
+      "nameForLaunchbox": "Game (J)",
+      "restored": "Game [T+Eng1.0_Someone] (J)"
+    }
+  ],
+  "queries": [
+    {
+      "conditions": [
+        {
+          "launchboxId": 2,
+          "libretroId": "zelda"
+        },
+        {
+          "launchboxId": null,
+          "libretroId": "sf2"
+        },
+        {
+          "launchboxId": 99,
+          "libretroId": "nope"
+        }
+      ],
+      "result": [
+        {
+          "launchbox": {
+            "communityRating": 4.5,
+            "communityRatingCount": 120,
+            "compactName": "thelegendofzelda",
+            "cooperative": null,
+            "databaseId": 2,
+            "developer": "Nintendo",
+            "dos": null,
+            "esrb": null,
+            "genres": "Action;Adventure",
+            "goodcodesBaseCompactName": "thelegendofzelda",
+            "maxPlayers": 1,
+            "name": "The Legend of Zelda",
+            "overview": "Link & <Zelda>",
+            "platform": "Nintendo Entertainment System",
+            "publisher": "Nintendo",
+            "releaseDate": "1987-08-22T00:00:00.000Z",
+            "releaseType": null,
+            "releaseYear": null,
+            "setupFile": null,
+            "setupMd5": null,
+            "startupFile": null,
+            "startupMd5": null,
+            "startupParameters": null,
+            "steamAppId": null,
+            "videoUrl": null,
+            "wikipediaUrl": null
+          },
+          "libretro": {
+            "compactName": "legendofzeldatheusa",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "legendofzeldathe",
+            "id": "zelda",
+            "md5": "337bd6f1a1163df31bf2633665589ab0",
+            "name": "Legend of Zelda, The (USA)",
+            "origin": null,
+            "platform": "Nintendo - Nintendo Entertainment System",
+            "publisher": null,
+            "releasemonth": null,
+            "releaseyear": null,
+            "romName": "Legend of Zelda, The (USA).nes",
+            "sha1": null,
+            "size": null,
+            "users": null
+          }
+        },
+        {
+          "libretro": {
+            "compactName": "streetfighteriitheworldwarriorworld910522",
+            "crc": null,
+            "description": null,
+            "developer": "HAL",
+            "esrbRating": null,
+            "franchise": null,
+            "genre": "Puzzle",
+            "goodcodesBaseCompactName": "streetfighteriitheworldwarrior",
+            "id": "sf2",
+            "md5": null,
+            "name": "Street Fighter II - The World Warrior (World 910522)",
+            "origin": null,
+            "platform": "MAME 2003-Plus",
+            "publisher": "Pub",
+            "releasemonth": null,
+            "releaseyear": 1991,
+            "romName": "sf2.zip",
+            "sha1": null,
+            "size": null,
+            "users": 2
+          }
+        },
+        {}
+      ]
+    },
+    {
+      "conditions": [
+        {
+          "launchboxId": null,
+          "libretroId": null
+        }
+      ],
+      "result": [{}]
+    }
+  ],
+  "schema": {
+    "indexes": "\nCREATE INDEX idx_launchbox_games_compact_name ON launchbox_games (compact_name);\nCREATE INDEX idx_launchbox_games_goodcodes_compact_name ON launchbox_games (goodcodes_base_compact_name);\nCREATE INDEX idx_launchbox_game_alternate_name_compact_name ON launchbox_game_alternate_names (compact_name);\nCREATE INDEX idx_libretro_games_md5 ON libretro_games (md5);\nCREATE INDEX idx_libretro_games_rom_name ON libretro_games (rom_name);\nCREATE INDEX idx_libretro_games_name ON libretro_games (name);\nCREATE INDEX idx_libretro_games_compact_name ON libretro_games (compact_name);\nCREATE INDEX idx_libretro_games_goodcodes_base_compact_name ON libretro_games (goodcodes_base_compact_name);\n",
+    "tables": "\nCREATE TABLE launchbox_games (\n  community_rating REAL, community_rating_count INTEGER, compact_name TEXT NOT NULL, cooperative INTEGER,\n  database_id INTEGER PRIMARY KEY NOT NULL, developer TEXT, dos TEXT, esrb TEXT, genres TEXT,\n  goodcodes_base_compact_name TEXT NOT NULL, max_players INTEGER, name TEXT NOT NULL, overview TEXT, platform TEXT,\n  publisher TEXT, release_date INTEGER, release_type TEXT, release_year TEXT, setup_file TEXT, setup_md5 TEXT,\n  startup_file TEXT, startup_md5 TEXT, startup_parameters TEXT, steam_app_id TEXT, video_url TEXT, wikipedia_url TEXT\n);\nCREATE TABLE launchbox_game_alternate_names (\n  alternate_name TEXT, compact_name TEXT, database_id INTEGER, id INTEGER PRIMARY KEY, region TEXT\n);\nCREATE TABLE libretro_games (\n  compact_name TEXT NOT NULL, crc TEXT, description TEXT, developer TEXT, esrb_rating TEXT, franchise TEXT, genre TEXT,\n  goodcodes_base_compact_name TEXT NOT NULL, id TEXT PRIMARY KEY NOT NULL, md5 TEXT, name TEXT, origin TEXT,\n  platform TEXT, publisher TEXT, releasemonth INTEGER, releaseyear INTEGER, rom_name TEXT, sha1 TEXT, size INTEGER,\n  users INTEGER\n);\n"
+  },
+  "statements": [
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "lolo-b2",
+        "Nintendo - Nintendo Entertainment System",
+        "Adventures of Lolo 3 (USA)[b2]",
+        "Adventures of Lolo 3 (USA)[b2].nes",
+        null,
+        "adventuresoflolo3usab2",
+        "adventuresoflolo3",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "lolo-tr",
+        "Nintendo - Nintendo Entertainment System",
+        "Adventures of Lolo 3 (USA)[tr it Clomax Dominion]",
+        "Adventures of Lolo 3 (USA)[tr it Clomax Dominion].nes",
+        null,
+        "adventuresoflolo3usatritclomaxdominion",
+        "adventuresoflolo3",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "lolo-eu",
+        "Nintendo - Nintendo Entertainment System",
+        "Adventures of Lolo 3 (Europe)",
+        "Adventures of Lolo 3 (Europe).nes",
+        null,
+        "adventuresoflolo3europe",
+        "adventuresoflolo3",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "lolo-us",
+        "Nintendo - Nintendo Entertainment System",
+        "Adventures of Lolo 3 (USA)",
+        "Adventures of Lolo 3 (USA).nes",
+        null,
+        "adventuresoflolo3usa",
+        "adventuresoflolo3",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "zelda",
+        "Nintendo - Nintendo Entertainment System",
+        "Legend of Zelda, The (USA)",
+        "Legend of Zelda, The (USA).nes",
+        "337bd6f1a1163df31bf2633665589ab0",
+        "legendofzeldatheusa",
+        "legendofzeldathe",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "zelda-r1",
+        "Nintendo - Nintendo Entertainment System",
+        "Legend of Zelda, The (USA) (Rev 1)",
+        "Legend of Zelda, The (USA) (Rev 1).nes",
+        null,
+        "legendofzeldatheusarev1",
+        "legendofzeldathe",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "cv",
+        "Nintendo - Nintendo Entertainment System",
+        "Castlevania (USA)",
+        "Castlevania (USA).nes",
+        null,
+        "castlevaniausa",
+        "castlevania",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "cv-r1",
+        "Nintendo - Nintendo Entertainment System",
+        "Castlevania (USA) (Rev 1)",
+        "Castlevania (USA) (Rev 1).nes",
+        null,
+        "castlevaniausarev1",
+        "castlevania",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "tetris-proto",
+        "Nintendo - Nintendo Entertainment System",
+        "Tetris (USA) (Proto)",
+        "Tetris (USA) (Proto).nes",
+        null,
+        "tetrisusaproto",
+        "tetris",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "tetris",
+        "Nintendo - Nintendo Entertainment System",
+        "Tetris (USA)",
+        "Tetris (USA).nes",
+        null,
+        "tetrisusa",
+        "tetris",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "ff2-d1",
+        "Sony - PlayStation",
+        "Fear Effect 2 - Retro Helix (Europe) (Disc 4)",
+        "Fear Effect 2 - Retro Helix (Europe) (Disc 4).nes",
+        null,
+        "feareffect2retrohelixeuropedisc4",
+        "feareffect2retrohelix",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "ff2-us4",
+        "Sony - PlayStation",
+        "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)",
+        "Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1).nes",
+        null,
+        "feareffect2retrohelixusadisc4rev1",
+        "feareffect2retrohelix",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "ff2-us3",
+        "Sony - PlayStation",
+        "Fear Effect 2 - Retro Helix (USA) (Disc 3) (Rev 1)",
+        "Fear Effect 2 - Retro Helix (USA) (Disc 3) (Rev 1).nes",
+        null,
+        "feareffect2retrohelixusadisc3rev1",
+        "feareffect2retrohelix",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "sf2",
+        "MAME 2003-Plus",
+        "Street Fighter II - The World Warrior (World 910522)",
+        "sf2.zip",
+        null,
+        "streetfighteriitheworldwarriorworld910522",
+        "streetfighteriitheworldwarrior",
+        "HAL",
+        "Puzzle",
+        1991,
+        2,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "sf2-fb",
+        "FBNeo - Arcade Games",
+        "Street Fighter II - The World Warrior (USA 910206)",
+        "sf2.zip",
+        null,
+        "streetfighteriitheworldwarriorusa910206",
+        "streetfighteriitheworldwarrior",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "dkc",
+        "Nintendo - Super Nintendo Entertainment System",
+        "Donkey Kong Country (USA) (Rev 2)",
+        "Donkey Kong Country (USA) (Rev 2).nes",
+        null,
+        "donkeykongcountryusarev2",
+        "donkeykongcountry",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "marioland",
+        "Nintendo - Game Boy",
+        "Super Mario Land (World) (Rev A)",
+        "Super Mario Land (World) (Rev A).nes",
+        "aaaa1111",
+        "supermariolandworldreva",
+        "supermarioland",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        "lonely",
+        "Nintendo - Nintendo Entertainment System",
+        "Only In Libretro (USA)",
+        "Only In Libretro (USA).nes",
+        null,
+        "onlyinlibretrousa",
+        "onlyinlibretro",
+        "HAL",
+        "Puzzle",
+        null,
+        null,
+        "Pub"
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, cooperative, genres, max_players, release_date, release_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        1,
+        "Nintendo Entertainment System",
+        "Adventures of Lolo 3",
+        "adventuresoflolo3",
+        "adventuresoflolo3",
+        1,
+        "Puzzle; Action ",
+        1,
+        654480000000,
+        "1990"
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, community_rating, community_rating_count, developer, genres, max_players, overview, publisher, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        2,
+        "Nintendo Entertainment System",
+        "The Legend of Zelda",
+        "thelegendofzelda",
+        "thelegendofzelda",
+        4.5,
+        120,
+        "Nintendo",
+        "Action;Adventure",
+        1,
+        "Link & <Zelda>",
+        "Nintendo",
+        556588800000
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, release_date, release_year) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        3,
+        "Nintendo DS",
+        "Castlevania: Order of Ecclesia",
+        "castlevaniaorderofecclesia",
+        "castlevaniaorderofecclesia",
+        1224558000000,
+        "not a year"
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, cooperative, release_year) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "values": [4, "Nintendo Entertainment System", "Castlevania", "castlevania", "castlevania", 0, "1987"]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, max_players) VALUES (?, ?, ?, ?, ?, ?)",
+      "values": [
+        5,
+        "Sony Playstation",
+        "Fear Effect 2: Retro Helix",
+        "feareffect2retrohelix",
+        "feareffect2retrohelix",
+        1
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, max_players, release_year) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "values": [
+        6,
+        "Arcade",
+        "Street Fighter II: The World Warrior",
+        "streetfighteriitheworldwarrior",
+        "streetfighteriitheworldwarrior",
+        2,
+        "1991"
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, max_players) VALUES (?, ?, ?, ?, ?, ?)",
+      "values": [
+        7,
+        "Super Nintendo Entertainment System",
+        "Donkey Kong Country",
+        "donkeykongcountry",
+        "donkeykongcountry",
+        2
+      ]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name) VALUES (?, ?, ?, ?, ?)",
+      "values": [8, "Nintendo Game Boy", "Super Mario Land", "supermarioland", "supermarioland"]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name, release_year) VALUES (?, ?, ?, ?, ?, ?)",
+      "values": [9, "Nintendo Entertainment System", "Tetris", "tetris", "tetris", "1989"]
+    },
+    {
+      "sql": "INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name) VALUES (?, ?, ?, ?, ?)",
+      "values": [10, "Nintendo Entertainment System", "Mega Man 2", "megaman2", "megaman2"]
+    },
+    {
+      "sql": "INSERT INTO launchbox_game_alternate_names (id, alternate_name, compact_name, database_id, region) VALUES (?, ?, ?, ?, ?)",
+      "values": [1, "Rockman 2: Dr. Wily no Nazo", "rockman2drwilynonazo", 10, "Japan"]
+    },
+    {
+      "sql": "INSERT INTO launchbox_game_alternate_names (id, alternate_name, compact_name, database_id, region) VALUES (?, ?, ?, ?, ?)",
+      "values": [2, "Lolo 3", "lolo3", 1, null]
+    }
+  ]
+}

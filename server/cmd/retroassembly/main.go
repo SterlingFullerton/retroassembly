@@ -1,5 +1,4 @@
-// Command retroassembly is the Go server. It serves the built browser app, the API and the CDN cache, but for uploading
-// games, which is still the Node server's.
+// Command retroassembly is the Go server: the built browser app, the API, the CDN cache and the background jobs.
 package main
 
 import (
@@ -132,7 +131,7 @@ func run() error {
 	}
 	log.Printf("RetroAssembly (Go) is running at http://%s/", address)
 	// Jobs that need the internet start once the server is listening, so the library is up quickly even without it
-	server.StartPrefetch()
+	server.StartBackgroundJobs()
 	return http.Serve(listener, handler)
 }
 

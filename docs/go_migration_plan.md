@@ -157,7 +157,7 @@ Order, from least to most involved:
 API types: from step 1, generate an OpenAPI spec from the Go handlers and TypeScript types from it, and move the
 browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as each group lands.
 
-**Status: in progress.**
+**Status: done.** Every group is Go's.
 
 - Go stands in front of Node when `RETROASSEMBLY_GO_NODE_URL` is set, passing on whatever it doesn't answer yet
 - Done: 1 (with `PATCH /api/v1/auth/password`); 2, except `GET /api/v1/launch_records`, which needs the search and
@@ -172,8 +172,13 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - Done: 5, but uploading games: editing a game (`PATCH /api/v1/roms/{id}`), its box art and screenshots, deleting one
   or several. The server's messages come in the browser's language (`Accept-Language`, matched as Hono matches it),
   from the TypeScript translations (`scripts/go-shared-data.ts`), and typed dates are read as Luxon reads them
-- Uploading games waits for `origin/main`'s two newer commits, which replace the game info lookup on the original
-  author's server with the app's own database: porting the old lookup would port code that's already gone
+- Done, once `origin/main` was merged: uploading games (`POST /api/v1/roms`). The file is streamed straight to the
+  games folder with busboy's limits, the game is looked up in the game info database (`server/internal/gameinfo`:
+  by MD5, then by name in its several forms, with goodcodes-parser's reading of regions to pick a release, and LaunchBox
+  again without revision tags), stored under its digest, its discs grouped, and a PSP ISO compressed afterwards. The
+  name handling and every lookup are checked against the TypeScript code's answers from the same small database
+  (`server/internal/gameinfo/testdata`); uploads to both servers store the same rows, info and files
+- Difference: a 413 says "Request Entity Too Large", as Go's HTTP server words it, where Node says "Payload Too Large"
 - Quirk kept from Node: saving a game's details without a player count or a release date clears them
 - Done: 6, the admin's account routes (`GET` and `POST /api/v1/users`, `PATCH` and `DELETE /api/v1/users/{id}`)
 - Done: 7, the pages' data (`/api/v1/pages/*`): the data every page shares and the login page's, always; the library's
@@ -210,7 +215,7 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - Game info backfill (`migration/raw-metadata.ts`), disc groups update, moving uploaded artwork
 - **Done when:** Go no longer proxies anything to Node
 
-**Status: in progress.**
+**Status: done.** Go no longer passes anything to Node.
 
 - Done: the CDN cache (`server/internal/cdn`): `/cdn/*`, the covers every game list notes (`coverCandidates`,
   libretro's box art matched by title included), libretro's art in the artwork folder, offline mode, and the prefetch.
@@ -232,8 +237,14 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   history moved to its first disc, and box art uploaded before an artwork folder was set is moved into it. Disc names
   are read as `parseDisc` reads them (checked against it, `server/internal/library/testdata/discs.json`); started on
   copies of the same data folder, Node and Go leave the same database and files
-- Next: PSP compression moves with uploading games, which starts it; the game info backfill and uploads wait for
-  `origin/main`'s game info commits. Once those are in, Go no longer needs Node, and phase 4 can start
+- Done: PSP compression (`server/internal/psp`, with `tests/unit/cso.test.ts` ported) and the game info backfill, run
+  in the background once the server is listening, as on Node. Started on copies of the same data, the two leave the
+  same database and files, and log the same lines. Go's CSOs are about 0.2% larger, as Go's deflate isn't zlib's;
+  each server reads the other's
+- While Node still runs behind Go, it runs its own startup jobs too. They do the same work and can overlap safely: Go
+  compresses under a temporary name of its own, so the two never write the same file
+- The end-to-end tests through Go send nothing on to Node. The tests that start a game fail at times on Node alone too
+  since the merge (the game is still loading when the screenshot is taken), so they say nothing about Go either way
 
 ### Phase 4: Remove Node from the server
 

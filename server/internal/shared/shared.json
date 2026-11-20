@@ -505,6 +505,180 @@
       "showTitle": true
     }
   },
+  "fileExtensions": {
+    "arcade": [".zip"],
+    "atari2600": [".a26", ".zip"],
+    "atari5200": [".a52", ".xfd", ".atr", ".atx", ".cdm", ".cas", ".xex", ".zip"],
+    "atari7800": [".a78", ".zip"],
+    "atarilynx": [".lnx", ".lyx", ".bll", ".o", ".zip"],
+    "channelf": [".bin", ".rom", ".zip"],
+    "colecovision": [".col", ".cv", ".bin", ".rom", ".zip"],
+    "famicom": [".nes", ".unif", ".unf", ".zip"],
+    "fds": [".fds", ".zip"],
+    "gameandwatch": [".zip", ".mgw"],
+    "gb": [".gb", ".zip"],
+    "gba": [".gba", ".zip"],
+    "gbc": [".gb", ".gbc", ".cgb", ".sgb", ".zip"],
+    "gamegear": [".gg", ".zip"],
+    "genesis": [".md", ".gen", ".zip"],
+    "odyssey2": [".bin", ".zip"],
+    "sms": [".sms", ".zip"],
+    "megadrive": [".md", ".gen", ".zip"],
+    "n64": [".n64", ".z64", ".zip"],
+    "nds": [".nds", ".zip"],
+    "ngp": [".ngp", ".zip"],
+    "ngpc": [".ngc", ".zip"],
+    "nes": [".nes", ".unif", ".unf", ".zip"],
+    "pcengine": [".pce", ".bin", ".zip"],
+    "videopac": [".bin", ".zip"],
+    "psp": [".iso", ".cso", ".pbp"],
+    "psx": [".chd"],
+    "sega32x": [".32x", ".zip"],
+    "sg-1000": [".sg", ".zip"],
+    "sfc": [".smc", ".sfc", ".zip"],
+    "snes": [".smc", ".sfc", ".zip"],
+    "vb": [".vb", ".vboy", ".zip"],
+    "wonderswan": [".ws", ".zip"],
+    "wonderswancolor": [".wsc", ".zip"]
+  },
+  "gameInfoPlatforms": {
+    "arcade": {
+      "launchbox": "Arcade",
+      "libretro": ["MAME", "MAME 2003-Plus", "FBNeo - Arcade Games"]
+    },
+    "atari2600": {
+      "launchbox": "Atari 2600",
+      "libretro": ["Atari - 2600"]
+    },
+    "atari5200": {
+      "launchbox": "Atari 5200",
+      "libretro": ["Atari - 5200"]
+    },
+    "atari7800": {
+      "launchbox": "Atari 7800",
+      "libretro": ["Atari - 7800"]
+    },
+    "atarilynx": {
+      "launchbox": "Atari Lynx",
+      "libretro": ["Atari - Lynx"]
+    },
+    "channelf": {
+      "launchbox": "Fairchild Channel F",
+      "libretro": ["Fairchild - Channel F"]
+    },
+    "colecovision": {
+      "launchbox": "ColecoVision",
+      "libretro": ["Coleco - ColecoVision"]
+    },
+    "famicom": {
+      "launchbox": "Nintendo Entertainment System",
+      "libretro": ["Nintendo - Nintendo Entertainment System"]
+    },
+    "fds": {
+      "launchbox": "Nintendo Famicom Disk System",
+      "libretro": ["Nintendo - Family Computer Disk System"]
+    },
+    "gameandwatch": {
+      "launchbox": "Nintendo Game & Watch",
+      "libretro": ["Handheld Electronic Game"]
+    },
+    "gamegear": {
+      "launchbox": "Sega Game Gear",
+      "libretro": ["Sega - Game Gear"]
+    },
+    "gb": {
+      "launchbox": "Nintendo Game Boy",
+      "libretro": ["Nintendo - Game Boy"]
+    },
+    "gba": {
+      "launchbox": "Nintendo Game Boy Advance",
+      "libretro": ["Nintendo - Game Boy Advance"]
+    },
+    "gbc": {
+      "launchbox": "Nintendo Game Boy Color",
+      "libretro": ["Nintendo - Game Boy Color"]
+    },
+    "genesis": {
+      "launchbox": "Sega Genesis",
+      "libretro": ["Sega - Mega Drive - Genesis"]
+    },
+    "megadrive": {
+      "launchbox": "Sega Genesis",
+      "libretro": ["Sega - Mega Drive - Genesis"]
+    },
+    "n64": {
+      "launchbox": "Nintendo 64",
+      "libretro": ["Nintendo - Nintendo 64"]
+    },
+    "nds": {
+      "launchbox": "Nintendo DS",
+      "libretro": ["Nintendo - Nintendo DS"]
+    },
+    "nes": {
+      "launchbox": "Nintendo Entertainment System",
+      "libretro": ["Nintendo - Nintendo Entertainment System"]
+    },
+    "ngp": {
+      "launchbox": "SNK Neo Geo Pocket",
+      "libretro": ["SNK - Neo Geo Pocket"]
+    },
+    "ngpc": {
+      "launchbox": "SNK Neo Geo Pocket Color",
+      "libretro": ["SNK - Neo Geo Pocket Color"]
+    },
+    "odyssey2": {
+      "launchbox": "Magnavox Odyssey 2",
+      "libretro": ["Magnavox - Odyssey2"]
+    },
+    "pcengine": {
+      "launchbox": "NEC TurboGrafx-16",
+      "libretro": ["NEC - PC Engine - TurboGrafx 16"]
+    },
+    "psp": {
+      "launchbox": "Sony PSP",
+      "libretro": ["Sony - PlayStation Portable"]
+    },
+    "psx": {
+      "launchbox": "Sony Playstation",
+      "libretro": ["Sony - PlayStation"]
+    },
+    "sega32x": {
+      "launchbox": "Sega 32X",
+      "libretro": ["Sega - 32X"]
+    },
+    "sfc": {
+      "launchbox": "Super Nintendo Entertainment System",
+      "libretro": ["Nintendo - Super Nintendo Entertainment System"]
+    },
+    "sg-1000": {
+      "launchbox": "Sega SG-1000",
+      "libretro": ["Sega - SG-1000"]
+    },
+    "sms": {
+      "launchbox": "Sega Master System",
+      "libretro": ["Sega - Master System - Mark III"]
+    },
+    "snes": {
+      "launchbox": "Super Nintendo Entertainment System",
+      "libretro": ["Nintendo - Super Nintendo Entertainment System"]
+    },
+    "vb": {
+      "launchbox": "Nintendo Virtual Boy",
+      "libretro": ["Nintendo - Virtual Boy"]
+    },
+    "videopac": {
+      "launchbox": "Philips Videopac+",
+      "libretro": ["Philips - Videopac+"]
+    },
+    "wonderswan": {
+      "launchbox": "WonderSwan",
+      "libretro": ["Bandai - WonderSwan"]
+    },
+    "wonderswancolor": {
+      "launchbox": "WonderSwan Color",
+      "libretro": ["Bandai - WonderSwan Color"]
+    }
+  },
   "languages": [
     {
       "code": "cs",

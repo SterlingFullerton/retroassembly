@@ -31,8 +31,18 @@ type CDN struct {
 	} `json:"prefetch"`
 }
 
+// GameInfoPlatform is a console's names in LaunchBox's database and libretro's
+type GameInfoPlatform struct {
+	Launchbox string   `json:"launchbox"`
+	Libretro  []string `json:"libretro"`
+}
+
 type Data struct {
 	CDN CDN `json:"cdn"`
+	// The file extensions each console's games may have
+	FileExtensions map[string][]string `json:"fileExtensions"`
+	// Each console's names in the game info database
+	GameInfoPlatforms map[string]GameInfoPlatform `json:"gameInfoPlatforms"`
 	// Each language's date format, for reading dates typed in it
 	DateFormats     map[string]string `json:"dateFormats"`
 	DefaultLanguage string            `json:"defaultLanguage"`

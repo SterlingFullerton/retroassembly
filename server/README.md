@@ -17,6 +17,9 @@ The browser app stays TypeScript; this serves it and its API.
 - In-game saves: `GET` and `POST /api/v1/game_saves`, `POST /api/v1/game_saves/{id}/restore`
 - Games: `GET /api/v1/roms/by_files`, `GET /api/v1/roms/{id}/content`, `GET /api/v1/roms/search_counts`
 - Accounts, for the admin: `GET` and `POST /api/v1/users`, `PATCH` and `DELETE /api/v1/users/{id}`
+- Adding games: `POST /api/v1/roms`, streamed to disk, looked up in the game info database
+  (`RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE`, or `game-info/game-info.sqlite`; without it, games are added by their
+  file names), and PSP discs compressed to CSO afterwards
 - Editing and deleting games: `PATCH` and `DELETE /api/v1/roms/{id}`, `DELETE /api/v1/roms`, `POST` and
   `DELETE /api/v1/roms/{id}/boxart`, `POST /api/v1/roms/{id}/thumbnail`,
   `DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId}`
@@ -36,8 +39,11 @@ At startup it does what the Node server does before it listens: checks the data 
 files, moves box art uploaded before an artwork folder was set into it, brings the database up to date, and groups the
 discs of games uploaded before discs were grouped.
 
-With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (uploading games) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
-Without it, those answer 501.
+Once listening, it fills in the game info of games matched before it was kept, downloads what the CDN prefetch names,
+and compresses PSP ISOs, as the Node server does.
+
+Everything the app uses is served. With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, any other address
+under `/api/` is still passed on to it; without it, those answer 501.
 
 It uses the same data folder, database and settings (`RETROASSEMBLY_RUN_TIME_*`) as the Node server, and can run on
 the same data folder at the same time. Password hashes, sessions, ids, file ids and the migrations Drizzle records are

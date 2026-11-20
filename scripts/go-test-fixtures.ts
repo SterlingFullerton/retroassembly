@@ -376,3 +376,237 @@ await writeFile(
   )}\n`,
 )
 console.info(`Wrote ${discFixturePath}`)
+
+// Game info: how names are compared, and what the lookup finds in a small database built from the rows below
+const { getCompactName, getCountries, getGoodcodesBase, getGoodcodesBaseCompactName, restoreTitleForSorting } =
+  await import('#@/utils/server/game-info/names.ts')
+const { gameInfoIndexes, gameInfoTables } = await import('#@/utils/server/game-info/tables.ts')
+const gameNames = [
+  'Super Mario Bros. 3',
+  'Tetris (World) [!]',
+  'Legend of Zelda, The (USA)',
+  'Legend of Zelda, The - A Link to the Past (USA)',
+  'Pokémon - Édition Rouge (France)',
+  "Street Fighter II' - Champion Edition (USA)",
+  'Mega Man X (U) (V1.1) [!]',
+  'Tetris (UE) [h1]',
+  'Game (JU)',
+  'Game (Japan, Korea)',
+  'Game (USA, Europe)',
+  'Game (Europe) (En,Fr,De)',
+  'Game (UK)',
+  'Game (Unl)',
+  'Game (PD)',
+  'Game (Disc 4)',
+  'Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)',
+  'Castlevania (U) (PRG1) [!]',
+  'Vol.2 Game',
+  'Ys I & II (Japan)',
+  'İstanbul Οδυσσεύς (Greece)',
+  '1942 (Japan, USA)',
+  'A, The',
+  'Game, An - Subtitle',
+  'Game,The (USA)',
+  '(Japan) Only Tags',
+  'Game (Hong Kong)',
+  'Game (UEB)',
+  'Game (Beta) (USA)',
+  'Game (USA) (Beta)',
+  'Game (PAL)',
+  'Game (UXJ)',
+  'Game [T+Eng1.0_Someone] (J)',
+]
+const nesName = 'Nintendo - Nintendo Entertainment System'
+const libretroRows: [string, string, string, string, string?][] = [
+  ['lolo-b2', nesName, 'Adventures of Lolo 3 (USA)[b2]', ''],
+  ['lolo-tr', nesName, 'Adventures of Lolo 3 (USA)[tr it Clomax Dominion]', ''],
+  ['lolo-eu', nesName, 'Adventures of Lolo 3 (Europe)', ''],
+  ['lolo-us', nesName, 'Adventures of Lolo 3 (USA)', ''],
+  ['zelda', nesName, 'Legend of Zelda, The (USA)', '337bd6f1a1163df31bf2633665589ab0'],
+  ['zelda-r1', nesName, 'Legend of Zelda, The (USA) (Rev 1)', ''],
+  ['cv', nesName, 'Castlevania (USA)', ''],
+  ['cv-r1', nesName, 'Castlevania (USA) (Rev 1)', ''],
+  ['tetris-proto', nesName, 'Tetris (USA) (Proto)', ''],
+  ['tetris', nesName, 'Tetris (USA)', ''],
+  ['ff2-d1', 'Sony - PlayStation', 'Fear Effect 2 - Retro Helix (Europe) (Disc 4)', ''],
+  ['ff2-us4', 'Sony - PlayStation', 'Fear Effect 2 - Retro Helix (USA) (Disc 4) (Rev 1)', ''],
+  ['ff2-us3', 'Sony - PlayStation', 'Fear Effect 2 - Retro Helix (USA) (Disc 3) (Rev 1)', ''],
+  ['sf2', 'MAME 2003-Plus', 'Street Fighter II - The World Warrior (World 910522)', '', 'sf2.zip'],
+  ['sf2-fb', 'FBNeo - Arcade Games', 'Street Fighter II - The World Warrior (USA 910206)', '', 'sf2.zip'],
+  ['dkc', 'Nintendo - Super Nintendo Entertainment System', 'Donkey Kong Country (USA) (Rev 2)', ''],
+  ['marioland', 'Nintendo - Game Boy', 'Super Mario Land (World) (Rev A)', 'aaaa1111'],
+  ['lonely', nesName, 'Only In Libretro (USA)', ''],
+]
+const launchboxRows: [number, string, string, Record<string, number | string>][] = [
+  [
+    1,
+    'Nintendo Entertainment System',
+    'Adventures of Lolo 3',
+    {
+      cooperative: 1,
+      genres: 'Puzzle; Action ',
+      max_players: 1,
+      release_date: Date.UTC(1990, 8, 28),
+      release_year: '1990',
+    },
+  ],
+  [
+    2,
+    'Nintendo Entertainment System',
+    'The Legend of Zelda',
+    {
+      community_rating: 4.5,
+      community_rating_count: 120,
+      developer: 'Nintendo',
+      genres: 'Action;Adventure',
+      max_players: 1,
+      overview: 'Link & <Zelda>',
+      publisher: 'Nintendo',
+      release_date: Date.UTC(1987, 7, 22),
+    },
+  ],
+  [
+    3,
+    'Nintendo DS',
+    'Castlevania: Order of Ecclesia',
+    { release_date: Date.UTC(2008, 9, 21, 3), release_year: 'not a year' },
+  ],
+  [4, 'Nintendo Entertainment System', 'Castlevania', { cooperative: 0, release_year: '1987' }],
+  [5, 'Sony Playstation', 'Fear Effect 2: Retro Helix', { max_players: 1 }],
+  [6, 'Arcade', 'Street Fighter II: The World Warrior', { max_players: 2, release_year: '1991' }],
+  [7, 'Super Nintendo Entertainment System', 'Donkey Kong Country', { max_players: 2 }],
+  [8, 'Nintendo Game Boy', 'Super Mario Land', {}],
+  [9, 'Nintendo Entertainment System', 'Tetris', { release_year: '1989' }],
+  [10, 'Nintendo Entertainment System', 'Mega Man 2', {}],
+]
+const alternateRows: [number, string, number, null | string][] = [
+  [1, 'Rockman 2: Dr. Wily no Nazo', 10, 'Japan'],
+  [2, 'Lolo 3', 1, null],
+]
+const lookups = [
+  { files: [{ md5: '337bd6f1a1163df31bf2633665589ab0', name: 'whatever.nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Adventures of Lolo 3 (USA).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Adventures of Lolo 3 (U).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Adventures of Lolo 3 (E).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'adventures of lolo 3.nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Legend of Zelda, The (USA).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Legend of Zelda, The (U) (PRG1) [!].nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Castlevania (U) (PRG1) [!].nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Castlevania (U) [!].nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Tetris.nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Fear Effect 2 - Retro Helix (USA) (Disc 4).cue' }], platform: 'psx' },
+  { files: [{ md5: '', name: 'Fear Effect 2 - Retro Helix (USA) (Disc 3).cue' }], platform: 'psx' },
+  { files: [{ md5: '', name: 'sf2.zip' }], platform: 'arcade' },
+  { files: [{ md5: '', name: 'Street Fighter II.zip' }], platform: 'arcade' },
+  { files: [{ md5: '', name: 'Donkey Kong Country (USA).sfc' }], platform: 'snes' },
+  { files: [{ md5: 'aaaa1111', name: 'land.gb' }], platform: 'gb' },
+  { files: [{ md5: '', name: 'Rockman 2 - Dr. Wily no Nazo (Japan).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Lolo 3.nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Mega Man 2 (USA).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Only In Libretro (USA).nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Nothing Like It.nes' }], platform: 'nes' },
+  { files: [{ md5: '', name: 'Castlevania: Order of Ecclesia.nds' }], platform: 'nds' },
+  { files: [{ md5: '', name: 'Tetris.nes' }], platform: 'nowhere' },
+  { files: [{ md5: '', name: '.nes' }], platform: 'nes' },
+  {
+    files: [
+      { md5: '', name: 'Tetris (USA).nes' },
+      { md5: '337bd6f1a1163df31bf2633665589ab0', name: 'x.nes' },
+      { md5: '', name: 'nope.nes' },
+    ],
+    platform: 'nes',
+  },
+]
+const againInputs = [
+  { fileName: 'Castlevania (U) (PRG1) [!].nes', libretroName: 'Castlevania (USA) (Rev 1)', platform: 'nes' },
+  { fileName: 'Donkey Kong Country (USA).sfc', libretroName: 'Donkey Kong Country (USA) (Rev 2)', platform: 'snes' },
+  { fileName: 'Super Mario Land.gb', libretroName: 'Super Mario Land (World) (Rev A)', platform: 'gb' },
+  { fileName: 'Only In Libretro (USA).nes', libretroName: 'Only In Libretro (USA)', platform: 'nes' },
+  { fileName: '.nes', platform: 'nes' },
+]
+const gameQueries = [
+  [
+    { launchboxId: 2, libretroId: 'zelda' },
+    { launchboxId: null, libretroId: 'sf2' },
+    { launchboxId: 99, libretroId: 'nope' },
+  ],
+  [{ launchboxId: null, libretroId: null }],
+]
+
+const gameInfoDirectory = await mkdtemp(path.join(os.tmpdir(), 'retroassembly-go-game-info-'))
+try {
+  const { DatabaseSync } = await import('node:sqlite')
+  const gameInfoFile = path.join(gameInfoDirectory, 'game-info.sqlite')
+  const statements: { sql: string; values: (null | number | string)[] }[] = []
+  for (const [id, platform, name, md5, romName] of libretroRows) {
+    statements.push({
+      sql: 'INSERT INTO libretro_games (id, platform, name, rom_name, md5, compact_name, goodcodes_base_compact_name, developer, genre, releaseyear, users, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      values: [
+        id,
+        platform,
+        name,
+        romName ?? `${name}.nes`,
+        md5 || null,
+        getCompactName(name),
+        getGoodcodesBaseCompactName(name),
+        'HAL',
+        'Puzzle',
+        id === 'sf2' ? 1991 : null,
+        id === 'sf2' ? 2 : null,
+        id.startsWith('zelda') ? null : 'Pub',
+      ],
+    })
+  }
+  for (const [databaseId, platform, name, extra] of launchboxRows) {
+    const columns = Object.keys(extra)
+    statements.push({
+      sql: `INSERT INTO launchbox_games (database_id, platform, name, compact_name, goodcodes_base_compact_name${columns.map((column) => `, ${column}`).join('')}) VALUES (?, ?, ?, ?, ?${columns.map(() => ', ?').join('')})`,
+      values: [
+        databaseId,
+        platform,
+        name,
+        getCompactName(name),
+        getGoodcodesBaseCompactName(name),
+        ...Object.values(extra),
+      ],
+    })
+  }
+  for (const [id, name, databaseId, region] of alternateRows) {
+    statements.push({
+      sql: 'INSERT INTO launchbox_game_alternate_names (id, alternate_name, compact_name, database_id, region) VALUES (?, ?, ?, ?, ?)',
+      values: [id, name, getCompactName(name), databaseId, region],
+    })
+  }
+  const database = new DatabaseSync(gameInfoFile)
+  database.exec(gameInfoTables)
+  database.exec(gameInfoIndexes)
+  for (const { sql, values } of statements) {
+    database.prepare(sql).run(...values)
+  }
+  database.close()
+  process.env.RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE = gameInfoFile
+  const { identifyGames, queryGames } = await import('#@/utils/server/game-info/lookup.ts')
+  const { findLaunchboxAgain, getNameForLaunchbox } = await import('#@/utils/server/find-launchbox-again.ts')
+  const gameInfoFixtures = {
+    again: againInputs.map((input) => ({ input, result: findLaunchboxAgain(input) ?? null })),
+    lookups: lookups.map((input) => ({ input, result: identifyGames(input) })),
+    names: gameNames.map((name) => ({
+      compactName: getCompactName(name),
+      countries: getCountries(name),
+      goodcodesBase: getGoodcodesBase(name),
+      goodcodesBaseCompactName: getGoodcodesBaseCompactName(name),
+      name,
+      nameForLaunchbox: getNameForLaunchbox(name),
+      restored: restoreTitleForSorting(name),
+    })),
+    queries: gameQueries.map((conditions) => ({ conditions, result: queryGames({ conditions }) })),
+    schema: { indexes: gameInfoIndexes, tables: gameInfoTables },
+    statements,
+  }
+  const gameInfoFixturePath = path.join('server', 'internal', 'gameinfo', 'testdata', 'typescript.json')
+  await mkdir(path.dirname(gameInfoFixturePath), { recursive: true })
+  await writeFile(gameInfoFixturePath, `${JSON.stringify(gameInfoFixtures, null, 2)}\n`)
+  console.info(`Wrote ${gameInfoFixturePath}`)
+} finally {
+  await rm(gameInfoDirectory, { force: true, recursive: true })
+}

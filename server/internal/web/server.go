@@ -14,19 +14,28 @@ import (
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/cdn"
 	"retroassembly/server/internal/config"
+	"retroassembly/server/internal/gameinfo"
 	"retroassembly/server/internal/i18n"
 	"retroassembly/server/internal/preference"
+	"retroassembly/server/internal/psp"
 	"retroassembly/server/internal/shared"
 )
 
 type Server struct {
 	authMode string
 	// The server's copy of CDN files, when it keeps one
-	cdn       *cdn.Cache
-	config    config.Config
-	database  *sql.DB
-	languages *i18n.Languages
-	oidc      oidcProvider
+	cdn        *cdn.Cache
+	compressor *psp.Compressor
+	// The file extensions each console's games may have
+	fileExtensions map[string][]string
+	gameInfo       *gameinfo.Database
+	// The consoles whose games come on several discs
+	multiDisc     map[string]bool
+	multiDiscList []string
+	config        config.Config
+	database      *sql.DB
+	languages     *i18n.Languages
+	oidc          oidcProvider
 	// The key of each console's name in the translations, which is also the list of consoles the app has
 	platformNames map[string]string
 	preference    *preference.Settings
@@ -52,8 +61,15 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	if c.CDNCache {
 		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline)
 	}
+	multiDisc := map[string]bool{}
+	for _, console := range data.MultiDiscConsoles {
+		multiDisc[console] = true
+	}
 	return &Server{
-		authMode: authMode, cdn: cache, config: c, database: database, languages: i18n.New(data),
+		authMode: authMode, cdn: cache,
+		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
+		gameInfo:  &gameinfo.Database{Path: gameinfo.DefaultPath(), Platforms: data.GameInfoPlatforms},
+		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
 		platformNames: data.PlatformNames, preference: settings, threadedConsoles: threaded,
 	}, nil
@@ -178,6 +194,7 @@ func (s *Server) Handler() (http.Handler, error) {
 		"DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId...}": s.signedIn(s.removeThumbnail),
 		"POST /api/v1/game_saves":                             s.signedIn(s.createGameSave),
 		"POST /api/v1/game_saves/{id}/restore":                s.signedIn(s.restoreGameSave),
+		"POST /api/v1/roms":                                   s.signedIn(s.createRom),
 	} {
 		api.Handle(pattern, compress(handler))
 	}
