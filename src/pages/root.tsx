@@ -8,6 +8,7 @@ import { i18n } from '#@/utils/isomorphic/i18n.ts'
 import type { Route } from './+types/root.ts'
 import { AppLayout } from './components/app-layout.tsx'
 import { ErrorPage } from './components/error-page.tsx'
+import { LibrarySkeleton } from './components/library-skeleton.tsx'
 import { useReloadOnUpdate } from './hooks/use-reload-on-update.ts'
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
@@ -31,9 +32,9 @@ export default function App() {
   return <Outlet />
 }
 
-// Shown while the page's data loads
+// Shown while the page's data loads the first time, and written into the HTML every page is sent
 export function HydrateFallback() {
-  return null
+  return <LibrarySkeleton />
 }
 
 export function ErrorBoundary(props: Readonly<Route.ErrorBoundaryProps>) {
