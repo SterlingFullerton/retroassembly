@@ -640,3 +640,17 @@ func DefaultPath() string {
 	absolute, _ := filepath.Abs(filepath.Join("game-info", "game-info.sqlite"))
 	return absolute
 }
+
+// LaunchboxCover is the file name of a LaunchBox game's best front cover on LaunchBox's image server
+// (images.launchbox-app.com), by its id; empty when it has none, or the game info database predates them
+func (d *Database) LaunchboxCover(databaseID string) string {
+	database := d.open()
+	if database == nil || databaseID == "" {
+		return ""
+	}
+	var fileName string
+	if err := database.QueryRow(`SELECT file_name FROM launchbox_covers WHERE database_id = ?`, databaseID).Scan(&fileName); err != nil {
+		return ""
+	}
+	return fileName
+}

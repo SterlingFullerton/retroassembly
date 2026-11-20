@@ -194,3 +194,34 @@ func TestLookup(t *testing.T) {
 		t.Errorf("without the database: %v %v", results, err)
 	}
 }
+
+// A LaunchBox game's front cover, and none from a game info database built before covers were kept
+func TestLaunchboxCover(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "game-info.sqlite")
+	database, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(`CREATE TABLE launchbox_covers (database_id INTEGER PRIMARY KEY NOT NULL, file_name TEXT NOT NULL);
+		INSERT INTO launchbox_covers VALUES (42, 'r2_0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0.jpg')`); err != nil {
+		t.Fatal(err)
+	}
+	database.Close()
+	lookup := &Database{Path: path}
+	if got := lookup.LaunchboxCover("42"); got != "r2_0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0.jpg" {
+		t.Errorf("cover of 42: %q", got)
+	}
+	if got := lookup.LaunchboxCover("7"); got != "" {
+		t.Errorf("cover of 7: %q", got)
+	}
+	older := filepath.Join(t.TempDir(), "game-info.sqlite")
+	database, _ = sql.Open("sqlite", older)
+	database.Exec(`CREATE TABLE launchbox_games (database_id INTEGER PRIMARY KEY)`)
+	database.Close()
+	if got := (&Database{Path: older}).LaunchboxCover("42"); got != "" {
+		t.Errorf("without the table: %q", got)
+	}
+	if got := (&Database{Path: filepath.Join(t.TempDir(), "none.sqlite")}).LaunchboxCover("42"); got != "" {
+		t.Errorf("without the database: %q", got)
+	}
+}

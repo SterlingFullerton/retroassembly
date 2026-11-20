@@ -23,7 +23,8 @@ type Rom struct {
 // Metadata is the part of a game's info its pictures are found from
 type Metadata struct {
 	Launchbox *struct {
-		Name *string `json:"name"`
+		DatabaseID json.Number `json:"databaseId"`
+		Name       *string     `json:"name"`
 	} `json:"launchbox"`
 	Libretro *struct {
 		Name     *string `json:"name"`
@@ -59,6 +60,13 @@ func (m Metadata) libretroPlatform() string {
 		return ""
 	}
 	return text(m.Libretro.Platform)
+}
+
+func (m Metadata) launchboxID() string {
+	if m.Launchbox == nil {
+		return ""
+	}
+	return m.Launchbox.DatabaseID.String()
 }
 
 func (m Metadata) launchboxName() string {
@@ -354,6 +362,19 @@ func (c *Cache) MatchedCover(rom Rom, offline bool) (string, error) {
 	return "", nil
 }
 
+// launchboxCover is a game's front cover from LaunchBox, for when libretro has no box art for it; empty for none
+func (c *Cache) launchboxCover(rom Rom) string {
+	id := rom.Metadata.launchboxID()
+	if c.LaunchboxCovers == nil || id == "" {
+		return ""
+	}
+	fileName := c.LaunchboxCovers(id)
+	if !launchboxImageName.MatchString(fileName) {
+		return ""
+	}
+	return "/cdn/launchbox-images/" + fileName
+}
+
 func isBoxArt(href string) bool {
 	return strings.Contains(href, "/Named_Boxarts/")
 }
@@ -372,8 +393,8 @@ func (c *Cache) statusOf(href string) (int, error) {
 }
 
 // CoverCandidates are the pictures of a game the server has, as addCoverCandidates notes them, so pages don't ask for
-// ones that don't exist: box art first, under the game's own names, then libretro's box art matched by title, and only
-// then a title screen or screenshot. The first the server has is the one shown, so the rest are left out; one it
+// ones that don't exist: box art first, under the game's own names, then libretro's box art matched by title, then
+// LaunchBox's front cover, and only then a title screen or screenshot. The first the server has is the one shown, so the rest are left out; one it
 // hasn't looked for yet may still exist, unless it's offline
 func (c *Cache) CoverCandidates(rom Rom) ([]string, error) {
 	var all []string
@@ -409,6 +430,12 @@ func (c *Cache) CoverCandidates(rom Rom) ([]string, error) {
 	}
 	if matched != "" && !seen[matched] {
 		if ok, err := found(matched); err != nil || ok {
+			return candidates, err
+		}
+	}
+	// Then LaunchBox's front cover, before any title screen or screenshot
+	if cover := c.launchboxCover(rom); cover != "" {
+		if ok, err := found(cover); err != nil || ok {
 			return candidates, err
 		}
 	}

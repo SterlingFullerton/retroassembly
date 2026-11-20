@@ -358,3 +358,94 @@ func TestStale(t *testing.T) {
 		}
 	}
 }
+
+// With CDN_RECHECK_DAYS=0, a file found missing is never looked for again; with a number of days, after that long
+func TestRecheck(t *testing.T) {
+	href := LibretroHost + "x/Named_Boxarts/a.png"
+	for _, test := range []struct {
+		recheck time.Duration
+		age     time.Duration
+		stale   bool
+	}{
+		{0, 400 * 24 * time.Hour, false},
+		{7 * 24 * time.Hour, 8 * 24 * time.Hour, true},
+		{7 * 24 * time.Hour, 6 * 24 * time.Hour, false},
+		{DefaultRecheck, 29 * 24 * time.Hour, false},
+	} {
+		cache := New(loadData(t), config.Directories{Cache: t.TempDir()}, false, "")
+		cache.Recheck = test.recheck
+		paths := cache.paths(href)
+		os.MkdirAll(filepath.Dir(paths.meta), 0o755)
+		writeNote(paths.meta, note{Status: 404, Time: millis(time.Now().Add(-test.age))})
+		entry, _ := cache.read(href)
+		if entry == nil || entry.Stale != test.stale {
+			t.Errorf("recheck %v, %v old: %+v", test.recheck, test.age, entry)
+		}
+	}
+}
+
+// LaunchBox's front cover comes after libretro's box art and before a title screen or screenshot, and /cdn/ fetches
+// nothing from LaunchBox's server but its images
+func TestLaunchboxCover(t *testing.T) {
+	data := loadData(t)
+	const image = "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0.jpg"
+	for _, test := range []struct {
+		path string
+		ok   bool
+	}{
+		{"launchbox-images/" + image, true},
+		{"launchbox-images/r2_" + strings.TrimSuffix(image, ".jpg") + ".jpeg", true},
+		{"launchbox-images/" + strings.ToUpper(image), false},
+		{"launchbox-images/r3_" + image, false},
+		{"launchbox-images/a/" + image, false},
+		{"launchbox-images/../" + image, false},
+		{"launchbox-images/index.html", false},
+	} {
+		target, err := data.ResolveTarget(test.path)
+		if err != nil || (target != nil) != test.ok || target != nil && (!target.RequiresLogin || target.URL != LaunchboxImagesHost+strings.TrimPrefix(test.path, "launchbox-images/")) {
+			t.Errorf("%s: %+v %v", test.path, target, err)
+		}
+	}
+
+	cache := New(data, config.Directories{Cache: t.TempDir()}, true, "")
+	cache.LaunchboxCovers = func(id string) string {
+		if id == "42" {
+			return image
+		}
+		return ""
+	}
+	note200 := func(href string) {
+		paths := cache.paths(cache.toUpstream(href))
+		os.MkdirAll(filepath.Dir(paths.meta), 0o755)
+		os.WriteFile(paths.file, []byte("x"), 0o644)
+		writeNote(paths.meta, note{ContentType: "image/png", Status: 200, Time: millis(time.Now())})
+	}
+	rom := func(id string) Rom {
+		return romOf("Game (USA).nes", "nes", `{"launchbox":{"databaseId":`+id+`,"name":"Game"}}`)
+	}
+	cover := "/cdn/launchbox-images/" + image
+	note200(cover)
+	if got, _ := cache.CoverCandidates(rom("42")); len(got) != 1 || got[0] != cover {
+		t.Errorf("no libretro art: %q, want LaunchBox's cover", got)
+	}
+	if got, _ := cache.CoverCandidates(rom("7")); len(got) != 0 {
+		t.Errorf("no cover anywhere: %q", got)
+	}
+	// A title screen from libretro still comes after LaunchBox's cover
+	title := cache.Thumbnail("Game (USA)", "nes", "title")
+	note200(title)
+	if got, _ := cache.CoverCandidates(rom("42")); len(got) != 1 || got[0] != cover {
+		t.Errorf("with a title screen: %q, want LaunchBox's cover", got)
+	}
+	// libretro's box art comes first
+	boxart := cache.Thumbnail("Game (USA)", "nes", "boxart")
+	note200(boxart)
+	if got, _ := cache.CoverCandidates(rom("42")); len(got) != 1 || got[0] != boxart {
+		t.Errorf("with libretro box art: %q, want it", got)
+	}
+}
+
+// romOf is a game as the database has it
+func romOf(fileName, platform, metadata string) Rom {
+	return Rom{FileName: fileName, Platform: platform, Metadata: ParseMetadata([]byte(metadata))}
+}

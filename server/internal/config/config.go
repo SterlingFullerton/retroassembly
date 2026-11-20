@@ -124,6 +124,9 @@ type Config struct {
 	CDNOffline bool
 	// What the cache downloads when the server starts (CDN_PREFETCH)
 	CDNPrefetch string
+	// How many days a file found missing upstream is remembered before it's looked for again, 0 for forever
+	// (CDN_RECHECK_DAYS, 30 by default)
+	CDNRecheckDays float64
 	// The built browser app, dist/client
 	ClientRoot  string
 	Directories Directories
@@ -164,6 +167,15 @@ func positiveInteger(value string, fallback int) int {
 	return int(parsed)
 }
 
+// recheckDays reads CDN_RECHECK_DAYS: a number of days, 0 for never; 30 when it's unset or isn't a number of days
+func recheckDays(value string) float64 {
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || parsed < 0 {
+		return 30
+	}
+	return parsed
+}
+
 func absolute(parts ...string) string {
 	result, err := filepath.Abs(filepath.Join(parts...))
 	if err != nil {
@@ -189,10 +201,11 @@ func Load() Config {
 	}
 
 	return Config{
-		CDNCache:    Get("CDN_CACHE") == "true",
-		CDNOffline:  Get("CDN_OFFLINE") == "true",
-		CDNPrefetch: Get("CDN_PREFETCH"),
-		ClientRoot:  env("CLIENT_DIR", absolute("dist", "client")),
+		CDNCache:       Get("CDN_CACHE") == "true",
+		CDNOffline:     Get("CDN_OFFLINE") == "true",
+		CDNPrefetch:    Get("CDN_PREFETCH"),
+		CDNRecheckDays: recheckDays(Get("CDN_RECHECK_DAYS")),
+		ClientRoot:     env("CLIENT_DIR", absolute("dist", "client")),
 		Directories: Directories{
 			Artwork:     artwork,
 			Attachments: attachments,

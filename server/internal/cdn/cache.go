@@ -29,8 +29,9 @@ const (
 	fetchTimeout = 120 * time.Second
 	// A host that doesn't answer within this long is taken to be unreachable
 	headersTimeout = 10 * time.Second
-	// Files that don't exist upstream are remembered for this long, or forever for pinned versions
-	notFoundTTL = 30 * 24 * time.Hour
+	// Files that don't exist upstream are remembered for this long by default (CDN_RECHECK_DAYS), and forever for pinned
+	// versions
+	DefaultRecheck = 30 * 24 * time.Hour
 	// After a host fails to answer, requests to it are skipped for this long, so pages load quickly while offline
 	unreachableBackoff = 5 * time.Minute
 )
@@ -46,6 +47,12 @@ type Cache struct {
 	// With CDN_OFFLINE=true, pages get only what's in the cache, and nothing is downloaded while
 	// they're browsed; files are added only by the prefetch
 	Offline bool
+	// How long a file found missing upstream is remembered before it's looked for again; zero for forever
+	// (CDN_RECHECK_DAYS)
+	Recheck time.Duration
+	// The file name of a game's best front cover on LaunchBox's image server, by its LaunchBox id; empty for none.
+	// Unset, LaunchBox's covers aren't used
+	LaunchboxCovers func(databaseID string) string
 
 	mutex       sync.Mutex
 	downloads   map[string]*call
@@ -67,7 +74,7 @@ func New(data *Data, directories config.Directories, offline bool, extraCertific
 	transport.DialContext = dialer.DialContext
 	return &Cache{
 		Data: data, directory: filepath.Join(directories.Cache, "cdn"), artwork: directories.Artwork,
-		client: &http.Client{Transport: transport}, Offline: offline,
+		client: &http.Client{Transport: transport}, Offline: offline, Recheck: DefaultRecheck,
 		downloads: map[string]*call{}, unreachable: map[string]time.Time{}, conversions: map[string]*call{},
 		coverLists: map[string]*coverList{}, coverParses: map[string]*call{},
 	}
@@ -261,7 +268,7 @@ func (c *Cache) read(href string) (*Entry, error) {
 	if noted.Status == 404 && file == nil {
 		age := time.Duration((millis(time.Now()) - noted.Time) * float64(time.Millisecond))
 		return &Entry{
-			ContentType: noted.ContentType, Path: paths.file, Stale: !isPinned(href) && age >= notFoundTTL, Status: 404,
+			ContentType: noted.ContentType, Path: paths.file, Stale: c.Recheck > 0 && !isPinned(href) && age >= c.Recheck, Status: 404,
 			Time: noted.Time, WebPPath: paths.webP,
 		}, nil
 	}

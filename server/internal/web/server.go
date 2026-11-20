@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/klauspost/compress/gzhttp"
 
@@ -59,9 +60,12 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	if err != nil {
 		return nil, err
 	}
+	gameInfo := &gameinfo.Database{Path: gameinfo.DefaultPath(), Platforms: data.GameInfoPlatforms}
 	var cache *cdn.Cache
 	if c.CDNCache {
 		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline, c.OIDC.ExtraCertificates)
+		cache.Recheck = time.Duration(c.CDNRecheckDays * float64(24*time.Hour))
+		cache.LaunchboxCovers = gameInfo.LaunchboxCover
 	}
 	multiDisc := map[string]bool{}
 	for _, console := range data.MultiDiscConsoles {
@@ -70,7 +74,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	return &Server{
 		authMode: authMode, cdn: cache,
 		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
-		gameInfo:  &gameinfo.Database{Path: gameinfo.DefaultPath(), Platforms: data.GameInfoPlatforms},
+		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
 		platformNames: data.PlatformNames, preference: settings, threadedConsoles: threaded,

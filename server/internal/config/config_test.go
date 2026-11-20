@@ -104,3 +104,11 @@ func TestSettingNames(t *testing.T) {
 		}
 	}
 }
+
+func TestRecheckDays(t *testing.T) {
+	for value, want := range map[string]float64{"": 30, "0": 0, "7": 7, " 365 ": 365, "-1": 30, "never": 30, "1.5": 1.5} {
+		if got := recheckDays(value); got != want {
+			t.Errorf("recheckDays(%q) = %v, want %v", value, got, want)
+		}
+	}
+}

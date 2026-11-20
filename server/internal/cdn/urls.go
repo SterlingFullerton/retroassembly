@@ -16,10 +16,17 @@ import (
 const (
 	CDNHost      = "https://cdn.jsdelivr.net/"
 	LibretroHost = "https://thumbnails.libretro.com/"
+	// LaunchBox's game images, for box art libretro doesn't have
+	LaunchboxImagesHost = "https://images.launchbox-app.com/"
 )
 
 // The hosts /cdn/ serves, by the name its addresses start with
-var cacheHosts = map[string]string{"jsdelivr": CDNHost, "libretro-thumbnails": LibretroHost}
+var cacheHosts = map[string]string{
+	"jsdelivr": CDNHost, "launchbox-images": LaunchboxImagesHost, "libretro-thumbnails": LibretroHost,
+}
+
+// LaunchBox names each image by a UUID, some with "r2_" in front
+var launchboxImageName = regexp.MustCompile(`^(?:r2_)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpe?g|png)$`)
 
 // ErrURIMalformed is decodeURIComponent's URIError: an escape that isn't one, or bytes that aren't UTF-8
 var ErrURIMalformed = errors.New("URI malformed")
@@ -212,6 +219,13 @@ func (d *Data) ResolveTarget(cachePath string) (*Target, error) {
 		return nil, nil
 	}
 	if name == "libretro-thumbnails" {
+		return &Target{RequiresLogin: true, URL: href}, nil
+	}
+	if name == "launchbox-images" {
+		// Only an image itself, by its own name, as the game info database gives it
+		if !launchboxImageName.MatchString(rest) {
+			return nil, nil
+		}
 		return &Target{RequiresLogin: true, URL: href}, nil
 	}
 	path := pathname(href)

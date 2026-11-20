@@ -7,6 +7,7 @@ CREATE TABLE launchbox_games (
   publisher TEXT, release_date INTEGER, release_type TEXT, release_year TEXT, setup_file TEXT, setup_md5 TEXT,
   startup_file TEXT, startup_md5 TEXT, startup_parameters TEXT, steam_app_id TEXT, video_url TEXT, wikipedia_url TEXT
 );
+CREATE TABLE launchbox_covers (database_id INTEGER PRIMARY KEY NOT NULL, file_name TEXT NOT NULL);
 CREATE TABLE launchbox_game_alternate_names (
   alternate_name TEXT, compact_name TEXT, database_id INTEGER, id INTEGER PRIMARY KEY, region TEXT
 );

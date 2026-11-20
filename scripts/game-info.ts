@@ -163,8 +163,19 @@ const launchboxColumns = [
   'wikipediaUrl',
 ]
 
+// The pictures that can stand for a game's box, best first: its front cover, one rebuilt from scans, one made by a fan,
+// then the cartridge
+const coverTypes = ['Box - Front', 'Box - Front - Reconstructed', 'Fanart - Box - Front', 'Cart - Front']
+// Among pictures of the same kind, the one for these regions first, then one for no region, then any other
+const coverRegions = ['North America', 'United States', 'World', '', 'Europe', 'Japan']
+
+function coverRank({ region = '', type = '' }: Record<string, string>) {
+  const regionRank = coverRegions.indexOf(region)
+  return coverTypes.indexOf(type) * 100 + (regionRank === -1 ? coverRegions.length : regionRank)
+}
+
 // Reads LaunchBox's Metadata.xml a piece at a time (it's over 500 MB): its <Game> and <GameAlternateName> records,
-// each a list of fields, as msleuth read them
+// each a list of fields, as msleuth read them, and the best front cover among its <GameImage> records
 function addLaunchbox(db: DatabaseSync, file: string) {
   const addGame = insert(db, 'launchbox_games', launchboxColumns)
   const addAlternate = insert(db, 'launchbox_game_alternate_names', [
@@ -173,8 +184,10 @@ function addLaunchbox(db: DatabaseSync, file: string) {
     'databaseId',
     'region',
   ])
+  const addCover = insert(db, 'launchbox_covers', ['databaseId', 'fileName'])
   const gameIds = new Set<string>()
   const alternates: Record<string, string>[] = []
+  const covers = new Map<string, Record<string, string>>()
   let games = 0
 
   const { promise, reject, resolve } = Promise.withResolvers<undefined>()
@@ -186,7 +199,7 @@ function addLaunchbox(db: DatabaseSync, file: string) {
   parser.on('opentag', (tag) => {
     tags.push(tag.name)
     field = camelCase(tag.name)
-    recording = tags.length > 2 && (tags[1] === 'Game' || tags[1] === 'GameAlternateName')
+    recording = tags.length > 2 && ['Game', 'GameAlternateName', 'GameImage'].includes(tags[1])
   })
   parser.on('text', (value) => {
     if (recording && field) {
@@ -212,6 +225,11 @@ function addLaunchbox(db: DatabaseSync, file: string) {
         games += 1
       } else if (tag === 'GameAlternateName') {
         alternates.push(record)
+      } else if (tag === 'GameImage' && coverTypes.includes(record.type) && record.databaseId && record.fileName) {
+        const best = covers.get(record.databaseId)
+        if (!best || coverRank(record) < coverRank(best)) {
+          covers.set(record.databaseId, record)
+        }
       }
       record = {}
       field = ''
@@ -230,7 +248,14 @@ function addLaunchbox(db: DatabaseSync, file: string) {
         kept += 1
       }
     }
-    return { alternates: kept, games }
+    let coverCount = 0
+    for (const [databaseId, cover] of covers) {
+      if (gameIds.has(databaseId)) {
+        addCover({ databaseId: integer(databaseId), fileName: cover.fileName })
+        coverCount += 1
+      }
+    }
+    return { alternates: kept, covers: coverCount, games }
   })
 }
 
@@ -265,7 +290,7 @@ async function build(rdbZip: string, metadataZip: string, output: string) {
     await fs.rename(partial, output)
     const { size } = await fs.stat(output)
     console.info(
-      `Game info: ${libretro} libretro entries, ${launchbox.games} LaunchBox games and ${launchbox.alternates} other names; ${(size / 1024 / 1024).toFixed(1)} MB at ${output}`,
+      `Game info: ${libretro} libretro entries, ${launchbox.games} LaunchBox games, ${launchbox.alternates} other names and ${launchbox.covers} covers; ${(size / 1024 / 1024).toFixed(1)} MB at ${output}`,
     )
   } finally {
     await fs.rm(work, { force: true, recursive: true })

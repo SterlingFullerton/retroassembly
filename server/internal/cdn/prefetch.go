@@ -80,7 +80,8 @@ func (c *Cache) prefetchURLs(selected map[string]bool, roms func() ([]Rom, error
 			}
 		}
 		for _, rom := range games {
-			if matched, err := c.MatchedCover(rom, false); err == nil && matched != "" {
+			matched, err := c.MatchedCover(rom, false)
+			if err == nil && matched != "" {
 				urls.add(matched)
 			}
 			for _, kind := range []string{"boxart", "title", "snap", "logo"} {
@@ -91,6 +92,10 @@ func (c *Cache) prefetchURLs(selected map[string]bool, roms func() ([]Rom, error
 			for _, kind := range []string{"boxart", "title", "snap"} {
 				urls.add(c.Thumbnail(name, rom.Platform, kind))
 			}
+			// LaunchBox's front cover only for a game with no libretro box art the cache knows of
+			if cover := c.launchboxCover(rom); cover != "" && !c.hasLibretroBoxArt(rom, matched) {
+				urls.add(cover)
+			}
 		}
 	}
 	var upstream []string
@@ -100,6 +105,22 @@ func (c *Cache) prefetchURLs(selected map[string]bool, roms func() ([]Rom, error
 		}
 	}
 	return upstream, nil
+}
+
+// hasLibretroBoxArt tells whether the cache already has libretro box art for a game, under one of its names or the one
+// matched by title
+func (c *Cache) hasLibretroBoxArt(rom Rom, matched string) bool {
+	for _, href := range append(c.Candidates(rom), matched) {
+		if href == "" || !isBoxArt(href) {
+			continue
+		}
+		if upstream := c.toUpstream(href); upstream != "" {
+			if status, err := c.Status(upstream, true); err == nil && status == 200 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Counts are how a prefetch went
