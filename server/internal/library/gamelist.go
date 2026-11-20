@@ -49,6 +49,8 @@ type ListQuery struct {
 	PageSize  float64
 	Platform  string
 	Search    string
+	// Without counting the whole list, for a row that shows only its first games
+	WithoutTotal bool
 }
 
 // SearchInfo is the search a list shows the matches of, and how many games it looked through
@@ -142,8 +144,10 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 		where = append(where, "roms.id IN (SELECT value FROM json_each(?))")
 		arguments = append(arguments, string(mustJSON(matchIDs)))
 	}
+	// Favorites only: the list starts from the favorites, a few hundred at most, rather than from every game
+	favorites := favoriteJoin()
 	if query.Favorite {
-		where = append(where, "favorites.id IS NOT NULL")
+		favorites = strings.TrimPrefix(favorites, "LEFT ")
 	}
 	condition := strings.Join(where, " AND ")
 
@@ -155,7 +159,13 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 	if query.Direction == "desc" {
 		direction = " DESC"
 	}
-	order := []string{"(" + column + ") IS NULL", "(" + column + ")" + direction}
+	// Games without the value last. Sorted newest or highest first they are anyway, and a game always has its file name
+	// and the date it was added: there, the sort is left to follow the column's index, so a page of the newest games
+	// reads only those
+	order := []string{"(" + column + ")" + direction}
+	if direction == "" && orderBy != "added" && orderBy != "name" {
+		order = append([]string{"(" + column + ") IS NULL"}, order...)
+	}
 	if orderBy == "played" {
 		order = append(order, "plays.last_played"+direction)
 	}
@@ -163,12 +173,17 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 		order = append(order, orderColumns["name"])
 	}
 
-	// Most played: how many times this player has launched the game, then how recently
-	plays := `LEFT JOIN (SELECT count(*) AS play_count, max(created_at) AS last_played, rom_id FROM launch_records
+	// Most played: how many times this player has launched the game, then how recently. Counted only for that order
+	plays := ""
+	queryArguments := []any{scope.User.ID}
+	if orderBy == "played" {
+		plays = `LEFT JOIN (SELECT count(*) AS play_count, max(created_at) AS last_played, rom_id FROM launch_records
 		WHERE user_id = ? AND status = ? GROUP BY rom_id) plays ON plays.rom_id = roms.id`
-	queryArguments := append([]any{scope.User.ID, scope.User.ID, db.StatusNormal}, arguments...)
+		queryArguments = append(queryArguments, scope.User.ID, db.StatusNormal)
+	}
+	queryArguments = append(queryArguments, arguments...)
 	sqlText := `SELECT ` + selectColumns("roms", romColumns) + `, ` + discCount + `, favorites.id IS NOT NULL
-		FROM roms ` + favoriteJoin() + ` ` + plays + ` WHERE ` + condition
+		FROM roms ` + favorites + ` ` + plays + ` WHERE ` + condition
 	if pageIDs == nil {
 		sqlText += ` ORDER BY ` + strings.Join(order, ", ") + ` LIMIT ? OFFSET ?`
 		queryArguments = append(queryArguments, sqlNumber(query.PageSize), sqlNumber(offset))
@@ -206,9 +221,9 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 	}
 
 	total := int64(len(matchIDs))
-	if matchIDs == nil {
+	if matchIDs == nil && !query.WithoutTotal {
 		err := scope.Database.QueryRowContext(ctx,
-			`SELECT count(*) FROM roms `+favoriteJoin()+` WHERE `+condition,
+			`SELECT count(*) FROM roms `+favorites+` WHERE `+condition,
 			append([]any{scope.User.ID}, arguments...)...).Scan(&total)
 		if err != nil {
 			return nil, err
@@ -422,14 +437,15 @@ var withStatesColumns = []column{
 	{"gameName", plain, "roms.game_name"},
 	{"gameTitle", plain, "roms.game_title"},
 	{"id", plain, "roms.id"},
-	{"lastSaved", timestamp, "max(states.created_at)"},
+	{"lastSaved", timestamp, "saved.last_saved"},
 	{"launchboxGameId", plain, "roms.launchbox_game_id"},
 	{"libretroGameId", plain, "roms.libretro_game_id"},
 	{"platform", plain, "roms.platform"},
 	{"rawGameMetadata", jsonText, "roms.raw_game_metadata"},
 }
 
-// RomsWithStates is the games the player has saved states of, most recently saved first
+// RomsWithStates is the games the player has saved states of, most recently saved first. It starts from the saves, so
+// it reads the games saved, not the whole library
 func RomsWithStates(ctx context.Context, scope Scope, platforms []string, pageSize int) ([]Object, error) {
 	where, arguments := listed(scope, platforms)
 	columnsSQL := make([]string, len(withStatesColumns))
@@ -444,14 +460,11 @@ func RomsWithStates(ctx context.Context, scope Scope, platforms []string, pageSi
 		}
 		return append(object, Field{"isFavorite", favorite}), nil
 	}, `SELECT `+strings.Join(columnsSQL, ", ")+`, favorites.id IS NOT NULL
-		FROM roms
-		LEFT JOIN states ON states.rom_id = roms.id AND states.user_id = ? AND states.status = 1
+		FROM (SELECT rom_id, max(created_at) AS last_saved FROM states WHERE user_id = ? AND status = 1 GROUP BY rom_id) saved
+		JOIN roms ON roms.id = saved.rom_id
 		`+favoriteJoin()+`
 		WHERE `+where+`
-		GROUP BY roms.id, roms.file_name, roms.game_boxart_file_ids, roms.game_name, roms.game_title,
-			roms.launchbox_game_id, roms.libretro_game_id, roms.platform, favorites.id
-		HAVING count(states.id) >= 1
-		ORDER BY max(states.created_at) DESC
+		ORDER BY saved.last_saved DESC
 		LIMIT ? OFFSET 0`,
 		append(append([]any{scope.User.ID, scope.User.ID}, arguments...), pageSize)...)
 }

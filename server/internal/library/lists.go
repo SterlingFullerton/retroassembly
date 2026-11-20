@@ -155,11 +155,11 @@ func PlayTogetherPicks(ctx context.Context, scope Scope, platforms []string) ([]
 
 // The columns of a game the play history lists, after the play's own, in the Node server's order
 var historyColumns = []column{
-	{"core", plain, "launch_records.core"},
-	{"count", plain, "count(launch_records.id)"},
-	{"id", plain, "launch_records.rom_id"},
-	{"lastLaunched", timestamp, "max(launch_records.created_at)"},
-	{"platform", plain, "launch_records.platform"},
+	{"core", plain, "played.core"},
+	{"count", plain, "played.play_count"},
+	{"id", plain, "played.rom_id"},
+	{"lastLaunched", timestamp, "played.last_launched"},
+	{"platform", plain, "played.platform"},
 	{"discCount", plain, discCount},
 	{"fileId", plain, "roms.file_id"},
 	{"fileName", plain, "roms.file_name"},
@@ -186,7 +186,9 @@ type History struct {
 }
 
 // LaunchHistory is the play history list, on the consoles shown. A game deleted since is still listed. With a search,
-// only the played games that match it, still most recently played first
+// only the played games that match it, still most recently played first. The plays are grouped and the page cut from
+// them before the games are joined, so only the page's games are read. Each game's console and emulator are its latest
+// play's: SQLite takes a plain column beside max() from the row with the maximum
 func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, pageSize float64, search string) (*History, error) {
 	where := `launch_records.user_id = ? AND launch_records.status = ? AND launch_records.platform IN (` +
 		placeholders(len(platforms)) + `)`
@@ -210,8 +212,9 @@ func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, p
 	for i, c := range historyColumns {
 		columnsSQL[i] = c.sql
 	}
-	// The favorites join's user comes first, then the conditions', then the page
-	queryArguments := append(append([]any{scope.User.ID}, arguments...), sqlNumber(pageSize), sqlNumber((page-1)*pageSize))
+	// The conditions and the page come first, in the plays grouped, then the favorites join's user
+	queryArguments := append(append(append([]any{}, arguments...), sqlNumber(pageSize), sqlNumber((page-1)*pageSize)),
+		scope.User.ID)
 	roms, err := queryObjects(ctx, scope.Database, func(rows *sqlRows) (Object, error) {
 		var favorite bool
 		object, err := scanObject(rows, historyColumns, &favorite)
@@ -220,13 +223,11 @@ func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, p
 		}
 		return append(object, Field{"isFavorite", favorite}), nil
 	}, `SELECT `+strings.Join(columnsSQL, ", ")+`, favorites.id IS NOT NULL
-		FROM launch_records
-		LEFT JOIN roms ON launch_records.rom_id = roms.id
+		FROM (SELECT rom_id, core, platform, count(id) AS play_count, max(created_at) AS last_launched
+			FROM launch_records WHERE `+where+` GROUP BY rom_id ORDER BY last_launched DESC LIMIT ? OFFSET ?) played
+		LEFT JOIN roms ON played.rom_id = roms.id
 		`+favoriteJoin()+`
-		WHERE `+where+`
-		GROUP BY launch_records.rom_id, roms.file_name, roms.launchbox_game_id, roms.libretro_game_id
-		ORDER BY max(launch_records.created_at) DESC
-		LIMIT ? OFFSET ?`, queryArguments...)
+		ORDER BY played.last_launched DESC`, queryArguments...)
 	if err != nil {
 		return nil, err
 	}

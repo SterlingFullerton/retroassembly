@@ -481,7 +481,9 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
-	newAdded, err := library.GetRoms(ctx, scope, platforms, library.ListQuery{Direction: "desc", OrderBy: "added", PageSize: 20})
+	// Home's rows show their first games, never how many there are
+	newAdded, err := library.GetRoms(ctx, scope, platforms,
+		library.ListQuery{Direction: "desc", OrderBy: "added", PageSize: 20, WithoutTotal: true})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -490,7 +492,7 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
-	favorites, err := library.GetRoms(ctx, scope, platforms, library.ListQuery{Favorite: true, PageSize: 20})
+	favorites, err := library.GetRoms(ctx, scope, platforms, library.ListQuery{Favorite: true, PageSize: 20, WithoutTotal: true})
 	if err != nil {
 		writeError(w, err)
 		return
