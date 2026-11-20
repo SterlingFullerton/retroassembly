@@ -23,7 +23,8 @@ const discCount = `CASE WHEN roms.disc_group IS NULL THEN 1 ELSE (
 		AND disc.disc_group = roms.disc_group AND disc.status = 1
 ) END`
 
-// LaunchBox's community rating (out of 5), and how many people gave one
+// LaunchBox's community rating (out of 5), and how many people gave one. The index idx_roms_rating
+// (src/databases/schema.ts) holds both, for these expressions exactly: a change to one is made there too
 const (
 	rating      = `coalesce(json_extract(roms.raw_game_metadata, '$.launchbox.communityRating'), 0)`
 	ratingCount = `coalesce(json_extract(roms.raw_game_metadata, '$.launchbox.communityRatingCount'), 0)`
@@ -134,13 +135,15 @@ func RediscoverPicks(ctx context.Context, scope Scope, platforms []string) ([]Ob
 		append(arguments, scope.User.ID, db.StatusNormal, pickLimit)...)
 }
 
-// OnThisDayPicks is games first released on this day of the year (as MM-DD), the best known first
+// OnThisDayPicks is games first released on this day of the year (as MM-DD), the best known first. The sort's unary +
+// changes nothing but keeps SQLite from walking idx_roms_rating in that order, which opens game after game for its
+// date: the few released on the day are found first, then sorted
 func OnThisDayPicks(ctx context.Context, scope Scope, platforms []string, monthDay string) ([]Object, error) {
 	where, arguments := listed(scope, platforms)
 	return pickedIDs(ctx, scope, `SELECT roms.id FROM roms WHERE `+where+`
 		AND roms.game_release_date IS NOT NULL
 		AND strftime('%m-%d', roms.game_release_date / 1000, 'unixepoch') = ?
-		ORDER BY `+ratingCount+` DESC LIMIT ?`,
+		ORDER BY +`+ratingCount+` DESC LIMIT ?`,
 		append(arguments, monthDay, pickLimit)...)
 }
 

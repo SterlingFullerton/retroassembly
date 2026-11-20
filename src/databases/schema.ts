@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { customAlphabet } from 'nanoid'
 import { nolookalikes } from 'nanoid-dictionary'
@@ -137,6 +138,19 @@ export const romTable = sqliteTable(
       table.gameTitle,
       table.gameDeveloper,
       table.gamePublisher,
+      table.id,
+    ),
+    // Home's picks of well-rated games filter on LaunchBox's rating and how many gave one, which are in each game's
+    // stored LaunchBox data: kept here, they're read without opening it. The expressions are the server's own
+    // (server/internal/library/lists.go), as an index on an expression is used only for that exact expression
+    index('idx_roms_rating').on(
+      table.userId,
+      table.status,
+      sql`coalesce(json_extract(raw_game_metadata, '$.launchbox.communityRatingCount'), 0)`,
+      sql`coalesce(json_extract(raw_game_metadata, '$.launchbox.communityRating'), 0)`,
+      table.platform,
+      table.discGroup,
+      table.gamePlayers,
       table.id,
     ),
   ],
