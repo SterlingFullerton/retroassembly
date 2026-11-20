@@ -449,3 +449,88 @@ func TestLaunchboxCover(t *testing.T) {
 func romOf(fileName, platform, metadata string) Rom {
 	return Rom{FileName: fileName, Platform: platform, Metadata: ParseMetadata([]byte(metadata))}
 }
+
+// With CDN_KEEP_ORIGINALS=false, a downloaded image is kept only as its WebP copy, which is what's sent; other files
+// are kept as they came
+func TestWithoutOriginals(t *testing.T) {
+	picture := pngOf(t)
+	var requests atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		switch r.URL.Path {
+		case "/cover.png":
+			w.Header().Set("Content-Type", "image/png")
+			w.Write(picture)
+		case "/core.wasm":
+			w.Header().Set("Content-Type", "application/wasm")
+			w.Write([]byte("wasm"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer upstream.Close()
+	cache := New(loadData(t), config.Directories{Cache: t.TempDir()}, false, "")
+	cache.KeepOriginals = false
+
+	entry, err := cache.File(upstream.URL+"/cover.png", 0, false)
+	if err != nil || entry == nil || entry.Status != 200 || entry.ContentType != "image/webp" || !strings.HasSuffix(entry.Path, ".webp") {
+		t.Fatalf("image: %+v %v", entry, err)
+	}
+	if isFile(cache.paths(upstream.URL + "/cover.png").file) {
+		t.Error("the original is still there")
+	}
+	if copyPath, _ := cache.WebPCopy(entry); copyPath != "" {
+		t.Errorf("a copy of the copy: %s", copyPath)
+	}
+	if entry, _ := cache.File(upstream.URL+"/cover.png", 0, false); entry == nil || entry.Status != 200 || requests.Load() != 1 {
+		t.Errorf("downloaded again: %+v, %d requests", entry, requests.Load())
+	}
+	if status, _ := cache.Status(upstream.URL+"/cover.png", true); status != 200 {
+		t.Errorf("status %d", status)
+	}
+	if entry, err := cache.File(upstream.URL+"/core.wasm", 0, false); err != nil || entry == nil || entry.ContentType != "application/wasm" || strings.HasSuffix(entry.Path, ".webp") {
+		t.Errorf("other file: %+v %v", entry, err)
+	}
+}
+
+// Turning CDN_KEEP_ORIGINALS off converts the images already downloaded, and leaves art put there by hand alone
+func TestDropOriginals(t *testing.T) {
+	picture := pngOf(t)
+	cacheDirectory, artwork := t.TempDir(), t.TempDir()
+	cache := New(loadData(t), config.Directories{Artwork: artwork, Cache: cacheDirectory}, true, "")
+	cache.KeepOriginals = false
+	place := func(href, contentType string, content []byte, noted bool) cachePaths {
+		paths := cache.paths(href)
+		os.MkdirAll(filepath.Dir(paths.file), 0o755)
+		os.WriteFile(paths.file, content, 0o644)
+		if noted {
+			os.MkdirAll(filepath.Dir(paths.meta), 0o755)
+			writeNote(paths.meta, note{ContentType: contentType, Status: 200, Time: millis(time.Now())})
+		}
+		return paths
+	}
+	downloaded := place(LibretroHost+"Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png", "image/png", picture, true)
+	byHand := place(LibretroHost+"Nintendo%20-%20Game%20Boy/Named_Boxarts/Mine.png", "image/png", picture, false)
+	cover := place(LaunchboxImagesHost+"0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0.png", "image/png", picture, true)
+	font := place(CDNHost+"gh/x/y@1/font.woff2", "font/woff2", []byte("font"), true)
+
+	cache.DropOriginals()
+	for name, paths := range map[string]cachePaths{"downloaded art": downloaded, "LaunchBox cover": cover} {
+		if isFile(paths.file) || !isFile(paths.webP) {
+			t.Errorf("%s: original %v, copy %v", name, isFile(paths.file), isFile(paths.webP))
+		}
+	}
+	if !isFile(byHand.file) || isFile(byHand.webP) {
+		t.Error("art put there by hand was touched")
+	}
+	if !isFile(font.file) || isFile(font.webP) {
+		t.Error("a file that isn't an image was touched")
+	}
+	entry, err := cache.File(LibretroHost+"Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png", 0, true)
+	if err != nil || entry == nil || entry.Path != downloaded.webP || entry.ContentType != "image/webp" {
+		t.Errorf("converted art: %+v %v", entry, err)
+	}
+	if entry, _ := cache.File(LibretroHost+"Nintendo%20-%20Game%20Boy/Named_Boxarts/Mine.png", 0, true); entry == nil || entry.Path != byHand.file {
+		t.Errorf("art put there by hand: %+v", entry)
+	}
+}

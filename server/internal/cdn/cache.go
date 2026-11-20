@@ -53,6 +53,9 @@ type Cache struct {
 	// The file name of a game's best front cover on LaunchBox's image server, by its LaunchBox id; empty for none.
 	// Unset, LaunchBox's covers aren't used
 	LaunchboxCovers func(databaseID string) string
+	// Whether downloaded images are kept as they came beside their WebP copy. Without them (CDN_KEEP_ORIGINALS=false),
+	// an image is kept only as its WebP copy, a seventh of the size, and that's what every browser is sent
+	KeepOriginals bool
 
 	mutex       sync.Mutex
 	downloads   map[string]*call
@@ -74,7 +77,7 @@ func New(data *Data, directories config.Directories, offline bool, extraCertific
 	transport.DialContext = dialer.DialContext
 	return &Cache{
 		Data: data, directory: filepath.Join(directories.Cache, "cdn"), artwork: directories.Artwork,
-		client: &http.Client{Transport: transport}, Offline: offline, Recheck: DefaultRecheck,
+		client: &http.Client{Transport: transport}, Offline: offline, Recheck: DefaultRecheck, KeepOriginals: true,
 		downloads: map[string]*call{}, unreachable: map[string]time.Time{}, conversions: map[string]*call{},
 		coverLists: map[string]*coverList{}, coverParses: map[string]*call{},
 	}
@@ -273,6 +276,15 @@ func (c *Cache) read(href string) (*Entry, error) {
 		}, nil
 	}
 	if file == nil {
+		// An image kept only as its WebP copy (CDN_KEEP_ORIGINALS=false)
+		if noted.Status == 200 && isWebPSource(noted.ContentType) {
+			if info, err := os.Stat(paths.webP); err == nil && info.Mode().IsRegular() {
+				return &Entry{
+					ContentType: "image/webp", Path: paths.webP, Size: info.Size(), Status: 200, Time: noted.Time,
+					WebPPath: paths.webP,
+				}, nil
+			}
+		}
 		return nil, nil
 	}
 	file.ContentType, file.Status, file.Time = noted.ContentType, 200, noted.Time
@@ -365,7 +377,13 @@ func (c *Cache) download(href string) error {
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	return writeNote(paths.meta, note{ContentType: contentType, Status: 200, Time: millis(time.Now())})
+	if err := writeNote(paths.meta, note{ContentType: contentType, Status: 200, Time: millis(time.Now())}); err != nil {
+		return err
+	}
+	if !c.KeepOriginals && isWebPSource(contentType) {
+		c.dropOriginal(paths.file, paths.webP)
+	}
+	return nil
 }
 
 // once runs work for key, or waits for the run already under way and takes its result. A run that panics (in the image

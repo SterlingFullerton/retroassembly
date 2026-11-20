@@ -127,6 +127,8 @@ type Config struct {
 	// How many days a file found missing upstream is remembered before it's looked for again, 0 for forever
 	// (CDN_RECHECK_DAYS, 30 by default)
 	CDNRecheckDays float64
+	// Whether downloaded images are kept as they came beside their WebP copy (CDN_KEEP_ORIGINALS, true unless "false")
+	CDNKeepOriginals bool
 	// The built browser app, dist/client
 	ClientRoot  string
 	Directories Directories
@@ -201,11 +203,12 @@ func Load() Config {
 	}
 
 	return Config{
-		CDNCache:       Get("CDN_CACHE") == "true",
-		CDNOffline:     Get("CDN_OFFLINE") == "true",
-		CDNPrefetch:    Get("CDN_PREFETCH"),
-		CDNRecheckDays: recheckDays(Get("CDN_RECHECK_DAYS")),
-		ClientRoot:     env("CLIENT_DIR", absolute("dist", "client")),
+		CDNCache:         Get("CDN_CACHE") == "true",
+		CDNOffline:       Get("CDN_OFFLINE") == "true",
+		CDNPrefetch:      Get("CDN_PREFETCH"),
+		CDNRecheckDays:   recheckDays(Get("CDN_RECHECK_DAYS")),
+		CDNKeepOriginals: Get("CDN_KEEP_ORIGINALS") != "false",
+		ClientRoot:       env("CLIENT_DIR", absolute("dist", "client")),
 		Directories: Directories{
 			Artwork:     artwork,
 			Attachments: attachments,

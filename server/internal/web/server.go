@@ -66,6 +66,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline, c.OIDC.ExtraCertificates)
 		cache.Recheck = time.Duration(c.CDNRecheckDays * float64(24*time.Hour))
 		cache.LaunchboxCovers = gameInfo.LaunchboxCover
+		cache.KeepOriginals = c.CDNKeepOriginals
 	}
 	multiDisc := map[string]bool{}
 	for _, console := range data.MultiDiscConsoles {

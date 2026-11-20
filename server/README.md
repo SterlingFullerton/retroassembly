@@ -32,7 +32,7 @@ longer exist name the Node code a part was ported from, which the history before
   files once and keeps them in the data folder (libretro's art in the artwork folder, when one is set), the covers
   each game list says the cache has (LaunchBox's front cover, from the game info database, for a game libretro has no
   box art for), the WebP copies of images (made with libwebp, built into the server), offline mode (`CDN_OFFLINE`),
-  how long a missing file is remembered (`CDN_RECHECK_DAYS`) and the prefetch at startup (`CDN_PREFETCH`).
+  how long a missing file is remembered (`CDN_RECHECK_DAYS`), whether downloaded images are kept beside their WebP copies (`CDN_KEEP_ORIGINALS`) and the prefetch at startup (`CDN_PREFETCH`).
   The cache's files are kept as the Node server kept them, so a cache it filled is used as it is
 - Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. The provider must be reached over https; one with a
   certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the setting the Node server read it from (the CDN

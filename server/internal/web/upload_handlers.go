@@ -549,6 +549,10 @@ func (s *Server) StartBackgroundJobs() {
 		}
 	}()
 	go s.BackfillGameInfo()
+	// Images the cache kept as they came, from before CDN_KEEP_ORIGINALS=false, are converted once
+	if s.cdn != nil && !s.cdn.KeepOriginals {
+		go s.cdn.DropOriginals()
+	}
 	s.StartPrefetch()
 	go func() {
 		if err := s.compressor.CompressAll(); err != nil {
