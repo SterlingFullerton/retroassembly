@@ -733,10 +733,7 @@
     },
     {
       "cachePath": "jsdelivr/gh/libretro/docs@35b22b41444b7d547d7f239669332c634acb455b/docs/image/core/fceumm.png",
-      "result": {
-        "requiresLogin": false,
-        "url": "https://cdn.jsdelivr.net/gh/libretro/docs@35b22b41444b7d547d7f239669332c634acb455b/docs/image/core/fceumm.png"
-      }
+      "result": null
     },
     {
       "cachePath": "jsdelivr///evil.example/x",

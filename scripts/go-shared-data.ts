@@ -56,7 +56,8 @@ function getFixedPrefetchUrls(category: 'assets' | 'shaders') {
       urls.add(url)
     }
   }
-  return [...urls]
+  // Only files from the CDNs: the app serves its own (the shader previews) itself, and the empty "disabled" shader has none
+  return [...urls].filter((url) => url.startsWith('https://'))
 }
 
 // What the CDN cache needs: which files it may fetch (src/utils/server/cdn-cache.ts), the files the prefetch downloads

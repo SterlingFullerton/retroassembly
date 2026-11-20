@@ -29,7 +29,6 @@ export const repositoryVersions = {
   'libretro-thumbnails/Sega_-_SG-1000': '3a0e96504581c36cbb8a0d6860099565142ef7fd', // https://github.com/libretro-thumbnails/Sega_-_SG-1000/commits
   'libretro-thumbnails/SNK_-_Neo_Geo_Pocket': '3932af2130b55ae1d666632c79fc99515ed5438c', // https://github.com/libretro-thumbnails/SNK_-_Neo_Geo_Pocket/commits
   'libretro-thumbnails/SNK_-_Neo_Geo_Pocket_Color': '2b397b7b0a7e0056cfe787599578ddf8724f1859', // https://github.com/libretro-thumbnails/SNK_-_Neo_Geo_Pocket_Color/commits
-  'libretro/docs': '35b22b41444b7d547d7f239669332c634acb455b', // https://github.com/libretro/docs/commits
   'libretro/retroarch-assets': '2d24ef2972a709f870cc3f73853158fa2376f37d', // https://github.com/libretro/retroarch-assets/commits
   'Mattersons/es-theme-neutral': 'c9b38e7265d680d3da68e96df1bc2ed1cfefb79f', // https://github.com/Mattersons/es-theme-neutral/commits
   // Free homebrew games, which the end-to-end tests play
