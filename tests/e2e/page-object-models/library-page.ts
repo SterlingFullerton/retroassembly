@@ -15,6 +15,20 @@ export class LibraryPage {
     await page.getByRole('dialog').waitFor({ state: 'detached' })
   }
 
+  /**
+   * Starts the game on its page with Start or Continue, and waits until it's playing: the play is recorded once the
+   * game has started, and only then does it take keys such as Escape for its menu
+   */
+  async launchGame(button: 'continue' | 'start') {
+    const { page } = this
+    const recorded = page.waitForResponse(
+      (response) => response.request().method() === 'POST' && response.url().endsWith('/api/v1/launch_records'),
+    )
+    await page.getByText(button).click()
+    await recorded
+    await page.locator('#canvas').waitFor()
+  }
+
   async goto() {
     await this.page.goto(this.romsURL, { waitUntil: 'load' })
   }

@@ -116,6 +116,11 @@ function formOf(fields: NonNullable<RequestInput['form']>) {
   return form
 }
 
+// What the client's proxies stand in front of: a function, so they can be called; calls go to their `apply`
+function callable() {
+  return null
+}
+
 /**
  * A client whose properties are an address's parts, ending in the method: `$get`, `$post`, `$patch` or `$delete` send
  * a request, `$url` gives the address
@@ -126,7 +131,7 @@ export function createClient<Routes>(
   send: typeof fetch = async (input, init) => await fetch(input, init),
 ): Routes {
   function proxy(segments: string[]): unknown {
-    return new Proxy(() => {}, {
+    return new Proxy(callable, {
       apply(_target, _this, args: [RequestInput?, RequestOptions?]) {
         const [input = {}, options = {}] = args
         const method = segments.at(-1)?.slice(1) ?? 'get'
