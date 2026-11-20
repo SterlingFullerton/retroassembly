@@ -1,0 +1,799 @@
+{
+  "artwork": [
+    {
+      "result": "/artwork/Nintendo - Game Boy/Named_Boxarts/Tetris (World).png",
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png"
+    },
+    {
+      "result": "/artwork/Nintendo - Game Boy/Named_Snaps/Cotton 100% (Japan).png",
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Snaps/Cotton%20100%%20(Japan).png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Other/Tetris.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris.jpg"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/.hidden.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/a/b/Named_Boxarts/x.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/%2E%2E/Named_Boxarts/x.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/%E0%A4%A.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/a%00b.png"
+    },
+    {
+      "result": null,
+      "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.png"
+    },
+    {
+      "result": "/artwork/Nintendo - Game Boy/Named_Titles/Tetris (World).png",
+      "url": "https://cdn.jsdelivr.net/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Titles/Tetris%20(World).png"
+    },
+    {
+      "result": null,
+      "url": "https://cdn.jsdelivr.net/gh/libretro/retroarch-assets@1/Named_Boxarts/x.png"
+    }
+  ],
+  "candidates": [
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(Japan)%20(En).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Titles/Tetris%20(Japan)%20(En).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Snaps/Tetris%20(Japan)%20(En).png"
+      ],
+      "rom": {
+        "fileName": "Tetris (Japan) (En).gb",
+        "platform": "gb",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/tetris.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Titles/tetris.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Snaps/tetris.png"
+      ],
+      "rom": {
+        "fileName": "tetris.gb",
+        "platform": "gb",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Dr.%20Mario%20(World).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Titles/Dr.%20Mario%20(World).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Snaps/Dr.%20Mario%20(World).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Dr%20Mario.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Titles/Dr%20Mario.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Snaps/Dr%20Mario.png"
+      ],
+      "rom": {
+        "fileName": "Dr Mario.gb",
+        "platform": "gb",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "Dr. Mario (World)"
+          }
+        }
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Tetris%20(Europe).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Tetris%20(Europe).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Tetris%20(Europe).png"
+      ],
+      "rom": {
+        "fileName": "Tetris (Europe).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/zelda.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/zelda.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/zelda.png"
+      ],
+      "rom": {
+        "fileName": "zelda.nes",
+        "platform": "nes",
+        "rawGameMetadata": {
+          "launchbox": {
+            "name": "The Legend of Zelda"
+          }
+        }
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/peekaboo.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/peekaboo.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/peekaboo.png"
+      ],
+      "rom": {
+        "fileName": "peekaboo.nes",
+        "platform": "nes",
+        "rawGameMetadata": {
+          "launchbox": {
+            "name": "Peek-A-Boo Poker"
+          }
+        }
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Q_bert%20(Japan).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Q_bert%20(Japan).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Q_bert%20(Japan).png"
+      ],
+      "rom": {
+        "fileName": "Q*bert (Japan).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Mega%20Man%202%20(Europe).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Mega%20Man%202%20(Europe).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Mega%20Man%202%20(Europe).png"
+      ],
+      "rom": {
+        "fileName": "Mega Man 2 (Europe).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Mega%20Man%202.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Mega%20Man%202.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Mega%20Man%202.png"
+      ],
+      "rom": {
+        "fileName": "Mega Man 2.nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "/cdn/libretro-thumbnails/MAME/Named_Boxarts/Street%20Fighter%20II%20-%20The%20World%20Warrior%20(USA%20910206).png",
+        "/cdn/libretro-thumbnails/MAME/Named_Titles/Street%20Fighter%20II%20-%20The%20World%20Warrior%20(USA%20910206).png",
+        "/cdn/libretro-thumbnails/MAME/Named_Snaps/Street%20Fighter%20II%20-%20The%20World%20Warrior%20(USA%20910206).png",
+        "/cdn/libretro-thumbnails/MAME/Named_Boxarts/sf2.png",
+        "/cdn/libretro-thumbnails/MAME/Named_Titles/sf2.png",
+        "/cdn/libretro-thumbnails/MAME/Named_Snaps/sf2.png"
+      ],
+      "rom": {
+        "fileName": "sf2.zip",
+        "platform": "arcade",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "Street Fighter II - The World Warrior (USA 910206)",
+            "platform": "MAME 2003-Plus"
+          }
+        }
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Sony%20-%20PlayStation%20Portable/Named_Boxarts/LEGO%20Batman%20(USA).png",
+        "/cdn/libretro-thumbnails/Sony%20-%20PlayStation%20Portable/Named_Titles/LEGO%20Batman%20(USA).png",
+        "/cdn/libretro-thumbnails/Sony%20-%20PlayStation%20Portable/Named_Snaps/LEGO%20Batman%20(USA).png"
+      ],
+      "rom": {
+        "fileName": "LEGO Batman (USA).iso",
+        "platform": "psp",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Unknown%20Game%20(USA).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Unknown%20Game%20(USA).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Unknown%20Game%20(USA).png"
+      ],
+      "rom": {
+        "fileName": "Unknown Game (USA).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Atari%20-%202600/Named_Boxarts/Pitfall.png",
+        "/cdn/libretro-thumbnails/Atari%20-%202600/Named_Titles/Pitfall.png",
+        "/cdn/libretro-thumbnails/Atari%20-%202600/Named_Snaps/Pitfall.png"
+      ],
+      "rom": {
+        "fileName": "Pitfall.a26",
+        "platform": "atari2600",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Game_%20The%20%22Sequel%22%20|%20Part%202%20_Beta_%20_%20More_.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Game_%20The%20%22Sequel%22%20|%20Part%202%20_Beta_%20_%20More_.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Game_%20The%20%22Sequel%22%20|%20Part%202%20_Beta_%20_%20More_.png"
+      ],
+      "rom": {
+        "fileName": "Game: The \"Sequel\" | Part 2 <Beta> & More?.nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/A_B_C_D_E.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Titles/A_B_C_D_E.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Snaps/A_B_C_D_E.png"
+      ],
+      "rom": {
+        "fileName": "A/B\\C*D`E.sfc",
+        "platform": "snes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy%20Advance/Named_Boxarts/Game%20#1%20(USA).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy%20Advance/Named_Titles/Game%20#1%20(USA).png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy%20Advance/Named_Snaps/Game%20#1%20(USA).png"
+      ],
+      "rom": {
+        "fileName": "Game #1 (USA).gba",
+        "platform": "gba",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/NEC%20-%20PC%20Engine%20-%20TurboGrafx%2016/Named_Boxarts/Cotton%20100%%20(Japan).png",
+        "/cdn/libretro-thumbnails/NEC%20-%20PC%20Engine%20-%20TurboGrafx%2016/Named_Titles/Cotton%20100%%20(Japan).png",
+        "/cdn/libretro-thumbnails/NEC%20-%20PC%20Engine%20-%20TurboGrafx%2016/Named_Snaps/Cotton%20100%%20(Japan).png"
+      ],
+      "rom": {
+        "fileName": "Cotton 100% (Japan).pce",
+        "platform": "pcengine",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Pok%C3%A9mon%20%C3%9Cn%C3%AFcode%20%E6%97%A5%E6%9C%AC.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Titles/Pok%C3%A9mon%20%C3%9Cn%C3%AFcode%20%E6%97%A5%E6%9C%AC.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Snaps/Pok%C3%A9mon%20%C3%9Cn%C3%AFcode%20%E6%97%A5%E6%9C%AC.png"
+      ],
+      "rom": {
+        "fileName": "Pokémon Ünïcode 日本.gb",
+        "platform": "gb",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/.hidden.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/.hidden.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/.hidden.png"
+      ],
+      "rom": {
+        "fileName": ".hidden",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Dots...png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Dots...png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Dots...png"
+      ],
+      "rom": {
+        "fileName": "Dots...nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "",
+        "",
+        "",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Tabhere%7Bx%7D.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/Tabhere%7Bx%7D.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/Tabhere%7Bx%7D.png"
+      ],
+      "rom": {
+        "fileName": "Tab\there{x}.nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": [
+        "/cdn/libretro-thumbnails/Sega%20-%2032X/Named_Boxarts/Named.png",
+        "/cdn/libretro-thumbnails/Sega%20-%2032X/Named_Titles/Named.png",
+        "/cdn/libretro-thumbnails/Sega%20-%2032X/Named_Snaps/Named.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/game.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Titles/game.png",
+        "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Snaps/game.png"
+      ],
+      "rom": {
+        "fileName": "game.nes",
+        "platform": "nes",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "Named",
+            "platform": "Sega - 32X"
+          }
+        }
+      }
+    },
+    {
+      "result": [
+        "/cdn/libretro-thumbnails/FBNeo%20-%20Arcade%20Games/Named_Boxarts/x.png",
+        "/cdn/libretro-thumbnails/FBNeo%20-%20Arcade%20Games/Named_Titles/x.png",
+        "/cdn/libretro-thumbnails/FBNeo%20-%20Arcade%20Games/Named_Snaps/x.png",
+        "/cdn/libretro-thumbnails/MAME/Named_Boxarts/game.png",
+        "/cdn/libretro-thumbnails/MAME/Named_Titles/game.png",
+        "/cdn/libretro-thumbnails/MAME/Named_Snaps/game.png"
+      ],
+      "rom": {
+        "fileName": "game.zip",
+        "platform": "arcade",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "x",
+            "platform": "FBNeo - Arcade Games"
+          }
+        }
+      }
+    },
+    {
+      "result": ["", "", "", "", "", ""],
+      "rom": {
+        "fileName": "",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    }
+  ],
+  "coverLists": [
+    {
+      "folder": "MAME",
+      "html": "<a href=\"?C=N;O=D\">Name</a>\n<a href=\"Street%20Fighter%20II%20-%20The%20World%20Warrior%20(World%20910522).png\">Street Fighter II - The World Warrior (World 910522).png</a>\n<a href=\"Street%20Fighter%20II%20-%20The%20World%20Warrior%20(USA%20910206).png\">Street Fighter II - The World Warrior (USA 910206).png</a>"
+    },
+    {
+      "folder": "Nintendo - Game Boy",
+      "html": "<a href=\"?C=N;O=D\">Name</a>\n<a href=\"Dr.%20Mario%20(World).png\">Dr. Mario (World).png</a>\n<a href=\"Dr.%20Mario%20(World)%20(Rev%201).png\">Dr. Mario (World) (Rev 1).png</a>\n<a href=\"Tetris%20(Japan).png\">Tetris (Japan).png</a>\n<a href=\"Tetris%20(World)%20(Rev%201).png\">Tetris (World) (Rev 1).png</a>"
+    },
+    {
+      "folder": "Nintendo - Nintendo Entertainment System",
+      "html": "<a href=\"?C=N;O=D\">Name</a>\n<a href=\"Peek-A-Boo%20Poker%20(1991)(Panesian)(EU-US).png\">Peek-A-Boo Poker (1991)(Panesian)(EU-US).png</a>\n<a href=\"Peek-A-Boo%20Poker%20(1991)(Panesian)(EU-US)%5Bh%20Vimm%5D%5BiNES%20title%5D.png\">Peek-A-Boo Poker (1991)(Panesian)(EU-US)[h Vimm][iNES title].png</a>\n<a href=\"Tetris%20(Japan).png\">Tetris (Japan).png</a>\n<a href=\"Tetris%20(USA).png\">Tetris (USA).png</a>\n<a href=\"Tetris%20(USA)%20%5Bb%5D.png\">Tetris (USA) [b].png</a>\n<a href=\"Legend%20of%20Zelda%2C%20The%20(USA).png\">Legend of Zelda, The (USA).png</a>\n<a href=\"Legend%20of%20Zelda%2C%20The%20(Europe)%20(Proto).png\">Legend of Zelda, The (Europe) (Proto).png</a>\n<a href=\"Q-bert%20(USA).png\">Q-bert (USA).png</a>\n<a href=\"Mega%20Man%202%20(Europe).png\">Mega Man 2 (Europe).png</a>\n<a href=\"Mega%20Man%202%20(USA).png\">Mega Man 2 (USA).png</a>"
+    },
+    {
+      "folder": "Sony - PlayStation Portable",
+      "html": "<a href=\"?C=N;O=D\">Name</a>\n<a href=\"LEGO%20Batman%20-%20The%20Video%20Game%20(USA).png\">LEGO Batman - The Video Game (USA).png</a>\n<a href=\"LEGO%20Batman%20-%20The%20Video%20Game%20(Europe)%20(En%2CFr%2CDe%2CEs%2CIt%2CDa).png\">LEGO Batman - The Video Game (Europe) (En,Fr,De,Es,It,Da).png</a>"
+    }
+  ],
+  "matched": [
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(Japan).png",
+      "rom": {
+        "fileName": "Tetris (Japan) (En).gb",
+        "platform": "gb",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World)%20(Rev%201).png",
+      "rom": {
+        "fileName": "tetris.gb",
+        "platform": "gb",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Dr.%20Mario%20(World).png",
+      "rom": {
+        "fileName": "Dr Mario.gb",
+        "platform": "gb",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "Dr. Mario (World)"
+          }
+        }
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Tetris%20(USA).png",
+      "rom": {
+        "fileName": "Tetris (Europe).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Legend%20of%20Zelda,%20The%20(USA).png",
+      "rom": {
+        "fileName": "zelda.nes",
+        "platform": "nes",
+        "rawGameMetadata": {
+          "launchbox": {
+            "name": "The Legend of Zelda"
+          }
+        }
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Peek-A-Boo%20Poker%20(1991)(Panesian)(EU-US).png",
+      "rom": {
+        "fileName": "peekaboo.nes",
+        "platform": "nes",
+        "rawGameMetadata": {
+          "launchbox": {
+            "name": "Peek-A-Boo Poker"
+          }
+        }
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Q-bert%20(USA).png",
+      "rom": {
+        "fileName": "Q*bert (Japan).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Mega%20Man%202%20(Europe).png",
+      "rom": {
+        "fileName": "Mega Man 2 (Europe).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/Mega%20Man%202%20(USA).png",
+      "rom": {
+        "fileName": "Mega Man 2.nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": "/cdn/libretro-thumbnails/MAME/Named_Boxarts/Street%20Fighter%20II%20-%20The%20World%20Warrior%20(USA%20910206).png",
+      "rom": {
+        "fileName": "sf2.zip",
+        "platform": "arcade",
+        "rawGameMetadata": {
+          "libretro": {
+            "name": "Street Fighter II - The World Warrior (USA 910206)",
+            "platform": "MAME 2003-Plus"
+          }
+        }
+      }
+    },
+    {
+      "result": null,
+      "rom": {
+        "fileName": "LEGO Batman (USA).iso",
+        "platform": "psp",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": null,
+      "rom": {
+        "fileName": "Unknown Game (USA).nes",
+        "platform": "nes",
+        "rawGameMetadata": null
+      }
+    },
+    {
+      "result": null,
+      "rom": {
+        "fileName": "Pitfall.a26",
+        "platform": "atari2600",
+        "rawGameMetadata": null
+      }
+    }
+  ],
+  "regions": [
+    {
+      "name": "Legend of Zelda, The - Link's Awakening (USA) [!]",
+      "result": ["usa"]
+    },
+    {
+      "name": "The Legend of Zelda: Link's Awakening (Europe)",
+      "result": ["europe"]
+    },
+    {
+      "name": "Peek-A-Boo Poker (1991)(Panesian)(EU-US)",
+      "result": ["europe", "usa"]
+    },
+    {
+      "name": "Tetris (JU) [h1]",
+      "result": ["japan", "usa"]
+    },
+    {
+      "name": "Sonic & Knuckles (World)",
+      "result": ["world"]
+    },
+    {
+      "name": "Pokémon - Édition Rouge (France)",
+      "result": ["france"]
+    },
+    {
+      "name": "A Boy and His Blob (USA, Europe) (Beta)",
+      "result": ["usa", "europe"]
+    },
+    {
+      "name": "Super Mario Bros. (World) (Hack) [b1]",
+      "result": ["world"]
+    },
+    {
+      "name": "Game (Asia) (En,Ja)",
+      "result": ["asia"]
+    },
+    {
+      "name": "Cotton 100% (Japan)",
+      "result": ["japan"]
+    }
+  ],
+  "targets": [
+    {
+      "cachePath": "libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/Nintendo - Game Boy/Named_Boxarts/Tetris (World).png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/a/../../b.png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/b.png"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/a/%2e%2e/b.png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/b.png"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails",
+      "result": null
+    },
+    {
+      "cachePath": "libretro-thumbnails//evil.example/x.png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/evil.example/x.png"
+      }
+    },
+    {
+      "cachePath": "libretro-thumbnails/x.png?query=1#fragment",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/x.png?query=1#fragment"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Boxarts/Tetris%20(World).png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://cdn.jsdelivr.net/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Boxarts/Tetris%20(World).png"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro/retroarch-assets@2d24ef2972a709f870cc3f73853158fa2376f37d/xmb/icon.png",
+      "result": {
+        "requiresLogin": false,
+        "url": "https://cdn.jsdelivr.net/gh/libretro/retroarch-assets@2d24ef2972a709f870cc3f73853158fa2376f37d/xmb/icon.png"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro/retroarch-assets@other/xmb/icon.png",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt.glslp",
+      "result": {
+        "requiresLogin": false,
+        "url": "https://cdn.jsdelivr.net/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt.glslp"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/gh/someone/else@1/file.js",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro%2Fdocs@35b22b41444b7d547d7f239669332c634acb455b/x",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/npm/anything@1/x.js",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/fontsource/fonts/inter:vf@5.2.8/latin-wght-normal.woff2",
+      "result": {
+        "requiresLogin": false,
+        "url": "https://cdn.jsdelivr.net/fontsource/fonts/inter:vf@5.2.8/latin-wght-normal.woff2"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/fontsource/fonts/inter:vf@5.2.9/latin-wght-normal.woff2",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro/docs@35b22b41444b7d547d7f239669332c634acb455b/docs/image/core/fceumm.png",
+      "result": {
+        "requiresLogin": false,
+        "url": "https://cdn.jsdelivr.net/gh/libretro/docs@35b22b41444b7d547d7f239669332c634acb455b/docs/image/core/fceumm.png"
+      }
+    },
+    {
+      "cachePath": "jsdelivr///evil.example/x",
+      "result": null
+    },
+    {
+      "cachePath": "unknown/x",
+      "result": null
+    },
+    {
+      "cachePath": "///libretro-thumbnails/x.png",
+      "result": {
+        "requiresLogin": true,
+        "url": "https://thumbnails.libretro.com/x.png"
+      }
+    },
+    {
+      "cachePath": "jsdelivr/gh/%E0%A4%A/x",
+      "error": "URIError"
+    }
+  ],
+  "titleKeys": [
+    {
+      "name": "Legend of Zelda, The - Link's Awakening (USA) [!]",
+      "result": "thelegendofzeldalinksawakening"
+    },
+    {
+      "name": "The Legend of Zelda: Link's Awakening (Europe)",
+      "result": "thelegendofzeldalinksawakening"
+    },
+    {
+      "name": "Peek-A-Boo Poker (1991)(Panesian)(EU-US)",
+      "result": "peekaboopoker"
+    },
+    {
+      "name": "Tetris (JU) [h1]",
+      "result": "tetris"
+    },
+    {
+      "name": "Sonic & Knuckles (World)",
+      "result": "sonicandknuckles"
+    },
+    {
+      "name": "Pokémon - Édition Rouge (France)",
+      "result": "pokmonditionrouge"
+    },
+    {
+      "name": "A Boy and His Blob (USA, Europe) (Beta)",
+      "result": "aboyandhisblob"
+    },
+    {
+      "name": "Super Mario Bros. (World) (Hack) [b1]",
+      "result": "supermariobros"
+    },
+    {
+      "name": "Game (Asia) (En,Ja)",
+      "result": "game"
+    },
+    {
+      "name": "Cotton 100% (Japan)",
+      "result": "cotton100"
+    }
+  ]
+}

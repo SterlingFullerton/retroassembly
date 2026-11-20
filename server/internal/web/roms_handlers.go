@@ -40,6 +40,10 @@ func (s *Server) picks(pick func(*http.Request, library.Scope, []string) ([]libr
 			writeError(w, err)
 			return
 		}
+		if err := s.withCovers(roms); err != nil {
+			writeError(w, err)
+			return
+		}
 		writeJSON(w, http.StatusOK, roms)
 	}
 }
@@ -122,6 +126,10 @@ func (s *Server) launchHistory(w http.ResponseWriter, r *http.Request, scope lib
 	}
 	history, err := library.LaunchHistory(r.Context(), scope, platforms, page, pageSize, "")
 	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.withCovers(history.Roms); err != nil {
 		writeError(w, err)
 		return
 	}

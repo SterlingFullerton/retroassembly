@@ -210,6 +210,27 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - Game info backfill (`migration/raw-metadata.ts`), disc groups update, moving uploaded artwork
 - **Done when:** Go no longer proxies anything to Node
 
+**Status: in progress.**
+
+- Done: the CDN cache (`server/internal/cdn`): `/cdn/*`, the covers every game list notes (`coverCandidates`,
+  libretro's box art matched by title included), libretro's art in the artwork folder, offline mode, and the prefetch.
+  With it, the game lists and the library's pages are Go's whether the cache is on or not. The WebP copies are made
+  with `gen2brain/webp`, libwebp translated to Go, so the server stays one static binary; at the same quality as sharp,
+  the copies come out within a few bytes of Node's. Each conversion takes tens of MB while it runs, so two run at a
+  time and the memory is given back when the last ends: converting 24 covers, six asked for at once, Go peaked at
+  114 MB and was back to 17 MB right after (macOS physical footprint); Node peaked at 167 MB from 111 MB. The binary
+  grew to 25 MB
+- The cache's files, notes and copies are kept as Node keeps them, so the two servers share one cache: Node serves
+  what Go downloaded and the copies Go made. What the cache may fetch, the covers it looks for and the matching by
+  title are checked against the TypeScript code's answers (`server/internal/cdn/testdata`), and the whole cache
+  against Node with real downloads from jsDelivr
+- Differences: an address under `/cdn/` with a broken escape (`%E0%A4%A`) is refused by Go's HTTP server with 400
+  before it's read, where Node answers 500; an empty 404 says `Content-Length: 0`
+- While both servers run, each starts its own prefetch if `RETROASSEMBLY_RUN_TIME_CDN_PREFETCH` is set for both: they
+  download into the same cache safely, but twice. Set it for the Go server only
+- Next: PSP compression moves with uploading games, which starts it; the game info backfill and uploads wait for
+  `origin/main`'s game info commits; then the disc groups update and moving uploaded artwork at startup
+
 ### Phase 4: Remove Node from the server
 
 - Dockerfile: Node stage builds the browser app and the emulator files; final image is the Go binary plus
@@ -234,9 +255,8 @@ About 30 server files import code the browser app also uses. What moves where:
 
 ## Open questions
 
-1. **WebP copies of CDN images.** Keep with `govips` (needs libvips in the image, gives up the static binary), or drop
-   it and send the originals (bigger box art downloads on a slow network), or encode with a pure-Go library if a good
-   one exists by then.
+1. ~~**WebP copies of CDN images.**~~ Decided: made in pure Go with `gen2brain/webp` (libwebp translated to Go), at
+   the same quality as before, keeping the static binary.
 2. **Phase 2 proxy, or a single switch.** The proxy lets each group ship alone, but two servers run side by side for a
    while. A single switch is simpler but larger.
 3. **First paint without server rendering.** The library opens to an empty layout until its data arrives. Is a loading

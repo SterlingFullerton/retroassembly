@@ -159,6 +159,10 @@ func (s *Server) libraryLayoutData(w http.ResponseWriter, r *http.Request, scope
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(recent.Roms); err != nil {
+		writeError(w, err)
+		return
+	}
 	adminID, err := s.adminID(r)
 	if err != nil {
 		writeError(w, err)
@@ -221,6 +225,10 @@ func (s *Server) gamesPageData(w http.ResponseWriter, r *http.Request, scope lib
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(list.Roms); err != nil {
+		writeError(w, err)
+		return
+	}
 	platformCount, err := library.PlatformCount(r.Context(), scope, platforms)
 	if err != nil {
 		writeError(w, err)
@@ -253,6 +261,10 @@ func (s *Server) favoritesPageData(w http.ResponseWriter, r *http.Request, scope
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(list.Roms); err != nil {
+		writeError(w, err)
+		return
+	}
 	lettersValue, err := letters(r, scope, platforms, query, list, true, "")
 	if err != nil {
 		writeError(w, err)
@@ -275,6 +287,10 @@ func (s *Server) historyPageData(w http.ResponseWriter, r *http.Request, scope l
 	query := listQuery(r)
 	history, err := library.LaunchHistory(r.Context(), scope, platforms, query.Page, 100, query.Search)
 	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.withCovers(history.Roms); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -337,6 +353,10 @@ func (s *Server) platformPageData(w http.ResponseWriter, r *http.Request, scope 
 	query.Platform = platform
 	list, err := library.GetRoms(r.Context(), scope, platforms, query)
 	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.withCovers(list.Roms); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -428,6 +448,13 @@ func (s *Server) romPageData(w http.ResponseWriter, r *http.Request, scope libra
 			data = append(data, library.Field{Key: "gameSave", Value: save})
 		}
 	}
+	// Which of its pictures the server has, including libretro's box art matched by title
+	withCovers := []library.Object{rom}
+	if err := s.withCovers(withCovers); err != nil {
+		writeError(w, err)
+		return
+	}
+	rom = withCovers[0]
 	data = append(data, library.Field{Key: "rom", Value: rom})
 	if len(states) > 0 {
 		data = append(data, library.Field{Key: "state", Value: states[0]})
@@ -450,8 +477,16 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(recentlySaved); err != nil {
+		writeError(w, err)
+		return
+	}
 	newAdded, err := library.GetRoms(ctx, scope, platforms, library.ListQuery{Direction: "desc", OrderBy: "added", PageSize: 20})
 	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.withCovers(newAdded.Roms); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -460,8 +495,16 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(favorites.Roms); err != nil {
+		writeError(w, err)
+		return
+	}
 	launched, err := library.LaunchHistory(ctx, scope, platforms, 1, 1, "")
 	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.withCovers(launched.Roms); err != nil {
 		writeError(w, err)
 		return
 	}

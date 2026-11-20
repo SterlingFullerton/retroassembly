@@ -16,7 +16,23 @@ type Language struct {
 	Messages map[string]string `json:"messages"`
 }
 
+// CDN is what the CDN cache needs to know
+type CDN struct {
+	// The fonts' paths on the CDN, which anyone may have cached
+	FontPaths []string `json:"fontPaths"`
+	// The folder libretro keeps each console's art in, when it has one
+	LibretroNames map[string]string `json:"libretroNames"`
+	// The GitHub repositories whose files anyone may have cached, at these versions only
+	PinnedRepositories map[string]string `json:"pinnedRepositories"`
+	// The files the prefetch downloads for its categories that don't depend on the library
+	Prefetch struct {
+		Assets  []string `json:"assets"`
+		Shaders []string `json:"shaders"`
+	} `json:"prefetch"`
+}
+
 type Data struct {
+	CDN CDN `json:"cdn"`
 	// Each language's date format, for reading dates typed in it
 	DateFormats     map[string]string `json:"dateFormats"`
 	DefaultLanguage string            `json:"defaultLanguage"`

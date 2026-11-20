@@ -30,17 +30,20 @@ function toUpstreamUrl(url: string) {
   return url.startsWith('/cdn/') ? resolveCDNCacheTarget(url.slice('/cdn/'.length))?.url : url
 }
 
-async function getPrefetchUrls(selected: Set<Category>) {
+/**
+ * The files the prefetch downloads for a category that doesn't depend on the library: the shaders, or the fonts, logos
+ * and consoles' pictures. The Go server reads the same lists (scripts/go-shared-data.ts)
+ */
+export function getFixedPrefetchUrls(category: 'assets' | 'shaders') {
   const urls = new Set<string>()
-  // `cores` is still accepted, but needs nothing now: every emulator is served by the app itself
-  if (selected.has('shaders')) {
+  if (category === 'shaders') {
     for (const { id, thumbnail } of shaders) {
       for (const url of [...getShaderUrls(id), thumbnail]) {
         urls.add(url)
       }
     }
   }
-  if (selected.has('assets')) {
+  if (category === 'assets') {
     for (const { path } of fonts) {
       urls.add(getFontUrl(path))
     }
@@ -57,6 +60,19 @@ async function getPrefetchUrls(selected: Set<Category>) {
         `platforms/blured-backgrounds/${platform}.jpg`,
       ]) {
         urls.add(getCDNUrl('arianrhodsandlot/retroassembly-assets', file))
+      }
+    }
+  }
+  return [...urls]
+}
+
+async function getPrefetchUrls(selected: Set<Category>) {
+  const urls = new Set<string>()
+  // `cores` is still accepted, but needs nothing now: every emulator is served by the app itself
+  for (const category of ['shaders', 'assets'] as const) {
+    if (selected.has(category)) {
+      for (const url of getFixedPrefetchUrls(category)) {
+        urls.add(url)
       }
     }
   }

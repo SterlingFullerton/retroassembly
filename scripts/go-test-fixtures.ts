@@ -1,12 +1,17 @@
 // Writes what the TypeScript code answers for a set of inputs, for the Go server's tests to answer the same:
 //   node scripts/go-test-fixtures.ts
 // Run it after changing how settings are resolved or merged, or how games are searched
-import { writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { type PreferenceSnippet, resolveUserPreference } from '#@/constants/preference.ts'
 import { rank } from '#@/controllers/roms/search-roms.ts'
 import { mergePreference } from '#@/utils/isomorphic/preference.ts'
+import { getRomCoverCandidates } from '#@/utils/isomorphic/rom-cover-candidates.ts'
 import { getSearchTitle, normalizeSearchText, scoreRom } from '#@/utils/isomorphic/search.ts'
+import { getArtworkPath, resolveCDNCacheTarget } from '#@/utils/server/cdn-cache.ts'
+import { getCoverListUrl, getMatchedCoverUrl, getRegions, getTitleKey } from '#@/utils/server/libretro-covers.ts'
 
 const resolveInputs: (null | PreferenceSnippet)[] = [
   null,
@@ -179,3 +184,163 @@ const searchFixtures = {
 const searchFixturePath = path.join('server', 'internal', 'search', 'testdata', 'typescript.json')
 await writeFile(searchFixturePath, `${JSON.stringify(searchFixtures, null, 2)}\n`)
 console.info(`Wrote ${searchFixturePath}`)
+
+// The CDN cache: which addresses it fetches, the pictures it looks for for a game, and libretro's box art matched by title
+const coverNames = [
+  "Legend of Zelda, The - Link's Awakening (USA) [!]",
+  "The Legend of Zelda: Link's Awakening (Europe)",
+  'Peek-A-Boo Poker (1991)(Panesian)(EU-US)',
+  'Tetris (JU) [h1]',
+  'Sonic & Knuckles (World)',
+  'Pokémon - Édition Rouge (France)',
+  'A Boy and His Blob (USA, Europe) (Beta)',
+  'Super Mario Bros. (World) (Hack) [b1]',
+  'Game (Asia) (En,Ja)',
+  'Cotton 100% (Japan)',
+]
+const coverLists: Record<string, string[]> = {
+  MAME: ['Street Fighter II - The World Warrior (World 910522)', 'Street Fighter II - The World Warrior (USA 910206)'],
+  'Nintendo - Game Boy': ['Dr. Mario (World)', 'Dr. Mario (World) (Rev 1)', 'Tetris (Japan)', 'Tetris (World) (Rev 1)'],
+  'Nintendo - Nintendo Entertainment System': [
+    'Peek-A-Boo Poker (1991)(Panesian)(EU-US)',
+    'Peek-A-Boo Poker (1991)(Panesian)(EU-US)[h Vimm][iNES title]',
+    'Tetris (Japan)',
+    'Tetris (USA)',
+    'Tetris (USA) [b]',
+    'Legend of Zelda, The (USA)',
+    'Legend of Zelda, The (Europe) (Proto)',
+    'Q-bert (USA)',
+    'Mega Man 2 (Europe)',
+    'Mega Man 2 (USA)',
+  ],
+  'Sony - PlayStation Portable': [
+    'LEGO Batman - The Video Game (USA)',
+    'LEGO Batman - The Video Game (Europe) (En,Fr,De,Es,It,Da)',
+  ],
+}
+const coverRoms = [
+  { fileName: 'Tetris (Japan) (En).gb', platform: 'gb', rawGameMetadata: null },
+  { fileName: 'tetris.gb', platform: 'gb', rawGameMetadata: null },
+  { fileName: 'Dr Mario.gb', platform: 'gb', rawGameMetadata: { libretro: { name: 'Dr. Mario (World)' } } },
+  { fileName: 'Tetris (Europe).nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'zelda.nes', platform: 'nes', rawGameMetadata: { launchbox: { name: 'The Legend of Zelda' } } },
+  { fileName: 'peekaboo.nes', platform: 'nes', rawGameMetadata: { launchbox: { name: 'Peek-A-Boo Poker' } } },
+  { fileName: 'Q*bert (Japan).nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'Mega Man 2 (Europe).nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'Mega Man 2.nes', platform: 'nes', rawGameMetadata: null },
+  {
+    fileName: 'sf2.zip',
+    platform: 'arcade',
+    rawGameMetadata: {
+      libretro: { name: 'Street Fighter II - The World Warrior (USA 910206)', platform: 'MAME 2003-Plus' },
+    },
+  },
+  { fileName: 'LEGO Batman (USA).iso', platform: 'psp', rawGameMetadata: null },
+  { fileName: 'Unknown Game (USA).nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'Pitfall.a26', platform: 'atari2600', rawGameMetadata: null },
+]
+const candidateRoms = [
+  ...coverRoms,
+  { fileName: 'Game: The "Sequel" | Part 2 <Beta> & More?.nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'A/B\\C*D`E.sfc', platform: 'snes', rawGameMetadata: null },
+  { fileName: 'Game #1 (USA).gba', platform: 'gba', rawGameMetadata: null },
+  { fileName: 'Cotton 100% (Japan).pce', platform: 'pcengine', rawGameMetadata: null },
+  { fileName: 'Pokémon Ünïcode 日本.gb', platform: 'gb', rawGameMetadata: null },
+  { fileName: '.hidden', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'Dots...nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'Tab\there{x}.nes', platform: 'nes', rawGameMetadata: null },
+  { fileName: 'game.nes', platform: 'nes', rawGameMetadata: { libretro: { name: 'Named', platform: 'Sega - 32X' } } },
+  {
+    fileName: 'game.zip',
+    platform: 'arcade',
+    rawGameMetadata: { libretro: { name: 'x', platform: 'FBNeo - Arcade Games' } },
+  },
+  { fileName: '', platform: 'nes', rawGameMetadata: null },
+]
+const cachePaths = [
+  'libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png',
+  'libretro-thumbnails/Nintendo - Game Boy/Named_Boxarts/Tetris (World).png',
+  'libretro-thumbnails/Nintendo%20-%20Game%20Boy/Named_Boxarts/',
+  'libretro-thumbnails/a/../../b.png',
+  'libretro-thumbnails/a/%2e%2e/b.png',
+  'libretro-thumbnails/',
+  'libretro-thumbnails',
+  'libretro-thumbnails//evil.example/x.png',
+  'libretro-thumbnails/x.png?query=1#fragment',
+  'jsdelivr/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Boxarts/Tetris%20(World).png',
+  'jsdelivr/gh/libretro/retroarch-assets@2d24ef2972a709f870cc3f73853158fa2376f37d/xmb/icon.png',
+  'jsdelivr/gh/libretro/retroarch-assets@other/xmb/icon.png',
+  'jsdelivr/gh/libretro/glsl-shaders@468f67b6f6788e2719d1dd28dfb2c9b7c3db3cc7/crt/crt.glslp',
+  'jsdelivr/gh/someone/else@1/file.js',
+  'jsdelivr/gh/libretro%2Fdocs@35b22b41444b7d547d7f239669332c634acb455b/x',
+  'jsdelivr/npm/anything@1/x.js',
+  'jsdelivr/fontsource/fonts/inter:vf@5.2.8/latin-wght-normal.woff2',
+  'jsdelivr/fontsource/fonts/inter:vf@5.2.9/latin-wght-normal.woff2',
+  'jsdelivr/gh/libretro/docs@35b22b41444b7d547d7f239669332c634acb455b/docs/image/core/fceumm.png',
+  'jsdelivr///evil.example/x',
+  'unknown/x',
+  '///libretro-thumbnails/x.png',
+  'jsdelivr/gh/%E0%A4%A/x',
+]
+const artworkUrls = [
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Snaps/Cotton%20100%%20(Japan).png',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Other/Tetris.png',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris.jpg',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/.hidden.png',
+  'https://thumbnails.libretro.com/a/b/Named_Boxarts/x.png',
+  'https://thumbnails.libretro.com/%2E%2E/Named_Boxarts/x.png',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/%E0%A4%A.png',
+  'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/a%00b.png',
+  `https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/${'x'.repeat(220)}.png`,
+  'https://cdn.jsdelivr.net/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Titles/Tetris%20(World).png',
+  'https://cdn.jsdelivr.net/gh/libretro/retroarch-assets@1/Named_Boxarts/x.png',
+]
+
+const cdnDirectory = await mkdtemp(path.join(os.tmpdir(), 'retroassembly-go-fixtures-'))
+const cdnSettings = { ...process.env }
+process.env.RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY = cdnDirectory
+process.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE = 'true'
+process.env.RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY = '/artwork'
+try {
+  // Each console's list of box art, as libretro's server lists it, in the cache
+  const lists = Object.entries(coverLists).map(([folder, names]) => ({
+    folder,
+    html: `<a href="?C=N;O=D">Name</a>\n${names.map((name) => `<a href="${encodeURIComponent(name)}.png">${name}.png</a>`).join('\n')}`,
+  }))
+  const cacheDirectory = path.join(cdnDirectory, 'cache', 'cdn')
+  await mkdir(cacheDirectory, { recursive: true })
+  for (const { folder, html } of lists) {
+    const key = createHash('sha256').update(getCoverListUrl(folder)).digest('hex')
+    await writeFile(path.join(cacheDirectory, key), html)
+    await writeFile(
+      path.join(cacheDirectory, `${key}.json`),
+      JSON.stringify({ contentType: 'text/html', status: 200, time: Date.now() }),
+    )
+  }
+  const cdnFixtures = {
+    artwork: artworkUrls.map((url) => ({ result: getArtworkPath(url) ?? null, url })),
+    candidates: candidateRoms.map((rom) => ({ result: getRomCoverCandidates(rom), rom })),
+    coverLists: lists,
+    matched: await Promise.all(
+      coverRoms.map(async (rom) => ({ result: (await getMatchedCoverUrl(rom, { offline: true })) ?? null, rom })),
+    ),
+    regions: coverNames.map((name) => ({ name, result: [...getRegions(name)] })),
+    targets: cachePaths.map((cachePath) => {
+      try {
+        return { cachePath, result: resolveCDNCacheTarget(cachePath) ?? null }
+      } catch (error) {
+        return { cachePath, error: error instanceof Error ? error.name : 'Error' }
+      }
+    }),
+    titleKeys: coverNames.map((name) => ({ name, result: getTitleKey(name) })),
+  }
+  const cdnFixturePath = path.join('server', 'internal', 'cdn', 'testdata', 'typescript.json')
+  await mkdir(path.dirname(cdnFixturePath), { recursive: true })
+  await writeFile(cdnFixturePath, `${JSON.stringify(cdnFixtures, null, 2)}\n`)
+  console.info(`Wrote ${cdnFixturePath}`)
+} finally {
+  process.env = cdnSettings
+  await rm(cdnDirectory, { force: true, recursive: true })
+}

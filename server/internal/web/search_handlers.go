@@ -32,6 +32,10 @@ func (s *Server) searchRoms(w http.ResponseWriter, r *http.Request, scope librar
 		writeError(w, err)
 		return
 	}
+	if err := s.withCovers(result.Roms); err != nil {
+		writeError(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, result)
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 
 	"retroassembly/server/internal/auth"
+	"retroassembly/server/internal/cdn"
 	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/i18n"
 	"retroassembly/server/internal/preference"
@@ -19,7 +20,9 @@ import (
 )
 
 type Server struct {
-	authMode  string
+	authMode string
+	// The server's copy of CDN files, when it keeps one
+	cdn       *cdn.Cache
 	config    config.Config
 	database  *sql.DB
 	languages *i18n.Languages
@@ -45,8 +48,12 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	if err != nil {
 		return nil, err
 	}
+	var cache *cdn.Cache
+	if c.CDNCache {
+		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline)
+	}
 	return &Server{
-		authMode: authMode, config: c, database: database, languages: i18n.New(data),
+		authMode: authMode, cdn: cache, config: c, database: database, languages: i18n.New(data),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
 		platformNames: data.PlatformNames, preference: settings, threadedConsoles: threaded,
 	}, nil
@@ -174,27 +181,23 @@ func (s *Server) Handler() (http.Handler, error) {
 	} {
 		api.Handle(pattern, compress(handler))
 	}
-	// Lists of games say which covers the server's CDN cache has, which only the Node server can tell yet: with the cache
-	// on, they stay the Node server's
-	if !s.config.CDNCache {
-		for pattern, handler := range map[string]http.HandlerFunc{
-			"GET /api/v1/launch_records":     s.signedIn(s.launchHistory),
-			"GET /api/v1/roms/rediscover":    s.signedIn(s.rediscoverPicks),
-			"GET /api/v1/roms/on_this_day":   s.signedIn(s.onThisDayPicks),
-			"GET /api/v1/roms/play_together": s.signedIn(s.playTogetherPicks),
-			"GET /api/v1/roms/search":        s.signedIn(s.searchRoms),
-			// The pages with lists of games
-			"GET /api/v1/pages/library":           s.signedIn(s.libraryLayoutData),
-			"GET /api/v1/pages/library/home":      s.signedIn(s.homePageData),
-			"GET /api/v1/pages/library/roms":      s.signedIn(s.gamesPageData),
-			"GET /api/v1/pages/library/consoles":  s.signedIn(s.consolesPageData),
-			"GET /api/v1/pages/library/favorites": s.signedIn(s.favoritesPageData),
-			"GET /api/v1/pages/library/history":   s.signedIn(s.historyPageData),
-			"GET /api/v1/pages/library/platform":  s.signedIn(s.platformPageData),
-			"GET /api/v1/pages/library/rom":       s.signedIn(s.romPageData),
-		} {
-			api.Handle(pattern, compress(handler))
-		}
+	for pattern, handler := range map[string]http.HandlerFunc{
+		"GET /api/v1/launch_records":     s.signedIn(s.launchHistory),
+		"GET /api/v1/roms/rediscover":    s.signedIn(s.rediscoverPicks),
+		"GET /api/v1/roms/on_this_day":   s.signedIn(s.onThisDayPicks),
+		"GET /api/v1/roms/play_together": s.signedIn(s.playTogetherPicks),
+		"GET /api/v1/roms/search":        s.signedIn(s.searchRoms),
+		// The pages with lists of games
+		"GET /api/v1/pages/library":           s.signedIn(s.libraryLayoutData),
+		"GET /api/v1/pages/library/home":      s.signedIn(s.homePageData),
+		"GET /api/v1/pages/library/roms":      s.signedIn(s.gamesPageData),
+		"GET /api/v1/pages/library/consoles":  s.signedIn(s.consolesPageData),
+		"GET /api/v1/pages/library/favorites": s.signedIn(s.favoritesPageData),
+		"GET /api/v1/pages/library/history":   s.signedIn(s.historyPageData),
+		"GET /api/v1/pages/library/platform":  s.signedIn(s.platformPageData),
+		"GET /api/v1/pages/library/rom":       s.signedIn(s.romPageData),
+	} {
+		api.Handle(pattern, compress(handler))
 	}
 	api.Handle("GET /api/v1/pages/common", compress(http.HandlerFunc(s.commonPageData)))
 	api.Handle("GET /api/v1/pages/login", compress(http.HandlerFunc(s.loginPageData)))
@@ -205,7 +208,10 @@ func (s *Server) Handler() (http.Handler, error) {
 	api.HandleFunc("GET /api/v1/files/{id...}", s.file)
 	api.HandleFunc("GET /logout", s.logout)
 	api.Handle("/api/", notPorted)
-	api.Handle("/cdn/", notPorted)
+	// Without the cache, /cdn/ is just another page address, as on the Node server. Its files aren't compressed
+	if s.cdn != nil {
+		api.HandleFunc("GET /cdn/", s.cdnFile)
+	}
 	api.HandleFunc("GET /login/oidc", s.loginWithOIDC)
 	api.HandleFunc("GET "+oidcCallbackPath, s.oidcCallback)
 	api.Handle("/", page)

@@ -4,6 +4,7 @@ go 1.27.4
 
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/gen2brain/webp v0.6.4
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/klauspost/compress v1.20.4
 	golang.org/x/crypto v0.59.0
@@ -15,6 +16,7 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
+	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
