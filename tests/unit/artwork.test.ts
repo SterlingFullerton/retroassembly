@@ -77,7 +77,7 @@ await describe('the artwork folder', async () => {
 
   await it('leaves everything else in the cache', () => {
     for (const url of [
-      'https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroassembly-assets@feab5bc/platforms/icons/nes.png',
+      'https://cdn.jsdelivr.net/gh/Mattersons/es-theme-neutral@c9b38e7/platforms/icons/nes.png',
       'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Other/Tetris.png',
       'https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris.txt',
       'https://thumbnails.libretro.com/..%2F..%2Fdata/Named_Boxarts/x.png',

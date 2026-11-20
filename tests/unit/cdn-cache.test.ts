@@ -12,7 +12,7 @@ import { getCoreUrl, getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts
 import { getCachedFile, resolveCDNCacheTarget } from '#@/utils/server/cdn-cache.ts'
 
 const dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'retroassembly-cdn-cache-'))
-const assetsPath = 'jsdelivr/gh/arianrhodsandlot/retroassembly-assets@feab5bc8061c36cf9ad01c35b36ab721c3929ca3'
+const assetsPath = 'jsdelivr/gh/Mattersons/es-theme-neutral@c9b38e7265d680d3da68e96df1bc2ed1cfefb79f'
 
 function ageMissingEntry(url: string) {
   const key = createHash('sha256').update(url).digest('hex')
@@ -74,7 +74,7 @@ await describe('CDN cache', async () => {
       '/cdn/libretro-thumbnails/Nintendo - Nintendo 64/Named_Boxarts/a.png',
     )
     assert.equal(toCDNCacheUrl('https://example.com/a.png'), 'https://example.com/a.png')
-    assert.ok(getCDNUrl('arianrhodsandlot/retroassembly-assets', 'a.png').startsWith('/cdn/jsdelivr/gh/'))
+    assert.ok(getCDNUrl('Mattersons/es-theme-neutral', 'a.png').startsWith('/cdn/jsdelivr/gh/'))
 
     process.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE = 'false'
     assert.equal(toCDNCacheUrl(coreUrl), coreUrl)
@@ -100,7 +100,7 @@ await describe('CDN cache', async () => {
     }
 
     const rejected = [
-      'jsdelivr/gh/arianrhodsandlot/retroassembly-assets@main/platforms/icons/nes.png',
+      'jsdelivr/gh/Mattersons/es-theme-neutral@main/platforms/icons/nes.png',
       'jsdelivr/gh/someone/else@v1/x.js',
       'jsdelivr/npm/left-pad@1.3.0/index.js',
       'jsdelivr/fontsource/fonts/comic-neue@5.0.0/latin-400-normal.woff2',
@@ -149,13 +149,13 @@ await describe('CDN cache', async () => {
 
   await it('remembers missing files, and caches nothing when the CDN fails', async (t) => {
     const fetchMock = t.mock.method(globalThis, 'fetch', () => Promise.resolve(new Response('', { status: 404 })))
-    const missing = 'https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroassembly-assets@x/missing.png'
+    const missing = 'https://cdn.jsdelivr.net/gh/Mattersons/es-theme-neutral@x/missing.png'
     assert.equal(await getCachedStatus(missing), 404)
     assert.equal(await getCachedStatus(missing), 404)
     assert.equal(fetchMock.mock.callCount(), 1)
 
     fetchMock.mock.mockImplementation(() => Promise.resolve(new Response('', { status: 503 })))
-    const failing = 'https://cdn.jsdelivr.net/gh/arianrhodsandlot/retroassembly-assets@x/failing.png'
+    const failing = 'https://cdn.jsdelivr.net/gh/Mattersons/es-theme-neutral@x/failing.png'
     await assert.rejects(getCachedFile(failing))
     assert.ok(fs.readdirSync(path.join(dataDirectory, 'cache', 'cdn')).every((name) => !name.endsWith('.partial')))
   })

@@ -1,43 +1,33 @@
 import { parse } from 'goodcodes-parser'
 import { Nostalgist } from 'nostalgist'
-import { getCDNUrl } from '../isomorphic/cdn.ts'
 
 export { getLibretroThumbnail, getRomLibretroThumbnail } from '../isomorphic/libretro-thumbnail.ts'
 
 const { path } = Nostalgist.vendors
 
-// Platforms added in this fork, whose artwork ships with the app in public/assets/platforms
-const bundledPlatformAssets = new Set(['nds', 'psp'])
-
-function getPlatformAsset(platform: string, file: string) {
-  if (bundledPlatformAssets.has(platform)) {
-    return `/assets/platforms/${file}`
-  }
-  return getCDNUrl('arianrhodsandlot/retroassembly-assets', `platforms/${file}`)
+// Every console's artwork ships with the app, in public/assets/platforms (see its readme for where it comes from)
+function getPlatformAsset(file: string) {
+  return `/assets/platforms/${file}`
 }
 
 export function getPlatformIcon(platform: string) {
-  return getPlatformAsset(platform, `icons/${platform}.png`)
+  return getPlatformAsset(`icons/${platform}.png`)
 }
 
 export function getPlatformGameIcon(platform: string) {
-  return getPlatformAsset(platform, `contents/${platform}.svg`)
+  return getPlatformAsset(`contents/${platform}.svg`)
 }
 
 export function getPlatformBanner(platform: string) {
-  return getPlatformAsset(platform, `logos/${platform}.svg`)
+  return getPlatformAsset(`logos/${platform}.svg`)
 }
 
 export function getPlatformDevicePhoto(platform: string) {
-  return getPlatformAsset(platform, `photos/${platform}.png`)
-}
-
-export function getPlatformDeviceBackground(platform: string) {
-  return getPlatformAsset(platform, `backgrounds/${platform}.png`)
+  return getPlatformAsset(`photos/${platform}.webp`)
 }
 
 export function getPlatformBluredBackground(platform: string) {
-  return getPlatformAsset(platform, `blured-backgrounds/${platform}.jpg`)
+  return getPlatformAsset(`blured-backgrounds/${platform}.jpg`)
 }
 
 export function getRomGoodcodes(rom: {

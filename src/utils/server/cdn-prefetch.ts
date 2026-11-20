@@ -2,9 +2,8 @@ import { eq } from 'drizzle-orm'
 import { attemptAsync } from 'es-toolkit'
 import { getCompanyLogoUrls } from '#@/consoles/artwork.ts'
 import { shaders } from '#@/consoles/shaders.ts'
-import { platformMap } from '#@/constants/platform.ts'
 import { romTable, statusEnum } from '#@/databases/schema.ts'
-import { getCDNUrl, isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
+import { isCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
 import { getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts'
 import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
 import {
@@ -46,18 +45,6 @@ async function getPrefetchUrls(selected: Set<Category>) {
     }
     for (const url of getCompanyLogoUrls()) {
       urls.add(url)
-    }
-    for (const platform of Object.keys(platformMap)) {
-      for (const file of [
-        `platforms/icons/${platform}.png`,
-        `platforms/contents/${platform}.svg`,
-        `platforms/logos/${platform}.svg`,
-        `platforms/photos/${platform}.png`,
-        `platforms/backgrounds/${platform}.png`,
-        `platforms/blured-backgrounds/${platform}.jpg`,
-      ]) {
-        urls.add(getCDNUrl('arianrhodsandlot/retroassembly-assets', file))
-      }
     }
   }
   if (selected.has('thumbnails')) {
