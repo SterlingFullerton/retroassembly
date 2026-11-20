@@ -16,6 +16,9 @@ The browser app stays TypeScript; this serves it and its API.
 - Save states: `GET` and `POST /api/v1/states`, `DELETE /api/v1/states/{id}`, `GET /api/v1/roms/{id}/states`
 - In-game saves: `GET` and `POST /api/v1/game_saves`, `POST /api/v1/game_saves/{id}/restore`
 - Games: `GET /api/v1/roms/by_files`, `GET /api/v1/roms/{id}/content`, `GET /api/v1/roms/search_counts`
+- Editing and deleting games: `PATCH` and `DELETE /api/v1/roms/{id}`, `DELETE /api/v1/roms`, `POST` and
+  `DELETE /api/v1/roms/{id}/boxart`, `POST /api/v1/roms/{id}/thumbnail`,
+  `DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId}`
 - Lists of games: `GET /api/v1/launch_records`, `GET /api/v1/roms/search`, `GET /api/v1/roms/rediscover`,
   `GET /api/v1/roms/on_this_day`, `GET /api/v1/roms/play_together`. These say which covers the server's CDN cache has,
   which only the Node server knows yet, so with `RETROASSEMBLY_RUN_TIME_CDN_CACHE=true` they stay the Node server's
@@ -50,7 +53,8 @@ go -C server vet ./... && go -C server test ./...
 this one on the same empty data folder, then run it with `DATA_DIRECTORY`, `NODE_URL` and `GO_URL`.
 
 What the Go server needs from the TypeScript definitions (the default settings, the consoles in order, which consoles'
-game pages are cross-origin isolated) is in `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
+game pages are cross-origin isolated, the languages with the messages the server writes and their date formats) is in
+`internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
 A unit test fails when it's out of date.
 
 How settings are resolved and merged, and how games are found and ranked by a search (Fuse.js's typo-tolerant matching

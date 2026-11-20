@@ -22,7 +22,9 @@ func (s *Server) signedIn(handler func(http.ResponseWriter, *http.Request, libra
 		}
 		handler(w, r, library.Scope{
 			Database:       s.database,
+			Language:       current.language,
 			LibraryOwnerID: current.libraryOwnerID,
+			Messages:       s.languages.T,
 			MaxAutoStates:  s.config.MaxAutoStatesPerRom,
 			Storage:        files.Storage{Path: s.config.FilePath},
 			User:           current.user,

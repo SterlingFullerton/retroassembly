@@ -21,12 +21,24 @@ import (
 
 // Scope is everything needed to act for the signed-in user
 type Scope struct {
-	Database       *sql.DB
+	Database *sql.DB
+	// The user's language
+	Language       string
 	LibraryOwnerID string
+	// A message in the user's language
+	Messages func(language, key string, values map[string]any) string
 	// How many automatic save states are kept for each game
 	MaxAutoStates int
 	Storage       files.Storage
 	User          *auth.User
+}
+
+// T is a message in the user's language
+func (s Scope) T(key string, values map[string]any) string {
+	if s.Messages == nil {
+		return key
+	}
+	return s.Messages(s.Language, key, values)
 }
 
 // SharesLibrary tells whether the user sees someone else's library, which they may only read

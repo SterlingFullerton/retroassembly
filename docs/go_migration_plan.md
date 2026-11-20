@@ -169,6 +169,12 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   typo-tolerant matching included, is checked against the TypeScript code's own rankings
   (`server/internal/search/testdata`). With the CDN cache on, the lists stay Node's until phase 3, as only Node knows
   which covers the cache has. The game lists of the pages (`getRoms`, the letters) come with step 7
+- Done: 5, but uploading games: editing a game (`PATCH /api/v1/roms/{id}`), its box art and screenshots, deleting one
+  or several. The server's messages come in the browser's language (`Accept-Language`, matched as Hono matches it),
+  from the TypeScript translations (`scripts/go-shared-data.ts`), and typed dates are read as Luxon reads them
+- Uploading games waits for `origin/main`'s two newer commits, which replace the game info lookup on the original
+  author's server with the app's own database: porting the old lookup would port code that's already gone
+- Quirk kept from Node: saving a game's details without a player count or a release date clears them
 - Quirks kept from Node: `GET /api/v1/launch_records` ignores `page_size` (always 100); game lists give `isFavorite` as
   1 or 0, the picks and history as true or false. Among games that tie on everything search ranks by, the order may
   differ from Node's, which takes it from the order SQLite reads the rows in

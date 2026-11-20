@@ -10,9 +10,20 @@ import (
 //go:embed shared.json
 var content []byte
 
+// Language is one of the app's languages, with the messages the server writes in it
+type Language struct {
+	Code     string            `json:"code"`
+	Messages map[string]string `json:"messages"`
+}
+
 type Data struct {
+	// Each language's date format, for reading dates typed in it
+	DateFormats     map[string]string `json:"dateFormats"`
+	DefaultLanguage string            `json:"defaultLanguage"`
 	// The settings a user starts with, before their own
 	DefaultPreference json.RawMessage `json:"defaultPreference"`
+	// The languages, in the app's order
+	Languages []Language `json:"languages"`
 	// Every console, in the app's usual order
 	Platforms []string `json:"platforms"`
 	// The consoles whose game pages are sent with cross-origin isolation headers
