@@ -301,7 +301,55 @@ func (s *Settings) Get(ctx context.Context, database *sql.DB, userID, libraryOwn
 		}
 		user = r.object()
 	}
-	return s.withLibraryPlatforms(ctx, database, s.Resolve(user), chosenPlatforms(r), libraryOwnerID)
+	resolved, err := s.withLibraryPlatforms(ctx, database, s.Resolve(user), chosenPlatforms(r), libraryOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return withLibraryBioses(ctx, database, resolved, userID, libraryOwnerID)
+}
+
+// LibraryBioses is the BIOS files in a library owner's settings, by console
+func LibraryBioses(ctx context.Context, database *sql.DB, libraryOwnerID string) (map[string][]any, error) {
+	owner, err := scanRow(database.QueryRowContext(ctx,
+		`SELECT emulator, input, ui FROM user_preferences WHERE user_id = ? AND status = ? LIMIT 1`,
+		libraryOwnerID, db.StatusNormal))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	bioses := map[string][]any{}
+	for platform, value := range section(owner.emulator, "platform") {
+		settings, _ := value.(Object)
+		if list, _ := settings["bioses"].([]any); len(list) > 0 {
+			bioses[platform] = list
+		}
+	}
+	return bioses, nil
+}
+
+// withLibraryBioses gives a player who shares another's library that library owner's BIOS files, on each console they
+// haven't added any of their own for
+func withLibraryBioses(ctx context.Context, database *sql.DB, resolved Object, userID, libraryOwnerID string) (Object, error) {
+	if libraryOwnerID == "" || libraryOwnerID == userID {
+		return resolved, nil
+	}
+	owned, err := LibraryBioses(ctx, database, libraryOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	platforms := section(section(resolved, "emulator"), "platform")
+	for platform, bioses := range owned {
+		settings, ok := platforms[platform].(Object)
+		if !ok {
+			continue
+		}
+		if own, _ := settings["bioses"].([]any); len(own) == 0 {
+			settings["bioses"] = clone(bioses)
+		}
+	}
+	return resolved, nil
 }
 
 // normalize puts chosen consoles in the app's usual order and leaves out the ones it doesn't have; null removes them
@@ -386,5 +434,9 @@ func (s *Settings) Update(ctx context.Context, database *sql.DB, userID, library
 	if err != nil {
 		return nil, err
 	}
-	return s.withLibraryPlatforms(ctx, database, s.Resolve(saved.object()), chosenPlatforms(saved), libraryOwnerID)
+	resolved, err := s.withLibraryPlatforms(ctx, database, s.Resolve(saved.object()), chosenPlatforms(saved), libraryOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return withLibraryBioses(ctx, database, resolved, userID, libraryOwnerID)
 }

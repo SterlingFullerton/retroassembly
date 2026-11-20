@@ -128,9 +128,10 @@ func (s *Server) updatePreference(w http.ResponseWriter, r *http.Request, scope 
 	s.savePreference(w, r, scope, snippet)
 }
 
-// The BIOS files in the user's settings for a console, or false for a console the app doesn't have
+// The BIOS files the user added themselves for a console, or an error for a console the app doesn't have. Asked as
+// the owner of their own library, so the BIOS files of a library they share aren't among them: those stay the owner's
 func (s *Server) bioses(r *http.Request, scope library.Scope, platform string) ([]any, error) {
-	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID)
+	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.User.ID)
 	if err != nil {
 		return nil, err
 	}

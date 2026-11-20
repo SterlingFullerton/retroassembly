@@ -114,3 +114,54 @@ func TestBIOSFiles(t *testing.T) {
 		t.Fatalf("the other player's: %+v", saved.Emulator.Platform["nes"].Bioses)
 	}
 }
+
+// A player who shares the admin's library uses the admin's BIOS files, on each console they haven't added any for. One
+// with a library of their own doesn't
+func TestSharedLibraryBIOSFiles(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
+		url.Values{"libraryMode": {"1"}, "password": {"password-friend"}, "username": {"friend"}}))
+	friend := api.login(t, "friend")
+	separate := api.register(t, "separate")
+	add := func(user *apiUser, platform, name string) {
+		user.expect(http.StatusOK, user.multipart(http.MethodPost, "/api/v1/preference/bioses",
+			map[string]string{"platform": platform}, map[string]uploadFile{"file": {content: []byte(name), name: name}}))
+	}
+	for _, name := range []string{"sl31253.bin", "sl31254.bin", "sl90025.bin"} {
+		add(admin, "channelf", name)
+	}
+	add(admin, "nes", "disksys.rom")
+	add(friend, "nes", "mine.rom")
+
+	var adminSettings, friendSettings, separateSettings settings
+	admin.expectJSON(http.StatusOK, &adminSettings, admin.get("/api/v1/preference"))
+	friend.expectJSON(http.StatusOK, &friendSettings, friend.get("/api/v1/preference"))
+	channelF := friendSettings.Emulator.Platform["channelf"].Bioses
+	if len(channelF) != 3 || channelF[0].FileID != adminSettings.Emulator.Platform["channelf"].Bioses[0].FileID {
+		t.Fatalf("the friend's Channel F BIOS files: %+v", channelF)
+	}
+	for _, bios := range channelF {
+		if body := friend.expect(http.StatusOK, friend.get("/api/v1/files/"+bios.FileID)); string(body) != bios.FileName {
+			t.Fatalf("%s: %q", bios.FileName, body)
+		}
+	}
+	// Their own BIOS files for a console are used in place of the admin's
+	if nes := friendSettings.Emulator.Platform["nes"].Bioses; len(nes) != 1 || nes[0].FileName != "mine.rom" {
+		t.Fatalf("the friend's NES BIOS files: %+v", nes)
+	}
+
+	separate.expectJSON(http.StatusOK, &separateSettings, separate.get("/api/v1/preference"))
+	if bioses := separateSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 0 {
+		t.Fatalf("a player with their own library got the admin's: %+v", bioses)
+	}
+	separate.expect(http.StatusNotFound, separate.get("/api/v1/files/"+channelF[0].FileID))
+
+	// Once the admin stops sharing their library with the friend, the admin's BIOS files go with it
+	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+friend.id, url.Values{"libraryMode": {"0"}}))
+	friend.expectJSON(http.StatusOK, &friendSettings, friend.get("/api/v1/preference"))
+	if bioses := friendSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 0 {
+		t.Fatalf("after the library was no longer shared: %+v", bioses)
+	}
+	friend.expect(http.StatusNotFound, friend.get("/api/v1/files/"+channelF[0].FileID))
+}

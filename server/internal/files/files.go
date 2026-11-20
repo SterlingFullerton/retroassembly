@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -100,7 +101,7 @@ func biosFileIDs(ctx context.Context, database *sql.DB, userID string) ([]string
 }
 
 // CanRead tells whether the reader may read a stored file: their own, or, for a user who shares another's library,
-// that library's ROMs and box art. Save states, game saves and BIOS settings are each user's own
+// that library's ROMs, box art and BIOS files. Save states and game saves are each user's own
 func CanRead(ctx context.Context, database *sql.DB, reader Reader, id string) (bool, error) {
 	kind, ok := KindOf(id)
 	if !ok {
@@ -110,12 +111,16 @@ func CanRead(ctx context.Context, database *sql.DB, reader Reader, id string) (b
 	case "attachment":
 		return kind.UserID == reader.UserID || kind.UserID == reader.LibraryOwnerID, nil
 	case "bios":
-		fileIDs, err := biosFileIDs(ctx, database, reader.UserID)
-		if err != nil {
-			return false, err
+		owners := []string{reader.UserID}
+		if reader.LibraryOwnerID != "" && reader.LibraryOwnerID != reader.UserID {
+			owners = append(owners, reader.LibraryOwnerID)
 		}
-		for _, fileID := range fileIDs {
-			if fileID == id {
+		for _, owner := range owners {
+			fileIDs, err := biosFileIDs(ctx, database, owner)
+			if err != nil {
+				return false, err
+			}
+			if slices.Contains(fileIDs, id) {
 				return true, nil
 			}
 		}
