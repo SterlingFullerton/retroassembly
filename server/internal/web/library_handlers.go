@@ -44,7 +44,7 @@ func (s *Server) updatePassword(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	end, err := signIns.begin(clientAddress(r), current.user.Username)
+	end, err := s.signIns.begin(clientAddress(r), current.user.Username)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -208,6 +208,9 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 		return
 	}
 	fileID := path.Join("bioses", platform, digest+extension(upload.Filename))
+	// Held until it's in the user's settings, so another user's removal can't delete the file found here first
+	unlock := files.Lock(fileID)
+	defer func() { unlock() }()
 	filePath, ok := s.config.FilePath(fileID)
 	if !ok {
 		writeError(w, errors.New("Invalid file id"))
@@ -240,6 +243,8 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 		bioses = append(bioses, preference.Object{"fileId": fileID, "fileName": upload.Filename})
 	}
 	resolved, err := s.preference.UpdateBioses(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID, platform, bioses, fileID)
+	unlock()
+	unlock = func() {}
 	if err != nil {
 		writeError(w, err)
 		return
@@ -252,15 +257,16 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 // who added the same content
 func (s *Server) removeUnusedBioses(r *http.Request, fileIDs []string) {
 	for _, fileID := range fileIDs {
+		unlock := files.Lock(fileID)
 		var users int
 		err := s.database.QueryRowContext(r.Context(),
 			`SELECT count(*) FROM user_preferences WHERE instr(emulator, ?) > 0`, fileID).Scan(&users)
-		if err != nil || users > 0 {
-			continue
+		if err == nil && users == 0 {
+			if filePath, ok := s.config.FilePath(fileID); ok && strings.HasPrefix(fileID, "bioses/") {
+				os.Remove(filePath)
+			}
 		}
-		if filePath, ok := s.config.FilePath(fileID); ok && strings.HasPrefix(fileID, "bioses/") {
-			os.Remove(filePath)
-		}
+		unlock()
 	}
 }
 

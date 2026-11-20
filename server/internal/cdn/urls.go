@@ -258,10 +258,16 @@ func (d *Data) ResolveTarget(cachePath string) (*Target, error) {
 	if err != nil {
 		return nil, err
 	}
+	pinned := d.PinnedRepositories[owner+"/"+pieces[0]]
 	if owner == "libretro-thumbnails" {
+		// At the version the app asks for, or none for a console it doesn't pin: with ARTWORK_DIR, art is kept under
+		// its name alone, for every version, so another would replace everyone's art with what was asked for
+		if version != pinned {
+			return nil, nil
+		}
 		return &Target{RequiresLogin: true, URL: href}, nil
 	}
-	if pinned := d.PinnedRepositories[owner+"/"+pieces[0]]; pinned != "" && pinned == version {
+	if pinned != "" && pinned == version {
 		return &Target{URL: href}, nil
 	}
 	return nil, nil

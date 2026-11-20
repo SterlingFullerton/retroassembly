@@ -1,6 +1,7 @@
-ARG BUILD_IMAGE=node:26.12.1-slim
-ARG GO_IMAGE=golang:1.27.4-alpine
-ARG PROD_IMAGE=alpine:3.24.4
+# Pinned by digest as well as tag, so a tag moved to another image can't change what's built
+ARG BUILD_IMAGE=node:26.12.1-slim@sha256:94816674c62774da0d099a947bf4613b9e1972a2733abd0d0cd80e795f8411d0
+ARG GO_IMAGE=golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280
+ARG PROD_IMAGE=alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 ARG PNPM_VERSION=12.11.2
 
 # Everything Node builds (the browser app, the emulators, the game info database) is the same on every platform, so it's
@@ -47,7 +48,7 @@ ENV SKIP_INSTALL_SIMPLE_GIT_HOOKS=true
 COPY . .
 COPY --from=retroarch-cores /cores public/cores
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm i
+    pnpm i --frozen-lockfile
 RUN node --run=build:client
 
 # The server (server/): one static binary, built on the build machine for each platform the image is for
@@ -64,13 +65,16 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 # Alpine rather than an image with nothing but the server, so a container keeps a shell, wget for health checks, and the
 # system's certificate authorities and time zones
 FROM ${PROD_IMAGE} AS production
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates su-exec tzdata
 WORKDIR /app
 COPY --from=server /retroassembly ./retroassembly
 COPY --from=builder /app/dist/client ./dist/client
 COPY --from=builder /app/src/databases/migrations ./src/databases/migrations
 COPY --from=game-info /game-info ./game-info
+COPY --chmod=755 scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
 VOLUME ["/app/data"]
 EXPOSE 8000
+# The server runs as PUID:PGID (1000 by default), not root: see scripts/docker-entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["/app/retroassembly"]

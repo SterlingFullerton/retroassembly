@@ -401,6 +401,13 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 	fileID := path.Join("roms", platform, digest+extension)
 	// A PSP disc uploaded before is already compressed; a new one is compressed once it's stored
 	compressible := psp.IsCompressible(platform, fileID)
+	// Held until the game is saved, so the file found here can't be removed by a delete before the game uses it
+	unlock := files.Lock(fileID)
+	defer func() {
+		if unlock != nil {
+			unlock()
+		}
+	}()
 	if compressible && scope.Storage.Exists(psp.CsoFileID(fileID)) {
 		fileID = psp.CsoFileID(fileID)
 	} else if !scope.Storage.Exists(fileID) {
@@ -444,8 +451,14 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 	}
 	add("user_id", scope.User.ID)
 
-	rom, err := library.SaveUploadedRom(ctx, scope, platform, file.fileName, fields)
+	rom, replaced, err := library.SaveUploadedRom(ctx, scope, platform, file.fileName, fields)
+	unlock()
+	unlock = nil
 	if err != nil {
+		return nil, err
+	}
+	// Uploaded again with other content, the game's old file goes once no game uses it
+	if err := library.RemoveUnusedRomFiles(ctx, scope, []string{replaced}); err != nil {
 		return nil, err
 	}
 	if compressible && fileID != psp.CsoFileID(fileID) {

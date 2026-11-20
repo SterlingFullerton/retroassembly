@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"retroassembly/server/internal/db"
+	"retroassembly/server/internal/files"
 )
 
 // An uploaded ISO is playable straight away and compressed afterwards, in the background, one game at a time
@@ -127,8 +128,11 @@ func (c *Compressor) compress(isoFileID string) error {
 		log.Printf("Compressed %s: %d MB to %d MB in %ds", isoFileID, megabytes(info.Size()), megabytes(size),
 			int64(math.Round(time.Since(started).Seconds())))
 	}
-	if _, err := c.Database.Exec(`UPDATE roms SET file_id = ?, updated_at = ? WHERE file_id = ?`, csoFileID,
-		db.Millis(time.Now()), isoFileID); err != nil {
+	unlock := files.Lock(isoFileID)
+	_, err := c.Database.Exec(`UPDATE roms SET file_id = ?, updated_at = ? WHERE file_id = ?`, csoFileID,
+		db.Millis(time.Now()), isoFileID)
+	unlock()
+	if err != nil {
 		return err
 	}
 	c.mutex.Lock()
@@ -141,6 +145,7 @@ func (c *Compressor) compress(isoFileID string) error {
 
 // removeUnusedISO removes an ISO no game uses any more, once its CSO is in place
 func (c *Compressor) removeUnusedISO(isoFileID string, evenWithoutCso bool) {
+	defer files.Lock(isoFileID)()
 	isoPath, isoOK := c.FilePath(isoFileID)
 	csoPath, csoOK := c.FilePath(CsoFileID(isoFileID))
 	var used string

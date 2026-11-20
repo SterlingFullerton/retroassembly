@@ -143,7 +143,8 @@ func (s *Server) loginPageData(w http.ResponseWriter, r *http.Request) {
 	if users > 0 {
 		formType = "login"
 	}
-	writeJSON(w, http.StatusOK, obj("error", nil, "formType", formType, "redirectTo", redirectTo, "title", title))
+	writeJSON(w, http.StatusOK, obj("error", nil, "formType", formType, "redirectTo", redirectTo,
+		"signupOpen", s.config.OpenSignup, "title", title))
 }
 
 // GET /api/v1/pages/library: what every library page shares: the games played most recently, and whether the user is

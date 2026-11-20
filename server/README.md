@@ -57,16 +57,30 @@ Where it differs from the Node server, on purpose:
 - Request bodies are limited: 64 KiB for forms of text, 1 MiB for JSON, 100 MiB for an image, 512 MiB for a save state,
   in-game save or BIOS (game uploads are streamed to disk and aren't limited). A larger one is answered with 413
 - A request that changes something (anything but `GET`, `HEAD` and `OPTIONS`) from another site, as the browser's
-  `Sec-Fetch-Site` header says, is refused with 403
-- At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. Signing in
-  to an account that doesn't exist takes as long as to one that does
+  `Sec-Fetch-Site` header says (or, from a browser without it, its `Origin`), is refused with 403. Pages may be framed
+  only by the sites `FRAME_ANCESTORS` lists, the app itself by default
+- Only the first account can sign up; the admin adds the others, unless `OPEN_SIGNUP=true` lets anyone sign up (sharing
+  the admin's library with `SIGNUP_SHARES_LIBRARY=true`). New passwords are at least 8 characters
+- At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. One address
+  may have 8 sign-ins under way, and 10 wrong passwords for a username in 15 minutes, 50 for all (`SIGN_IN_ATTEMPTS`
+  sets the 10, 0 for no limit); past that, it's answered with 429. Signing in to an account that doesn't exist takes as
+  long as to one that does
+- Session tokens are 32 random bytes. A password session renews itself while it's used, but not past 90 days
+- An account that shares the admin's library uses the admin's BIOS files on a console it has none of its own for.
+  Settings keep only the BIOS files the user uploaded, of the app's consoles; a BIOS file no one has any more is deleted
+- Box art and screenshots no game shows any more, a deleted game's pictures, and a game's file once no game uses it are
+  deleted. Save states and in-game saves are streamed to disk rather than held in memory
 - On `SIGTERM` or `SIGINT` it stops taking requests and lets those under way finish, for up to 8 seconds
 - At startup it removes files that writes cut short left behind (`*.partial`, `*.tmp`) once they're a day old. A PSP
   disc that doesn't get smaller as a CSO is kept as an ISO, with an `.uncompressed` file beside it so it isn't tried
   again; a CSO an earlier run left is checked against its ISO before it replaces it
 - The CDN cache sends its files with `X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy`,
   remembers only a 404 or 410 as missing (another refusal is tried again next time), and doesn't convert an image of
-  more than 40 megapixels to WebP
+  more than 40 megapixels to WebP. It keeps files of up to 64 MiB, runs 8 downloads at once, refuses addresses with a
+  fragment, takes libretro's art only at the version the app asks for, and skips a host for a while only when it
+  doesn't answer
+- A CSO the startup repair didn't write (aligned further than the app aligns one) is left alone, and a background job
+  that panics is logged rather than taking the server down
 
 ## Running it
 
@@ -76,7 +90,9 @@ it stops.
 
 The Docker image is Alpine with the binary in `/app/retroassembly`: it has a shell, `wget` (for health checks such as
 `wget -qO- http://localhost:8000/build-version`), the certificate authorities and the time zones, but no Node, so a
-health check or script that ran `node` in the container needs changing.
+health check or script that ran `node` in the container needs changing. It runs the server as `PUID`:`PGID` (1000 by
+default) through `scripts/docker-entrypoint.sh`, which first hands that user the files root owns in the data folder and
+the folders the settings name: those earlier images wrote.
 
 It reads `dist/client`, `src/databases/migrations` and `game-info/game-info.sqlite` from the folder it's started in (or
 `CLIENT_DIR`, `MIGRATIONS_DIR` and `GAME_INFO_DB`). Without `dist/client`, as in development, it serves the API alone.
@@ -105,6 +121,7 @@ How settings are resolved and merged, how games are found and ranked by a search
 included), and which files the CDN cache fetches and which covers it finds for a game, are checked against the
 TypeScript code's own answers, in `internal/*/testdata`. They were written by the Node server's code
 (`scripts/go-test-fixtures.ts`, removed with it), and are kept as they were: the answers the Go server must keep giving.
+The one change since: libretro's art at a version other than the one the app pins is refused.
 
 ## Passwords
 

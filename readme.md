@@ -34,7 +34,12 @@ services:
     restart: unless-stopped
 ```
 
-Then run `docker compose up -d` and open `http://localhost:8000`. The first account created is the administrator.
+Then run `docker compose up -d` and open `http://localhost:8000`. The first account created is the administrator, who
+adds the others from the settings (or lets anyone sign up with `OPEN_SIGNUP`).
+
+The server in the container runs as user and group 1000, not root; set `PUID` and `PGID` to use others, or `PUID=0` to
+keep running as root. Files earlier images wrote as root are handed to that user when the container starts; files owned
+by anyone else, such as a game collection mounted from the host, are left alone, so make sure that user can read them.
 
 PlayStation Portable games need the page to be served over HTTPS (or `localhost`), as the emulator runs on several
 threads.
@@ -55,19 +60,24 @@ Unless `thumbnails` is prefetched, box art and screenshots are cached once someo
 
 ### Other settings
 
-| Variable                                              | Default                      | Description                                                                                                                |
-| ----------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                                                | `8000`                       | The port the server listens on                                                                                             |
-| `DATA_DIR`                                            | `data`                       | The database, the cache, and the storage folder unless `STORAGE_DIR` is set                                                |
-| `STORAGE_DIR`                                         | `data/storage`               | Stored files: the folders below that aren't set                                                                            |
-| `ROMS_DIR`, `SAVES_DIR`, `STATES_DIR`, `BIOSES_DIR`   | In `STORAGE_DIR`             | Games, in-game saves, save states and BIOS files, each in a folder of its own, such as the games on a large disk           |
-| `ARTWORK_DIR`                                         | Unset                        | Uploaded box art, and libretro's art when `CDN_CACHE` is `true`, under readable names; art put there by hand is used first |
-| `CACHE_DIR`                                           | `data/cache`                 | The CDN cache                                                                                                              |
-| `GAME_INFO_DB`                                        | `game-info/game-info.sqlite` | The game information database built with the app                                                                           |
-| `MAX_UPLOAD`                                          | `1000`                       | How many files one upload may pick                                                                                         |
-| `MAX_ROMS`                                            | Unset                        | How many games a library may hold                                                                                          |
-| `MAX_AUTO_STATES`                                     | `20`                         | How many automatic save states are kept per game                                                                           |
-| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Unset                        | Sign-in with an OpenID Connect provider instead of passwords; see `server/README.md` for the other `OIDC_*` settings       |
+| Variable                                              | Default                      | Description                                                                                                                      |
+| ----------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                                | `8000`                       | The port the server listens on                                                                                                   |
+| `DATA_DIR`                                            | `data`                       | The database, the cache, and the storage folder unless `STORAGE_DIR` is set                                                      |
+| `STORAGE_DIR`                                         | `data/storage`               | Stored files: the folders below that aren't set                                                                                  |
+| `ROMS_DIR`, `SAVES_DIR`, `STATES_DIR`, `BIOSES_DIR`   | In `STORAGE_DIR`             | Games, in-game saves, save states and BIOS files, each in a folder of its own, such as the games on a large disk                 |
+| `ARTWORK_DIR`                                         | Unset                        | Uploaded box art, and libretro's art when `CDN_CACHE` is `true`, under readable names; art put there by hand is used first       |
+| `CACHE_DIR`                                           | `data/cache`                 | The CDN cache                                                                                                                    |
+| `GAME_INFO_DB`                                        | `game-info/game-info.sqlite` | The game information database built with the app                                                                                 |
+| `MAX_UPLOAD`                                          | `1000`                       | How many files one upload may pick                                                                                               |
+| `MAX_ROMS`                                            | Unset                        | How many games a library may hold                                                                                                |
+| `MAX_AUTO_STATES`                                     | `20`                         | How many automatic save states are kept per game                                                                                 |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | Unset                        | Sign-in with an OpenID Connect provider instead of passwords; see `server/README.md` for the other `OIDC_*` settings             |
+| `OPEN_SIGNUP`                                         | `false`                      | When `true`, anyone who can reach the server can make an account from the login page, not only the first                         |
+| `SIGNUP_SHARES_LIBRARY`                               | `false`                      | When `true`, accounts made from the login page see and play the administrator's games instead of having their own                |
+| `SIGN_IN_ATTEMPTS`                                    | `10`                         | Wrong passwords allowed for one username from one address in 15 minutes (five times as many for all usernames); `0` for no limit |
+| `FRAME_ANCESTORS`                                     | `'self'`                     | The sites that may show the app in a frame, such as a dashboard, as CSP's `frame-ancestors` lists them; empty for any            |
+| `PUID`, `PGID`                                        | `1000`                       | The user and group the server runs as in the Docker image; `PUID=0` runs it as root                                              |
 
 The longer names these settings had before (`RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY` and so on) still work.
 

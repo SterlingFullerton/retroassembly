@@ -221,10 +221,11 @@ func Serve(w http.ResponseWriter, r *http.Request, id, filePath string) {
 	start, end := int64(0), size-1
 	status := http.StatusOK
 	if offset, length, ok := parseRange(r.Header.Get("Range")); ok && offset < size {
-		if length < 0 {
+		// Past the end, or with no end, it's up to the file's end. Clamped before adding, as a huge end would overflow
+		if length < 0 || length > size-offset {
 			length = size - offset
 		}
-		start, end = offset, min(size, offset+length)-1
+		start, end = offset, offset+length-1
 		header.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, size))
 		status = http.StatusPartialContent
 	}

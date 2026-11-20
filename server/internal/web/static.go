@@ -91,7 +91,9 @@ func staticFiles(root string, next http.Handler) http.Handler {
 // page is index.html, the one page every page address is answered with, with its compressed copies
 type page struct {
 	encoded map[string][]byte
-	html    []byte
+	// The sites that may show the app in a frame (FRAME_ANCESTORS), or none set for any
+	frameAncestors string
+	html           []byte
 }
 
 var manifestPattern = regexp.MustCompile(`/assets/manifest-([\da-f]+)\.js`)
@@ -120,6 +122,15 @@ func (p *page) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	header.Set("Cache-Control", "no-cache")
 	header.Set("Content-Type", "text/html; charset=UTF-8")
 	header.Add("Vary", "Accept-Encoding")
+	header.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	// Shown in a frame only where it's allowed, so a page elsewhere can't lay the library under its own and have it
+	// clicked unseen
+	if p.frameAncestors != "" {
+		header.Set("Content-Security-Policy", "frame-ancestors "+p.frameAncestors)
+		if p.frameAncestors == "'self'" {
+			header.Set("X-Frame-Options", "SAMEORIGIN")
+		}
+	}
 	body := p.html
 	for _, encoding := range encodings {
 		if content, ok := p.encoded[encoding.name]; ok && accepts(r, encoding.name) {

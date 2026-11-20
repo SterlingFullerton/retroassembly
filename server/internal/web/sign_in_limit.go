@@ -15,11 +15,9 @@ import (
 const (
 	// How long failed sign-ins are counted for
 	failureWindow = 15 * time.Minute
-	// Failed sign-ins allowed, in the window, for one username from one address: guessing a password is slowed to a
-	// crawl, and no one can lock an account out from another address
-	maxFailuresPerAccount = 10
-	// And for all usernames from one address. Behind a reverse proxy every visitor has the proxy's address, so it's high
-	maxFailuresPerAddress = 50
+	// Failed sign-ins allowed from one address for all usernames, as a multiple of those for one username
+	// (SIGN_IN_ATTEMPTS). Behind a reverse proxy every visitor has the proxy's address, so it's high
+	addressFailuresPerAccount = 5
 	// Sign-ins under way at once from one address, waiting their turn or checking a password. Only 2 checks run at once
 	// in all, and 32 wait, so one address can't fill the queue and keep everyone else from signing in
 	maxHashingPerAddress = 8
@@ -32,13 +30,22 @@ type failures struct {
 
 // signInLimit counts failed sign-ins and the password checks under way, by address and username
 type signInLimit struct {
-	mutex    sync.Mutex
-	failed   map[string]*failures
-	hashing  map[string]int
-	lastTidy time.Time
+	mutex  sync.Mutex
+	failed map[string]*failures
+	// Failed sign-ins allowed in the window for one username from one address, guessing a password slowed to a crawl
+	// without anyone locking an account out from another address, and for all usernames from it. 0 for no limit
+	maxFailuresPerAccount, maxFailuresPerAddress int
+	hashing                                      map[string]int
+	lastTidy                                     time.Time
 }
 
-var signIns = &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}}
+// newSignInLimit allows attempts wrong passwords per username and address in the window, or any number for 0
+func newSignInLimit(attempts int) *signInLimit {
+	return &signInLimit{
+		failed: map[string]*failures{}, hashing: map[string]int{},
+		maxFailuresPerAccount: attempts, maxFailuresPerAddress: attempts * addressFailuresPerAccount,
+	}
+}
 
 func accountKey(address, username string) string {
 	return address + "\x00" + strings.ToLower(strings.TrimSpace(username))
@@ -59,7 +66,7 @@ func (l *signInLimit) tidy(now time.Time) {
 
 func (l *signInLimit) waitFor(key string, limit int, now time.Time) time.Duration {
 	counted := l.failed[key]
-	if counted == nil || now.Sub(counted.since) >= failureWindow || counted.count < limit {
+	if limit == 0 || counted == nil || now.Sub(counted.since) >= failureWindow || counted.count < limit {
 		return 0
 	}
 	return failureWindow - now.Sub(counted.since)
@@ -72,7 +79,8 @@ func (l *signInLimit) begin(address, username string) (func(succeeded bool), err
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	l.tidy(now)
-	wait := max(l.waitFor(accountKey(address, username), maxFailuresPerAccount, now), l.waitFor(address, maxFailuresPerAddress, now))
+	wait := max(l.waitFor(accountKey(address, username), l.maxFailuresPerAccount, now),
+		l.waitFor(address, l.maxFailuresPerAddress, now))
 	if wait > 0 {
 		minutes := int(math.Ceil(wait.Minutes()))
 		return nil, failure.New(http.StatusTooManyRequests,
@@ -89,7 +97,7 @@ func (l *signInLimit) begin(address, username string) (func(succeeded bool), err
 			delete(l.hashing, address)
 		}
 		key := accountKey(address, username)
-		if succeeded {
+		if succeeded || l.maxFailuresPerAccount == 0 {
 			delete(l.failed, key)
 			return
 		}

@@ -137,9 +137,32 @@ type Config struct {
 	// The SQL migrations Drizzle writes, src/databases/migrations
 	MigrationsDirectory string
 	OIDC                OIDC
-	Port                int
+	// Whether anyone can create an account from the login page, not only the first (OPEN_SIGNUP)
+	OpenSignup bool
+	Port       int
+	// Wrong passwords allowed for one username from one address in 15 minutes, 0 for no limit (SIGN_IN_ATTEMPTS, 10 by
+	// default)
+	SignInAttempts int
+	// Whether accounts made at the login page share the admin's library rather than having their own
+	// (SIGNUP_SHARES_LIBRARY)
+	SignupSharesLibrary bool
 	// When set, stored files are sent from there instead of from disk
 	StorageHost string
+	// The sites that may show the app in a frame, as Content-Security-Policy's frame-ancestors lists them
+	// (FRAME_ANCESTORS, 'self' by default)
+	FrameAncestors string
+}
+
+// signInAttempts reads SIGN_IN_ATTEMPTS: 10 when unset or unreadable, and 0 (no limit) only when set to 0
+func signInAttempts(value string) int {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 10
+	}
+	if attempts, err := strconv.Atoi(value); err == nil && attempts >= 0 {
+		return attempts
+	}
+	return 10
 }
 
 func env(name, fallback string) string {
@@ -233,8 +256,12 @@ func Load() Config {
 			Scopes:               setOr("OIDC_SCOPES", "openid profile email"),
 			SessionMaxAge:        sessionMaxAge(env("OIDC_SESSION_MAX_AGE", "28800000")),
 		},
-		Port:        port,
-		StorageHost: Get("STORAGE_HOST"),
+		FrameAncestors:      setOr("FRAME_ANCESTORS", "'self'"),
+		OpenSignup:          Get("OPEN_SIGNUP") == "true",
+		Port:                port,
+		SignInAttempts:      signInAttempts(Get("SIGN_IN_ATTEMPTS")),
+		SignupSharesLibrary: Get("SIGNUP_SHARES_LIBRARY") == "true",
+		StorageHost:         Get("STORAGE_HOST"),
 	}
 }
 

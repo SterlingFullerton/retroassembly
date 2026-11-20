@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -42,6 +43,8 @@ type Server struct {
 	// The key of each console's name in the translations, which is also the list of consoles the app has
 	platformNames map[string]string
 	preference    *preference.Settings
+	// Failed sign-ins and sign-ins under way, by address and username
+	signIns *signInLimit
 	// The consoles whose game pages are sent with cross-origin isolation headers
 	threadedConsoles map[string]bool
 }
@@ -78,7 +81,8 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
-		platformNames: data.PlatformNames, preference: settings, threadedConsoles: threaded,
+		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts),
+		threadedConsoles: threaded,
 	}, nil
 }
 
@@ -123,16 +127,39 @@ var (
 	workerScript = regexp.MustCompile(`\.worker-[\w-]+\.js$`)
 )
 
+// fromAnotherSite tells whether a browser sent a request from a page somewhere else: another site, or another subdomain
+// of this one. Browsers say so in Sec-Fetch-Site; older ones don't, but send Origin with a form posted or a script's
+// request, which is then compared with the address the request came to. Requests from outside a browser send
+// neither, and aren't from another site
+func fromAnotherSite(r *http.Request) bool {
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" {
+		return site == "cross-site" || site == "same-site"
+	}
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return false
+	}
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Host == "" {
+		// "null", from a sandboxed frame or a page opened from a file
+		return true
+	}
+	host := r.Host
+	if forwarded, _, _ := strings.Cut(r.Header.Get("X-Forwarded-Host"), ","); strings.TrimSpace(forwarded) != "" {
+		host = strings.TrimSpace(forwarded)
+	}
+	return !strings.EqualFold(parsed.Host, host)
+}
+
 // sameSiteWrites refuses a request that changes something when it comes from another site, or another subdomain of the
 // same one: the session cookie is SameSite=Lax, which sends it with a form posted from a sibling subdomain, and a form
-// posted to the login from anywhere would sign the browser in to someone else's account. Browsers say where a request
-// comes from in Sec-Fetch-Site; requests from outside a browser don't, and aren't affected
+// posted to the login from anywhere would sign the browser in to someone else's account
 func sameSiteWrites(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions:
 		default:
-			if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" || site == "same-site" {
+			if fromAnotherSite(r) {
 				writeMessage(w, http.StatusForbidden, "Requests from other sites are refused")
 				return
 			}
@@ -165,6 +192,8 @@ func (s *Server) Handler() (http.Handler, error) {
 	if errors.Is(err, fs.ErrNotExist) {
 		log.Printf("No built browser app at %s, so only the API is served", s.config.ClientRoot)
 		pages, err = http.NotFoundHandler(), nil
+	} else if err == nil {
+		page.frameAncestors = s.config.FrameAncestors
 	}
 	if err != nil {
 		return nil, err

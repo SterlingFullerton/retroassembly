@@ -195,3 +195,26 @@ func TestSignedOutIsRefused(t *testing.T) {
 		}
 	}
 }
+
+// Play history is of the library the user sees now: once the admin's is no longer shared, its games leave the list
+func TestPlayHistoryFollowsTheLibrary(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	added := admin.addGame("Quest (USA).nes")
+	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
+		url.Values{"libraryMode": {"1"}, "password": {"password-guest"}, "username": {"guest"}}))
+	guest := api.login(t, "guest")
+	guest.expect(http.StatusOK, guest.form(http.MethodPost, "/api/v1/launch_records", url.Values{"core": {"fceumm"}, "rom": {added.ID}}))
+	var history gameList
+	guest.expectJSON(http.StatusOK, &history, guest.get("/api/v1/launch_records"))
+	if len(history.Roms) != 1 {
+		t.Fatalf("while shared: %+v", history)
+	}
+	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+guest.id, url.Values{"libraryMode": {"0"}}))
+	for _, path := range []string{"/api/v1/launch_records", "/api/v1/pages/library/history"} {
+		guest.expectJSON(http.StatusOK, &history, guest.get(path))
+		if len(history.Roms) != 0 || history.Pagination.Total != 0 {
+			t.Fatalf("%s once no longer shared: %+v", path, history)
+		}
+	}
+}

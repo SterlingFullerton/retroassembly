@@ -188,14 +188,16 @@ type History struct {
 	Roms       []Object   `json:"roms"`
 }
 
-// LaunchHistory is the play history list, on the consoles shown. A game deleted since is still listed. With a search,
+// LaunchHistory is the play history list, on the consoles shown, of the games in the library the user sees now: not the
+// admin's once their library is no longer shared with the user. A game deleted since is still listed. With a search,
 // only the played games that match it, still most recently played first. The plays are grouped and the page cut from
 // them before the games are joined, so only the page's games are read. Each game's console and emulator are its latest
 // play's: SQLite takes a plain column beside max() from the row with the maximum
 func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, pageSize float64, search string) (*History, error) {
 	where := `launch_records.user_id = ? AND launch_records.status = ? AND launch_records.platform IN (` +
-		placeholders(len(platforms)) + `)`
+		placeholders(len(platforms)) + `) AND launch_records.rom_id IN (SELECT id FROM roms WHERE user_id = ?)`
 	arguments := append([]any{scope.User.ID, db.StatusNormal}, strings2any(platforms)...)
+	arguments = append(arguments, scope.LibraryOwnerID)
 	if search != "" {
 		matches, _, err := FindSearchMatches(ctx, scope, SearchScope{Platforms: platforms}, search)
 		if err != nil {

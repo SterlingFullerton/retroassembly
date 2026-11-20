@@ -681,9 +681,13 @@
     },
     {
       "cachePath": "jsdelivr/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Boxarts/Tetris%20(World).png",
+      "result": null
+    },
+    {
+      "cachePath": "jsdelivr/gh/libretro-thumbnails/Nintendo_-_Game_Boy@d963e89e95c1fe48df9fdb88ccb60f7d1ffc68d3/Named_Boxarts/Tetris%20(World).png",
       "result": {
         "requiresLogin": true,
-        "url": "https://cdn.jsdelivr.net/gh/libretro-thumbnails/Nintendo_-_Game_Boy@master/Named_Boxarts/Tetris%20(World).png"
+        "url": "https://cdn.jsdelivr.net/gh/libretro-thumbnails/Nintendo_-_Game_Boy@d963e89e95c1fe48df9fdb88ccb60f7d1ffc68d3/Named_Boxarts/Tetris%20(World).png"
       }
     },
     {

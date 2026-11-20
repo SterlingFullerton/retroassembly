@@ -2,6 +2,8 @@ package library
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"net/http"
 	"path"
 	"sort"
@@ -10,6 +12,7 @@ import (
 
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/failure"
+	"retroassembly/server/internal/files"
 )
 
 // AssertCanWrite refuses accounts that share someone else's library, which they may only read
@@ -119,7 +122,7 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 	for _, folder := range pictureFolders {
 		scope.Storage.DeleteFolder(folder)
 	}
-	return removeUnusedRomFiles(ctx, scope, fileIDs)
+	return RemoveUnusedRomFiles(ctx, scope, fileIDs)
 }
 
 // PicturesFolder is where the box art and screenshots a user adds to a game are kept
@@ -127,34 +130,27 @@ func PicturesFolder(userID, platform, romID string) string {
 	return path.Join("attachments", userID, platform, romID)
 }
 
-// removeUnusedRomFiles removes the game files no game uses any more. One file is shared by every game with the same
-// content, whoever added it
-func removeUnusedRomFiles(ctx context.Context, scope Scope, fileIDs []string) error {
-	if len(fileIDs) == 0 {
-		return nil
-	}
-	referenced := map[string]bool{}
-	stillUsed, err := scope.Database.QueryContext(ctx,
-		`SELECT file_id FROM roms WHERE file_id IN (`+placeholders(len(fileIDs))+`) AND status = ?`,
-		append(strings2any(fileIDs), db.StatusNormal)...)
-	if err != nil {
-		return err
-	}
-	for stillUsed.Next() {
-		var fileID string
-		if err := stillUsed.Scan(&fileID); err != nil {
-			stillUsed.Close()
+// RemoveUnusedRomFiles removes the game files no game uses any more. One file is shared by every game with the same
+// content, whoever added it, so each is checked and removed under its lock, where an upload of it waits
+func RemoveUnusedRomFiles(ctx context.Context, scope Scope, fileIDs []string) error {
+	for _, fileID := range fileIDs {
+		if fileID == "" {
+			continue
+		}
+		unlock := files.Lock(fileID)
+		var used string
+		err := scope.Database.QueryRowContext(ctx, `SELECT id FROM roms WHERE file_id = ? AND status = ? LIMIT 1`,
+			fileID, db.StatusNormal).Scan(&used)
+		if errors.Is(err, sql.ErrNoRows) {
+			scope.Storage.Delete(fileID)
+			err = nil
+		}
+		unlock()
+		if err != nil {
 			return err
 		}
-		referenced[fileID] = true
 	}
-	stillUsed.Close()
-	for _, fileID := range fileIDs {
-		if !referenced[fileID] {
-			scope.Storage.Delete(fileID)
-		}
-	}
-	return stillUsed.Err()
+	return nil
 }
 
 // DeleteRom deletes a game in the library

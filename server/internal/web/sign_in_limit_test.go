@@ -9,8 +9,8 @@ import (
 )
 
 func TestSignInLimit(t *testing.T) {
-	limit := &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}}
-	for range maxFailuresPerAccount {
+	limit := newSignInLimit(10)
+	for range limit.maxFailuresPerAccount {
 		end, err := limit.begin("192.0.2.1", "admin")
 		if err != nil {
 			t.Fatal(err)
@@ -18,7 +18,7 @@ func TestSignInLimit(t *testing.T) {
 		end(false)
 	}
 	if _, err := limit.begin("192.0.2.1", " Admin "); !isStatus(err, http.StatusTooManyRequests) {
-		t.Fatalf("after %d failures: %v", maxFailuresPerAccount, err)
+		t.Fatalf("after %d failures: %v", limit.maxFailuresPerAccount, err)
 	}
 	// Another username from the address, and the account from another address, go on
 	for _, attempt := range [][2]string{{"192.0.2.1", "friend"}, {"192.0.2.2", "admin"}} {
@@ -50,4 +50,19 @@ func TestSignInLimit(t *testing.T) {
 func isStatus(err error, status int) bool {
 	var refused *failure.Error
 	return errors.As(err, &refused) && refused.Status == status
+}
+
+// SIGN_IN_ATTEMPTS=0 counts no failures, and only sign-ins under way are limited
+func TestSignInLimitOff(t *testing.T) {
+	limit := newSignInLimit(0)
+	for range 100 {
+		end, err := limit.begin("192.0.2.1", "admin")
+		if err != nil {
+			t.Fatal(err)
+		}
+		end(false)
+	}
+	if len(limit.failed) != 0 {
+		t.Fatalf("failures counted: %v", limit.failed)
+	}
 }

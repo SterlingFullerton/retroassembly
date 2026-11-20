@@ -3,7 +3,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"strings"
@@ -84,8 +86,22 @@ func inThirtyDays(now time.Time) time.Time {
 	return now.AddDate(0, 0, 30)
 }
 
+// A password session renews itself while it's used, but not past this long after signing in, so a token taken from
+// a browser stops working in the end, however it's used
+const maxPasswordSessionAge = 90 * 24 * time.Hour
+
+// newToken is a session token: 32 random bytes, which can't be guessed
+func newToken() string {
+	token := make([]byte, 32)
+	if _, err := rand.Read(token); err != nil {
+		panic(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(token)
+}
+
 // CurrentUser is whoever the token belongs to, or nil. A session still in use is kept going: its last activity is
-// noted every 5 minutes, and a password session within a day of expiring is given another 30 days
+// noted every 5 minutes, and a password session within a day of expiring is given another 30 days, up to 90 days after
+// it started
 func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) (*User, error) {
 	if token == "" {
 		return nil, nil
@@ -96,17 +112,17 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 	}
 	now := time.Now()
 	var (
-		sessionID               string
-		expiresAt, lastActivity int64
-		user                    User
+		sessionID                          string
+		createdAt, expiresAt, lastActivity int64
+		user                               User
 	)
 	err := database.QueryRowContext(ctx, `
-		SELECT s.id, s.expires_at, s.last_activity_at, u.id, u.library_mode, u.username
+		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.library_mode, u.username
 		FROM sessions s INNER JOIN users u ON s.user_id = u.id
 		WHERE s.token = ? AND s.status = ? AND u.status = ? AND s.authentication_method = ? AND s.expires_at > ?
 		LIMIT 1`,
 		token, db.StatusNormal, db.StatusNormal, method, db.Millis(now),
-	).Scan(&sessionID, &expiresAt, &lastActivity, &user.ID, &user.LibraryMode, &user.Username)
+	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.LibraryMode, &user.Username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -117,8 +133,14 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 	newExpiresAt, newLastActivity := db.Time(expiresAt), db.Time(lastActivity)
 	update := false
 	if method == MethodPassword && newExpiresAt.Sub(now) <= 24*time.Hour {
-		newExpiresAt = inThirtyDays(now)
-		update = true
+		renewed := inThirtyDays(now)
+		if latest := db.Time(createdAt).Add(maxPasswordSessionAge); renewed.After(latest) {
+			renewed = latest
+		}
+		if renewed.After(newExpiresAt) {
+			newExpiresAt = renewed
+			update = true
+		}
 	}
 	if now.Sub(newLastActivity) >= 5*time.Minute {
 		newLastActivity = now
@@ -144,7 +166,7 @@ func CreateSession(ctx context.Context, database *sql.DB, userID, method string,
 		ExpiresAt:            JSTime(expiresAt),
 		IP:                   optional(client.IP),
 		LastActivityAt:       JSTime(now),
-		Token:                ids.New(),
+		Token:                newToken(),
 		UserAgent:            optional(client.UserAgent),
 		UserID:               userID,
 		CreatedAt:            JSTime(now),

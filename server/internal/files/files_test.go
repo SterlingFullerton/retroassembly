@@ -105,6 +105,17 @@ func TestServe(t *testing.T) {
 		t.Fatalf("range: %d %q %q", part.Code, part.Body.String(), part.Header().Get("Content-Range"))
 	}
 
+	// An end past the file's, however large, is the file's end
+	request = httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set("Range", "bytes=1-9223372036854775807")
+	huge := httptest.NewRecorder()
+	Serve(huge, request, "roms/nes/game.nes", filePath)
+	if huge.Code != http.StatusPartialContent || huge.Body.String() != "123456789" ||
+		huge.Header().Get("Content-Range") != "bytes 1-9/10" || huge.Header().Get("Content-Length") != "9" {
+		t.Fatalf("huge range: %d %q %q %q", huge.Code, huge.Body.String(), huge.Header().Get("Content-Range"),
+			huge.Header().Get("Content-Length"))
+	}
+
 	request = httptest.NewRequest(http.MethodGet, "/", nil)
 	request.Header.Set("Range", "bytes=20-")
 	past := httptest.NewRecorder()

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -296,15 +295,14 @@ func (c *Cache) read(href string) (*Entry, error) {
 // upstreamError is an error answer from the CDN, as opposed to the CDN being unreachable
 type upstreamError struct{ message string }
 
-func (e *upstreamError) Error() string { return e.message }
+// unreachableError is a host that didn't answer, or didn't send headers in time. Only that makes the cache skip a host
+// for a while: a download cut short partway says nothing about the next file, and a visitor could cause it at will
+type unreachableError struct{ err error }
 
-// isFileSystemError tells whether the error is a file that couldn't be written here, which says nothing about whether
-// the CDN can be reached
-func isFileSystemError(err error) bool {
-	var pathError *fs.PathError
-	var linkError *os.LinkError
-	return errors.As(err, &pathError) || errors.As(err, &linkError)
-}
+func (e *unreachableError) Error() string { return e.err.Error() }
+func (e *unreachableError) Unwrap() error { return e.err }
+
+func (e *upstreamError) Error() string { return e.message }
 
 // writeNote writes what the cache notes about a file, under a temporary name first so it's never read half-written
 func writeNote(path string, noted note) error {
@@ -349,9 +347,9 @@ func (c *Cache) download(href string) error {
 	if err != nil {
 		var urlError *url.Error
 		if errors.As(err, &urlError) {
-			return fmt.Errorf("No response from %s: %w", href, urlError.Err)
+			err = urlError.Err
 		}
-		return err
+		return &unreachableError{fmt.Errorf("No response from %s: %w", href, err)}
 	}
 	defer response.Body.Close()
 	now := millis(time.Now())
@@ -456,8 +454,8 @@ func (c *Cache) File(href string, maxAge time.Duration, offline bool) (*Entry, e
 		return nil, fmt.Errorf("%s is unreachable", host)
 	}
 	if _, err := c.once(c.downloads, href, func() (string, error) { return "", c.download(href) }); err != nil {
-		var upstream *upstreamError
-		if !errors.As(err, &upstream) && !isFileSystemError(err) {
+		var unreachable *unreachableError
+		if errors.As(err, &unreachable) {
 			c.mutex.Lock()
 			c.unreachable[host] = time.Now().Add(unreachableBackoff)
 			c.mutex.Unlock()

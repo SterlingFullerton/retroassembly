@@ -26,13 +26,14 @@ type RomField struct {
 }
 
 // SaveUploadedRom stores an uploaded game: as a new game, or over the game the user already has with its file name on
-// that console. Only the fields given are set on a game that's there already, as Drizzle leaves out what's undefined
-func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string, fields []RomField) (Object, error) {
+// that console. Only the fields given are set on a game that's there already, as Drizzle leaves out what's undefined.
+// Uploaded again with other content, the game's old file id is returned too, to be removed with RemoveUnusedRomFiles
+func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string, fields []RomField) (Object, string, error) {
 	now := db.Millis(time.Now())
 	// Looked up and stored in one transaction, so the same file name uploaded twice at once is one game
 	transaction, err := scope.Database.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer transaction.Rollback()
 	var existing, previousFileID string
@@ -40,7 +41,7 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		`SELECT id, file_id FROM roms WHERE user_id = ? AND platform = ? AND status = ? AND file_name = ? LIMIT 1`,
 		scope.User.ID, platform, db.StatusNormal, fileName).Scan(&existing, &previousFileID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+		return nil, "", err
 	}
 	columns := make([]string, 0, len(fields)+4)
 	arguments := make([]any, 0, len(fields)+4)
@@ -59,18 +60,15 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 			`UPDATE roms SET `+strings.Join(set, ", ")+` WHERE id = ? RETURNING `+selectColumns("", romColumns),
 			arguments...), romColumns)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		if err := transaction.Commit(); err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		// Uploaded again with other content, the game's old file goes once no game uses it
 		if fileID, _ := rom.Get("fileId").(string); fileID != previousFileID {
-			if err := removeUnusedRomFiles(ctx, scope, []string{previousFileID}); err != nil {
-				return nil, err
-			}
+			return rom, previousFileID, nil
 		}
-		return rom, nil
+		return rom, "", nil
 	}
 	columns = append(columns, "created_at", "id", "status", "updated_at")
 	arguments = append(arguments, now, ids.New(), db.StatusNormal, now)
@@ -78,9 +76,9 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		`INSERT INTO roms (`+strings.Join(columns, ", ")+`) VALUES (`+placeholders(len(columns))+`) RETURNING `+
 			selectColumns("", romColumns), arguments...), romColumns)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return rom, transaction.Commit()
+	return rom, "", transaction.Commit()
 }
 
 // MustJSON is a value as JSON, as JSON.stringify writes it

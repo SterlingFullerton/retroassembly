@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 type account struct {
@@ -106,17 +107,80 @@ func TestRegistrationOnlyForTheFirstAccount(t *testing.T) {
 		url.Values{"new_password": {"a longer one"}, "password": {"password-admin"}}))
 }
 
-// Wrong passwords for an account, from one address, are refused for a while after 10, before any is checked
+// Wrong passwords for an account, from one address, are refused for a while after SIGN_IN_ATTEMPTS, before any is
+// checked
 func TestSignInAttemptsAreLimited(t *testing.T) {
-	signIns = &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}}
-	t.Cleanup(func() { signIns = &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}} })
+	t.Setenv("SIGN_IN_ATTEMPTS", "3")
 	api := newAPI(t)
 	api.register(t, "admin")
 	guesser := api.browser(t)
-	for range maxFailuresPerAccount {
+	for range 3 {
 		guesser.expect(http.StatusUnauthorized, guesser.form(http.MethodPost, "/api/v1/auth/login",
 			url.Values{"password": {"wrong password"}, "username": {"admin"}}))
 	}
 	guesser.expect(http.StatusTooManyRequests, guesser.form(http.MethodPost, "/api/v1/auth/login",
 		url.Values{"password": {"password-admin"}, "username": {"admin"}}))
+}
+
+// With OPEN_SIGNUP anyone makes an account at the login page, and with SIGNUP_SHARES_LIBRARY it shares the admin's
+// library; the first account is the admin all the same
+func TestOpenSignup(t *testing.T) {
+	for _, shares := range []bool{false, true} {
+		t.Setenv("OPEN_SIGNUP", "true")
+		t.Setenv("SIGNUP_SHARES_LIBRARY", map[bool]string{false: "false", true: "true"}[shares])
+		api := newAPI(t)
+		var page struct {
+			SignupOpen bool `json:"signupOpen"`
+		}
+		stranger := api.browser(t)
+		stranger.expectJSON(http.StatusOK, &page, stranger.get("/api/v1/pages/login"))
+		if !page.SignupOpen {
+			t.Fatal("the login page doesn't say sign-up is open")
+		}
+		var accounts []account
+		for _, name := range []string{"admin", "friend"} {
+			stranger.expect(http.StatusOK, stranger.form(http.MethodPost, "/api/v1/auth/register",
+				url.Values{"password": {"password-" + name}, "username": {name}}))
+		}
+		admin := api.login(t, "admin")
+		admin.expectJSON(http.StatusOK, &accounts, admin.get("/api/v1/users"))
+		want := map[bool]int{false: 0, true: 1}[shares]
+		if len(accounts) != 2 || !accounts[0].IsSuper || accounts[0].LibraryMode != 0 || accounts[1].LibraryMode != want {
+			t.Fatalf("shares %v: %+v", shares, accounts)
+		}
+	}
+}
+
+// A session's token can't be guessed, and a password session renews itself while used, but not past 90 days
+func TestSessionLifetime(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	var token string
+	if err := api.database.QueryRow(`SELECT token FROM sessions WHERE user_id = ?`, admin.id).Scan(&token); err != nil {
+		t.Fatal(err)
+	}
+	if len(token) != 43 {
+		t.Fatalf("token %q", token)
+	}
+
+	day := int64(24 * time.Hour / time.Millisecond)
+	now := time.Now().UnixMilli()
+	started := now - 89*day
+	if _, err := api.database.Exec(`UPDATE sessions SET created_at = ?, expires_at = ?, last_activity_at = ? WHERE token = ?`,
+		started, now+day/2, now-day, token); err != nil {
+		t.Fatal(err)
+	}
+	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
+	var expiresAt int64
+	if err := api.database.QueryRow(`SELECT expires_at FROM sessions WHERE token = ?`, token).Scan(&expiresAt); err != nil {
+		t.Fatal(err)
+	}
+	if expiresAt != started+90*day {
+		t.Fatalf("renewed to %d days after it started", (expiresAt-started)/day)
+	}
+
+	if _, err := api.database.Exec(`UPDATE sessions SET expires_at = ? WHERE token = ?`, now-1, token); err != nil {
+		t.Fatal(err)
+	}
+	admin.expect(http.StatusUnauthorized, admin.get("/api/v1/preference"))
 }

@@ -138,7 +138,14 @@ export interface CommonPageData {
 
 export type LoginPageData =
   | { error: { message: string } | null; formType: 'oidc'; redirectTo: string; title: string }
-  | { error: null; formType: 'login' | 'register'; redirectTo: string; title: string }
+  | {
+      error: null
+      formType: 'login' | 'register'
+      redirectTo: string
+      /** Whether anyone can create an account (OPEN_SIGNUP), not only the first */
+      signupOpen: boolean
+      title: string
+    }
   | { redirect: string }
 
 export interface LibraryLayoutData {

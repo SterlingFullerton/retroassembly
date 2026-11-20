@@ -53,7 +53,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password login is disabled")
 		return
 	}
-	end, err := signIns.begin(clientAddress(r), values["username"])
+	end, err := s.signIns.begin(clientAddress(r), values["username"])
 	if err != nil {
 		writeError(w, err)
 		return
@@ -77,13 +77,13 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password registration is disabled")
 		return
 	}
-	end, err := signIns.begin(clientAddress(r), values["username"])
+	end, err := s.signIns.begin(clientAddress(r), values["username"])
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 	defer end(true)
-	user, err := auth.RegisterFirst(r.Context(), s.database, values["username"], values["password"], s.authMode, client(r))
+	user, err := s.signUp(r, values["username"], values["password"])
 	if err != nil {
 		writeError(w, err)
 		return
@@ -96,6 +96,25 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	}
 	setSessionCookie(w, r, session)
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
+}
+
+// signUp adds an account from the login page: only the first, which is the admin, unless OPEN_SIGNUP lets anyone make
+// one. Those share the admin's library with SIGNUP_SHARES_LIBRARY
+func (s *Server) signUp(r *http.Request, username, password string) (*auth.User, error) {
+	if !s.config.OpenSignup {
+		return auth.RegisterFirst(r.Context(), s.database, username, password, s.authMode, client(r))
+	}
+	libraryMode := 0
+	if s.config.SignupSharesLibrary {
+		adminID, err := s.adminID(r)
+		if err != nil {
+			return nil, err
+		}
+		if adminID != "" {
+			libraryMode = 1
+		}
+	}
+	return auth.CreateUser(r.Context(), s.database, username, password, libraryMode, s.authMode, client(r))
 }
 
 // currentUser is whoever is signed in, or nothing; open to everyone
@@ -113,9 +132,7 @@ func (s *Server) currentUser(w http.ResponseWriter, r *http.Request) {
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	// The session cookie is sent on links from other sites too (SameSite=Lax), so only the app itself may log out: a
 	// link to /logout elsewhere would otherwise sign the player out
-	site := r.Header.Get("Sec-Fetch-Site")
-	fromElsewhere := site == "cross-site" || site == "same-site"
-	if token := stateOf(r).token; token != "" && !fromElsewhere {
+	if token := stateOf(r).token; token != "" && !fromAnotherSite(r) {
 		if err := auth.InvalidateSession(r.Context(), s.database, token); err != nil {
 			writeError(w, err)
 			return
