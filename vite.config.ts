@@ -103,7 +103,9 @@ export default defineConfig(async (env) => {
     },
   }
 
-  if (env.command === 'serve') {
+  // Only for the dev server: not for the preview server React Router starts to prerender the app while it builds,
+  // which loads this config in production mode, once without saying it's a preview
+  if (env.command === 'serve' && !env.isPreview && env.mode !== 'production') {
     // The API is the Go server's (server/), started here on the next port, with the same settings and data folder
     const { dataDirectory, storageDirectory } = getDirectories()
     await fs.ensureDir(dataDirectory)

@@ -273,8 +273,12 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - The fixtures the Go tests compare against (`server/internal/*/testdata`) were written by the Node server's code; they
   stay as the answers the Go server must keep giving
 - The unit tests of the Node server's code went with it; what they checked is checked by the Go tests
-- The Docker image was checked by building its Go stage, and running that binary on the runtime image with the built
-  app: the full build downloads libretro's and LaunchBox's databases and wasn't run here
+- The full Docker image was built and checked: the end-to-end tests pass against it on a fresh library; on a library the
+  last Node server made (accounts, games, box art, a save state, an in-game save, a favorite, play history, a setting),
+  the library's reads answer as Node's did, Node's sessions and passwords still sign in, stored files come back
+  unchanged, and new games, states, deletions and a password change last through a restart. It's 371 MB, uses about
+  10 to 22 MiB, and stops at once on `docker stop`. The full build found that the preview server React Router starts to
+  prerender the app loaded the dev-only code that starts the Go server; that code now runs only for `pnpm dev`
 
 ### After the switch: an adversarial review
 
