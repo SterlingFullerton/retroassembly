@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises'
 import { expect, mergeTests, type Page } from '@playwright/test'
 import { test as pagesTest } from '../fixtures/pages.ts'
 import { test as romsTest } from '../fixtures/roms.ts'
@@ -52,4 +53,27 @@ test('navigate search results with keyboard', async ({ page, pages: { library, l
   await expect(gameEntry(page, rom.title)).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByText('start')).toBeVisible()
+})
+
+test('enter goes into the search results while they are still loading', async ({
+  page,
+  pages: { library, login },
+  roms,
+  user,
+}) => {
+  await login.login(user)
+  await library.uploadROMs(roms)
+  const rom = roms.at(-1)
+  if (!rom) {
+    throw new Error('No test games')
+  }
+  // The results take longer than the pause before typing is searched for, so Enter arrives while they load
+  await page.route('**/api/v1/pages/library/roms*', async (route) => {
+    await setTimeout(1500)
+    await route.continue()
+  })
+  await searchBox(page).fill(rom.title)
+  await page.waitForTimeout(500)
+  await searchBox(page).press('Enter')
+  await expect(gameEntry(page, rom.title)).toBeFocused()
 })

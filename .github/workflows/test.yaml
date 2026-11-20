@@ -21,6 +21,19 @@ jobs:
           cache-dependency-path: server/go.sum
 
       - run: pnpm install
+
+      # The emulators the app serves (scripts/retroarch-cores.ts), as the Docker build makes them: without them no game
+      # starts. Kept between runs, as they change only with the emulator list or RetroArch's version
+      - uses: actions/cache@v4
+        id: cores
+        with:
+          path: public/cores
+          key: cores-${{ hashFiles('scripts/retroarch-cores.ts', 'src/consoles/**', 'src/input/**') }}
+      - if: steps.cores.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libarchive-tools
+          node scripts/retroarch-cores.ts
       - run: node --run=setup
       - run: node --run=lint
       - run: test -z "$(gofmt -l server)" || (gofmt -l server && exit 1)

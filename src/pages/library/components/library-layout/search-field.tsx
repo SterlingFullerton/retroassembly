@@ -52,11 +52,13 @@ export function SearchField() {
     if (event.key === 'Enter' || (event.key === 'ArrowDown' && text)) {
       event.preventDefault()
       focusFirstGame.current = true
-      if (normalizeSearch(text) === query) {
+      // The search counts as applied as soon as it's asked for, before its list has loaded. Until it has, the first game
+      // is the previous list's, so it's focused once the list is in
+      if (normalizeSearch(text) !== query) {
+        await apply(text)
+      } else if (navigation.state === 'idle') {
         focusFirstGame.current = false
         focus('.game-entry')
-      } else {
-        await apply(text)
       }
     } else if (event.key === 'Escape') {
       event.preventDefault()
