@@ -14,6 +14,7 @@ type settings struct {
 			Bioses []struct {
 				FileID   string `json:"fileId"`
 				FileName string `json:"fileName"`
+				Shared   bool   `json:"shared"`
 			} `json:"bioses"`
 			Core string `json:"core"`
 		} `json:"platform"`
@@ -145,6 +146,19 @@ func TestSharedLibraryBIOSFiles(t *testing.T) {
 		if body := friend.expect(http.StatusOK, friend.get("/api/v1/files/"+bios.FileID)); string(body) != bios.FileName {
 			t.Fatalf("%s: %q", bios.FileName, body)
 		}
+		if !bios.Shared {
+			t.Fatalf("%s isn't marked as the admin's", bios.FileName)
+		}
+	}
+	if adminSettings.Emulator.Platform["channelf"].Bioses[0].Shared {
+		t.Fatal("the admin's own BIOS files are marked shared")
+	}
+	// Sent back with other settings, the admin's aren't saved as the friend's
+	friend.expect(http.StatusOK, friend.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
+		"platform": map[string]any{"channelf": map[string]any{"bioses": channelF, "rewindEnabled": false}},
+	}}))
+	if api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ? AND emulator LIKE '%sl31253%'`, friend.id) != 0 {
+		t.Fatal("the admin's BIOS files were saved in the friend's settings")
 	}
 	// Their own BIOS files for a console are used in place of the admin's
 	if nes := friendSettings.Emulator.Platform["nes"].Bioses; len(nes) != 1 || nes[0].FileName != "mine.rom" {

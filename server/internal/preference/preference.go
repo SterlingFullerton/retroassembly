@@ -329,8 +329,27 @@ func LibraryBioses(ctx context.Context, database *sql.DB, libraryOwnerID string)
 	return bioses, nil
 }
 
+// withoutSharedBioses leaves out of settings being saved the BIOS files marked shared: they're the library owner's, and
+// saved as the player's they would stay after the library is no longer shared
+func withoutSharedBioses(snippet Object) {
+	for _, value := range section(section(snippet, "emulator"), "platform") {
+		settings, _ := value.(Object)
+		bioses, ok := settings["bioses"].([]any)
+		if !ok {
+			continue
+		}
+		own := []any{}
+		for _, item := range bioses {
+			if bios, _ := item.(Object); bios == nil || bios["shared"] != true {
+				own = append(own, item)
+			}
+		}
+		settings["bioses"] = own
+	}
+}
+
 // withLibraryBioses gives a player who shares another's library that library owner's BIOS files, on each console they
-// haven't added any of their own for
+// haven't added any of their own for. Each is marked shared, as only its owner can remove it
 func withLibraryBioses(ctx context.Context, database *sql.DB, resolved Object, userID, libraryOwnerID string) (Object, error) {
 	if libraryOwnerID == "" || libraryOwnerID == userID {
 		return resolved, nil
@@ -346,7 +365,13 @@ func withLibraryBioses(ctx context.Context, database *sql.DB, resolved Object, u
 			continue
 		}
 		if own, _ := settings["bioses"].([]any); len(own) == 0 {
-			settings["bioses"] = clone(bioses)
+			shared := clone(bioses).([]any)
+			for _, item := range shared {
+				if bios, ok := item.(Object); ok {
+					bios["shared"] = true
+				}
+			}
+			settings["bioses"] = shared
 		}
 	}
 	return resolved, nil
@@ -388,6 +413,7 @@ func column(value any) any {
 
 // Update saves part of a user's settings over what they have, and is their settings, resolved: updatePreference
 func (s *Settings) Update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object) (Object, error) {
+	withoutSharedBioses(snippet)
 	existing, err := scanRow(database.QueryRowContext(ctx,
 		`SELECT emulator, input, ui FROM user_preferences WHERE user_id = ? LIMIT 1`, userID))
 	if errors.Is(err, sql.ErrNoRows) {

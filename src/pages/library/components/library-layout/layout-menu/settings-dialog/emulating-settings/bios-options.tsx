@@ -103,29 +103,31 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
       </SettingsTitle>
       <div className='flex flex-col gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
-          {bioses.map(({ fileName }) => (
+          {bioses.map(({ fileName, shared }) => (
             <Badge key={fileName} size='3' variant='surface'>
               <span className='icon-[mdi--file]' />
               {fileName}
-              <Popover.Root>
-                <Popover.Trigger>
-                  <IconButton disabled={disabled} size='1' title={t('common.delete')} type='button' variant='ghost'>
-                    <span className='icon-[mdi--close]' />
-                  </IconButton>
-                </Popover.Trigger>
-                <Popover.Content size='1'>
-                  <Button
-                    disabled={disabled}
-                    loading={isDeleting}
-                    onClick={() => handleClickDelete(fileName)}
-                    size='1'
-                    variant='soft'
-                  >
-                    <span className='icon-[mdi--delete]' />
-                    {t('dialog.confirmDeleteTitle')}
-                  </Button>
-                </Popover.Content>
-              </Popover.Root>
+              {shared ? null : (
+                <Popover.Root>
+                  <Popover.Trigger>
+                    <IconButton disabled={disabled} size='1' title={t('common.delete')} type='button' variant='ghost'>
+                      <span className='icon-[mdi--close]' />
+                    </IconButton>
+                  </Popover.Trigger>
+                  <Popover.Content size='1'>
+                    <Button
+                      disabled={disabled}
+                      loading={isDeleting}
+                      onClick={() => handleClickDelete(fileName)}
+                      size='1'
+                      variant='soft'
+                    >
+                      <span className='icon-[mdi--delete]' />
+                      {t('dialog.confirmDeleteTitle')}
+                    </Button>
+                  </Popover.Content>
+                </Popover.Root>
+              )}
             </Badge>
           ))}
         </div>

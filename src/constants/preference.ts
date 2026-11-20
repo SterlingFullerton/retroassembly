@@ -15,7 +15,8 @@ export interface Preference {
     platform: Record<
       PlatformName,
       {
-        bioses: { fileId: string; fileName: string }[]
+        /** shared: the library owner's, for a player who shares their library; only the owner can remove it */
+        bioses: { fileId: string; fileName: string; shared?: boolean }[]
         core: CoreName
         rewindEnabled: boolean
         shader?: string
