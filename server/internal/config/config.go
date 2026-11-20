@@ -42,6 +42,8 @@ type OIDC struct {
 }
 
 type Config struct {
+	// Whether the server keeps its own copies of CDN files (RETROASSEMBLY_RUN_TIME_CDN_CACHE)
+	CDNCache bool
 	// The built browser app, dist/client
 	ClientRoot  string
 	Directories Directories
@@ -102,6 +104,7 @@ func Load() Config {
 	}
 
 	return Config{
+		CDNCache:   os.Getenv("RETROASSEMBLY_RUN_TIME_CDN_CACHE") == "true",
 		ClientRoot: env("RETROASSEMBLY_GO_CLIENT_ROOT", absolute("dist", "client")),
 		Directories: Directories{
 			Artwork:     artwork,

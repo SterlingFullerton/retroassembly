@@ -31,7 +31,8 @@ interface Candidate {
   title: string
 }
 
-function rank<T extends Candidate>(candidates: T[], query: string) {
+/** The candidates matching a search, best first. Exported for the Go server's tests (scripts/go-test-fixtures.ts) */
+export function rank<T extends Candidate>(candidates: T[], query: string) {
   for (const candidate of candidates) {
     candidate.score = scoreRom(candidate, query)
   }

@@ -15,6 +15,10 @@ The browser app stays TypeScript; this serves it and its API.
 - Settings: `GET` and `POST /api/v1/preference`, `POST` and `DELETE /api/v1/preference/bioses`
 - Save states: `GET` and `POST /api/v1/states`, `DELETE /api/v1/states/{id}`, `GET /api/v1/roms/{id}/states`
 - In-game saves: `GET` and `POST /api/v1/game_saves`, `POST /api/v1/game_saves/{id}/restore`
+- Games: `GET /api/v1/roms/by_files`, `GET /api/v1/roms/{id}/content`, `GET /api/v1/roms/search_counts`
+- Lists of games: `GET /api/v1/launch_records`, `GET /api/v1/roms/search`, `GET /api/v1/roms/rediscover`,
+  `GET /api/v1/roms/on_this_day`, `GET /api/v1/roms/play_together`. These say which covers the server's CDN cache has,
+  which only the Node server knows yet, so with `RETROASSEMBLY_RUN_TIME_CDN_CACHE=true` they stay the Node server's
 
 With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (the rest of `/api/`, `/cdn/`, logging
 in with OIDC) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
@@ -49,8 +53,9 @@ What the Go server needs from the TypeScript definitions (the default settings, 
 game pages are cross-origin isolated) is in `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
 A unit test fails when it's out of date.
 
-How settings are resolved and merged is checked against the TypeScript code's own answers, in
-`internal/preference/testdata/typescript.json`, written by `node scripts/go-test-fixtures.ts`.
+How settings are resolved and merged, and how games are found and ranked by a search (Fuse.js's typo-tolerant matching
+included), are checked against the TypeScript code's own answers, in `internal/preference/testdata/typescript.json`
+and `internal/search/testdata/typescript.json`, written by `node scripts/go-test-fixtures.ts`.
 
 ## Passwords
 

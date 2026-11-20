@@ -24,20 +24,13 @@
     },
     {
       "result": {
-        "a": [
-          3
-        ]
+        "a": [3]
       },
       "source": {
-        "a": [
-          3
-        ]
+        "a": [3]
       },
       "target": {
-        "a": [
-          1,
-          2
-        ]
+        "a": [1, 2]
       }
     },
     {
@@ -372,16 +365,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -664,16 +648,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -960,16 +935,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -1256,16 +1222,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -1567,10 +1524,7 @@
       "input": {
         "ui": {
           "language": "de",
-          "platforms": [
-            "nes",
-            "gba"
-          ]
+          "platforms": ["nes", "gba"]
         }
       },
       "result": {
@@ -1843,10 +1797,7 @@
           "language": "de",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "nes",
-            "gba"
-          ],
+          "platforms": ["nes", "gba"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -2134,16 +2085,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 0,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -2406,16 +2348,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -2710,16 +2643,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -3021,16 +2945,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -3317,16 +3232,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,
@@ -3613,16 +3519,7 @@
           "language": "auto",
           "libraryCoverSize": "medium",
           "libraryCoverType": "boxart",
-          "platforms": [
-            "arcade",
-            "atari2600",
-            "gb",
-            "gba",
-            "gbc",
-            "genesis",
-            "nes",
-            "snes"
-          ],
+          "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
           "saturation": 100,
           "saturationApplyToGame": false,
           "saturationApplyToImages": false,

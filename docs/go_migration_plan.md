@@ -164,6 +164,14 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   cover matching of step 4 and moves there; 3, with `GET /api/v1/roms/{id}/states`. The same upload sent several times
   at once is still stored once, and the same saves and files are kept as on Node
 - In-game saves: restoring a version whose file is missing on disk answers 404 where Node answers 500
+- Done: 4's API routes: `GET /api/v1/launch_records`, `/roms/search`, `/roms/search_counts`, `/roms/rediscover`,
+  `/roms/on_this_day`, `/roms/play_together`, `/roms/by_files`, `/roms/{id}/content`. The search ranking, Fuse.js's
+  typo-tolerant matching included, is checked against the TypeScript code's own rankings
+  (`server/internal/search/testdata`). With the CDN cache on, the lists stay Node's until phase 3, as only Node knows
+  which covers the cache has. The game lists of the pages (`getRoms`, the letters) come with step 7
+- Quirks kept from Node: `GET /api/v1/launch_records` ignores `page_size` (always 100); game lists give `isFavorite` as
+  1 or 0, the picks and history as true or false. Among games that tie on everything search ranks by, the order may
+  differ from Node's, which takes it from the order SQLite reads the rows in
 - Checked by sending the same requests, errors included, to Node alone and to Go in front of Node, and with the
   end-to-end tests through Go in front of Node: the same tests pass as on Node alone
 - The default settings and the consoles come from the TypeScript definitions (`scripts/go-shared-data.ts`), and how

@@ -149,7 +149,23 @@ func (s *Server) Handler() (http.Handler, error) {
 	} {
 		api.Handle(pattern, compress(handler))
 	}
+	// Lists of games say which covers the server's CDN cache has, which only the Node server can tell yet: with the cache
+	// on, they stay the Node server's
+	if !s.config.CDNCache {
+		for pattern, handler := range map[string]http.HandlerFunc{
+			"GET /api/v1/launch_records":     s.signedIn(s.launchHistory),
+			"GET /api/v1/roms/rediscover":    s.signedIn(s.rediscoverPicks),
+			"GET /api/v1/roms/on_this_day":   s.signedIn(s.onThisDayPicks),
+			"GET /api/v1/roms/play_together": s.signedIn(s.playTogetherPicks),
+			"GET /api/v1/roms/search":        s.signedIn(s.searchRoms),
+		} {
+			api.Handle(pattern, compress(handler))
+		}
+	}
+	api.Handle("GET /api/v1/roms/by_files", compress(s.signedIn(s.romsByFiles)))
+	api.Handle("GET /api/v1/roms/search_counts", compress(s.signedIn(s.searchCounts)))
 	// Stored files are mostly binary, and compressing them would drop their size from downloads for no gain
+	api.Handle("GET /api/v1/roms/{id}/content", s.signedIn(s.romContent))
 	api.HandleFunc("GET /api/v1/files/{id...}", s.file)
 	api.HandleFunc("GET /logout", s.logout)
 	api.Handle("/api/", notPorted)
