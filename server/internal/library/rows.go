@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"strings"
 
 	"retroassembly/server/internal/auth"
@@ -42,6 +43,25 @@ func (o Object) MarshalJSON() ([]byte, error) {
 	}
 	buffer.WriteByte('}')
 	return buffer.Bytes(), nil
+}
+
+// mustJSON is a value as JSON, as JSON.stringify writes it
+func mustJSON(value any) []byte {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
+		panic(err)
+	}
+	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n"))
+}
+
+// sqlNumber is a number as SQLite takes it for LIMIT and OFFSET: whole numbers as integers
+func sqlNumber(n float64) any {
+	if n == math.Trunc(n) && !math.IsInf(n, 0) {
+		return int64(n)
+	}
+	return n
 }
 
 // Get is a key's value, or nil

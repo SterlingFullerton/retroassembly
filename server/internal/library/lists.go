@@ -29,7 +29,12 @@ const (
 	ratingCount = `coalesce(json_extract(roms.raw_game_metadata, '$.launchbox.communityRatingCount'), 0)`
 )
 
+// placeholders is the inside of an IN list of n values. With none, it's NULL, which nothing is IN: the same as Drizzle's
+// empty inArray, which matches nothing
 func placeholders(n int) string {
+	if n == 0 {
+		return "NULL"
+	}
 	return strings.TrimSuffix(strings.Repeat("?, ", n), ", ")
 }
 
@@ -180,17 +185,33 @@ type History struct {
 	Roms       []Object   `json:"roms"`
 }
 
-// LaunchHistory is the play history list, on the consoles shown. A game deleted since is still listed
-func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, pageSize float64) (*History, error) {
+// LaunchHistory is the play history list, on the consoles shown. A game deleted since is still listed. With a search,
+// only the played games that match it, still most recently played first
+func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, pageSize float64, search string) (*History, error) {
 	where := `launch_records.user_id = ? AND launch_records.status = ? AND launch_records.platform IN (` +
 		placeholders(len(platforms)) + `)`
 	arguments := append([]any{scope.User.ID, db.StatusNormal}, strings2any(platforms)...)
+	if search != "" {
+		matches, _, err := FindSearchMatches(ctx, scope, SearchScope{Platforms: platforms}, search)
+		if err != nil {
+			return nil, err
+		}
+		if len(matches) == 0 {
+			return &History{Pagination: Pagination{Current: page, Size: pageSize}, Roms: []Object{}}, nil
+		}
+		ids := make([]string, len(matches))
+		for i, match := range matches {
+			ids[i] = match.ID
+		}
+		where += ` AND launch_records.rom_id IN (` + placeholders(len(ids)) + `)`
+		arguments = append(arguments, strings2any(ids)...)
+	}
 	columnsSQL := make([]string, len(historyColumns))
 	for i, c := range historyColumns {
 		columnsSQL[i] = c.sql
 	}
 	// The favorites join's user comes first, then the conditions', then the page
-	queryArguments := append(append([]any{scope.User.ID}, arguments...), pageSize, (page-1)*pageSize)
+	queryArguments := append(append([]any{scope.User.ID}, arguments...), sqlNumber(pageSize), sqlNumber((page-1)*pageSize))
 	roms, err := queryObjects(ctx, scope.Database, func(rows *sqlRows) (Object, error) {
 		var favorite bool
 		object, err := scanObject(rows, historyColumns, &favorite)

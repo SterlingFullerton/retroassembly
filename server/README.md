@@ -23,6 +23,9 @@ The browser app stays TypeScript; this serves it and its API.
 - Lists of games: `GET /api/v1/launch_records`, `GET /api/v1/roms/search`, `GET /api/v1/roms/rediscover`,
   `GET /api/v1/roms/on_this_day`, `GET /api/v1/roms/play_together`. These say which covers the server's CDN cache has,
   which only the Node server knows yet, so with `RETROASSEMBLY_RUN_TIME_CDN_CACHE=true` they stay the Node server's
+- The pages' data: `GET /api/v1/pages/common` and `/api/v1/pages/login`, and the library's pages
+  (`/api/v1/pages/library`, `.../home`, `/roms`, `/consoles`, `/favorites`, `/history`, `/platform`, `/rom`). The
+  library's pages list games, so like the lists above they stay the Node server's while the CDN cache is on
 
 With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (the rest of `/api/`, `/cdn/`, logging
 in with OIDC) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
@@ -53,8 +56,8 @@ go -C server vet ./... && go -C server test ./...
 `server/test/shared-data.sh` checks the two servers against each other on one data folder: start the Node server and
 this one on the same empty data folder, then run it with `DATA_DIRECTORY`, `NODE_URL` and `GO_URL`.
 
-What the Go server needs from the TypeScript definitions (the default settings, the consoles in order, which consoles'
-game pages are cross-origin isolated, the languages with the messages the server writes and their date formats) is in
+What the Go server needs from the TypeScript definitions (the default settings, the consoles in order and their names' translation keys,
+which consoles' game pages are cross-origin isolated, the languages with the messages the server writes and their date formats) is in
 `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
 A unit test fails when it's out of date.
 

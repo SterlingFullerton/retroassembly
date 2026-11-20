@@ -24,6 +24,8 @@ type Data struct {
 	DefaultPreference json.RawMessage `json:"defaultPreference"`
 	// The languages, in the app's order
 	Languages []Language `json:"languages"`
+	// The key of each console's name in the translations
+	PlatformNames map[string]string `json:"platformNames"`
 	// Every console, in the app's usual order
 	Platforms []string `json:"platforms"`
 	// The consoles whose game pages are sent with cross-origin isolation headers

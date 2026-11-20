@@ -120,7 +120,7 @@ func (s *Server) launchHistory(w http.ResponseWriter, r *http.Request, scope lib
 		writeError(w, err)
 		return
 	}
-	history, err := library.LaunchHistory(r.Context(), scope, platforms, page, pageSize)
+	history, err := library.LaunchHistory(r.Context(), scope, platforms, page, pageSize, "")
 	if err != nil {
 		writeError(w, err)
 		return

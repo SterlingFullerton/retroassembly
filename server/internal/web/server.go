@@ -19,13 +19,20 @@ import (
 )
 
 type Server struct {
-	authMode   string
-	config     config.Config
-	database   *sql.DB
-	languages  *i18n.Languages
-	preference *preference.Settings
+	authMode  string
+	config    config.Config
+	database  *sql.DB
+	languages *i18n.Languages
+	// The key of each console's name in the translations, which is also the list of consoles the app has
+	platformNames map[string]string
+	preference    *preference.Settings
 	// The consoles whose game pages are sent with cross-origin isolation headers
 	threadedConsoles map[string]bool
+}
+
+// adminID is the admin's account: the oldest one still in use
+func (s *Server) adminID(r *http.Request) (string, error) {
+	return auth.AdminID(r.Context(), s.database)
 }
 
 func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (*Server, error) {
@@ -38,8 +45,8 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		return nil, err
 	}
 	return &Server{
-		authMode: authMode, config: c, database: database, languages: i18n.New(data), preference: settings,
-		threadedConsoles: threaded,
+		authMode: authMode, config: c, database: database, languages: i18n.New(data), platformNames: data.PlatformNames,
+		preference: settings, threadedConsoles: threaded,
 	}, nil
 }
 
@@ -174,10 +181,21 @@ func (s *Server) Handler() (http.Handler, error) {
 			"GET /api/v1/roms/on_this_day":   s.signedIn(s.onThisDayPicks),
 			"GET /api/v1/roms/play_together": s.signedIn(s.playTogetherPicks),
 			"GET /api/v1/roms/search":        s.signedIn(s.searchRoms),
+			// The pages with lists of games
+			"GET /api/v1/pages/library":           s.signedIn(s.libraryLayoutData),
+			"GET /api/v1/pages/library/home":      s.signedIn(s.homePageData),
+			"GET /api/v1/pages/library/roms":      s.signedIn(s.gamesPageData),
+			"GET /api/v1/pages/library/consoles":  s.signedIn(s.consolesPageData),
+			"GET /api/v1/pages/library/favorites": s.signedIn(s.favoritesPageData),
+			"GET /api/v1/pages/library/history":   s.signedIn(s.historyPageData),
+			"GET /api/v1/pages/library/platform":  s.signedIn(s.platformPageData),
+			"GET /api/v1/pages/library/rom":       s.signedIn(s.romPageData),
 		} {
 			api.Handle(pattern, compress(handler))
 		}
 	}
+	api.Handle("GET /api/v1/pages/common", compress(http.HandlerFunc(s.commonPageData)))
+	api.Handle("GET /api/v1/pages/login", compress(http.HandlerFunc(s.loginPageData)))
 	api.Handle("GET /api/v1/roms/by_files", compress(s.signedIn(s.romsByFiles)))
 	api.Handle("GET /api/v1/roms/search_counts", compress(s.signedIn(s.searchCounts)))
 	// Stored files are mostly binary, and compressing them would drop their size from downloads for no gain

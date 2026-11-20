@@ -2,12 +2,14 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 
 	"retroassembly/server/internal/failure"
+	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/preference"
 )
 
@@ -44,7 +46,10 @@ func writeError(w http.ResponseWriter, err error) {
 		writeMessage(w, known.Status, known.Message)
 		return
 	}
-	log.Println(err)
+	// A request the browser stopped waiting for gets no answer anyway
+	if !errors.Is(err, context.Canceled) {
+		log.Println(err)
+	}
 	message := err.Error()
 	if message == "" {
 		message = "Unknown error"
@@ -72,6 +77,15 @@ func form(w http.ResponseWriter, r *http.Request, names ...string) (map[string]s
 
 func decodeJSON(content []byte) (any, error) {
 	return preference.Decode(content)
+}
+
+// obj is a JSON object with its keys in the order given: obj("a", 1, "b", 2) is {"a":1,"b":2}
+func obj(pairs ...any) library.Object {
+	object := make(library.Object, 0, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		object = append(object, library.Field{Key: pairs[i].(string), Value: pairs[i+1]})
+	}
+	return object
 }
 
 // redirect answers with a 302 and no body, as the Node server does

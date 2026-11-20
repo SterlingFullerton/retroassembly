@@ -49,6 +49,8 @@ export function getGoSharedData() {
       code,
       messages: Object.fromEntries(Object.entries(translation).filter(([key]) => isServerMessage(key))),
     })),
+    // The key of each console's name in the translations, for page titles
+    platformNames: Object.fromEntries(platforms.map(({ displayNameI18nKey, name }) => [name, displayNameI18nKey])),
     // Every console, in the app's usual order (src/constants/platform.ts)
     platforms: platforms.map(({ name }) => name),
     threadedConsoles,
