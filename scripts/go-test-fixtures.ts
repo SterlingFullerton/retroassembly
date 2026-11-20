@@ -7,6 +7,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { type PreferenceSnippet, resolveUserPreference } from '#@/constants/preference.ts'
 import { rank } from '#@/controllers/roms/search-roms.ts'
+import { parseDisc } from '#@/utils/isomorphic/discs.ts'
 import { mergePreference } from '#@/utils/isomorphic/preference.ts'
 import { getRomCoverCandidates } from '#@/utils/isomorphic/rom-cover-candidates.ts'
 import { getSearchTitle, normalizeSearchText, scoreRom } from '#@/utils/isomorphic/search.ts'
@@ -344,3 +345,34 @@ try {
   process.env = cdnSettings
   await rm(cdnDirectory, { force: true, recursive: true })
 }
+
+// A game on several discs: its name and disc number, from each disc's file name
+const discNames = [
+  'Chrono Cross (USA, Canada) (Disc 2).chd',
+  'Rival Schools - United by Fate (USA) (Disc 2) (Evolution Disc).chd',
+  'Final Fantasy VII (USA) (Disc 1 of 3).cue',
+  'Policenauts (Japan) (Disk 3).bin',
+  'Snatcher (CD 01).cue',
+  'game (disc 2).iso',
+  'Game (DISC 10).chd',
+  'Game(Disc 2).chd',
+  ' Spaced  (Disc 1).cue',
+  '(Disc 1).cue',
+  'Game (Disc A).cue',
+  'Game (Disc 2',
+  'Game (Disc 1) (Disc 2).cue',
+  'A (Disc 1 of X).cue',
+  'Tekken 3 (USA).cue',
+  'Game (Disc 007).cue',
+]
+const discFixturePath = path.join('server', 'internal', 'library', 'testdata', 'discs.json')
+await mkdir(path.dirname(discFixturePath), { recursive: true })
+await writeFile(
+  discFixturePath,
+  `${JSON.stringify(
+    discNames.map((fileName) => ({ fileName, result: parseDisc(fileName) ?? null })),
+    null,
+    2,
+  )}\n`,
+)
+console.info(`Wrote ${discFixturePath}`)

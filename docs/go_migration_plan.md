@@ -228,8 +228,12 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   before it's read, where Node answers 500; an empty 404 says `Content-Length: 0`
 - While both servers run, each starts its own prefetch if `RETROASSEMBLY_RUN_TIME_CDN_PREFETCH` is set for both: they
   download into the same cache safely, but twice. Set it for the Go server only
+- Done: the startup tasks: discs uploaded before grouping existed are grouped, with each game's saves, favorites and
+  history moved to its first disc, and box art uploaded before an artwork folder was set is moved into it. Disc names
+  are read as `parseDisc` reads them (checked against it, `server/internal/library/testdata/discs.json`); started on
+  copies of the same data folder, Node and Go leave the same database and files
 - Next: PSP compression moves with uploading games, which starts it; the game info backfill and uploads wait for
-  `origin/main`'s game info commits; then the disc groups update and moving uploaded artwork at startup
+  `origin/main`'s game info commits. Once those are in, Go no longer needs Node, and phase 4 can start
 
 ### Phase 4: Remove Node from the server
 

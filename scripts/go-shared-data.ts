@@ -7,7 +7,7 @@ import path from 'node:path'
 import { shadersRepository } from '#@/consoles/assets.ts'
 import { emulators } from '#@/consoles/emulators.ts'
 import { consoles } from '#@/consoles/registry.ts'
-import type { EmulatorDefinition } from '#@/consoles/types.ts'
+import type { ConsoleDefinition, EmulatorDefinition } from '#@/consoles/types.ts'
 import { platforms } from '#@/constants/platform.ts'
 import { defaultPreference } from '#@/constants/preference.ts'
 import { locales } from '#@/locales/locales.ts'
@@ -76,6 +76,11 @@ export function getGoSharedData() {
       code,
       messages: Object.fromEntries(Object.entries(translation).filter(([key]) => isServerMessage(key))),
     })),
+    // The consoles whose games come on several discs, which are grouped into one game (src/utils/server/disc-groups.ts)
+    multiDiscConsoles: Object.entries(consoles as Record<string, ConsoleDefinition>)
+      .filter(([, { multiDisc }]) => multiDisc)
+      .map(([name]) => name)
+      .toSorted(),
     // The key of each console's name in the translations, for page titles
     platformNames: Object.fromEntries(platforms.map(({ displayNameI18nKey, name }) => [name, displayNameI18nKey])),
     // Every console, in the app's usual order (src/constants/platform.ts)

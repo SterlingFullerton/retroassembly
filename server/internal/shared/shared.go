@@ -40,6 +40,8 @@ type Data struct {
 	DefaultPreference json.RawMessage `json:"defaultPreference"`
 	// The languages, in the app's order
 	Languages []Language `json:"languages"`
+	// The consoles whose games come on several discs, which are grouped into one game
+	MultiDiscConsoles []string `json:"multiDiscConsoles"`
 	// The key of each console's name in the translations
 	PlatformNames map[string]string `json:"platformNames"`
 	// Every console, in the app's usual order

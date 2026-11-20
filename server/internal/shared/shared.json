@@ -700,7 +700,16 @@
       "language": "auto",
       "libraryCoverSize": "medium",
       "libraryCoverType": "boxart",
-      "platforms": ["arcade", "atari2600", "gb", "gba", "gbc", "genesis", "nes", "snes"],
+      "platforms": [
+        "arcade",
+        "atari2600",
+        "gb",
+        "gba",
+        "gbc",
+        "genesis",
+        "nes",
+        "snes"
+      ],
       "saturation": 100,
       "saturationApplyToGame": false,
       "saturationApplyToImages": false,
@@ -1336,6 +1345,9 @@
       }
     }
   ],
+  "multiDiscConsoles": [
+    "psx"
+  ],
   "platformNames": {
     "arcade": "platform.arcade",
     "atari2600": "platform.atari2600",
@@ -1408,5 +1420,7 @@
     "wonderswan",
     "wonderswancolor"
   ],
-  "threadedConsoles": ["psp"]
+  "threadedConsoles": [
+    "psp"
+  ]
 }

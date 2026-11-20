@@ -3,12 +3,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -16,6 +18,8 @@ import (
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/db"
+	"retroassembly/server/internal/files"
+	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/shared"
 	"retroassembly/server/internal/web"
 )
@@ -58,6 +62,30 @@ func checkDirectories(c config.Config) error {
 	return nil
 }
 
+// moveUploadedArtwork moves box art uploaded before an artwork folder was set into it, once: the first time the server
+// starts with the setting. Its ids stay the same, so nothing in the database changes
+func moveUploadedArtwork(c config.Config) error {
+	directories := c.Directories
+	if directories.Artwork != "" && !c.CDNCache {
+		log.Println("RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY holds only uploaded box art unless RETROASSEMBLY_RUN_TIME_CDN_CACHE=true: libretro art is otherwise loaded by the browser straight from libretro")
+	}
+	previous := filepath.Join(directories.Storage, "attachments")
+	previousPath, _ := filepath.Abs(previous)
+	attachmentsPath, _ := filepath.Abs(directories.Attachments)
+	if directories.Artwork == "" || previousPath == attachmentsPath {
+		return nil
+	}
+	if _, err := os.Stat(previous); err != nil {
+		return nil
+	}
+	moved, err := files.MoveFolderContents(previous, directories.Attachments)
+	if err != nil {
+		return err
+	}
+	log.Printf("Moved %d uploaded box art files into the artwork folder", moved)
+	return nil
+}
+
 func run() error {
 	c := config.Load()
 	authMode, err := c.AuthMode()
@@ -65,6 +93,9 @@ func run() error {
 		return err
 	}
 	if err := checkDirectories(c); err != nil {
+		return err
+	}
+	if err := moveUploadedArtwork(c); err != nil {
 		return err
 	}
 	database, err := db.Open(c.DatabasePath())
@@ -77,6 +108,9 @@ func run() error {
 	}
 	data, err := shared.Load()
 	if err != nil {
+		return err
+	}
+	if err := library.UpdateDiscGroups(context.Background(), database, data.MultiDiscConsoles); err != nil {
 		return err
 	}
 	server, err := web.New(c, database, authMode, data)

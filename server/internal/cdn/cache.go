@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"retroassembly/server/internal/config"
+	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/ids"
 )
 
@@ -203,44 +204,9 @@ func movePreviouslyCached(paths cachePaths) {
 		{previous.file, paths.file}, {previous.file + ".webp", paths.webP}, {previous.meta, paths.meta},
 	} {
 		if isFile(move[0]) && !isFile(move[1]) {
-			moveFile(move[0], move[1])
+			files.MoveFile(move[0], move[1])
 		}
 	}
-}
-
-// moveFile moves a file, making the folder it goes into. Between disks it's copied under a temporary name first, and
-// the original removed once the copy is complete
-func moveFile(from, to string) error {
-	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
-		return err
-	}
-	err := os.Rename(from, to)
-	var link *os.LinkError
-	if err == nil || !errors.As(err, &link) || !errors.Is(link.Err, errCrossDevice) {
-		return err
-	}
-	partial := to + "." + ids.New() + ".partial"
-	defer os.Remove(partial)
-	source, err := os.Open(from)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-	destination, err := os.Create(partial)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(destination, source); err != nil {
-		destination.Close()
-		return err
-	}
-	if err := destination.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(partial, to); err != nil {
-		return err
-	}
-	return os.Remove(from)
 }
 
 // isPinned tells whether an address is for a fixed version of its files, which never changes

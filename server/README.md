@@ -32,6 +32,10 @@ The browser app stays TypeScript; this serves it and its API.
 - Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. As with the Node server, the provider must be reached
   over https; one with a certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the file Node reads
 
+At startup it does what the Node server does before it listens: checks the data folder and any folders set for
+files, moves box art uploaded before an artwork folder was set into it, brings the database up to date, and groups the
+discs of games uploaded before discs were grouped.
+
 With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (uploading games) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
 Without it, those answer 501.
 
@@ -61,9 +65,10 @@ go -C server vet ./... && go -C server test ./...
 this one on the same empty data folder, then run it with `DATA_DIRECTORY`, `NODE_URL` and `GO_URL`.
 
 What the Go server needs from the TypeScript definitions (the default settings, the consoles in order and their names'
-translation keys, which consoles' game pages are cross-origin isolated, the languages with the messages the server
-writes and their date formats, what the CDN cache may fetch and what its prefetch downloads) is in
-`internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`. A unit test fails when it's out of date.
+translation keys, which consoles' game pages are cross-origin isolated and whose games come on several discs, the
+languages with the messages the server writes and their date formats, what the CDN cache may fetch and what its prefetch
+downloads) is in `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`. A unit test fails when it's
+out of date.
 
 The login with OIDC is checked against a test provider (`internal/oidctest`), which also runs on its own, over https,
 for checking both servers against it: `go -C server run ./test/oidc-provider -certificate /tmp/oidc-provider.pem`, then
