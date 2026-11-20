@@ -1,8 +1,8 @@
 # The Go server
 
 The app's server: it serves the browser app (TypeScript, in `src/`) and its API. It replaced a Node server, moved over a
-piece at a time (see [docs/go_migration_plan.md](../docs/go_migration_plan.md)); comments naming `src/...` files that no
-longer exist name the Node code a part was ported from, which the history before the Node server's removal keeps.
+piece at a time and merged in pull request 3. Comments naming `src/...` files that no longer exist name the Node code a
+part was ported from: `git show ee0408ee^:<path>` shows it as it was just before the Node server was removed.
 
 ## What it serves
 

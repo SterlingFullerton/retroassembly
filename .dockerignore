@@ -4,15 +4,12 @@
 
 .env
 .react-router
-.dev.vars
 docs
 data
 dist
 inputs
-migrations
 node_modules
 **/node_modules
-worker-configuration.d.ts
 
 Dockerfile
 .dockerignore
