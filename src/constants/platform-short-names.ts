@@ -7,6 +7,7 @@ const shortNames: Record<string, string> = {
   famicom: 'Famicom',
   fds: 'FDS',
   gameandwatch: 'G&W',
+  gb: 'GB',
   gba: 'GBA',
   gbc: 'GBC',
   n64: 'N64',
