@@ -4,7 +4,6 @@ package i18n
 
 import (
 	"fmt"
-	"html"
 	"regexp"
 	"slices"
 	"strconv"
@@ -110,8 +109,8 @@ func (l *Languages) Supports(code string) bool {
 
 var placeholder = regexp.MustCompile(`\{\{\s*([^}\s]+)\s*\}\}`)
 
-// T is a message in a language, in English when that language doesn't have it, with its {{placeholders}} filled in and
-// escaped, as i18next does
+// T is a message in a language, in English when that language doesn't have it, with its {{placeholders}} filled in. The
+// values aren't escaped, as the browser app's i18next doesn't escape them: React escapes what it shows
 func (l *Languages) T(language, key string, values map[string]any) string {
 	message, ok := l.messages[language][key]
 	if !ok {
@@ -125,7 +124,7 @@ func (l *Languages) T(language, key string, values map[string]any) string {
 		if !ok {
 			return match
 		}
-		return html.EscapeString(fmt.Sprint(value))
+		return fmt.Sprint(value)
 	})
 }
 

@@ -44,6 +44,9 @@ func TestT(t *testing.T) {
 	if got := l.T("de", "error.exceedMaxRomCount", map[string]any{"maxRomCount": 5}); got != "Das Hinzufügen dieser ROMs würde die maximal erlaubte ROM-Anzahl von 5 überschreiten." {
 		t.Errorf("German: %q", got)
 	}
+	if got := l.T("en", "error.exceedMaxRomCount", map[string]any{"maxRomCount": "<5 & more>"}); got != "Adding these ROMs would exceed the maximum allowed ROM count of <5 & more>." {
+		t.Errorf("a value with an ampersand: %q", got)
+	}
 	if got := l.T("en-CA", "nav.favorites", nil); got != "Favourites" {
 		t.Errorf("Canadian English: %q", got)
 	}

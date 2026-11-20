@@ -13,6 +13,8 @@ const resources = mapValues(
   await init({
     debug: false,
     fallbackLng: defaultLanguage,
+    // React escapes what it shows, so values escaped here too would show as "&amp;"
+    interpolation: { escapeValue: false },
     lng: defaultLanguage,
     resources,
     supportedLngs: locales.map(({ code }) => code),

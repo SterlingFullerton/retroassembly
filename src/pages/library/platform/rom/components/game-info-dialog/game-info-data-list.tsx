@@ -26,9 +26,7 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
   function handleDateChange(event: ChangeEvent<HTMLInputElement>) {
     const { value } = event.currentTarget
     const invalid = Boolean(value.trim()) && !DateTime.fromFormat(value.trim(), dateFormat).isValid
-    event.currentTarget.setCustomValidity(
-      invalid ? t('game.dateFormat', { example, interpolation: { escapeValue: false } }) : '',
-    )
+    event.currentTarget.setCustomValidity(invalid ? t('game.dateFormat', { example }) : '')
     setDateInvalid(invalid)
   }
 
@@ -133,9 +131,7 @@ export function GameInfoDataList({ autoFocusField }: Readonly<{ autoFocusField?:
             }[type]
           }
           {name === 'gameReleaseDate' && dateInvalid ? (
-            <span className='text-xs text-(--red-11)'>
-              {t('game.dateFormat', { example, interpolation: { escapeValue: false } })}
-            </span>
+            <span className='text-xs text-(--red-11)'>{t('game.dateFormat', { example })}</span>
           ) : null}
         </label>
       ))}
