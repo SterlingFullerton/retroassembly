@@ -16,6 +16,7 @@ The browser app stays TypeScript; this serves it and its API.
 - Save states: `GET` and `POST /api/v1/states`, `DELETE /api/v1/states/{id}`, `GET /api/v1/roms/{id}/states`
 - In-game saves: `GET` and `POST /api/v1/game_saves`, `POST /api/v1/game_saves/{id}/restore`
 - Games: `GET /api/v1/roms/by_files`, `GET /api/v1/roms/{id}/content`, `GET /api/v1/roms/search_counts`
+- Accounts, for the admin: `GET` and `POST /api/v1/users`, `PATCH` and `DELETE /api/v1/users/{id}`
 - Editing and deleting games: `PATCH` and `DELETE /api/v1/roms/{id}`, `DELETE /api/v1/roms`, `POST` and
   `DELETE /api/v1/roms/{id}/boxart`, `POST /api/v1/roms/{id}/thumbnail`,
   `DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId}`

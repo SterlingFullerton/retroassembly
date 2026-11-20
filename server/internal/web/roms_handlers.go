@@ -1,9 +1,9 @@
 package web
 
 import (
+	"math"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"retroassembly/server/internal/files"
@@ -94,12 +94,8 @@ func (v *validation) number(name string, values map[string][]string, fallback fl
 		return fallback
 	}
 	text, _ := value.(string)
-	trimmed := strings.TrimSpace(text)
-	if trimmed == "" {
-		return 0
-	}
-	number, err := strconv.ParseFloat(trimmed, 64)
-	if err != nil {
+	number := jsNumber(text)
+	if math.IsNaN(number) {
 		v.issues = append(v.issues, nanIssue{
 			Expected: "number", Code: "invalid_type", Received: "NaN", Path: []string{name},
 			Message: "Invalid input: expected number, received NaN",

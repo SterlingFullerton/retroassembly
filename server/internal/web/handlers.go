@@ -71,7 +71,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password registration is disabled")
 		return
 	}
-	user, err := auth.CreateUser(r.Context(), s.database, values["username"], values["password"], s.authMode, client(r))
+	user, err := auth.CreateUser(r.Context(), s.database, values["username"], values["password"], 0, s.authMode, client(r))
 	if err != nil {
 		writeError(w, err)
 		return

@@ -208,8 +208,9 @@ func InvalidateSession(ctx context.Context, database *sql.DB, token string) erro
 	return err
 }
 
-// CreateUser adds an account. With passwords, a password is needed; with OIDC, there are none
-func CreateUser(ctx context.Context, database *sql.DB, username, password, authMode string, client Client) (*User, error) {
+// CreateUser adds an account, with its own library (libraryMode 0) or the admin's (1). With passwords, a password is
+// needed; with OIDC, there are none
+func CreateUser(ctx context.Context, database *sql.DB, username, password string, libraryMode int, authMode string, client Client) (*User, error) {
 	username = strings.TrimSpace(username)
 	var existing string
 	err := database.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
@@ -235,7 +236,7 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password, authM
 		passwordHash = &hash
 	}
 	now := db.Millis(time.Now())
-	user := User{ID: ids.New(), LibraryMode: 0, Username: username}
+	user := User{ID: ids.New(), LibraryMode: libraryMode, Username: username}
 	_, err = database.ExecContext(ctx, `
 		INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, username, created_at,
 			id, status, updated_at)

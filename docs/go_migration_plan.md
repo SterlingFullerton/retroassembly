@@ -175,6 +175,13 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - Uploading games waits for `origin/main`'s two newer commits, which replace the game info lookup on the original
   author's server with the app's own database: porting the old lookup would port code that's already gone
 - Quirk kept from Node: saving a game's details without a player count or a release date clears them
+- Done: 6, the admin's account routes (`GET` and `POST /api/v1/users`, `PATCH` and `DELETE /api/v1/users/{id}`)
+- Next, 7, the pages' data (`/api/v1/pages/*`). What it needs, besides what's ported: `getRoms` (the game lists, with
+  their five orders, directions, favorites, and a search's pages in match order), `getRomLetters` (the A to Z pages),
+  `getRomsWithStates`, `getDiscs`, `getRomPlatformCount`, `getRomsQuery`; the data every page shares
+  (`getCommonLoaderData`: user, settings, language, limits, whether it's a computer); the library pages' language,
+  which is the user's chosen one where the others' is the browser's; and the page title of a game, from
+  `goodcodes-parser`'s file name cleaning (`cleanFileName` and `removeExtension`) and `moveArticleToFront`
 - Quirks kept from Node: `GET /api/v1/launch_records` ignores `page_size` (always 100); game lists give `isFavorite` as
   1 or 0, the picks and history as true or false. Among games that tie on everything search ranks by, the order may
   differ from Node's, which takes it from the order SQLite reads the rows in
