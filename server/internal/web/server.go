@@ -23,6 +23,7 @@ type Server struct {
 	config    config.Config
 	database  *sql.DB
 	languages *i18n.Languages
+	oidc      oidcProvider
 	// The key of each console's name in the translations, which is also the list of consoles the app has
 	platformNames map[string]string
 	preference    *preference.Settings
@@ -45,8 +46,9 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		return nil, err
 	}
 	return &Server{
-		authMode: authMode, config: c, database: database, languages: i18n.New(data), platformNames: data.PlatformNames,
-		preference: settings, threadedConsoles: threaded,
+		authMode: authMode, config: c, database: database, languages: i18n.New(data),
+		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
+		platformNames: data.PlatformNames, preference: settings, threadedConsoles: threaded,
 	}, nil
 }
 
@@ -204,8 +206,8 @@ func (s *Server) Handler() (http.Handler, error) {
 	api.HandleFunc("GET /logout", s.logout)
 	api.Handle("/api/", notPorted)
 	api.Handle("/cdn/", notPorted)
-	api.Handle("GET /login/oidc", notPorted)
-	api.Handle("GET /login/oidc/callback", notPorted)
+	api.HandleFunc("GET /login/oidc", s.loginWithOIDC)
+	api.HandleFunc("GET "+oidcCallbackPath, s.oidcCallback)
 	api.Handle("/", page)
 
 	signedIn := s.globals(logger(api))

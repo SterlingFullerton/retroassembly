@@ -1,5 +1,5 @@
-// Command retroassembly is the Go server. For now it serves the built browser app, signing in and out, and stored
-// files; the rest of the API is still the Node server's.
+// Command retroassembly is the Go server. It serves the built browser app and the API, but for uploading games and the
+// CDN cache, which are still the Node server's.
 package main
 
 import (

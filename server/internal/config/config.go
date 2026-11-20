@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Directories are where each kind of stored file is kept. A kind with no folder of its own set is kept where it always
@@ -38,7 +39,30 @@ var DirectorySettings = map[string]string{
 type OIDC struct {
 	ClientID     string
 	ClientSecret string
-	Issuer       string
+	// A file of certificate authorities trusted for the provider besides the system's (NODE_EXTRA_CA_CERTS, which the
+	// Node server trusts them from)
+	ExtraCertificates string
+	Issuer            string
+	// Where the provider sends the browser back to. Unset, it's /login/oidc/callback on the address the app was reached at
+	RedirectURI string
+	// A role the identity must have to sign in, from its roles claim. Unset, any identity may
+	RequiredRole string
+	Scopes       string
+	// How long a session started with OIDC lasts
+	SessionMaxAge time.Duration
+}
+
+// sessionMaxAge reads milliseconds as the Node server does, Math.trunc(Number(value)), with 8 hours for anything that
+// isn't above zero
+func sessionMaxAge(value string) time.Duration {
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil || math.IsNaN(parsed) || math.Trunc(parsed) <= 0 {
+		return 8 * time.Hour
+	}
+	if math.IsInf(parsed, 1) || parsed > float64(math.MaxInt64/int64(time.Millisecond)) {
+		return time.Duration(math.MaxInt64)
+	}
+	return time.Duration(math.Trunc(parsed)) * time.Millisecond
 }
 
 type Config struct {
@@ -61,6 +85,15 @@ type Config struct {
 
 func env(name, fallback string) string {
 	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
+}
+
+// setOr is the setting, even when it's set to nothing, or fallback when it isn't set at all, as es-toolkit's defaults
+// fills in the Node server's
+func setOr(name, fallback string) string {
+	if value, set := os.LookupEnv(name); set {
 		return value
 	}
 	return fallback
@@ -121,9 +154,14 @@ func Load() Config {
 		MigrationsDirectory: env("RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY", absolute("src", "databases", "migrations")),
 		NodeURL:             os.Getenv("RETROASSEMBLY_GO_NODE_URL"),
 		OIDC: OIDC{
-			ClientID:     os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
-			ClientSecret: os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),
-			Issuer:       os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_ISSUER"),
+			ClientID:          os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
+			ClientSecret:      os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),
+			ExtraCertificates: os.Getenv("NODE_EXTRA_CA_CERTS"),
+			Issuer:            os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_ISSUER"),
+			RedirectURI:       os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI"),
+			RequiredRole:      strings.TrimSpace(os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE")),
+			Scopes:            setOr("RETROASSEMBLY_RUN_TIME_OIDC_SCOPES", "openid profile email"),
+			SessionMaxAge:     sessionMaxAge(env("RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE", "28800000")),
 		},
 		Port:        port,
 		StorageHost: os.Getenv("RETROASSEMBLY_RUN_TIME_STORAGE_HOST"),

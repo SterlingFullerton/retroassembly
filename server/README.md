@@ -26,9 +26,11 @@ The browser app stays TypeScript; this serves it and its API.
 - The pages' data: `GET /api/v1/pages/common` and `/api/v1/pages/login`, and the library's pages
   (`/api/v1/pages/library`, `.../home`, `/roms`, `/consoles`, `/favorites`, `/history`, `/platform`, `/rom`). The
   library's pages list games, so like the lists above they stay the Node server's while the CDN cache is on
+- Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. As with the Node server, the provider must be reached
+  over https; one with a certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the file Node reads
 
-With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (the rest of `/api/`, `/cdn/`, logging
-in with OIDC) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.
+With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (uploading games, `/cdn/`) is passed
+on to it, so the Go server can stand in front of the Node server while the API moves over.
 Without it, those answer 501.
 
 It uses the same data folder, database and settings (`RETROASSEMBLY_RUN_TIME_*`) as the Node server, and can run on
@@ -60,6 +62,11 @@ What the Go server needs from the TypeScript definitions (the default settings, 
 which consoles' game pages are cross-origin isolated, the languages with the messages the server writes and their date formats) is in
 `internal/shared/shared.json`, written by `node scripts/go-shared-data.ts`.
 A unit test fails when it's out of date.
+
+The login with OIDC is checked against a test provider (`internal/oidctest`), which also runs on its own, over https,
+for checking both servers against it: `go -C server run ./test/oidc-provider -certificate /tmp/oidc-provider.pem`, then
+start the servers with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `RETROASSEMBLY_RUN_TIME_OIDC_ISSUER` set to
+`https://localhost:8300`, and the client and secret it prints.
 
 How settings are resolved and merged, and how games are found and ranked by a search (Fuse.js's typo-tolerant matching
 included), are checked against the TypeScript code's own answers, in `internal/preference/testdata/typescript.json`

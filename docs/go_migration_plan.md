@@ -184,7 +184,12 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   `moveArticleToFront` (checked against the TypeScript code in `title_test.go`)
 - Difference: the settings in the shared page data and in `GET /api/v1/preference` have their keys in alphabetical
   order (consoles, keyboard keys) where Node keeps the defaults' order. The values are the same
-- Next: 8, OIDC login and callback; then 5's uploads, once `origin/main` is merged
+- Done: 8, logging in with OIDC (`/login/oidc`, `/login/oidc/callback`), with `go-oidc` and `x/oauth2` in place of
+  `openid-client`: PKCE, state, nonce and the callback's issuer checked, accounts found, linked by username or made as
+  Node does, the required role, and the session's length. As with `openid-client`, the provider must be reached over
+  https, and a certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`. Checked against Node with the same test
+  provider (`server/internal/oidctest`, `server/test/oidc-provider`): the same redirects, cookies, accounts and sessions
+- Next: 5's uploads, once `origin/main` is merged; then phase 3
 - Quirks kept from Node: `GET /api/v1/launch_records` ignores `page_size` (always 100); game lists give `isFavorite` as
   1 or 0, the picks and history as true or false. Among games that tie on everything search ranks by, the order may
   differ from Node's, which takes it from the order SQLite reads the rows in
