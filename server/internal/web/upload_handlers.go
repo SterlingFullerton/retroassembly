@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -540,23 +541,36 @@ func (s *Server) BackfillGameInfo() {
 // StartBackgroundJobs starts what the Node server runs once it's listening: filling in game info, downloading CDN
 // files, and compressing PSP games
 func (s *Server) StartBackgroundJobs() {
-	go func() {
+	inBackground("Removing unfinished files", func() {
 		directories := s.config.Directories
 		for _, folder := range []string{directories.Storage, directories.Roms, directories.Cache, directories.Artwork} {
 			if removed := files.RemoveStaleTemporaries(folder, 24*time.Hour); removed > 0 {
 				log.Printf("Removed %d unfinished files from %s", removed, folder)
 			}
 		}
-	}()
-	go s.BackfillGameInfo()
+	})
+	inBackground("Filling in game info", s.BackfillGameInfo)
 	// Images the cache kept as they came, from before CDN_KEEP_ORIGINALS=false, are converted once
 	if s.cdn != nil && !s.cdn.KeepOriginals {
-		go s.cdn.DropOriginals()
+		inBackground("Converting cached images", s.cdn.DropOriginals)
 	}
 	s.StartPrefetch()
-	go func() {
+	inBackground("Compressing PSP games", func() {
 		if err := s.compressor.CompressAll(); err != nil {
 			log.Println("Compressing PSP games failed", err)
 		}
+	})
+}
+
+// inBackground runs a job on its own. A job that panics, on a file it can't handle, is logged and stops, rather than
+// taking the server down with it, which would happen again on every start while the file is there
+func inBackground(name string, job func()) {
+	go func() {
+		defer func() {
+			if failed := recover(); failed != nil {
+				log.Printf("%s stopped: %v\n%s", name, failed, debug.Stack())
+			}
+		}()
+		job()
 	}()
 }

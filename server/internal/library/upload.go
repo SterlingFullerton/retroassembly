@@ -35,10 +35,10 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		return nil, err
 	}
 	defer transaction.Rollback()
-	var existing string
+	var existing, previousFileID string
 	err = transaction.QueryRowContext(ctx,
-		`SELECT id FROM roms WHERE user_id = ? AND platform = ? AND status = ? AND file_name = ? LIMIT 1`,
-		scope.User.ID, platform, db.StatusNormal, fileName).Scan(&existing)
+		`SELECT id, file_id FROM roms WHERE user_id = ? AND platform = ? AND status = ? AND file_name = ? LIMIT 1`,
+		scope.User.ID, platform, db.StatusNormal, fileName).Scan(&existing, &previousFileID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -61,7 +61,16 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		if err != nil {
 			return nil, err
 		}
-		return rom, transaction.Commit()
+		if err := transaction.Commit(); err != nil {
+			return nil, err
+		}
+		// Uploaded again with other content, the game's old file goes once no game uses it
+		if fileID, _ := rom.Get("fileId").(string); fileID != previousFileID {
+			if err := removeUnusedRomFiles(ctx, scope, []string{previousFileID}); err != nil {
+				return nil, err
+			}
+		}
+		return rom, nil
 	}
 	columns = append(columns, "created_at", "id", "status", "updated_at")
 	arguments = append(arguments, now, ids.New(), db.StatusNormal, now)

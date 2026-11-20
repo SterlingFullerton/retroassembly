@@ -1,21 +1,10 @@
 package web
 
 import (
-	"io"
-	"mime/multipart"
 	"net/http"
 
 	"retroassembly/server/internal/library"
 )
-
-func readUpload(upload *multipart.FileHeader) ([]byte, error) {
-	file, err := upload.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	return io.ReadAll(file)
-}
 
 // GET /api/v1/states: a game's saves of one type
 func (s *Server) listStates(w http.ResponseWriter, r *http.Request, scope library.Scope) {
@@ -82,15 +71,20 @@ func (s *Server) createState(w http.ResponseWriter, r *http.Request, scope libra
 	if check.Failed(w) {
 		return
 	}
-	var err error
-	if input.State, err = readUpload(stateUpload); err != nil {
+	// Read from where the form put them as they're stored, rather than held in memory
+	stateFile, err := stateUpload.Open()
+	if err != nil {
 		writeError(w, err)
 		return
 	}
-	if input.Thumbnail, err = readUpload(thumbnailUpload); err != nil {
+	defer stateFile.Close()
+	thumbnailFile, err := thumbnailUpload.Open()
+	if err != nil {
 		writeError(w, err)
 		return
 	}
+	defer thumbnailFile.Close()
+	input.State, input.Thumbnail = stateFile, thumbnailFile
 	state, err := library.CreateState(r.Context(), scope, input)
 	if err != nil {
 		writeError(w, err)
@@ -149,11 +143,13 @@ func (s *Server) createGameSave(w http.ResponseWriter, r *http.Request, scope li
 	if check.Failed(w) {
 		return
 	}
-	var err error
-	if input.Content, err = readUpload(upload); err != nil {
+	content, err := upload.Open()
+	if err != nil {
 		writeError(w, err)
 		return
 	}
+	defer content.Close()
+	input.Content = content
 	saved, err := library.CreateGameSave(r.Context(), scope, input)
 	if err != nil {
 		writeError(w, err)

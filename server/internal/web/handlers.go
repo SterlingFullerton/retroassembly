@@ -53,7 +53,13 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password login is disabled")
 		return
 	}
+	end, err := signIns.begin(clientAddress(r), values["username"])
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	session, user, err := auth.Login(r.Context(), s.database, values["username"], values["password"], client(r))
+	end(!wrongPassword(err))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -71,7 +77,13 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password registration is disabled")
 		return
 	}
-	user, err := auth.CreateUser(r.Context(), s.database, values["username"], values["password"], 0, s.authMode, client(r))
+	end, err := signIns.begin(clientAddress(r), values["username"])
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	defer end(true)
+	user, err := auth.RegisterFirst(r.Context(), s.database, values["username"], values["password"], s.authMode, client(r))
 	if err != nil {
 		writeError(w, err)
 		return

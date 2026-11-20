@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"net/http"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -85,16 +86,17 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 	arguments := append([]any{db.StatusDeleted, now}, strings2any(ids)...)
 	arguments = append(arguments, scope.User.ID)
 	rows, err := scope.Database.QueryContext(ctx,
-		`UPDATE roms SET status = ?, updated_at = ? WHERE id IN (`+placeholders(len(ids))+`) AND user_id = ? RETURNING file_id`,
+		`UPDATE roms SET status = ?, updated_at = ? WHERE id IN (`+placeholders(len(ids))+`) AND user_id = ?
+		RETURNING file_id, id, platform`,
 		arguments...)
 	if err != nil {
 		return err
 	}
 	seen := map[string]bool{}
-	var fileIDs []string
+	var fileIDs, pictureFolders []string
 	for rows.Next() {
-		var fileID string
-		if err := rows.Scan(&fileID); err != nil {
+		var fileID, id, platform string
+		if err := rows.Scan(&fileID, &id, &platform); err != nil {
 			rows.Close()
 			return err
 		}
@@ -102,6 +104,7 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 			seen[fileID] = true
 			fileIDs = append(fileIDs, fileID)
 		}
+		pictureFolders = append(pictureFolders, PicturesFolder(scope.User.ID, platform, id))
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
@@ -112,6 +115,21 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 		arguments...); err != nil {
 		return err
 	}
+	// The box art and screenshots added to a deleted game are kept for it alone
+	for _, folder := range pictureFolders {
+		scope.Storage.DeleteFolder(folder)
+	}
+	return removeUnusedRomFiles(ctx, scope, fileIDs)
+}
+
+// PicturesFolder is where the box art and screenshots a user adds to a game are kept
+func PicturesFolder(userID, platform, romID string) string {
+	return path.Join("attachments", userID, platform, romID)
+}
+
+// removeUnusedRomFiles removes the game files no game uses any more. One file is shared by every game with the same
+// content, whoever added it
+func removeUnusedRomFiles(ctx context.Context, scope Scope, fileIDs []string) error {
 	if len(fileIDs) == 0 {
 		return nil
 	}

@@ -62,16 +62,22 @@ func (c *Compressor) Compress(isoFileID string) <-chan struct{} {
 	previous, done := c.last, make(chan struct{})
 	c.queued[isoFileID], c.last = done, done
 	go func() {
+		defer func() {
+			// A disc it can't handle is left as it is, rather than taking the server down
+			if failed := recover(); failed != nil {
+				log.Printf("Couldn't compress %s, keeping the ISO: %v", isoFileID, failed)
+			}
+			c.mutex.Lock()
+			delete(c.queued, isoFileID)
+			c.mutex.Unlock()
+			close(done)
+		}()
 		if previous != nil {
 			<-previous
 		}
 		if err := c.compress(isoFileID); err != nil {
 			log.Printf("Couldn't compress %s, keeping the ISO %v", isoFileID, err)
 		}
-		c.mutex.Lock()
-		delete(c.queued, isoFileID)
-		c.mutex.Unlock()
-		close(done)
 	}()
 	return done
 }

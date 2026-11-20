@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"retroassembly/server/internal/files"
 )
 
 func TestEditGame(t *testing.T) {
@@ -176,5 +180,73 @@ func TestSharedLibraryIsReadOnly(t *testing.T) {
 		map[string]uploadFile{"file": {content: []byte("NES"), name: "Other.nes"}}))
 	if api.count(t, `SELECT count(*) FROM roms WHERE status = 1`) != 1 {
 		t.Fatal("the guest changed the admin's library")
+	}
+}
+
+// Pictures a game no longer shows, and a deleted game's, are removed from disk; a picture id pointed elsewhere isn't
+func TestUnusedPicturesAreRemoved(t *testing.T) {
+	api := newAPI(t)
+	player := api.register(t, "player")
+	other := api.register(t, "other")
+	added := player.addGame("Quest (USA).nes")
+	image := map[string]uploadFile{"file": {content: []byte("image"), name: "cover.png"}}
+	exists := func(user *apiUser, fileID string) bool {
+		return user.get("/api/v1/files/"+fileID).status == http.StatusOK
+	}
+
+	var first, second string
+	player.expectJSON(http.StatusOK, &first, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
+	player.expectJSON(http.StatusOK, &second, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
+	if exists(player, first) || !exists(player, second) {
+		t.Fatal("replaced box art kept, or the new one missing")
+	}
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
+	if exists(player, second) {
+		t.Fatal("removed box art kept")
+	}
+
+	var shots string
+	player.expectJSON(http.StatusOK, &shots, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/thumbnail", nil, image))
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/thumbnail/"+shots, "", nil))
+	if exists(player, shots) {
+		t.Fatal("removed screenshot kept")
+	}
+
+	// Box art pointed at another player's picture, then removed, leaves their picture alone
+	theirs := other.addGame("Theirs.nes")
+	var theirBoxart string
+	other.expectJSON(http.StatusOK, &theirBoxart, other.multipart(http.MethodPost, "/api/v1/roms/"+theirs.ID+"/boxart", nil, image))
+	player.expect(http.StatusOK, player.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameBoxartFileIds": {theirBoxart}}))
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
+	if !exists(other, theirBoxart) {
+		t.Fatal("another player's picture was deleted")
+	}
+
+	// A deleted game's pictures go with it
+	player.expectJSON(http.StatusOK, &first, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID, "", nil))
+	folder := filepath.Join(api.config.Directories.Attachments, player.id, "nes", added.ID)
+	if _, err := os.Stat(folder); !os.IsNotExist(err) {
+		t.Fatalf("the deleted game's pictures are still there: %v", err)
+	}
+}
+
+// A game uploaded again under its name with other content no longer keeps its old file
+func TestReuploadRemovesTheOldFile(t *testing.T) {
+	api := newAPI(t)
+	player := api.register(t, "player")
+	var first, second game
+	player.expectJSON(http.StatusOK, &first, player.multipart(http.MethodPost, "/api/v1/roms", map[string]string{"platform": "nes"},
+		map[string]uploadFile{"file": {content: []byte("NES\x1afirst"), name: "Quest.nes"}}))
+	player.expectJSON(http.StatusOK, &second, player.multipart(http.MethodPost, "/api/v1/roms", map[string]string{"platform": "nes"},
+		map[string]uploadFile{"file": {content: []byte("NES\x1asecond"), name: "Quest.nes"}}))
+	if first.FileID == second.FileID || first.ID != second.ID {
+		t.Fatalf("first %+v, second %+v", first, second)
+	}
+	if path, _ := api.config.FilePath(first.FileID); files.Exists(path) {
+		t.Fatal("the old file is kept")
+	}
+	if path, _ := api.config.FilePath(second.FileID); !files.Exists(path) {
+		t.Fatal("the new file is missing")
 	}
 }

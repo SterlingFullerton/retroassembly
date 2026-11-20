@@ -129,7 +129,7 @@ func storeImage(r *http.Request, scope library.Scope, rom library.Rom, field str
 		return "", err
 	}
 	defer file.Close()
-	fileID := path.Join("attachments", scope.User.ID, rom.Platform, rom.ID, ids.New()+extension(upload.Filename))
+	fileID := path.Join(library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID), ids.New()+extension(upload.Filename))
 	return fileID, scope.Storage.Put(fileID, file)
 }
 
@@ -156,9 +156,22 @@ func (s *Server) imageUpload(w http.ResponseWriter, r *http.Request, scope libra
 }
 
 // POST /api/v1/roms/{id}/boxart: a game's own box art, in place of any it had. Answers the box art's file id
+// removePicture deletes a picture a game no longer shows, when it's one the user added to that game. A file id set
+// some other way, pointing anywhere else, is left alone
+func removePicture(scope library.Scope, rom library.Rom, fileID string) {
+	if strings.HasPrefix(fileID, library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID)+"/") {
+		scope.Storage.Delete(fileID)
+	}
+}
+
 func (s *Server) addBoxart(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	rom, ok := s.imageUpload(w, r, scope)
 	if !ok {
+		return
+	}
+	previous, _, err := library.RomFiles(r.Context(), scope, rom.ID)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	fileID, err := storeImage(r, scope, rom, "file")
@@ -171,13 +184,33 @@ func (s *Server) addBoxart(w http.ResponseWriter, r *http.Request, scope library
 		writeError(w, err)
 		return
 	}
+	if previous != nil {
+		removePicture(scope, rom, *previous)
+	}
 	writeJSON(w, http.StatusOK, updated.Get("gameBoxartFileIds"))
 }
 
 func (s *Server) removeBoxart(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if _, err := library.UpdateRom(r.Context(), scope, r.PathValue("id"), map[string]any{"gameBoxartFileIds": nil}); err != nil {
+	if err := library.AssertCanWrite(scope); err != nil {
 		writeError(w, err)
 		return
+	}
+	rom, err := library.FindRom(r.Context(), scope, r.PathValue("id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	previous, _, err := library.RomFiles(r.Context(), scope, rom.ID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if _, err := library.UpdateRom(r.Context(), scope, rom.ID, map[string]any{"gameBoxartFileIds": nil}); err != nil {
+		writeError(w, err)
+		return
+	}
+	if previous != nil {
+		removePicture(scope, rom, *previous)
 	}
 	writeJSON(w, http.StatusOK, nil)
 }
@@ -246,6 +279,9 @@ func (s *Server) removeThumbnail(w http.ResponseWriter, r *http.Request, scope l
 	if err != nil {
 		writeError(w, err)
 		return
+	}
+	if len(kept) < len(splitIDs(thumbnails)) {
+		removePicture(scope, rom, removed)
 	}
 	writeJSON(w, http.StatusOK, updated.Get("gameThumbnailFileIds"))
 }

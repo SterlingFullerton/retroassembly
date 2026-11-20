@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"retroassembly/server/internal/files"
 )
 
 type settings struct {
@@ -178,4 +181,82 @@ func TestSharedLibraryBIOSFiles(t *testing.T) {
 		t.Fatalf("after the library was no longer shared: %+v", bioses)
 	}
 	friend.expect(http.StatusNotFound, friend.get("/api/v1/files/"+channelF[0].FileID))
+}
+
+// A console's name is part of a BIOS file's path, so only the app's consoles are taken, in settings and for BIOS files
+func TestBIOSFilesOnlyForKnownConsoles(t *testing.T) {
+	api := newAPI(t)
+	user := api.register(t, "user")
+	user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/preference",
+		map[string]any{"emulator": map[string]any{"platform": map[string]any{"../roms/psp": map[string]any{}}}}))
+	if api.count(t, `SELECT count(*) FROM user_preferences WHERE emulator LIKE '%../roms%'`) != 0 {
+		t.Fatal("an unknown console was saved in the settings")
+	}
+	user.expect(http.StatusBadRequest, user.multipart(http.MethodPost, "/api/v1/preference/bioses",
+		map[string]string{"platform": "../roms/psp"}, map[string]uploadFile{"file": {content: []byte("CISO"), name: "x.cso"}}))
+	user.expect(http.StatusBadRequest, user.send(http.MethodDelete, "/api/v1/preference/bioses?platform=../roms&file_name=x", "", nil))
+	if matches, _ := filepath.Glob(filepath.Join(api.config.Directories.Roms, "psp", "*")); len(matches) != 0 {
+		t.Fatalf("written among the games: %v", matches)
+	}
+}
+
+// Whoever has a BIOS file in their settings may download it, so a file id copied into one's settings is left out
+func TestBIOSFileIDsCantBeCopiedIn(t *testing.T) {
+	api := newAPI(t)
+	owner := api.register(t, "owner")
+	other := api.register(t, "other")
+	var saved settings
+	owner.expectJSON(http.StatusOK, &saved, owner.multipart(http.MethodPost, "/api/v1/preference/bioses",
+		map[string]string{"platform": "psx"}, map[string]uploadFile{"file": {content: []byte("a BIOS"), name: "scph5501.bin"}}))
+	id := saved.Emulator.Platform["psx"].Bioses[0].FileID
+
+	other.expectJSON(http.StatusOK, &saved, other.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
+		"platform": map[string]any{"psx": map[string]any{"bioses": []any{map[string]any{"fileId": id, "fileName": "scph5501.bin"}}}},
+	}}))
+	if len(saved.Emulator.Platform["psx"].Bioses) != 0 {
+		t.Fatalf("copied in: %+v", saved.Emulator.Platform["psx"].Bioses)
+	}
+	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+id))
+
+	// The owner's own settings, saved with their BIOS files in them, keep them
+	owner.expectJSON(http.StatusOK, &saved, owner.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
+		"platform": map[string]any{"psx": map[string]any{"bioses": []any{map[string]any{"fileId": id, "fileName": "scph5501.bin"}}}},
+	}}))
+	if len(saved.Emulator.Platform["psx"].Bioses) != 1 {
+		t.Fatalf("the owner's own: %+v", saved.Emulator.Platform["psx"].Bioses)
+	}
+}
+
+// A BIOS file goes once it's in no one's settings, and stays while it's in anyone's
+func TestUnusedBIOSFilesAreRemoved(t *testing.T) {
+	api := newAPI(t)
+	first := api.register(t, "first")
+	second := api.register(t, "second")
+	add := func(user *apiUser, content string) string {
+		var saved settings
+		user.expectJSON(http.StatusOK, &saved, user.multipart(http.MethodPost, "/api/v1/preference/bioses",
+			map[string]string{"platform": "nes"}, map[string]uploadFile{"file": {content: []byte(content), name: "disksys.rom"}}))
+		return saved.Emulator.Platform["nes"].Bioses[0].FileID
+	}
+	onDisk := func(fileID string) bool {
+		path, _ := api.config.FilePath(fileID)
+		return files.Exists(path)
+	}
+	shared := add(first, "a BIOS")
+	if add(second, "a BIOS") != shared {
+		t.Fatal("the same content stored twice")
+	}
+	first.expect(http.StatusOK, first.send(http.MethodDelete, "/api/v1/preference/bioses?platform=nes&file_name=disksys.rom", "", nil))
+	if !onDisk(shared) {
+		t.Fatal("removed while another player has it")
+	}
+	// Replaced by other content, it's in no one's settings
+	newer := add(second, "a newer BIOS")
+	if onDisk(shared) || !onDisk(newer) {
+		t.Fatal("the replaced file is kept, or the new one missing")
+	}
+	second.expect(http.StatusOK, second.send(http.MethodDelete, "/api/v1/preference/bioses?platform=nes&file_name=disksys.rom", "", nil))
+	if onDisk(newer) {
+		t.Fatal("kept once no one has it")
+	}
 }

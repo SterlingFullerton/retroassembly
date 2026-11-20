@@ -29,6 +29,8 @@ const (
 	fetchTimeout = 120 * time.Second
 	// A host that doesn't answer within this long is taken to be unreachable
 	headersTimeout = 10 * time.Second
+	// The largest file the cache keeps. What the app loads through it, images, fonts and shaders, is far smaller
+	maxDownloadSize = 64 << 20
 	// Files that don't exist upstream are remembered for this long by default (CDN_RECHECK_DAYS), and forever for pinned
 	// versions
 	DefaultRecheck = 30 * 24 * time.Hour
@@ -322,7 +324,12 @@ func writeNote(path string, noted note) error {
 	return os.Rename(partial, path)
 }
 
+// downloads is how many downloads may run at once, so many requests for files not kept yet can't start more
+var downloads = make(chan struct{}, 8)
+
 func (c *Cache) download(href string) error {
+	downloads <- struct{}{}
+	defer func() { <-downloads }()
 	paths := c.paths(href)
 	if err := os.MkdirAll(filepath.Dir(paths.file), 0o777); err != nil {
 		return err
@@ -363,9 +370,14 @@ func (c *Cache) download(href string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(output, response.Body); err != nil {
+	written, err := io.Copy(output, io.LimitReader(response.Body, maxDownloadSize+1))
+	if err != nil {
 		output.Close()
 		return err
+	}
+	if written > maxDownloadSize {
+		output.Close()
+		return &upstreamError{fmt.Sprintf("Not keeping %s: larger than %d bytes", href, maxDownloadSize)}
 	}
 	if err := errors.Join(output.Sync(), output.Close()); err != nil {
 		return err

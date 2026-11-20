@@ -5,6 +5,7 @@ import useSWRMutation from 'swr/mutation'
 import { client, parseResponse } from '#@/api/client.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { AccountFormField } from '#@/pages/components/account-form-field.tsx'
+import { minPasswordLength } from '#@/pages/components/min-password-length.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 
 interface CreateUserDialogProps {
@@ -86,6 +87,7 @@ export function CreateUserDialog({ onOpenChange, onSuccess, open }: Readonly<Cre
                   description={t('auth.passwordRecommendation')}
                   iconClass='icon-[mdi--password]'
                   label={t('auth.password')}
+                  minLength={minPasswordLength}
                   name='password'
                   required
                   type='password'

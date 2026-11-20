@@ -248,7 +248,8 @@ const (
 // that can't be read, and false
 func parseForm(w http.ResponseWriter, r *http.Request, limit int64) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, limit)
-	if err := r.ParseMultipartForm(32 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	// Files past the first MiB of a form wait on disk, rather than in memory, until they're read
+	if err := r.ParseMultipartForm(1 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
 			writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")

@@ -329,6 +329,60 @@ func LibraryBioses(ctx context.Context, database *sql.DB, libraryOwnerID string)
 	return bioses, nil
 }
 
+// biosFileIDs is the file ids of the BIOS files in a user's stored emulator settings
+func biosFileIDs(emulator Object) map[string]bool {
+	ids := map[string]bool{}
+	for _, value := range section(emulator, "platform") {
+		settings, _ := value.(Object)
+		bioses, _ := settings["bioses"].([]any)
+		for _, item := range bioses {
+			if bios, ok := item.(Object); ok {
+				if id, ok := bios["fileId"].(string); ok {
+					ids[id] = true
+				}
+			}
+		}
+	}
+	return ids
+}
+
+// withOnlyOwnBioses leaves out of settings being saved the BIOS files the user didn't upload: those already in their
+// settings, and the one just uploaded. Whoever has a BIOS file in their settings may download it, so a file id copied
+// in from elsewhere would otherwise hand over someone else's file
+func withOnlyOwnBioses(snippet, stored Object, newFileID string) {
+	own := biosFileIDs(stored)
+	if newFileID != "" {
+		own[newFileID] = true
+	}
+	for _, value := range section(section(snippet, "emulator"), "platform") {
+		settings, _ := value.(Object)
+		bioses, ok := settings["bioses"].([]any)
+		if !ok {
+			continue
+		}
+		kept := []any{}
+		for _, item := range bioses {
+			if bios, _ := item.(Object); bios != nil {
+				if id, _ := bios["fileId"].(string); own[id] {
+					kept = append(kept, item)
+				}
+			}
+		}
+		settings["bioses"] = kept
+	}
+}
+
+// withoutUnknownPlatforms leaves out of settings being saved the emulator settings of consoles the app doesn't have,
+// whose names could otherwise end up in a BIOS file's path
+func (s *Settings) withoutUnknownPlatforms(snippet Object) {
+	platforms := section(section(snippet, "emulator"), "platform")
+	for name := range platforms {
+		if !s.known[name] {
+			delete(platforms, name)
+		}
+	}
+}
+
 // withoutSharedBioses leaves out of settings being saved the BIOS files marked shared: they're the library owner's, and
 // saved as the player's they would stay after the library is no longer shared
 func withoutSharedBioses(snippet Object) {
@@ -413,7 +467,19 @@ func column(value any) any {
 
 // Update saves part of a user's settings over what they have, and is their settings, resolved: updatePreference
 func (s *Settings) Update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object) (Object, error) {
+	return s.update(ctx, database, userID, libraryOwnerID, snippet, "")
+}
+
+// UpdateBioses saves a console's BIOS files, among them one the user just uploaded (newFileID), which Update would
+// leave out as not theirs
+func (s *Settings) UpdateBioses(ctx context.Context, database *sql.DB, userID, libraryOwnerID, platform string, bioses []any, newFileID string) (Object, error) {
+	snippet := Object{"emulator": Object{"platform": Object{platform: Object{"bioses": bioses}}}}
+	return s.update(ctx, database, userID, libraryOwnerID, snippet, newFileID)
+}
+
+func (s *Settings) update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object, newFileID string) (Object, error) {
 	withoutSharedBioses(snippet)
+	s.withoutUnknownPlatforms(snippet)
 	existing, err := scanRow(database.QueryRowContext(ctx,
 		`SELECT emulator, input, ui FROM user_preferences WHERE user_id = ? LIMIT 1`, userID))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -422,6 +488,11 @@ func (s *Settings) Update(ctx context.Context, database *sql.DB, userID, library
 	if err != nil {
 		return nil, err
 	}
+	var stored Object
+	if existing != nil {
+		stored = existing.emulator
+	}
+	withOnlyOwnBioses(snippet, stored, newFileID)
 	now := db.Millis(time.Now())
 	var saved *row
 	if existing != nil {

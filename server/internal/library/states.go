@@ -1,10 +1,10 @@
 package library
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -108,12 +108,13 @@ func GetStates(ctx context.Context, scope Scope, query StatesQuery) ([]*State, e
 // NewState is a save state being uploaded
 type NewState struct {
 	// The browser's id for this save; a save already stored under it isn't stored again
-	ClientID  *string
-	Core      string
-	Disc      *int64
-	Rom       string
-	State     []byte
-	Thumbnail []byte
+	ClientID *string
+	Core     string
+	Disc     *int64
+	Rom      string
+	// The save and its picture, read as they're stored rather than held in memory
+	State     io.Reader
+	Thumbnail io.Reader
 	Type      string
 }
 
@@ -143,10 +144,11 @@ func CreateState(ctx context.Context, scope Scope, input NewState) (*State, erro
 	id := ids.New()
 	folder := path.Join("states", scope.User.ID, rom.Platform, input.Rom)
 	stateFileID, thumbnailFileID := path.Join(folder, id+".state"), path.Join(folder, id+".png")
-	if err := scope.Storage.Put(stateFileID, bytes.NewReader(input.State)); err != nil {
+	if err := scope.Storage.Put(stateFileID, input.State); err != nil {
 		return nil, err
 	}
-	if err := scope.Storage.Put(thumbnailFileID, bytes.NewReader(input.Thumbnail)); err != nil {
+	if err := scope.Storage.Put(thumbnailFileID, input.Thumbnail); err != nil {
+		scope.Storage.Delete(stateFileID)
 		return nil, err
 	}
 	now := db.Millis(time.Now())

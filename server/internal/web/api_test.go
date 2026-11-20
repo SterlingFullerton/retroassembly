@@ -21,6 +21,8 @@ import (
 
 // apiSetup is the whole server, as main starts it, on a data folder of its own and without the browser app
 type apiSetup struct {
+	// The first account, which adds the others
+	admin    *apiUser
 	app      *httptest.Server
 	config   config.Config
 	database *sql.DB
@@ -83,9 +85,15 @@ func (a *apiSetup) browser(t *testing.T) *apiUser {
 	}}, t: t}
 }
 
-// register signs up a new account. The first one is the admin
+// register gives a new account with its own library. The first signs up, and is the admin; the admin adds the others,
+// as only the first account can sign up
 func (a *apiSetup) register(t *testing.T, username string) *apiUser {
 	t.Helper()
+	if a.admin != nil {
+		a.admin.expect(http.StatusOK, a.admin.form(http.MethodPost, "/api/v1/users",
+			url.Values{"libraryMode": {"0"}, "password": {"password-" + username}, "username": {username}}))
+		return a.login(t, username)
+	}
 	user := a.browser(t)
 	var answer struct {
 		User struct {
@@ -95,6 +103,7 @@ func (a *apiSetup) register(t *testing.T, username string) *apiUser {
 	user.expectJSON(http.StatusOK, &answer, user.form(http.MethodPost, "/api/v1/auth/register",
 		url.Values{"password": {"password-" + username}, "username": {username}}))
 	user.id = answer.User.ID
+	a.admin = user
 	return user
 }
 

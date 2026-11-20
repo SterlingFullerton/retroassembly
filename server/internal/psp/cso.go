@@ -284,6 +284,11 @@ func RepairEnd(csoPath string) (bool, error) {
 	if err != nil || !ok {
 		return false, err
 	}
+	// The app aligns a CSO at Align(blockCount), 0 or 1 for a real disc, and never past a block. One aligned further
+	// wasn't written by it, so it isn't trusted: an uploaded file could otherwise ask for terabytes of padding
+	if head.align > max(Align(head.blockCount), 11) {
+		return false, nil
+	}
 	last := make([]byte, 4)
 	if _, err := cso.ReadAt(last, headerSize+head.blockCount*4); err != nil {
 		return false, err
@@ -297,7 +302,8 @@ func RepairEnd(csoPath string) (bool, error) {
 	if end <= size || end-size >= 1<<head.align {
 		return false, nil
 	}
-	if _, err := cso.WriteAt(make([]byte, end-size), size); err != nil {
+	// Extending the file fills it with zeros, without holding them in memory
+	if err := cso.Truncate(end); err != nil {
 		return false, err
 	}
 	return true, nil

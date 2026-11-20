@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/failure"
@@ -214,9 +215,44 @@ func InvalidateSession(ctx context.Context, database *sql.DB, token string) erro
 	return err
 }
 
+// MinPasswordLength is the shortest password a new account or a password change may have. Passwords set before it
+// was required still work
+const MinPasswordLength = 8
+
+var (
+	errPasswordTooShort   = failure.New(http.StatusBadRequest, "Password must be at least 8 characters")
+	errRegistrationClosed = failure.New(http.StatusForbidden, "Registration is closed: ask the admin for an account")
+)
+
 // CreateUser adds an account, with its own library (libraryMode 0) or the admin's (1). With passwords, a password is
 // needed; with OIDC, there are none
 func CreateUser(ctx context.Context, database *sql.DB, username, password string, libraryMode int, authMode string, client Client) (*User, error) {
+	return createUser(ctx, database, username, password, libraryMode, authMode, client, false)
+}
+
+// RegisterFirst adds the first account, which becomes the admin. Once there's an account, the admin adds the others,
+// so anyone who can reach the server can't make one for themselves
+func RegisterFirst(ctx context.Context, database *sql.DB, username, password, authMode string, client Client) (*User, error) {
+	return createUser(ctx, database, username, password, 0, authMode, client, true)
+}
+
+func hasAccounts(ctx context.Context, query interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}) (bool, error) {
+	var count int
+	err := query.QueryRowContext(ctx, `SELECT count(*) FROM users WHERE status = ?`, db.StatusNormal).Scan(&count)
+	return count > 0, err
+}
+
+func createUser(ctx context.Context, database *sql.DB, username, password string, libraryMode int, authMode string, client Client, firstOnly bool) (*User, error) {
+	if firstOnly {
+		// Checked before the password is hashed, so refusing costs nothing, and again below with the account added
+		if taken, err := hasAccounts(ctx, database); err != nil {
+			return nil, err
+		} else if taken {
+			return nil, errRegistrationClosed
+		}
+	}
 	username = strings.TrimSpace(username)
 	var existing string
 	err := database.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
@@ -229,6 +265,9 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password string
 	}
 	if authMode == "local" && password == "" {
 		return nil, failure.New(http.StatusBadRequest, "Password is required")
+	}
+	if authMode == "local" && utf8.RuneCountInString(password) < MinPasswordLength {
+		return nil, errPasswordTooShort
 	}
 	if authMode == "oidc" && password != "" {
 		return nil, failure.New(http.StatusBadRequest, "Passwords are unavailable with OIDC authentication")
@@ -255,6 +294,13 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password string
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
+	}
+	if firstOnly {
+		if taken, err := hasAccounts(ctx, transaction); err != nil {
+			return nil, err
+		} else if taken {
+			return nil, errRegistrationClosed
+		}
 	}
 	now := db.Millis(time.Now())
 	user := User{ID: ids.New(), LibraryMode: libraryMode, Username: username}
@@ -318,6 +364,9 @@ func UpdatePassword(ctx context.Context, database *sql.DB, user *User, token, cu
 	}
 	if !valid {
 		return failure.New(http.StatusUnauthorized, "Invalid current password")
+	}
+	if utf8.RuneCountInString(newPassword) < MinPasswordLength {
+		return errPasswordTooShort
 	}
 	newHash, err := HashPassword(ctx, newPassword)
 	if err != nil {

@@ -152,3 +152,24 @@ func TestNodeCso(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// An uploaded file can claim any alignment. One past what the app would use is left alone, rather than padded to where
+// it says it ends: 2^50 bytes here, which once crashed the server on every start
+func TestRepairEndLeavesFilesItDidntWrite(t *testing.T) {
+	file := make([]byte, headerSize+8)
+	copy(file, "CISO")
+	binary.LittleEndian.PutUint64(file[8:], blockSize)
+	binary.LittleEndian.PutUint32(file[16:], blockSize)
+	file[21] = 50
+	binary.LittleEndian.PutUint32(file[headerSize+4:], 1)
+	cso := filepath.Join(t.TempDir(), "crafted.cso")
+	if err := os.WriteFile(cso, file, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if repaired, err := RepairEnd(cso); repaired || err != nil {
+		t.Fatalf("repaired %v, %v", repaired, err)
+	}
+	if info, err := os.Stat(cso); err != nil || info.Size() != int64(len(file)) {
+		t.Fatalf("the file changed: %v %v", info, err)
+	}
+}

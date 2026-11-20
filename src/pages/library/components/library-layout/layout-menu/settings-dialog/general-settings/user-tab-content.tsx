@@ -6,6 +6,7 @@ import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { AccountFormField } from '#@/pages/components/account-form-field.tsx'
+import { minPasswordLength } from '#@/pages/components/min-password-length.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 
 const { $patch } = client.auth.password
@@ -144,6 +145,7 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
               <AccountFormField
                 iconClass='icon-[mdi--password-add]'
                 label={t('auth.newPassword')}
+                minLength={minPasswordLength}
                 name='new_password'
                 required
                 size='2'

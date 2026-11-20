@@ -49,6 +49,15 @@ func (s Storage) Delete(id string) error {
 	return nil
 }
 
+// DeleteFolder removes a folder of stored files, such as a game's pictures; one that isn't there is already gone
+func (s Storage) DeleteFolder(id string) error {
+	folderPath, err := s.writablePath(id)
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(folderPath)
+}
+
 // Exists tells whether a stored file is there
 func (s Storage) Exists(id string) bool {
 	filePath, ok := s.Path(id)

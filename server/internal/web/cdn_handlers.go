@@ -27,11 +27,25 @@ func writeText(w http.ResponseWriter, status int, contentType, message string) {
 	io.WriteString(w, message)
 }
 
+// cdnCachePath is what follows /cdn/ in a request's address, without its query. False for one with a fragment, which
+// browsers never send: sent anyway, each "#..." would be a file of its own, downloaded and kept again
+func cdnCachePath(requestURI string) (string, bool) {
+	requestPath, _, _ := strings.Cut(requestURI, "?")
+	if strings.Contains(requestPath, "#") {
+		return "", false
+	}
+	return strings.TrimPrefix(requestPath, "/cdn/"), true
+}
+
 // GET /cdn/*: a file from the server's copy of CDN files, downloaded first if need be, as src/middlewares/cdn-cache.ts
 // serves it
 func (s *Server) cdnFile(w http.ResponseWriter, r *http.Request) {
-	requestPath, _, _ := strings.Cut(r.RequestURI, "?")
-	target, err := s.cdn.ResolveTarget(strings.TrimPrefix(requestPath, "/cdn/"))
+	cachePath, ok := cdnCachePath(r.RequestURI)
+	if !ok {
+		writeText(w, http.StatusNotFound, cdnErrorType, "Not found")
+		return
+	}
+	target, err := s.cdn.ResolveTarget(cachePath)
 	if err != nil {
 		log.Println(err)
 		writeText(w, http.StatusInternalServerError, "text/plain; charset=UTF-8", "Internal Server Error")
@@ -160,9 +174,9 @@ func (s *Server) StartPrefetch() {
 		log.Println("CDN_PREFETCH is ignored unless CDN_CACHE=true")
 		return
 	}
-	go func() {
+	inBackground("Prefetching CDN files", func() {
 		if _, err := s.cdn.Prefetch(s.config.CDNPrefetch, s.allRoms); err != nil {
 			log.Println("Failed to prefetch CDN files", err)
 		}
-	}()
+	})
 }

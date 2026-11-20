@@ -84,3 +84,39 @@ func TestAdminManagesAccounts(t *testing.T) {
 		t.Fatalf("accounts: %+v", accounts)
 	}
 }
+
+// Only the first account signs up; the admin adds the others. New passwords are at least 8 characters
+func TestRegistrationOnlyForTheFirstAccount(t *testing.T) {
+	api := newAPI(t)
+	stranger := api.browser(t)
+	stranger.expect(http.StatusBadRequest, stranger.form(http.MethodPost, "/api/v1/auth/register",
+		url.Values{"password": {"short"}, "username": {"admin"}}))
+	admin := api.register(t, "admin")
+
+	stranger.expect(http.StatusForbidden, stranger.form(http.MethodPost, "/api/v1/auth/register",
+		url.Values{"password": {"password-stranger"}, "username": {"stranger"}}))
+	if api.count(t, `SELECT count(*) FROM users`) != 1 {
+		t.Fatal("a second account signed up")
+	}
+	admin.expect(http.StatusBadRequest, admin.form(http.MethodPost, "/api/v1/users",
+		url.Values{"password": {"1234567"}, "username": {"friend"}}))
+	admin.expect(http.StatusBadRequest, admin.form(http.MethodPatch, "/api/v1/auth/password",
+		url.Values{"new_password": {"short"}, "password": {"password-admin"}}))
+	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/auth/password",
+		url.Values{"new_password": {"a longer one"}, "password": {"password-admin"}}))
+}
+
+// Wrong passwords for an account, from one address, are refused for a while after 10, before any is checked
+func TestSignInAttemptsAreLimited(t *testing.T) {
+	signIns = &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}}
+	t.Cleanup(func() { signIns = &signInLimit{failed: map[string]*failures{}, hashing: map[string]int{}} })
+	api := newAPI(t)
+	api.register(t, "admin")
+	guesser := api.browser(t)
+	for range maxFailuresPerAccount {
+		guesser.expect(http.StatusUnauthorized, guesser.form(http.MethodPost, "/api/v1/auth/login",
+			url.Values{"password": {"wrong password"}, "username": {"admin"}}))
+	}
+	guesser.expect(http.StatusTooManyRequests, guesser.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-admin"}, "username": {"admin"}}))
+}

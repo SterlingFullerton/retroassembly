@@ -1,12 +1,12 @@
 package library
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -105,8 +105,9 @@ func ListGameSaves(ctx context.Context, scope Scope, core, rom string) ([]*GameS
 // NewGameSave is a version of a game's save being uploaded
 type NewGameSave struct {
 	ClientID *string
-	Content  []byte
-	Core     string
+	// The save, read twice (for its checksum, then to store it) rather than held in memory
+	Content io.ReadSeeker
+	Core    string
 	// The file's extension, as the emulator names it: srm, or dsv for DeSmuME
 	FileType *string
 	Rom      string
@@ -134,8 +135,15 @@ func CreateGameSave(ctx context.Context, scope Scope, input NewGameSave) (*GameS
 		}
 	}
 
-	sum := sha1.Sum(input.Content)
-	digest := hex.EncodeToString(sum[:])
+	hash := sha1.New()
+	size, err := io.Copy(hash, input.Content)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := input.Content.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	digest := hex.EncodeToString(hash.Sum(nil))
 	latest, err := LatestGameSave(ctx, scope, input.Core, rom.ID)
 	if err != nil {
 		return nil, err
@@ -150,7 +158,7 @@ func CreateGameSave(ctx context.Context, scope Scope, input NewGameSave) (*GameS
 		extension = *input.FileType
 	}
 	fileID := path.Join("game-saves", scope.User.ID, rom.Platform, rom.ID, id+"."+extension)
-	if err := scope.Storage.Put(fileID, bytes.NewReader(input.Content)); err != nil {
+	if err := scope.Storage.Put(fileID, input.Content); err != nil {
 		return nil, err
 	}
 	now := db.Millis(time.Now())
@@ -158,7 +166,7 @@ func CreateGameSave(ctx context.Context, scope Scope, input NewGameSave) (*GameS
 		INSERT INTO game_saves (client_id, core, file_id, id, platform, rom_id, sha1, size, user_id, created_at, status,
 			updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING `+gameSaveColumns,
-		input.ClientID, input.Core, fileID, id, rom.Platform, rom.ID, digest, len(input.Content), scope.User.ID, now,
+		input.ClientID, input.Core, fileID, id, rom.Platform, rom.ID, digest, size, scope.User.ID, now,
 		db.StatusNormal, now))
 	if err != nil {
 		// The same upload arrived twice at once, and the other copy was kept first
@@ -215,13 +223,18 @@ func RestoreGameSave(ctx context.Context, scope Scope, id string) (*GameSave, er
 	if version == nil {
 		return nil, errGameSaveNotFound
 	}
-	content, err := scope.Storage.Read(version.FileID)
+	filePath, ok := scope.Storage.Path(version.FileID)
+	if !ok {
+		return nil, errGameSaveNotFound
+	}
+	content, err := os.Open(filePath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, errGameSaveNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
+	defer content.Close()
 	fileType := strings.TrimPrefix(path.Ext(version.FileID), ".")
 	return CreateGameSave(ctx, scope, NewGameSave{
 		Content: content, Core: version.Core, FileType: &fileType, Rom: version.RomID,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"retroassembly/server/internal/auth"
@@ -50,16 +51,16 @@ func TestStates(t *testing.T) {
 	ctx := context.Background()
 	scope := savesScope(t, "owner")
 	clientID := "c1"
-	manual, err := CreateState(ctx, scope, NewState{ClientID: &clientID, Core: "fceumm", Rom: "rom1", State: []byte("s"), Thumbnail: []byte("t"), Type: "manual"})
+	manual, err := CreateState(ctx, scope, NewState{ClientID: &clientID, Core: "fceumm", Rom: "rom1", State: strings.NewReader("s"), Thumbnail: strings.NewReader("t"), Type: "manual"})
 	if err != nil || manual.Platform != "nes" || *manual.ClientID != "c1" {
 		t.Fatalf("create: %+v, %v", manual, err)
 	}
-	again, err := CreateState(ctx, scope, NewState{ClientID: &clientID, Core: "fceumm", Rom: "rom1", State: []byte("other"), Thumbnail: []byte("t"), Type: "manual"})
+	again, err := CreateState(ctx, scope, NewState{ClientID: &clientID, Core: "fceumm", Rom: "rom1", State: strings.NewReader("other"), Thumbnail: strings.NewReader("t"), Type: "manual"})
 	if err != nil || again.ID != manual.ID {
 		t.Fatalf("the same client id is the same save: %+v, %v", again, err)
 	}
 	for range 4 {
-		if _, err := CreateState(ctx, scope, NewState{Core: "fceumm", Rom: "rom1", State: []byte("a"), Thumbnail: []byte("t"), Type: "auto"}); err != nil {
+		if _, err := CreateState(ctx, scope, NewState{Core: "fceumm", Rom: "rom1", State: strings.NewReader("a"), Thumbnail: strings.NewReader("t"), Type: "auto"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -94,7 +95,7 @@ func TestGameSaves(t *testing.T) {
 	scope := savesScope(t, "owner")
 	save := func(content string, fileType *string) *GameSave {
 		t.Helper()
-		saved, err := CreateGameSave(ctx, scope, NewGameSave{Content: []byte(content), Core: "fceumm", FileType: fileType, Rom: "rom1"})
+		saved, err := CreateGameSave(ctx, scope, NewGameSave{Content: strings.NewReader(content), Core: "fceumm", FileType: fileType, Rom: "rom1"})
 		if err != nil {
 			t.Fatal(err)
 		}

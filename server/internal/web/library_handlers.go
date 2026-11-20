@@ -3,10 +3,12 @@ package web
 import (
 	"errors"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 
 	"retroassembly/server/internal/auth"
+	"retroassembly/server/internal/failure"
 	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/preference"
@@ -38,7 +40,17 @@ func (s *Server) updatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	current := stateOf(r)
-	err := auth.UpdatePassword(r.Context(), s.database, current.user, current.token, values["password"], values["new_password"], s.authMode)
+	if current.user == nil {
+		writeMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	end, err := signIns.begin(clientAddress(r), current.user.Username)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	err = auth.UpdatePassword(r.Context(), s.database, current.user, current.token, values["password"], values["new_password"], s.authMode)
+	end(!wrongPassword(err))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -131,6 +143,10 @@ func (s *Server) updatePreference(w http.ResponseWriter, r *http.Request, scope 
 // The BIOS files the user added themselves for a console, or an error for a console the app doesn't have. Asked as
 // the owner of their own library, so the BIOS files of a library they share aren't among them: those stay the owner's
 func (s *Server) bioses(r *http.Request, scope library.Scope, platform string) ([]any, error) {
+	// Only a console the app has: the name is part of the BIOS file's path
+	if _, known := s.platformNames[platform]; !known {
+		return nil, failure.New(http.StatusBadRequest, "Unknown platform")
+	}
 	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.User.ID)
 	if err != nil {
 		return nil, err
@@ -209,8 +225,12 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 	}
 
 	replaced := false
+	var previous []string
 	for _, item := range bioses {
 		if bios, ok := item.(preference.Object); ok && bios["fileName"] == upload.Filename {
+			if id, _ := bios["fileId"].(string); id != fileID {
+				previous = append(previous, id)
+			}
 			bios["fileId"] = fileID
 			replaced = true
 			break
@@ -219,10 +239,32 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 	if !replaced {
 		bioses = append(bioses, preference.Object{"fileId": fileID, "fileName": upload.Filename})
 	}
-	s.savePreference(w, r, scope, biosesSnippet(platform, bioses))
+	resolved, err := s.preference.UpdateBioses(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID, platform, bioses, fileID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	s.removeUnusedBioses(r, previous)
+	writeJSON(w, http.StatusOK, resolved)
 }
 
-// deleteBIOS takes a BIOS file out of the user's settings for its console. The file stays, as others may use it
+// removeUnusedBioses deletes the BIOS files that are in no one's settings any more. One file is shared by everyone
+// who added the same content
+func (s *Server) removeUnusedBioses(r *http.Request, fileIDs []string) {
+	for _, fileID := range fileIDs {
+		var users int
+		err := s.database.QueryRowContext(r.Context(),
+			`SELECT count(*) FROM user_preferences WHERE instr(emulator, ?) > 0`, fileID).Scan(&users)
+		if err != nil || users > 0 {
+			continue
+		}
+		if filePath, ok := s.config.FilePath(fileID); ok && strings.HasPrefix(fileID, "bioses/") {
+			os.Remove(filePath)
+		}
+	}
+}
+
+// deleteBIOS takes a BIOS file out of the user's settings for its console, and deletes it once no one else has it
 func (s *Server) deleteBIOS(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	query := r.URL.Query()
 	var check validation
@@ -239,10 +281,20 @@ func (s *Server) deleteBIOS(w http.ResponseWriter, r *http.Request, scope librar
 		return
 	}
 	kept := []any{}
+	var removed []string
 	for _, item := range bioses {
-		if bios, ok := item.(preference.Object); !ok || bios["fileName"] != fileName {
+		bios, ok := item.(preference.Object)
+		if !ok || bios["fileName"] != fileName {
 			kept = append(kept, item)
+		} else if id, ok := bios["fileId"].(string); ok {
+			removed = append(removed, id)
 		}
 	}
-	s.savePreference(w, r, scope, biosesSnippet(platform, kept))
+	resolved, err := s.preference.Update(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID, biosesSnippet(platform, kept))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	s.removeUnusedBioses(r, removed)
+	writeJSON(w, http.StatusOK, resolved)
 }
