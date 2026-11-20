@@ -406,6 +406,7 @@
   "settings.saturation": "채도",
   "settings.saturationDescription": "색상에 민감한 사용자를 위해 애플리케이션 내 색상 채도를 낮춥니다.",
   "settings.shader": "셰이더",
+  "settings.noShaderPreview": "이 셰이더의 예시 이미지가 없습니다",
   "settings.showDistrict": "제목에 지역 표시",
   "settings.showFocusIndicators": "포커스 표시자 표시",
   "settings.showGameTitles": "게임 제목 표시",

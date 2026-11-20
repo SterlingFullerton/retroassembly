@@ -412,6 +412,7 @@
   "settings.saturation": "Sättigung",
   "settings.saturationDescription": "Reduzieren Sie die Farbsättigung in der Anwendung für Menschen mit Farbempfindlichkeit.",
   "settings.shader": "Shader",
+  "settings.noShaderPreview": "Für diesen Shader gibt es kein Beispielbild",
   "settings.showDistrict": "Region in Spieltiteln anzeigen",
   "settings.showFocusIndicators": "Fokusindikatoren anzeigen",
   "settings.showGameTitles": "Spieltitel anzeigen",

@@ -424,6 +424,7 @@
   "settings.saturation": "Насыщенность",
   "settings.saturationDescription": "Снижение насыщенности цветов в приложении для людей с чувствительностью к цвету.",
   "settings.shader": "Шейдер",
+  "settings.noShaderPreview": "Для этого шейдера нет примера изображения",
   "settings.showDistrict": "Показывать регион в названиях игр",
   "settings.showFocusIndicators": "Показывать индикаторы фокуса",
   "settings.showGameTitles": "Показывать названия игр",

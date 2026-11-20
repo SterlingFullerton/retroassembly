@@ -412,6 +412,7 @@
   "settings.saturation": "Saturación",
   "settings.saturationDescription": "Reduce la saturación de colores dentro de la aplicación, para personas con sensibilidad al color.",
   "settings.shader": "Shader",
+  "settings.noShaderPreview": "No hay imagen de ejemplo para este shader",
   "settings.showDistrict": "Mostrar Distrito en Títulos de Juegos",
   "settings.showFocusIndicators": "Mostrar Indicadores de Foco",
   "settings.showGameTitles": "Mostrar Títulos de Juegos",

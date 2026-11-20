@@ -406,6 +406,7 @@
   "settings.saturation": "饱和度",
   "settings.saturationDescription": "降低应用内的颜色饱和度，适用于对颜色敏感的用户。",
   "settings.shader": "着色器",
+  "settings.noShaderPreview": "此着色器没有示例图片",
   "settings.showDistrict": "在标题上显示地区",
   "settings.showFocusIndicators": "显示焦点指示器",
   "settings.showGameTitles": "显示游戏标题",

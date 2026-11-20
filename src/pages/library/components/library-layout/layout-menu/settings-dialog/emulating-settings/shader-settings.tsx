@@ -1,13 +1,16 @@
 import { Switch } from '@radix-ui/themes'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { goesFullscreen } from '#@/constants/preference.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { SettingsTitle } from '../settings-title.tsx'
+import { ShaderPreview } from './shader-preview.tsx'
 import { ShaderSelect } from './shader-select.tsx'
 
 export function ShaderSettings() {
   const { t } = useTranslation()
   const { isLoading, preference, update } = usePreference()
+  const [highlighted, setHighlighted] = useState<string>()
 
   async function handleShaderChange(shader: string) {
     const actualShader = shader === 'none' ? '' : shader
@@ -32,10 +35,12 @@ export function ShaderSettings() {
               {t('settings.shader')}
               <ShaderSelect
                 disabled={isLoading}
+                onHighlight={setHighlighted}
                 onValueChange={handleShaderChange}
                 value={preference.emulator.shader || 'none'}
               />
             </SettingsTitle>
+            <ShaderPreview shader={highlighted ?? preference.emulator.shader} />
           </div>
 
           <div>

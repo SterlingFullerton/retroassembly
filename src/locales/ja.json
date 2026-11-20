@@ -406,6 +406,7 @@
   "settings.saturation": "彩度",
   "settings.saturationDescription": "色覚に敏感な方のために、アプリケーション内の色の彩度を下げます。",
   "settings.shader": "シェーダー",
+  "settings.noShaderPreview": "このシェーダーのサンプル画像はありません",
   "settings.showDistrict": "タイトルに地域を表示",
   "settings.showFocusIndicators": "フォーカスインジケーターを表示",
   "settings.showGameTitles": "ゲームタイトルを表示",

@@ -424,6 +424,7 @@
   "settings.saturation": "Saturace",
   "settings.saturationDescription": "Snížení saturace barev v aplikaci pro osoby s citlivostí na barvy.",
   "settings.shader": "Shader",
+  "settings.noShaderPreview": "Pro tento shader není ukázkový obrázek",
   "settings.showDistrict": "Zobrazit oblast u názvů her",
   "settings.showFocusIndicators": "Zobrazit indikátory fokusu",
   "settings.showGameTitles": "Zobrazit názvy her",
