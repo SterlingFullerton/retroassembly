@@ -172,6 +172,13 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 	if orderBy != "name" {
 		order = append(order, orderColumns["name"])
 	}
+	// Games of the same name (one game on two consoles, or uploaded twice) in the same order every time, so a page break
+	// between them never shows one twice and the other not at all. Not when sorted by when they were added: two games
+	// added in the same millisecond with the same name don't happen, and a third term would keep the newest from being
+	// read in the order of their index
+	if orderBy != "added" {
+		order = append(order, "roms.id")
+	}
 
 	// Most played: how many times this player has launched the game, then how recently. Counted only for that order
 	plays := ""

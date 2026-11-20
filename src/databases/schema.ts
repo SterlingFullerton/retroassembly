@@ -124,6 +124,21 @@ export const romTable = sqliteTable(
     // For get-rom.ts: lookup ROM by filename when ID not provided
     index('idx_roms_user_platform_filename').on(table.userId, table.platform, table.fileName),
     index('idx_roms_user_platform_disc_group').on(table.userId, table.platform, table.discGroup),
+    // Search reads every game's names: from here, rather than from rows that also hold kilobytes of game info. The disc
+    // group comes right after the console, so finding a game's other discs, as every list does, can use it too: before
+    // the names, it would be the slowest index for that, and the one SQLite picks
+    index('idx_roms_search').on(
+      table.userId,
+      table.status,
+      table.platform,
+      table.discGroup,
+      table.fileName,
+      table.gameName,
+      table.gameTitle,
+      table.gameDeveloper,
+      table.gamePublisher,
+      table.id,
+    ),
   ],
 )
 

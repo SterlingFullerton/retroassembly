@@ -85,6 +85,13 @@
       "when": 1795097870176,
       "tag": "0011_game_title",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1795188667633,
+      "tag": "0012_search_index",
+      "breakpoints": true
     }
   ]
 }
