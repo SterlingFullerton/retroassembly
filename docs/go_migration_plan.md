@@ -264,15 +264,35 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 - `pnpm dev`: Vite serves the browser app, and builds and starts the Go server on the next port, passing `/api`,
   `/cdn`, `/login/oidc` and `/logout` to it. `pnpm build` builds both; `pnpm start` runs `dist/retroassembly`
 - Dockerfile: Node builds the browser app, the emulator files and the game info database; Go builds the server for each
-  platform; the image is `distroless/static` with the binary, the built app, the migrations and the game info database.
-  The binary is built with the `nodynamic` tag, so the WebP encoder never loads a system libwebp, which would make it a
-  dynamically linked binary that a static image can't run. In Docker it uses 12 MiB once started
-- CI sets up Go and runs its tests (`node --run=test:go`) before the end-to-end tests
+  platform; the image is Alpine (for a shell and `wget` in health checks) with the binary, the built app, the
+  migrations and the game info database. The Node stages run on the build machine only, since what they make is the
+  same on every platform. The binary is built with the `nodynamic` tag, so the WebP encoder never loads a system
+  libwebp, which would make it a dynamically linked binary. In Docker it uses 12 MiB once started
+- CI sets up Go, checks it's `gofmt`ed, and runs its tests (`node --run=test:go`) and the unit tests before the
+  end-to-end tests
 - The fixtures the Go tests compare against (`server/internal/*/testdata`) were written by the Node server's code; they
   stay as the answers the Go server must keep giving
 - The unit tests of the Node server's code went with it; what they checked is checked by the Go tests
 - The Docker image was checked by building its Go stage, and running that binary on the runtime image with the built
   app: the full build downloads libretro's and LaunchBox's databases and wasn't run here
+
+### After the switch: an adversarial review
+
+Five reviews looked for what the move broke or kept broken. What was fixed (`server/README.md` lists what now differs
+from the Node server):
+
+- Password hashes written with the standard base64 alphabet are read; hashing is bounded and stops with its request;
+  an unknown username takes as long to refuse as a wrong password; two sign-ups can't take the same username
+- Request bodies are limited; writes from other sites are refused; the server shuts down gracefully
+- A BIOS for an unknown console is refused before anything is written (it could reach outside the BIOS folder);
+  stored files are named by their whole content; adding a game and its file happen in one transaction
+- OIDC doesn't link an identity to an account with a password unless told to
+- The CDN cache trusts `NODE_EXTRA_CA_CERTS`, recovers from a panicking conversion, doesn't remember a passing refusal
+  as a missing file, sandboxes what it serves, skips huge images and parses each cover list once at a time
+- Files are synced before they're renamed into place; leftovers of interrupted writes are removed at startup; PSP
+  compression checks a CSO left from before and keeps an ISO that doesn't shrink
+- The port is read as Node read it (`8080.0`, `0x1f90`); the server listens on IPv6 as well as IPv4
+- `pnpm dev` picks a free port for the Go server instead of passing requests to whatever already listens there
 
 ## Code that both sides use
 

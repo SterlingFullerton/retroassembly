@@ -190,7 +190,9 @@ func CreateGameSave(ctx context.Context, scope Scope, input NewGameSave) (*GameS
 		}
 		older = append(older, v)
 	}
-	rows.Close()
+	if err := errors.Join(rows.Err(), rows.Close()); err != nil {
+		return nil, err
+	}
 	for _, v := range older {
 		if _, err := scope.Database.ExecContext(ctx, `UPDATE game_saves SET status = ?, updated_at = ? WHERE id = ?`,
 			db.StatusDeleted, db.Millis(time.Now()), v.id); err != nil {

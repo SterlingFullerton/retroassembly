@@ -47,6 +47,9 @@ func (s *Server) cdnFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	header := w.Header()
+	// The files come from elsewhere: an SVG or HTML among them must not run as a page of this site
+	header.Set("X-Content-Type-Options", "nosniff")
+	header.Set("Content-Security-Policy", "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'")
 	cached, err := s.cdn.File(target.URL, 0, s.cdn.Offline)
 	if err != nil {
 		log.Println(err)

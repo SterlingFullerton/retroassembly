@@ -16,7 +16,7 @@ import (
 // rename can't work, it's copied under a temporary name first and the original removed once the copy is complete, so
 // neither is ever left half-written
 func MoveFile(from, to string) error {
-	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(to), 0o777); err != nil {
 		return err
 	}
 	err := os.Rename(from, to)
@@ -38,7 +38,7 @@ func MoveFile(from, to string) error {
 		destination.Close()
 		return err
 	}
-	if err := destination.Close(); err != nil {
+	if err := errors.Join(destination.Sync(), destination.Close()); err != nil {
 		return err
 	}
 	if err := os.Rename(partial, to); err != nil {

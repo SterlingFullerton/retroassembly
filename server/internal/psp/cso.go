@@ -169,7 +169,7 @@ func Compress(isoPath, csoPath string, align int) (size int64, err error) {
 	if _, err := output.WriteAt(indexBytes, headerSize); err != nil {
 		return 0, err
 	}
-	if err := output.Close(); err != nil {
+	if err := errors.Join(output.Sync(), output.Close()); err != nil {
 		return 0, err
 	}
 	if err := os.Rename(partial, csoPath); err != nil {

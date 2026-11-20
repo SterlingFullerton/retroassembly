@@ -177,6 +177,26 @@ func TestOIDCLinksAccounts(t *testing.T) {
 	}
 }
 
+// An account with a password is linked only when the setting allows it: anyone choosing that username on the provider
+// could otherwise take it over
+func TestOIDCPasswordAccounts(t *testing.T) {
+	o := newOIDCSetup(t, "")
+	if _, err := auth.CreateUser(t.Context(), o.database, "admin", "admin-pass-1", 0, "local", auth.Client{}); err != nil {
+		t.Fatal(err)
+	}
+	o.provider.SetIdentity(oidctest.Identity{Subject: "chosen", Username: "admin"})
+	if location := o.login(t, o.browser(t), "/library"); location != "/login?error=oidc_callback_failed" {
+		t.Fatalf("linked to the account with a password: %q", location)
+	}
+	o.server.config.OIDC.LinkPasswordAccounts = true
+	if location := o.login(t, o.browser(t), "/library"); location != "/library" {
+		t.Fatalf("not linked with the setting: %q", location)
+	}
+	if o.count(t, `SELECT count(*) FROM users`) != 1 {
+		t.Fatal("a second account was made")
+	}
+}
+
 func TestOIDCRequiredRole(t *testing.T) {
 	o := newOIDCSetup(t, "player")
 	for _, test := range []struct {

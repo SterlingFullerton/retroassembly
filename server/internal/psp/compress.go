@@ -2,6 +2,7 @@ package psp
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"math"
 	"os"
@@ -20,6 +21,9 @@ import (
 const isoKeptFor = 10 * time.Minute
 
 var isoExtension = regexp.MustCompile(`(?i)\.iso$`)
+
+// Beside an ISO kept because compressing it saved nothing
+const keptMarker = ".uncompressed"
 
 // CsoFileID is the CSO a PSP ISO's file id is compressed to
 func CsoFileID(isoFileID string) string {
@@ -81,10 +85,17 @@ func (c *Compressor) compress(isoFileID string) error {
 	csoFileID := CsoFileID(isoFileID)
 	isoPath, isoOK := c.FilePath(isoFileID)
 	csoPath, csoOK := c.FilePath(csoFileID)
-	if !isoOK || !csoOK || csoFileID == isoFileID || !exists(isoPath) {
+	if !isoOK || !csoOK || csoFileID == isoFileID || !exists(isoPath) || exists(isoPath+keptMarker) {
 		return nil
 	}
-	// A CSO already there is from another upload of the same disc, or an earlier run stopped before the swap
+	// A CSO already there is from another upload of the same disc, or an earlier run stopped before the swap. It's
+	// checked all the same: a disk that filled up, or a crash before it was written out, can have left it incomplete
+	if exists(csoPath) {
+		if err := Check(csoPath, isoPath); err != nil {
+			log.Printf("Compressing %s again: the CSO there doesn't match it (%v)", isoFileID, err)
+			os.Remove(csoPath)
+		}
+	}
 	if !exists(csoPath) {
 		started := time.Now()
 		size, err := Compress(isoPath, csoPath, -1)
@@ -98,6 +109,13 @@ func (c *Compressor) compress(isoFileID string) error {
 		info, err := os.Stat(isoPath)
 		if err != nil {
 			return err
+		}
+		// A disc that hardly compresses (one of video, mostly) stays an ISO, and is remembered so it isn't tried again
+		// at every start
+		if size >= info.Size() {
+			os.Remove(csoPath)
+			log.Printf("Keeping %s as it is: compressed, it's no smaller", isoFileID)
+			return os.WriteFile(isoPath+keptMarker, nil, 0o666)
 		}
 		megabytes := func(n int64) int64 { return int64(math.Round(float64(n) / 1048576)) }
 		log.Printf("Compressed %s: %d MB to %d MB in %ds", isoFileID, megabytes(info.Size()), megabytes(size),
@@ -126,6 +144,7 @@ func (c *Compressor) removeUnusedISO(isoFileID string, evenWithoutCso bool) {
 	}
 	if isoOK && csoOK && (evenWithoutCso || exists(csoPath)) {
 		os.Remove(isoPath)
+		os.Remove(isoPath + keptMarker)
 	}
 }
 
@@ -146,7 +165,9 @@ func (c *Compressor) CompressAll() error {
 		}
 		fileIDs = append(fileIDs, fileID)
 	}
-	rows.Close()
+	if err := errors.Join(rows.Err(), rows.Close()); err != nil {
+		return err
+	}
 	for _, fileID := range fileIDs {
 		<-c.Compress(fileID)
 	}

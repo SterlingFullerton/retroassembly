@@ -9,8 +9,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"golang.org/x/sys/unix"
 
@@ -120,16 +123,38 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	// IPv4 only, as the Node server listens
-	address := fmt.Sprintf("0.0.0.0:%d", c.Port)
-	listener, err := net.Listen("tcp4", address)
+	// On IPv6 as well as IPv4 where the system has both: in an Alpine container, "localhost" (as a health check asks
+	// for it) is ::1 first
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", c.Port))
 	if err != nil {
 		return err
 	}
-	log.Printf("RetroAssembly is running at http://%s/", address)
+	log.Printf("RetroAssembly is running at http://0.0.0.0:%d/", c.Port)
 	// Jobs that need the internet start once the server is listening, so the library is up quickly even without it
 	server.StartBackgroundJobs()
-	return http.Serve(listener, handler)
+
+	httpServer := &http.Server{
+		Handler: handler,
+		// A client gets this long to send a request's headers, and a connection between requests stays open this long,
+		// so slow or idle clients can't hold connections forever. A request's body has no time limit, as a large game
+		// can take long to upload
+		IdleTimeout:       2 * time.Minute,
+		ReadHeaderTimeout: time.Minute,
+	}
+	// Stopped (as by docker stop), it finishes the requests under way for a few seconds before it exits
+	stopped := make(chan os.Signal, 1)
+	signal.Notify(stopped, syscall.SIGINT, syscall.SIGTERM)
+	served := make(chan error, 1)
+	go func() { served <- httpServer.Serve(listener) }()
+	select {
+	case err := <-served:
+		return err
+	case <-stopped:
+		log.Println("Stopping")
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+		return httpServer.Shutdown(ctx)
+	}
 }
 
 func main() {

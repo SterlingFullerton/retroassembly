@@ -54,7 +54,7 @@ var editFields = []string{
 
 // PATCH /api/v1/roms/{id}: the player's own name, details and release date of a game
 func (s *Server) updateRom(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, textBodyLimit) {
 		return
 	}
 	var check validation
@@ -135,7 +135,7 @@ func storeImage(r *http.Request, scope library.Scope, rom library.Rom, field str
 
 // imageUpload checks a form has an image file, and that the user may change the game, which it is
 func (s *Server) imageUpload(w http.ResponseWriter, r *http.Request, scope library.Scope) (library.Rom, bool) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, imageBodyLimit) {
 		return library.Rom{}, false
 	}
 	var check validation

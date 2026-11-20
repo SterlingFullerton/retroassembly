@@ -23,7 +23,9 @@ jobs:
       - run: pnpm install
       - run: node --run=setup
       - run: node --run=lint
+      - run: test -z "$(gofmt -l server)" || (gofmt -l server && exit 1)
       - run: node --run=test:go
+      - run: node --run=test:unit
       - run: node --run=test
 
       - uses: actions/upload-artifact@v7

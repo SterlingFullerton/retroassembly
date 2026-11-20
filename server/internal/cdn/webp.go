@@ -1,9 +1,11 @@
 package cdn
 
 import (
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -20,6 +22,9 @@ import (
 // to Go, built into the server (the nodynamic build tag keeps it from loading a system libwebp instead, which would
 // make the server a dynamically linked binary), at the quality sharp made it at on the Node server
 const webPQuality = 82
+
+// The largest picture converted, in pixels: far more than any cover or screenshot
+const maxWebPPixels = 40_000_000
 
 var webPSources = map[string]bool{"image/jpeg": true, "image/png": true}
 
@@ -64,12 +69,23 @@ func convertToWebP(source, copy string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	picture, _, err := image.Decode(file)
-	file.Close()
+	defer file.Close()
+	// A picture is measured before it's decoded: a small file can claim a huge picture, and decoding it would take GBs
+	size, _, err := image.DecodeConfig(file)
 	if err != nil {
 		return "", err
 	}
-	if err := os.MkdirAll(filepath.Dir(copy), 0o755); err != nil {
+	if size.Width*size.Height > maxWebPPixels {
+		return "", fmt.Errorf("%s is %dx%d, too large to convert", source, size.Width, size.Height)
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", err
+	}
+	picture, _, err := image.Decode(file)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Dir(copy), 0o777); err != nil {
 		return "", err
 	}
 	temporary := copy + "." + ids.New() + ".tmp"

@@ -271,15 +271,31 @@ func (c *Cache) coverList(folder string, offline bool) (*coverList, error) {
 	if known != nil && known.time == cached.Time {
 		return known, nil
 	}
+	// Read once however many games ask for it at the same time: the list is a few MB of HTML
+	if _, err := c.once(c.coverParses, folder, func() (string, error) { return "", c.parseCoverList(folder, cached) }); err != nil {
+		return nil, err
+	}
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.coverLists[folder], nil
+}
+
+func (c *Cache) parseCoverList(folder string, cached *Entry) error {
+	c.mutex.Lock()
+	known := c.coverLists[folder]
+	c.mutex.Unlock()
+	if known != nil && known.time == cached.Time {
+		return nil
+	}
 	html, err := os.ReadFile(cached.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	list := &coverList{byTitle: map[string][]string{}, time: cached.Time}
 	for _, match := range coverLink.FindAllStringSubmatch(string(html), -1) {
 		name, err := DecodeURIComponent(match[1])
 		if err != nil {
-			return nil, err
+			return err
 		}
 		name = pngExtension.ReplaceAllString(name, "")
 		key := TitleKey(name)
@@ -288,7 +304,7 @@ func (c *Cache) coverList(folder string, offline bool) (*coverList, error) {
 	c.mutex.Lock()
 	c.coverLists[folder] = list
 	c.mutex.Unlock()
-	return list, nil
+	return nil
 }
 
 // RefreshCoverList fetches libretro's list of covers for a console, so matching works offline. Run by the prefetch

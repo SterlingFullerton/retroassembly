@@ -15,7 +15,12 @@ import (
 // OIDCUser is the account an OIDC identity signs in to, as src/controllers/users/get-or-create-oidc-user.ts finds it:
 // the one already linked to the identity; else the account with its username, which gets linked to it; else a new
 // account, without a password
-func OIDCUser(ctx context.Context, database *sql.DB, issuer, subject, username string, client Client) (string, error) {
+//
+// An account with a password is only linked when linkPasswordAccounts is set
+// (RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS), as when a library kept with passwords moves to OIDC: on a
+// provider where users choose their own username, anyone could otherwise take over the account named like theirs,
+// the admin's among them
+func OIDCUser(ctx context.Context, database *sql.DB, issuer, subject, username string, client Client, linkPasswordAccounts bool) (string, error) {
 	transaction, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -47,10 +52,14 @@ func OIDCUser(ctx context.Context, database *sql.DB, issuer, subject, username s
 		return err
 	}
 
-	err = transaction.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
-		username, db.StatusNormal).Scan(&userID)
+	var passwordHash sql.NullString
+	err = transaction.QueryRowContext(ctx, `SELECT id, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
+		username, db.StatusNormal).Scan(&userID, &passwordHash)
 	switch {
 	case err == nil:
+		if passwordHash.Valid && passwordHash.String != "" && !linkPasswordAccounts {
+			return "", failure.New(http.StatusConflict, "This username belongs to an account with a password")
+		}
 		var linked string
 		err = transaction.QueryRowContext(ctx, `SELECT id FROM oidc_identities WHERE user_id = ? LIMIT 1`, userID).
 			Scan(&linked)

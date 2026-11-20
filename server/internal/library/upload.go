@@ -29,8 +29,14 @@ type RomField struct {
 // that console. Only the fields given are set on a game that's there already, as Drizzle leaves out what's undefined
 func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string, fields []RomField) (Object, error) {
 	now := db.Millis(time.Now())
+	// Looked up and stored in one transaction, so the same file name uploaded twice at once is one game
+	transaction, err := scope.Database.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer transaction.Rollback()
 	var existing string
-	err := scope.Database.QueryRowContext(ctx,
+	err = transaction.QueryRowContext(ctx,
 		`SELECT id FROM roms WHERE user_id = ? AND platform = ? AND status = ? AND file_name = ? LIMIT 1`,
 		scope.User.ID, platform, db.StatusNormal, fileName).Scan(&existing)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -49,15 +55,23 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		}
 		set = append(set, "updated_at = ?")
 		arguments = append(arguments, now, existing)
-		return scanObject(scope.Database.QueryRowContext(ctx,
+		rom, err := scanObject(transaction.QueryRowContext(ctx,
 			`UPDATE roms SET `+strings.Join(set, ", ")+` WHERE id = ? RETURNING `+selectColumns("", romColumns),
 			arguments...), romColumns)
+		if err != nil {
+			return nil, err
+		}
+		return rom, transaction.Commit()
 	}
 	columns = append(columns, "created_at", "id", "status", "updated_at")
 	arguments = append(arguments, now, ids.New(), db.StatusNormal, now)
-	return scanObject(scope.Database.QueryRowContext(ctx,
+	rom, err := scanObject(transaction.QueryRowContext(ctx,
 		`INSERT INTO roms (`+strings.Join(columns, ", ")+`) VALUES (`+placeholders(len(columns))+`) RETURNING `+
 			selectColumns("", romColumns), arguments...), romColumns)
+	if err != nil {
+		return nil, err
+	}
+	return rom, transaction.Commit()
 }
 
 // MustJSON is a value as JSON, as JSON.stringify writes it

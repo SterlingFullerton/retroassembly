@@ -233,9 +233,27 @@ func field(values url.Values, name string) (any, bool) {
 	return nil, false
 }
 
-// parseForm reads a multipart or URL-encoded form, answering 400 and false when it can't
-func parseForm(w http.ResponseWriter, r *http.Request) bool {
+// How large a request's body may be, by what it carries. Games are streamed to disk and have no limit
+const (
+	// Short fields only: names, passwords, a game's details
+	textBodyLimit = 64 << 10
+	jsonBodyLimit = 1 << 20
+	// A game's box art or screenshot
+	imageBodyLimit = 100 << 20
+	// A save state, an in-game save or a BIOS file
+	fileBodyLimit = 512 << 20
+)
+
+// parseForm reads a multipart or URL-encoded form of at most limit bytes, answering 413 for a larger one, 400 for one
+// that can't be read, and false
+func parseForm(w http.ResponseWriter, r *http.Request, limit int64) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, limit)
 	if err := r.ParseMultipartForm(32 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")
+			return false
+		}
 		writeMessage(w, http.StatusBadRequest, err.Error())
 		return false
 	}
@@ -253,7 +271,12 @@ func formFile(r *http.Request, name string) *multipart.FileHeader {
 // readJSON reads a JSON body with its numbers kept as written. One that isn't JSON is answered 400 as the Node server
 // answers it, and false
 func readJSON(w http.ResponseWriter, r *http.Request) (any, bool) {
-	content, err := io.ReadAll(r.Body)
+	content, err := io.ReadAll(http.MaxBytesReader(w, r.Body, jsonBodyLimit))
+	var tooLarge *http.MaxBytesError
+	if errors.As(err, &tooLarge) {
+		writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")
+		return nil, false
+	}
 	if err == nil {
 		var value any
 		if value, err = decodeJSON(content); err == nil {

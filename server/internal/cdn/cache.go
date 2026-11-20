@@ -22,6 +22,7 @@ import (
 	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/ids"
+	"retroassembly/server/internal/trust"
 )
 
 const (
@@ -51,6 +52,7 @@ type Cache struct {
 	unreachable map[string]time.Time
 	conversions map[string]*call
 	coverLists  map[string]*coverList
+	coverParses map[string]*call
 }
 
 type call struct {
@@ -59,15 +61,15 @@ type call struct {
 	result string
 }
 
-func New(data *Data, directories config.Directories, offline bool) *Cache {
+func New(data *Data, directories config.Directories, offline bool, extraCertificates string) *Cache {
 	dialer := &net.Dialer{Timeout: headersTimeout}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport := trust.Transport(extraCertificates)
 	transport.DialContext = dialer.DialContext
 	return &Cache{
 		Data: data, directory: filepath.Join(directories.Cache, "cdn"), artwork: directories.Artwork,
 		client: &http.Client{Transport: transport}, Offline: offline,
 		downloads: map[string]*call{}, unreachable: map[string]time.Time{}, conversions: map[string]*call{},
-		coverLists: map[string]*coverList{},
+		coverLists: map[string]*coverList{}, coverParses: map[string]*call{},
 	}
 }
 
@@ -303,10 +305,10 @@ func writeNote(path string, noted note) error {
 
 func (c *Cache) download(href string) error {
 	paths := c.paths(href)
-	if err := os.MkdirAll(filepath.Dir(paths.file), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(paths.file), 0o777); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(paths.meta), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(paths.meta), 0o777); err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeoutCause(context.Background(), fetchTimeout, fmt.Errorf("Timed out fetching %s", href))
@@ -327,7 +329,9 @@ func (c *Cache) download(href string) error {
 	}
 	defer response.Body.Close()
 	now := millis(time.Now())
-	if response.StatusCode >= 400 && response.StatusCode < 500 {
+	// A file that isn't there is remembered as missing. Another refusal (403, or 429 when there were too many requests)
+	// says nothing about the file, and is tried again next time
+	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
 		return writeNote(paths.meta, note{Status: 404, Time: now})
 	}
 	if response.StatusCode < 200 || response.StatusCode > 299 {
@@ -344,7 +348,7 @@ func (c *Cache) download(href string) error {
 		output.Close()
 		return err
 	}
-	if err := output.Close(); err != nil {
+	if err := errors.Join(output.Sync(), output.Close()); err != nil {
 		return err
 	}
 	if err := os.Rename(partial, paths.file); err != nil {
@@ -357,23 +361,29 @@ func (c *Cache) download(href string) error {
 	return writeNote(paths.meta, note{ContentType: contentType, Status: 200, Time: millis(time.Now())})
 }
 
-// once runs work for key, or waits for the run already under way and takes its result
+// once runs work for key, or waits for the run already under way and takes its result. A run that panics (in the image
+// decoder, say) is an error for everyone waiting on it, and the next request tries again
 func (c *Cache) once(calls map[string]*call, key string, work func() (string, error)) (string, error) {
 	c.mutex.Lock()
 	pending, found := calls[key]
-	if !found {
-		pending = &call{done: make(chan struct{})}
-		calls[key] = pending
+	if found {
 		c.mutex.Unlock()
-		pending.result, pending.err = work()
+		<-pending.done
+		return pending.result, pending.err
+	}
+	pending = &call{done: make(chan struct{})}
+	calls[key] = pending
+	c.mutex.Unlock()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			pending.result, pending.err = "", fmt.Errorf("%s: %v", key, recovered)
+		}
 		c.mutex.Lock()
 		delete(calls, key)
 		c.mutex.Unlock()
 		close(pending.done)
-	} else {
-		c.mutex.Unlock()
-		<-pending.done
-	}
+	}()
+	pending.result, pending.err = work()
 	return pending.result, pending.err
 }
 

@@ -1,9 +1,11 @@
 ARG BUILD_IMAGE=node:26.12.1-slim
 ARG GO_IMAGE=golang:1.27.4-alpine
-ARG PROD_IMAGE=gcr.io/distroless/static-debian12
+ARG PROD_IMAGE=alpine:3.24.4
 ARG PNPM_VERSION=12.11.2
 
-FROM ${BUILD_IMAGE} AS base
+# Everything Node builds (the browser app, the emulators, the game info database) is the same on every platform, so it's
+# built once, on the build machine
+FROM --platform=$BUILDPLATFORM ${BUILD_IMAGE} AS base
 WORKDIR /app
 ARG PNPM_VERSION
 RUN npm i -g pnpm@${PNPM_VERSION}
@@ -59,7 +61,10 @@ COPY server ./
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -tags nodynamic -trimpath -ldflags="-s -w" -o /retroassembly ./cmd/retroassembly
 
+# Alpine rather than an image with nothing but the server, so a container keeps a shell, wget for health checks, and the
+# system's certificate authorities and time zones
 FROM ${PROD_IMAGE} AS production
+RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=server /retroassembly ./retroassembly
 COPY --from=builder /app/dist/client ./dist/client

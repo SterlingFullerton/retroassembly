@@ -60,7 +60,7 @@ func writeError(w http.ResponseWriter, err error) {
 // form reads the named string fields of a multipart or URL-encoded form, in the order the schema lists them. A field
 // that's missing is answered with 400 and the same error zod gives the Node server, and false
 func form(w http.ResponseWriter, r *http.Request, names ...string) (map[string]string, bool) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, textBodyLimit) {
 		return nil, false
 	}
 	values := map[string]string{}

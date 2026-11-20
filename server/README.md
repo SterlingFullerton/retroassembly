@@ -34,7 +34,10 @@ longer exist name the Node code a part was ported from, which the history before
   mode (`RETROASSEMBLY_RUN_TIME_CDN_OFFLINE`) and the prefetch at startup (`RETROASSEMBLY_RUN_TIME_CDN_PREFETCH`).
   The cache's files are kept as the Node server kept them, so a cache it filled is used as it is
 - Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. The provider must be reached over https; one with a
-  certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the setting the Node server read it from
+  certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the setting the Node server read it from (the CDN
+  cache trusts the same certificates, for a network that inspects TLS). An identity whose username belongs to an account
+  with a password isn't linked to it, unless `RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS=true` (for a library
+  moving from passwords to OIDC, on a provider where users can't pick their own username)
 
 Before it listens, it checks the data folder and any folders set for files, moves box art uploaded before an artwork
 folder was set into it, brings the database up to date, and groups the discs of games uploaded before discs were
@@ -45,10 +48,33 @@ It takes the same settings (`RETROASSEMBLY_RUN_TIME_*`) and the same data folder
 sessions, ids, file ids and the migrations Drizzle records are all kept as the Node server kept them, so a library the
 Node server set up is used as it is.
 
+Where it differs from the Node server, on purpose:
+
+- A new game or BIOS file is named by its whole content (the first 16 hex digits of its SHA-256), not by its first and
+  last kilobyte and its size, which two different files can share. Files already stored keep their names
+- Request bodies are limited: 64 KiB for forms of text, 1 MiB for JSON, 100 MiB for an image, 512 MiB for a save state,
+  in-game save or BIOS (game uploads are streamed to disk and aren't limited). A larger one is answered with 413
+- A request that changes something (anything but `GET`, `HEAD` and `OPTIONS`) from another site, as the browser's
+  `Sec-Fetch-Site` header says, is refused with 403
+- At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. Signing in
+  to an account that doesn't exist takes as long as to one that does
+- On `SIGTERM` or `SIGINT` it stops taking requests and lets those under way finish, for up to 8 seconds
+- At startup it removes files that writes cut short left behind (`*.partial`, `*.tmp`) once they're a day old. A PSP
+  disc that doesn't get smaller as a CSO is kept as an ISO, with an `.uncompressed` file beside it so it isn't tried
+  again; a CSO an earlier run left is checked against its ISO before it replaces it
+- The CDN cache sends its files with `X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy`,
+  remembers only a 404 or 410 as missing (another refusal is tried again next time), and doesn't convert an image of
+  more than 40 megapixels to WebP
+
 ## Running it
 
 Go 1.27 or later. `pnpm build` builds the browser app and this server, to `dist/retroassembly`; `pnpm start` runs it.
-`pnpm dev` builds and starts it behind Vite (see `vite.config.ts`).
+`pnpm dev` builds and starts it behind Vite (see `vite.config.ts`), on the first free port after Vite's, and stops when
+it stops.
+
+The Docker image is Alpine with the binary in `/app/retroassembly`: it has a shell, `wget` (for health checks such as
+`wget -qO- http://localhost:8000/build-version`), the certificate authorities and the time zones, but no Node, so a
+health check or script that ran `node` in the container needs changing.
 
 It reads `dist/client`, `src/databases/migrations` and `game-info/game-info.sqlite` from the folder it's started in (or
 `RETROASSEMBLY_GO_CLIENT_ROOT`, `RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY` and
@@ -77,7 +103,7 @@ the server with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `RETROASSEMBLY_RUN
 How settings are resolved and merged, how games are found and ranked by a search (Fuse.js's typo-tolerant matching
 included), and which files the CDN cache fetches and which covers it finds for a game, are checked against the
 TypeScript code's own answers, in `internal/*/testdata`. They were written by the Node server's code
-(`scripts/go-test-fixtures.ts, removed with the Node server`, removed with it), and are kept as they were: the answers the Go server must keep giving.
+(`scripts/go-test-fixtures.ts`, removed with it), and are kept as they were: the answers the Go server must keep giving.
 
 ## Passwords
 

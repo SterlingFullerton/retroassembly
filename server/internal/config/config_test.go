@@ -56,3 +56,14 @@ func TestAuthMode(t *testing.T) {
 		t.Error("part of OIDC set should be an error")
 	}
 }
+
+func TestJSNumber(t *testing.T) {
+	for value, want := range map[string]int{
+		"8080": 8080, " 8080 ": 8080, "8080.9": 8080, "8e3": 8000, "0x1f40": 8000, "010": 10, "": 0, "abc": 0,
+		"80 80": 0, "1_000": 0, "Infinity": 0,
+	} {
+		if got := jsNumber(value); got != want {
+			t.Errorf("jsNumber(%q) = %d, want %d", value, got, want)
+		}
+	}
+}

@@ -61,7 +61,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	}
 	var cache *cdn.Cache
 	if c.CDNCache {
-		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline)
+		cache = cdn.New(&cdn.Data{CDN: data.CDN}, c.Directories, c.CDNOffline, c.OIDC.ExtraCertificates)
 	}
 	multiDisc := map[string]bool{}
 	for _, console := range data.MultiDiscConsoles {
@@ -117,6 +117,24 @@ var (
 	gamePage     = regexp.MustCompile(`^/library/platform/([^/]+)/rom/[^/]`)
 	workerScript = regexp.MustCompile(`\.worker-[\w-]+\.js$`)
 )
+
+// sameSiteWrites refuses a request that changes something when it comes from another site, or another subdomain of the
+// same one: the session cookie is SameSite=Lax, which sends it with a form posted from a sibling subdomain, and a form
+// posted to the login from anywhere would sign the browser in to someone else's account. Browsers say where a request
+// comes from in Sec-Fetch-Site; requests from outside a browser don't, and aren't affected
+func sameSiteWrites(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+		default:
+			if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" || site == "same-site" {
+				writeMessage(w, http.StatusForbidden, "Requests from other sites are refused")
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 // isolation sends the game pages of consoles whose emulator runs on several threads (the PSP's) with cross-origin
 // isolation headers. A stored file opened in a frame on such a page, and a worker such a page starts, allow it too
@@ -222,7 +240,7 @@ func (s *Server) Handler() (http.Handler, error) {
 	api.HandleFunc("GET "+oidcCallbackPath, s.oidcCallback)
 	api.Handle("/", pages)
 
-	signedIn := s.globals(logger(api))
+	signedIn := s.globals(logger(sameSiteWrites(api)))
 
 	outer := http.NewServeMux()
 	// A private library, kept out of search engines

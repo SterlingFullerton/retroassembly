@@ -150,7 +150,7 @@ func TestMatchesTypeScript(t *testing.T) {
 
 	// libretro's box art matched by title, from its lists in the cache
 	directory := t.TempDir()
-	cache := New(data, config.Directories{Cache: directory}, true)
+	cache := New(data, config.Directories{Cache: directory}, true, "")
 	for _, list := range loaded.CoverLists {
 		sum := sha256.Sum256([]byte(CoverListURL(list.Folder)))
 		key := filepath.Join(directory, "cdn", hex.EncodeToString(sum[:]))
@@ -222,7 +222,7 @@ func TestFile(t *testing.T) {
 	defer upstream.Close()
 
 	directory := t.TempDir()
-	cache := New(loadData(t), config.Directories{Cache: directory}, false)
+	cache := New(loadData(t), config.Directories{Cache: directory}, false, "")
 	cache.client = upstream.Client()
 
 	// Several asking at once share one download
@@ -309,12 +309,12 @@ func TestArtworkFolder(t *testing.T) {
 	href := LibretroHost + "Nintendo%20-%20Game%20Boy/Named_Boxarts/Tetris%20(World).png"
 
 	// Cached before the artwork folder was set: moved into it the first time it's asked for
-	before := New(data, config.Directories{Cache: cacheDirectory}, true)
+	before := New(data, config.Directories{Cache: cacheDirectory}, true, "")
 	old := before.paths(href)
 	os.MkdirAll(filepath.Dir(old.file), 0o755)
 	os.WriteFile(old.file, []byte("png"), 0o644)
 	writeNote(old.meta, note{ContentType: "image/png", Status: 200, Time: 1})
-	cache := New(data, config.Directories{Artwork: artwork, Cache: cacheDirectory}, true)
+	cache := New(data, config.Directories{Artwork: artwork, Cache: cacheDirectory}, true, "")
 	entry, err := cache.File(href, 0, true)
 	moved := filepath.Join(artwork, "Nintendo - Game Boy", "Named_Boxarts", "Tetris (World).png")
 	if err != nil || entry == nil || entry.Path != moved || !isFile(moved) || isFile(old.file) {
@@ -340,7 +340,7 @@ func TestArtworkFolder(t *testing.T) {
 }
 
 func TestStale(t *testing.T) {
-	cache := New(loadData(t), config.Directories{Cache: t.TempDir()}, false)
+	cache := New(loadData(t), config.Directories{Cache: t.TempDir()}, false, "")
 	for _, test := range []struct {
 		href  string
 		stale bool

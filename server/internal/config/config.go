@@ -43,6 +43,8 @@ type OIDC struct {
 	// Node server trusts them from)
 	ExtraCertificates string
 	Issuer            string
+	// Whether an identity may be linked to an account with a password that has its username
+	LinkPasswordAccounts bool
 	// Where the provider sends the browser back to. Unset, it's /login/oidc/callback on the address the app was reached at
 	RedirectURI string
 	// A role the identity must have to sign in, from its roles claim. Unset, any identity may
@@ -132,10 +134,8 @@ func Load() Config {
 	}
 
 	port := 8000
-	if value := env("RETROASSEMBLY_RUN_TIME_PORT", os.Getenv("PORT")); value != "" {
-		if parsed, err := strconv.Atoi(value); err == nil && parsed != 0 {
-			port = parsed
-		}
+	if parsed := jsNumber(env("RETROASSEMBLY_RUN_TIME_PORT", os.Getenv("PORT"))); parsed != 0 {
+		port = parsed
 	}
 
 	return Config{
@@ -157,14 +157,15 @@ func Load() Config {
 		MaxAutoStatesPerRom: positiveInteger(os.Getenv("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM"), 20),
 		MigrationsDirectory: env("RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY", absolute("src", "databases", "migrations")),
 		OIDC: OIDC{
-			ClientID:          os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
-			ClientSecret:      os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),
-			ExtraCertificates: os.Getenv("NODE_EXTRA_CA_CERTS"),
-			Issuer:            os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_ISSUER"),
-			RedirectURI:       os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI"),
-			RequiredRole:      strings.TrimSpace(os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE")),
-			Scopes:            setOr("RETROASSEMBLY_RUN_TIME_OIDC_SCOPES", "openid profile email"),
-			SessionMaxAge:     sessionMaxAge(env("RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE", "28800000")),
+			ClientID:             os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
+			ClientSecret:         os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),
+			ExtraCertificates:    os.Getenv("NODE_EXTRA_CA_CERTS"),
+			Issuer:               os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_ISSUER"),
+			LinkPasswordAccounts: os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS") == "true",
+			RedirectURI:          os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI"),
+			RequiredRole:         strings.TrimSpace(os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE")),
+			Scopes:               setOr("RETROASSEMBLY_RUN_TIME_OIDC_SCOPES", "openid profile email"),
+			SessionMaxAge:        sessionMaxAge(env("RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE", "28800000")),
 		},
 		Port:        port,
 		StorageHost: os.Getenv("RETROASSEMBLY_RUN_TIME_STORAGE_HOST"),
@@ -240,4 +241,22 @@ func (c Config) FilePath(id string) (string, bool) {
 		return StoragePath(directory, rest)
 	}
 	return StoragePath(c.Directories.Storage, id)
+}
+
+// jsNumber reads a whole number as Math.trunc(Number(value)) did on the Node server: spaces around it, a fraction or an
+// exponent ("8080.0", "8e3") and a 0x, 0o or 0b prefix are all accepted. Anything else is 0
+func jsNumber(value string) int {
+	value = strings.TrimSpace(value)
+	if len(value) > 2 && value[0] == '0' && strings.ContainsRune("xXoObB", rune(value[1])) {
+		parsed, err := strconv.ParseInt(value, 0, 64)
+		if err != nil {
+			return 0
+		}
+		return int(parsed)
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || strings.ContainsAny(value, "xXpP_") {
+		return 0
+	}
+	return int(math.Trunc(parsed))
 }

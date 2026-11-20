@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +18,7 @@ import (
 
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/failure"
+	"retroassembly/server/internal/trust"
 )
 
 // Signing in with an OIDC provider, as src/server/redirect-routes.ts does with openid-client: /login/oidc sends the
@@ -131,45 +129,9 @@ func requireHTTPS(address string) error {
 	return nil
 }
 
-// oidcClient talks to the provider, trusting the system's certificate authorities and, as Node does, those in the file
-// NODE_EXTRA_CA_CERTS names, for a provider with a certificate of its own
+// oidcClient talks to the provider, trusting the certificates NODE_EXTRA_CA_CERTS adds (see trust.Transport)
 func oidcClient(extraCertificates string) *http.Client {
-	if extraCertificates == "" {
-		return &http.Client{Timeout: 30 * time.Second}
-	}
-	// Node warns about a file it can't use, and goes on without it
-	extra := x509.NewCertPool()
-	certificates, err := os.ReadFile(extraCertificates)
-	if err != nil || !extra.AppendCertsFromPEM(certificates) {
-		log.Printf("Ignoring extra certificates in %s: none could be read", extraCertificates)
-		return &http.Client{Timeout: 30 * time.Second}
-	}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig = &tls.Config{
-		// Checked below instead, against the system's authorities and then the extra ones: on macOS the system's can't be
-		// added to
-		InsecureSkipVerify: true,
-		VerifyConnection: func(state tls.ConnectionState) error {
-			if len(state.PeerCertificates) == 0 {
-				return errors.New("the OIDC provider sent no certificate")
-			}
-			intermediates := x509.NewCertPool()
-			for _, certificate := range state.PeerCertificates[1:] {
-				intermediates.AddCert(certificate)
-			}
-			options := x509.VerifyOptions{DNSName: state.ServerName, Intermediates: intermediates}
-			_, err := state.PeerCertificates[0].Verify(options)
-			if err == nil {
-				return nil
-			}
-			options.Roots = extra
-			if _, extraErr := state.PeerCertificates[0].Verify(options); extraErr == nil {
-				return nil
-			}
-			return err
-		},
-	}
-	return &http.Client{Timeout: 30 * time.Second, Transport: transport}
+	return &http.Client{Timeout: 30 * time.Second, Transport: trust.Transport(extraCertificates)}
 }
 
 func withoutDefaultPort(scheme, host string) string {
@@ -374,7 +336,8 @@ func (s *Server) finishOIDCLogin(w http.ResponseWriter, r *http.Request) (string
 		return "", failure.New(http.StatusForbidden, "The OIDC identity does not have the required role")
 	}
 
-	userID, err := auth.OIDCUser(ctx, s.database, idToken.Issuer, idToken.Subject, username, client(r))
+	userID, err := auth.OIDCUser(ctx, s.database, idToken.Issuer, idToken.Subject, username, client(r),
+		s.config.OIDC.LinkPasswordAccounts)
 	if err != nil {
 		return "", err
 	}

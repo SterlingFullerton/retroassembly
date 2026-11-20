@@ -16,6 +16,10 @@ import (
 
 var errInvalidLogin = failure.New(http.StatusUnauthorized, "Invalid username or password")
 
+// A hash no password matches, with the settings of the app's own, to check a sign-in against when there's no account
+const unknownUserHash = "$argon2id$v=19$m=65536,t=3,p=4$c2lnbi1pbi13aXRob3V0LWFuLWFjY291bnQ$" +
+	"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
 const (
 	MethodOIDC     = "oidc"
 	MethodPassword = "password"
@@ -170,16 +174,18 @@ func Login(ctx context.Context, database *sql.DB, username, password string, cli
 		`SELECT id, library_mode, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
 		strings.TrimSpace(username), db.StatusNormal,
 	).Scan(&user.ID, &user.LibraryMode, &user.Username, &passwordHash)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil, errInvalidLogin
-	}
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, err
 	}
-	if !passwordHash.Valid || passwordHash.String == "" {
+	// A username that isn't there, or an account without a password, is checked against a hash all the same, so the
+	// answer takes as long and doesn't tell which usernames exist
+	if err != nil || !passwordHash.Valid || passwordHash.String == "" {
+		if _, err := VerifyPassword(ctx, unknownUserHash, password); err != nil {
+			return nil, nil, err
+		}
 		return nil, nil, errInvalidLogin
 	}
-	valid, err := VerifyPassword(passwordHash.String, password)
+	valid, err := VerifyPassword(ctx, passwordHash.String, password)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -229,15 +235,30 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password string
 	}
 	var passwordHash *string
 	if password != "" {
-		hash, err := HashPassword(password)
+		hash, err := HashPassword(ctx, password)
 		if err != nil {
 			return nil, err
 		}
 		passwordHash = &hash
 	}
+	// Checked again with the account added in the same transaction: two registrations of one username at once, each
+	// waiting for its hash, would otherwise both pass the check above
+	transaction, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer transaction.Rollback()
+	err = transaction.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
+		username, db.StatusNormal).Scan(&existing)
+	if err == nil {
+		return nil, failure.New(http.StatusConflict, "Username already exists")
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
 	now := db.Millis(time.Now())
 	user := User{ID: ids.New(), LibraryMode: libraryMode, Username: username}
-	_, err = database.ExecContext(ctx, `
+	_, err = transaction.ExecContext(ctx, `
 		INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, username, created_at,
 			id, status, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -245,6 +266,9 @@ func CreateUser(ctx context.Context, database *sql.DB, username, password string
 		db.StatusNormal, now,
 	)
 	if err != nil {
+		return nil, err
+	}
+	if err := transaction.Commit(); err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -288,14 +312,14 @@ func UpdatePassword(ctx context.Context, database *sql.DB, user *User, token, cu
 	}
 	valid := false
 	if passwordHash.Valid && passwordHash.String != "" {
-		if valid, err = VerifyPassword(passwordHash.String, currentPassword); err != nil {
+		if valid, err = VerifyPassword(ctx, passwordHash.String, currentPassword); err != nil {
 			return err
 		}
 	}
 	if !valid {
 		return failure.New(http.StatusUnauthorized, "Invalid current password")
 	}
-	newHash, err := HashPassword(newPassword)
+	newHash, err := HashPassword(ctx, newPassword)
 	if err != nil {
 		return err
 	}

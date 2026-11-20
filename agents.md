@@ -18,8 +18,8 @@ modernc.org/sqlite), Drizzle for the schema and its migrations
 
 ## Commands
 
-**Development**: `pnpm dev` (port 8000). Vite serves the browser app and builds and starts the Go server on the next
-port, passing `/api`, `/cdn`, `/login/oidc` and `/logout` to it. Typically it's already running: check whether port 8000
+**Development**: `pnpm dev` (port 8000). Vite serves the browser app and builds and starts the Go server on the first
+free port after it, passing `/api`, `/cdn`, `/login/oidc` and `/logout` to it; if the Go server stops, so does `pnpm dev`. Typically it's already running: check whether port 8000
 is in use. Go changes need `pnpm dev` restarted.
 **Build**: `pnpm build` (the browser app, then the Go server to `dist/retroassembly`)
 **Lint**: `pnpm vp check --fix`. _DO NOT_ ignore warnings, treat them as errors.

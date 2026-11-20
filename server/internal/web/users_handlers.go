@@ -19,7 +19,7 @@ func (s *Server) listAccounts(w http.ResponseWriter, r *http.Request, scope libr
 
 // POST /api/v1/users: an account the admin adds for someone
 func (s *Server) addAccount(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, textBodyLimit) {
 		return
 	}
 	var check validation
@@ -41,7 +41,7 @@ func (s *Server) addAccount(w http.ResponseWriter, r *http.Request, scope librar
 
 // PATCH /api/v1/users/{id}: whether an account has its own library or shares the admin's
 func (s *Server) setLibraryMode(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, textBodyLimit) {
 		return
 	}
 	var check validation

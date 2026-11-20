@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
@@ -9,11 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"golang.org/x/crypto/argon2"
+
+	"retroassembly/server/internal/failure"
 )
 
 // The same settings src/utils/server/argon2.ts hashes with
@@ -25,12 +30,23 @@ const (
 	saltLength      = 16
 )
 
-// The salt and hash are written in base64url without padding, not the standard base64 of the PHC string format, as the
-// Node server has always written them
+// The salt and hash are written in base64url without padding, as the Node server wrote them since December 2025.
+// Hashes from before then (the npm argon2 package's) are in standard base64, which decodeBase64 reads too
 var encoding = base64.RawURLEncoding
 
-// Each hash takes 64 MiB while it runs. At most two run at once, so a burst of logins can't take the server's memory
-var hashing = make(chan struct{}, 2)
+func decodeBase64(value string) ([]byte, error) {
+	return encoding.DecodeString(strings.NewReplacer("+", "-", "/", "_").Replace(strings.TrimRight(value, "=")))
+}
+
+// Each hash takes 64 MiB while it runs. At most two run at once, so a burst of logins can't take the server's memory,
+// and only so many wait for their turn: past that, a sign-in is refused rather than queued for minutes
+var (
+	hashing    = make(chan struct{}, 2)
+	waiting    atomic.Int32
+	maxWaiting = int32(32)
+)
+
+var errBusy = failure.New(http.StatusServiceUnavailable, "Too many sign-ins at once. Try again in a moment")
 
 // ChildArgument starts the server's own executable as a process that hashes one password and exits (see RunChild)
 const ChildArgument = "argon2id-child"
@@ -68,9 +84,20 @@ func RunChild(in io.Reader, out io.Writer) error {
 	return json.NewEncoder(out).Encode(work.key())
 }
 
-// idKey is argon2id, made in a child process when there is one to use
-func idKey(work childWork) ([]byte, error) {
-	hashing <- struct{}{}
+// idKey is argon2id, made in a child process when there is one to use. A request that ends while it waits, or while
+// its hash is made, stops it
+func idKey(ctx context.Context, work childWork) ([]byte, error) {
+	if waiting.Add(1) > maxWaiting {
+		waiting.Add(-1)
+		return nil, errBusy
+	}
+	select {
+	case hashing <- struct{}{}:
+		waiting.Add(-1)
+	case <-ctx.Done():
+		waiting.Add(-1)
+		return nil, ctx.Err()
+	}
 	defer func() { <-hashing }()
 	if childExecutable == "" {
 		return work.key(), nil
@@ -79,7 +106,7 @@ func idKey(work childWork) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	command := exec.Command(childExecutable, ChildArgument)
+	command := exec.CommandContext(ctx, childExecutable, ChildArgument)
 	command.Stdin = bytes.NewReader(input)
 	output, err := command.Output()
 	if err != nil {
@@ -93,12 +120,12 @@ func idKey(work childWork) ([]byte, error) {
 }
 
 // HashPassword hashes a password as $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
-func HashPassword(password string) (string, error) {
+func HashPassword(ctx context.Context, password string) (string, error) {
 	salt := make([]byte, saltLength)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
-	hash, err := idKey(childWork{
+	hash, err := idKey(ctx, childWork{
 		Length: hashLength, Memory: hashMemory, Parallelism: hashParallelism, Passes: hashPasses,
 		Password: []byte(password), Salt: salt,
 	})
@@ -123,7 +150,7 @@ func parseParameter(value, name string) (int, error) {
 
 // VerifyPassword tells whether password matches a hash HashPassword or the Node server wrote, with the settings the
 // hash itself names
-func VerifyPassword(encoded, password string) (bool, error) {
+func VerifyPassword(ctx context.Context, encoded, password string) (bool, error) {
 	parts := strings.Split(encoded, "$")
 	if len(parts) != 6 || parts[1] != "argon2id" || parts[2] != "v=19" {
 		return false, errInvalidHash
@@ -144,15 +171,15 @@ func VerifyPassword(encoded, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	salt, err := encoding.DecodeString(strings.TrimRight(parts[4], "="))
+	salt, err := decodeBase64(parts[4])
 	if err != nil {
 		return false, err
 	}
-	expected, err := encoding.DecodeString(strings.TrimRight(parts[5], "="))
+	expected, err := decodeBase64(parts[5])
 	if err != nil {
 		return false, err
 	}
-	actual, err := idKey(childWork{
+	actual, err := idKey(ctx, childWork{
 		Length: uint32(len(expected)), Memory: uint32(memory), Parallelism: uint8(parallelism), Passes: uint32(passes),
 		Password: []byte(password), Salt: salt,
 	})

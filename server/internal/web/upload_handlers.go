@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -39,6 +40,8 @@ var multipartType = regexp.MustCompile(`(?i)^multipart/form-data`)
 
 // upload is a file sent with a form, written to disk as it arrived
 type upload struct {
+	// The file's name by its content (files.Digest), worked out as it was written
+	digest               string
 	fileName, name, path string
 	size                 int64
 }
@@ -87,7 +90,7 @@ func (s *Server) readUpload(w http.ResponseWriter, r *http.Request) (*uploadForm
 	// Games are the only files uploaded this way, so they arrive in the games folder: finishing an upload is then a
 	// rename on the same disk, even when the games are on a different disk from everything else
 	directory := filepath.Join(s.config.Directories.Roms, ".uploads")
-	if err := os.MkdirAll(directory, 0o755); err != nil {
+	if err := os.MkdirAll(directory, 0o777); err != nil {
 		writeError(w, err)
 		return nil, false
 	}
@@ -149,7 +152,9 @@ func (s *Server) readUpload(w http.ResponseWriter, r *http.Request) (*uploadForm
 			writeMessage(w, http.StatusInternalServerError, "Failed to store the uploaded file.")
 			return nil, false
 		}
-		file.size, err = io.Copy(output, part)
+		hash := sha256.New()
+		file.size, err = io.Copy(io.MultiWriter(output, hash), part)
+		file.digest = files.DigestOf(hash)
 		closeErr := output.Close()
 		var pathError *os.PathError
 		if errors.As(err, &pathError) || closeErr != nil {
@@ -312,7 +317,7 @@ func (s *Server) createRom(w http.ResponseWriter, r *http.Request, scope library
 		defer form.remove()
 		upload, fields = form.files["file"], form.fields
 	} else {
-		if !parseForm(w, r) {
+		if !parseForm(w, r, textBodyLimit) {
 			return
 		}
 		fields = r.PostForm
@@ -390,15 +395,7 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 	launchbox, libretro = withoutNulls(launchbox), withoutNulls(libretro)
 
 	// The file, stored under its digest
-	source, err := os.Open(file.path)
-	if err != nil {
-		return nil, err
-	}
-	digest, err := files.PartialDigest(source, file.size)
-	source.Close()
-	if err != nil {
-		return nil, err
-	}
+	digest := file.digest
 	fileID := path.Join("roms", platform, digest+extension)
 	// A PSP disc uploaded before is already compressed; a new one is compressed once it's stored
 	compressible := psp.IsCompressible(platform, fileID)
@@ -542,6 +539,14 @@ func (s *Server) BackfillGameInfo() {
 // StartBackgroundJobs starts what the Node server runs once it's listening: filling in game info, downloading CDN
 // files, and compressing PSP games
 func (s *Server) StartBackgroundJobs() {
+	go func() {
+		directories := s.config.Directories
+		for _, folder := range []string{directories.Storage, directories.Roms, directories.Cache, directories.Artwork} {
+			if removed := files.RemoveStaleTemporaries(folder, 24*time.Hour); removed > 0 {
+				log.Printf("Removed %d unfinished files from %s", removed, folder)
+			}
+		}
+	}()
 	go s.BackfillGameInfo()
 	s.StartPrefetch()
 	go func() {

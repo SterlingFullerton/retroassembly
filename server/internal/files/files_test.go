@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestKindOf(t *testing.T) {
@@ -31,24 +32,19 @@ func TestKindOf(t *testing.T) {
 }
 
 // The digests the Node server's getFilePartialDigest gives the same files
-func TestPartialDigest(t *testing.T) {
-	pattern := make([]byte, 3000)
-	for i := range pattern {
-		pattern[i] = byte(i % 251)
+func TestDigest(t *testing.T) {
+	got, err := Digest(bytes.NewReader([]byte("small bios")))
+	// The first 16 hex digits of SHA-256("small bios")
+	if err != nil || got != "9c2a8bcf82020f16" {
+		t.Errorf("%q, %v", got, err)
 	}
-	cases := map[string]struct {
-		content []byte
-		want    string
-	}{
-		"over 2 KB":       {pattern, "731ee4d7aa8aee4c"},
-		"under 1 KB":      {[]byte("small bios"), "99b0c2e3febbe798"},
-		"between 1 and 2": {make([]byte, 1500), "12636ad34eee18cd"},
-	}
-	for name, test := range cases {
-		got, err := PartialDigest(bytes.NewReader(test.content), int64(len(test.content)))
-		if err != nil || got != test.want {
-			t.Errorf("%s: %q, %v; want %q", name, got, err, test.want)
-		}
+	// Two files that share their first and last kilobyte and their size have names of their own
+	one, two := bytes.Repeat([]byte{1}, 5000), bytes.Repeat([]byte{1}, 5000)
+	two[2500] = 2
+	a, _ := Digest(bytes.NewReader(one))
+	b, _ := Digest(bytes.NewReader(two))
+	if a == b {
+		t.Error("two files with the same ends share a name")
 	}
 }
 
@@ -129,5 +125,26 @@ func TestServe(t *testing.T) {
 	Serve(missing, httptest.NewRequest(http.MethodGet, "/", nil), "roms/nes/x.nes", filePath+".missing")
 	if missing.Code != http.StatusNotFound {
 		t.Fatalf("missing file: %d", missing.Code)
+	}
+}
+
+func TestRemoveStaleTemporaries(t *testing.T) {
+	folder := t.TempDir()
+	old := time.Now().Add(-48 * time.Hour)
+	for name, modified := range map[string]time.Time{
+		"a/game.iso.x.partial": old, "b.webp.x.tmp": old, "c.partial": time.Now(), "d.iso": old,
+	} {
+		path := filepath.Join(folder, name)
+		os.MkdirAll(filepath.Dir(path), 0o777)
+		os.WriteFile(path, nil, 0o666)
+		os.Chtimes(path, modified, modified)
+	}
+	if removed := RemoveStaleTemporaries(folder, 24*time.Hour); removed != 2 {
+		t.Errorf("removed %d, want 2", removed)
+	}
+	for _, name := range []string{"c.partial", "d.iso"} {
+		if _, err := os.Stat(filepath.Join(folder, name)); err != nil {
+			t.Errorf("%s was removed", name)
+		}
 	}
 }

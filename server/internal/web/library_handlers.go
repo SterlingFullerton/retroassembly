@@ -162,7 +162,7 @@ func extension(name string) string {
 // addBIOS stores a BIOS file, once however many users add it, and adds it to the user's settings for its console,
 // in place of one of the same name
 func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r) {
+	if !parseForm(w, r, fileBodyLimit) {
 		return
 	}
 	var check validation
@@ -173,13 +173,19 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 	if check.Failed(w) {
 		return
 	}
+	// The console is checked before the file is stored: it's part of the file's path
+	bioses, err := s.bioses(r, scope, platform)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	file, err := upload.Open()
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 	defer file.Close()
-	digest, err := files.PartialDigest(file, upload.Size)
+	digest, err := files.Digest(file)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -201,11 +207,6 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 		}
 	}
 
-	bioses, err := s.bioses(r, scope, platform)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
 	replaced := false
 	for _, item := range bioses {
 		if bios, ok := item.(preference.Object); ok && bios["fileName"] == upload.Filename {

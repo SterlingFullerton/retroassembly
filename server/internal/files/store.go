@@ -2,9 +2,9 @@ package files
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -73,7 +73,7 @@ func Exists(filePath string) bool {
 // Put writes a stored file. It's written under a temporary name first, so an interrupted write never leaves a partial
 // file behind
 func Put(filePath string, content io.Reader) (err error) {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o777); err != nil {
 		return err
 	}
 	partial := filePath + "." + ids.New() + ".partial"
@@ -86,27 +86,24 @@ func Put(filePath string, content io.Reader) (err error) {
 		file.Close()
 		return err
 	}
-	if err := file.Close(); err != nil {
+	if err := errors.Join(file.Sync(), file.Close()); err != nil {
 		return err
 	}
 	return os.Rename(partial, filePath)
 }
 
-// PartialDigest names a file by its first and last kilobyte and its size, as getFilePartialDigest does, without
-// reading a large file whole. A file under a kilobyte is read twice, as the Node server reads it
-func PartialDigest(file io.ReaderAt, size int64) (string, error) {
-	const part = 1024
-	header := make([]byte, min(size, part))
-	if _, err := file.ReadAt(header, 0); err != nil && err != io.EOF {
+// Digest names a stored file by its whole content: the first 16 hex digits of its SHA-256. A file that's stored already
+// is kept once however many games use it. (The Node server named files by their first and last kilobyte and their size,
+// which two different files can share; the files it stored keep their names)
+func Digest(content io.Reader) (string, error) {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, content); err != nil {
 		return "", err
 	}
-	start := max(size-part, 0)
-	footer := make([]byte, size-start)
-	if _, err := file.ReadAt(footer, start); err != nil && err != io.EOF {
-		return "", err
-	}
-	data := append(append(header, footer...), make([]byte, 8)...)
-	binary.LittleEndian.PutUint64(data[len(data)-8:], uint64(size))
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])[:16], nil
+	return DigestOf(hash), nil
+}
+
+// DigestOf is the name for a file whose content has been written to hash, a SHA-256
+func DigestOf(hash hash.Hash) string {
+	return hex.EncodeToString(hash.Sum(nil))[:16]
 }
