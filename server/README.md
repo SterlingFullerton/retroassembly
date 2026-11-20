@@ -13,6 +13,8 @@ The browser app stays TypeScript; this serves it and its API.
 - Favorites: `POST /api/v1/favorites`, `DELETE /api/v1/favorites/{romId}`
 - Play history: `POST /api/v1/launch_records`, `DELETE /api/v1/roms/{id}/launch_records`
 - Settings: `GET` and `POST /api/v1/preference`, `POST` and `DELETE /api/v1/preference/bioses`
+- Save states: `GET` and `POST /api/v1/states`, `DELETE /api/v1/states/{id}`, `GET /api/v1/roms/{id}/states`
+- In-game saves: `GET` and `POST /api/v1/game_saves`, `POST /api/v1/game_saves/{id}/restore`
 
 With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, everything else (the rest of `/api/`, `/cdn/`, logging
 in with OIDC) is passed on to it, so the Go server can stand in front of the Node server while the API moves over.

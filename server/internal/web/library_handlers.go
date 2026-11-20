@@ -20,7 +20,13 @@ func (s *Server) signedIn(handler func(http.ResponseWriter, *http.Request, libra
 			writeMessage(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
-		handler(w, r, library.Scope{Database: s.database, LibraryOwnerID: current.libraryOwnerID, User: current.user})
+		handler(w, r, library.Scope{
+			Database:       s.database,
+			LibraryOwnerID: current.libraryOwnerID,
+			MaxAutoStates:  s.config.MaxAutoStatesPerRom,
+			Storage:        files.Storage{Path: s.config.FilePath},
+			User:           current.user,
+		})
 	}
 }
 
@@ -159,7 +165,7 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 	}
 	var check validation
 	upload := formFile(r, "file")
-	check.File("file", upload)
+	check.File("file", upload, r.PostForm, "File")
 	value, present := field(r.PostForm, "platform")
 	platform := check.String("platform", value, present, 0)
 	if check.Failed(w) {

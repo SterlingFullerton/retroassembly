@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 // The issues zod reports, with their fields in zod's order, so a request the Node server refuses is refused in the same
@@ -26,6 +29,47 @@ type fileIssue struct {
 }
 
 type tooSmallIssue struct {
+	Origin    string   `json:"origin"`
+	Code      string   `json:"code"`
+	Minimum   int      `json:"minimum"`
+	Inclusive bool     `json:"inclusive"`
+	Path      []string `json:"path"`
+	Message   string   `json:"message"`
+}
+
+type tooBigIssue struct {
+	Origin    string   `json:"origin"`
+	Code      string   `json:"code"`
+	Maximum   int      `json:"maximum"`
+	Inclusive bool     `json:"inclusive"`
+	Path      []string `json:"path"`
+	Message   string   `json:"message"`
+}
+
+type enumIssue struct {
+	Code    string   `json:"code"`
+	Values  []string `json:"values"`
+	Path    []string `json:"path"`
+	Message string   `json:"message"`
+}
+
+type nanIssue struct {
+	Expected string   `json:"expected"`
+	Code     string   `json:"code"`
+	Received string   `json:"received"`
+	Path     []string `json:"path"`
+	Message  string   `json:"message"`
+}
+
+type intIssue struct {
+	Expected string   `json:"expected"`
+	Code     string   `json:"code"`
+	Format   string   `json:"format"`
+	Path     []string `json:"path"`
+	Message  string   `json:"message"`
+}
+
+type numberTooSmallIssue struct {
 	Origin    string   `json:"origin"`
 	Code      string   `json:"code"`
 	Minimum   int      `json:"minimum"`
@@ -78,14 +122,87 @@ func (v *validation) String(name string, value any, present bool, minimum int) s
 	return text
 }
 
-// File checks a field is an uploaded file
-func (v *validation) File(name string, file *multipart.FileHeader) {
-	if file == nil {
-		v.issues = append(v.issues, fileIssue{
-			Code: "invalid_type", Expected: "File", Path: []string{name},
-			Message: "Invalid input: expected File, received undefined",
+// OptionalString checks an optional field is, when it's there, a string of minimum to maximum characters (no maximum
+// for 0)
+func (v *validation) OptionalString(name string, value any, present bool, minimum, maximum int) (string, bool) {
+	if !present {
+		return "", false
+	}
+	text := v.String(name, value, present, minimum)
+	if maximum > 0 && len([]rune(text)) > maximum {
+		v.issues = append(v.issues, tooBigIssue{
+			Origin: "string", Code: "too_big", Maximum: maximum, Inclusive: true, Path: []string{name},
+			Message: "Too big: expected string to have <=" + itoa(maximum) + " characters",
 		})
 	}
+	return text, true
+}
+
+// Enum checks a field is one of values, which zod lists in the schema's order
+func (v *validation) Enum(name string, value any, present bool, values ...string) string {
+	if text, ok := value.(string); ok && present {
+		for _, allowed := range values {
+			if text == allowed {
+				return text
+			}
+		}
+	}
+	quoted := make([]string, len(values))
+	for i, allowed := range values {
+		quoted[i] = `"` + allowed + `"`
+	}
+	v.issues = append(v.issues, enumIssue{
+		Code: "invalid_value", Values: values, Path: []string{name},
+		Message: "Invalid option: expected one of " + strings.Join(quoted, "|"),
+	})
+	return ""
+}
+
+// OptionalInt checks an optional field is, when it's there, a whole number of at least minimum, read from text as
+// z.coerce.number() reads it
+func (v *validation) OptionalInt(name string, value any, present bool, minimum int) (int64, bool) {
+	if !present {
+		return 0, false
+	}
+	text, _ := value.(string)
+	number := 0.0
+	if trimmed := strings.TrimSpace(text); trimmed != "" {
+		parsed, err := strconv.ParseFloat(trimmed, 64)
+		if err != nil {
+			parsed = math.NaN()
+		}
+		number = parsed
+	}
+	switch {
+	case math.IsNaN(number):
+		v.issues = append(v.issues, nanIssue{
+			Expected: "number", Code: "invalid_type", Received: "NaN", Path: []string{name},
+			Message: "Invalid input: expected number, received NaN",
+		})
+	case number != math.Trunc(number) || math.IsInf(number, 0):
+		v.issues = append(v.issues, intIssue{
+			Expected: "int", Code: "invalid_type", Format: "safeint", Path: []string{name},
+			Message: "Invalid input: expected int, received number",
+		})
+	case number < float64(minimum):
+		v.issues = append(v.issues, numberTooSmallIssue{
+			Origin: "number", Code: "too_small", Minimum: minimum, Inclusive: true, Path: []string{name},
+			Message: "Too small: expected number to be >=" + itoa(minimum),
+		})
+	}
+	return int64(number), true
+}
+
+// File checks a field is an uploaded file. expected is how the schema names it: File, or Blob
+func (v *validation) File(name string, file *multipart.FileHeader, values url.Values, expected string) {
+	if file != nil {
+		return
+	}
+	_, isText := values[name]
+	v.issues = append(v.issues, fileIssue{
+		Code: "invalid_type", Expected: expected, Path: []string{name},
+		Message: "Invalid input: expected " + expected + ", received " + received("", isText),
+	})
 }
 
 // Failed answers 400 with what's wrong, as the Node server's validator does, when anything is

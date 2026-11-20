@@ -3,6 +3,7 @@ package config
 
 import (
 	"errors"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -44,6 +45,8 @@ type Config struct {
 	// The built browser app, dist/client
 	ClientRoot  string
 	Directories Directories
+	// How many automatic save states are kept for each game
+	MaxAutoStatesPerRom int
 	// The SQL migrations Drizzle writes, src/databases/migrations
 	MigrationsDirectory string
 	// The Node server, which answers what the Go server doesn't yet. Unset, those requests are answered with 501
@@ -59,6 +62,17 @@ func env(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// positiveInteger reads a number as the Node server does, Math.trunc(Number(value)) || fallback: its whole part, or
+// fallback for nothing, zero or anything that isn't a number. Below 1, where the Node server would misbehave, is the
+// fallback too
+func positiveInteger(value string, fallback int) int {
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || int(parsed) < 1 {
+		return fallback
+	}
+	return int(parsed)
 }
 
 func absolute(parts ...string) string {
@@ -100,6 +114,7 @@ func Load() Config {
 			States:      env("RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY", filepath.Join(storageDirectory, "states")),
 			Storage:     storageDirectory,
 		},
+		MaxAutoStatesPerRom: positiveInteger(os.Getenv("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM"), 20),
 		MigrationsDirectory: env("RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY", absolute("src", "databases", "migrations")),
 		NodeURL:             os.Getenv("RETROASSEMBLY_GO_NODE_URL"),
 		OIDC: OIDC{

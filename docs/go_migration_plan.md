@@ -161,7 +161,9 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
 
 - Go stands in front of Node when `RETROASSEMBLY_GO_NODE_URL` is set, passing on whatever it doesn't answer yet
 - Done: 1 (with `PATCH /api/v1/auth/password`); 2, except `GET /api/v1/launch_records`, which needs the search and
-  cover matching of step 4 and moves there
+  cover matching of step 4 and moves there; 3, with `GET /api/v1/roms/{id}/states`. The same upload sent several times
+  at once is still stored once, and the same saves and files are kept as on Node
+- In-game saves: restoring a version whose file is missing on disk answers 404 where Node answers 500
 - Checked by sending the same requests, errors included, to Node alone and to Go in front of Node, and with the
   end-to-end tests through Go in front of Node: the same tests pass as on Node alone
 - The default settings and the consoles come from the TypeScript definitions (`scripts/go-shared-data.ts`), and how

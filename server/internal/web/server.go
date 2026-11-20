@@ -139,6 +139,13 @@ func (s *Server) Handler() (http.Handler, error) {
 		"POST /api/v1/preference":                 s.signedIn(s.updatePreference),
 		"POST /api/v1/preference/bioses":          s.signedIn(s.addBIOS),
 		"DELETE /api/v1/preference/bioses":        s.signedIn(s.deleteBIOS),
+		"GET /api/v1/states":                      s.signedIn(s.listStates),
+		"POST /api/v1/states":                     s.signedIn(s.createState),
+		"DELETE /api/v1/states/{id}":              s.signedIn(s.deleteState),
+		"GET /api/v1/roms/{id}/states":            s.signedIn(s.listRomStates),
+		"GET /api/v1/game_saves":                  s.signedIn(s.listGameSaves),
+		"POST /api/v1/game_saves":                 s.signedIn(s.createGameSave),
+		"POST /api/v1/game_saves/{id}/restore":    s.signedIn(s.restoreGameSave),
 	} {
 		api.Handle(pattern, compress(handler))
 	}

@@ -4,12 +4,65 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 
 	"retroassembly/server/internal/ids"
 )
+
+// Storage is the stored files, by their ids, wherever each kind is kept
+type Storage struct {
+	// Path is where a file id is on disk, or false for an id that would reach outside its folder
+	Path func(id string) (string, bool)
+}
+
+var errInvalidFileID = errors.New("Invalid file id")
+
+func (s Storage) writablePath(id string) (string, error) {
+	filePath, ok := s.Path(id)
+	if !ok {
+		return "", errInvalidFileID
+	}
+	return filePath, nil
+}
+
+// Put stores a file under an id
+func (s Storage) Put(id string, content io.Reader) error {
+	filePath, err := s.writablePath(id)
+	if err != nil {
+		return err
+	}
+	return Put(filePath, content)
+}
+
+// Delete removes a stored file; one that isn't there is already gone
+func (s Storage) Delete(id string) error {
+	filePath, err := s.writablePath(id)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(filePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// Exists tells whether a stored file is there
+func (s Storage) Exists(id string) bool {
+	filePath, ok := s.Path(id)
+	return ok && Exists(filePath)
+}
+
+// Read is a stored file's content, or os.ErrNotExist
+func (s Storage) Read(id string) ([]byte, error) {
+	filePath, ok := s.Path(id)
+	if !ok {
+		return nil, os.ErrNotExist
+	}
+	return os.ReadFile(filePath)
+}
 
 // Exists tells whether a stored file is on disk
 func Exists(filePath string) bool {

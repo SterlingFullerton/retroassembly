@@ -15,6 +15,7 @@ import (
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/failure"
+	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/ids"
 )
 
@@ -22,7 +23,10 @@ import (
 type Scope struct {
 	Database       *sql.DB
 	LibraryOwnerID string
-	User           *auth.User
+	// How many automatic save states are kept for each game
+	MaxAutoStates int
+	Storage       files.Storage
+	User          *auth.User
 }
 
 // SharesLibrary tells whether the user sees someone else's library, which they may only read
