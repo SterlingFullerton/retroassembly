@@ -126,7 +126,7 @@ func nullable(object library.Object) any {
 	return object
 }
 
-// The answers the TypeScript lookup gives, from the same small database (scripts/go-test-fixtures.ts)
+// The answers the TypeScript lookup gives, from the same small database (scripts/go-test-fixtures.ts, removed with the Node server)
 func TestLookup(t *testing.T) {
 	loaded := load(t)
 	path := filepath.Join(t.TempDir(), "game-info.sqlite")

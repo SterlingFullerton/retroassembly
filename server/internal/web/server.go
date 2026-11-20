@@ -4,8 +4,10 @@ package web
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"io/fs"
+	"log"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -80,10 +82,8 @@ type state struct {
 	// The language the browser asks for
 	language       string
 	libraryOwnerID string
-	// Passed on to the Node server, which logs it itself
-	proxied bool
-	token   string
-	user    *auth.User
+	token          string
+	user           *auth.User
 }
 
 type stateKey struct{}
@@ -137,6 +137,12 @@ func (s *Server) isolation(next http.Handler) http.Handler {
 // everything after them looks up the signed-in user and is logged
 func (s *Server) Handler() (http.Handler, error) {
 	page, version, err := loadPage(s.config.ClientRoot)
+	// Without the built browser app, as in development, where Vite serves it, only the API is served
+	pages := http.Handler(page)
+	if errors.Is(err, fs.ErrNotExist) {
+		log.Printf("No built browser app at %s, so only the API is served", s.config.ClientRoot)
+		pages, err = http.NotFoundHandler(), nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -144,22 +150,6 @@ func (s *Server) Handler() (http.Handler, error) {
 	compress, err := gzhttp.NewWrapper(gzhttp.MinSize(1024))
 	if err != nil {
 		return nil, err
-	}
-
-	// What the Go server doesn't answer yet: the Node server's, when there is one to pass it to
-	notPorted := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeMessage(w, http.StatusNotImplemented, "Not served by the Go server yet")
-	}))
-	if s.config.NodeURL != "" {
-		node, err := url.Parse(s.config.NodeURL)
-		if err != nil {
-			return nil, err
-		}
-		proxy := nodeProxy(node)
-		notPorted = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			stateOf(r).proxied = true
-			proxy.ServeHTTP(w, r)
-		})
 	}
 
 	api := http.NewServeMux()
@@ -224,14 +214,13 @@ func (s *Server) Handler() (http.Handler, error) {
 	api.Handle("GET /api/v1/roms/{id}/content", s.signedIn(s.romContent))
 	api.HandleFunc("GET /api/v1/files/{id...}", s.file)
 	api.HandleFunc("GET /logout", s.logout)
-	api.Handle("/api/", notPorted)
 	// Without the cache, /cdn/ is just another page address, as on the Node server. Its files aren't compressed
 	if s.cdn != nil {
 		api.HandleFunc("GET /cdn/", s.cdnFile)
 	}
 	api.HandleFunc("GET /login/oidc", s.loginWithOIDC)
 	api.HandleFunc("GET "+oidcCallbackPath, s.oidcCallback)
-	api.Handle("/", page)
+	api.Handle("/", pages)
 
 	signedIn := s.globals(logger(api))
 

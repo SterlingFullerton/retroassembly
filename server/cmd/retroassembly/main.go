@@ -120,16 +120,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if c.NodeURL != "" {
-		log.Printf("Passing what isn't ported yet to the Node server at %s", c.NodeURL)
-	}
 	// IPv4 only, as the Node server listens
 	address := fmt.Sprintf("0.0.0.0:%d", c.Port)
 	listener, err := net.Listen("tcp4", address)
 	if err != nil {
 		return err
 	}
-	log.Printf("RetroAssembly (Go) is running at http://%s/", address)
+	log.Printf("RetroAssembly is running at http://%s/", address)
 	// Jobs that need the internet start once the server is listening, so the library is up quickly even without it
 	server.StartBackgroundJobs()
 	return http.Serve(listener, handler)

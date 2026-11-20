@@ -1,9 +1,10 @@
 # The Go server
 
-The server being moved from Node to Go, a piece at a time (see [docs/go_migration_plan.md](../docs/go_migration_plan.md)).
-The browser app stays TypeScript; this serves it and its API.
+The app's server: it serves the browser app (TypeScript, in `src/`) and its API. It replaced a Node server, moved over a
+piece at a time (see [docs/go_migration_plan.md](../docs/go_migration_plan.md)); comments naming `src/...` files that no
+longer exist name the Node code a part was ported from, which the history before the Node server's removal keeps.
 
-## What it serves so far
+## What it serves
 
 - The built browser app (`dist/client`): its files, compressed copies, and `index.html` for every page
 - `/robots.txt`, `/build-version`, `/` (to the library)
@@ -31,44 +32,36 @@ The browser app stays TypeScript; this serves it and its API.
   files once and keeps them in the data folder (libretro's art in the artwork folder, when one is set), the covers
   each game list says the cache has, the WebP copies of images (made with libwebp, built into the server), offline
   mode (`RETROASSEMBLY_RUN_TIME_CDN_OFFLINE`) and the prefetch at startup (`RETROASSEMBLY_RUN_TIME_CDN_PREFETCH`).
-  The cache's files are the Node server's, so either server uses what the other downloaded
-- Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. As with the Node server, the provider must be reached
-  over https; one with a certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the file Node reads
+  The cache's files are kept as the Node server kept them, so a cache it filled is used as it is
+- Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. The provider must be reached over https; one with a
+  certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the setting the Node server read it from
 
-At startup it does what the Node server does before it listens: checks the data folder and any folders set for
-files, moves box art uploaded before an artwork folder was set into it, brings the database up to date, and groups the
-discs of games uploaded before discs were grouped.
+Before it listens, it checks the data folder and any folders set for files, moves box art uploaded before an artwork
+folder was set into it, brings the database up to date, and groups the discs of games uploaded before discs were
+grouped. Once listening, it fills in the game info of games matched before it was kept, downloads what the CDN prefetch
+names, and compresses PSP ISOs.
 
-Once listening, it fills in the game info of games matched before it was kept, downloads what the CDN prefetch names,
-and compresses PSP ISOs, as the Node server does.
-
-Everything the app uses is served. With `RETROASSEMBLY_GO_NODE_URL` set to a running Node server, any other address
-under `/api/` is still passed on to it; without it, those answer 501.
-
-It uses the same data folder, database and settings (`RETROASSEMBLY_RUN_TIME_*`) as the Node server, and can run on
-the same data folder at the same time. Password hashes, sessions, ids, file ids and the migrations Drizzle records are
-all kept as the Node server keeps them.
+It takes the same settings (`RETROASSEMBLY_RUN_TIME_*`) and the same data folder the Node server did: password hashes,
+sessions, ids, file ids and the migrations Drizzle records are all kept as the Node server kept them, so a library the
+Node server set up is used as it is.
 
 ## Running it
 
-Go 1.27 or later. From the repository root, after building the browser app with `pnpm build`:
+Go 1.27 or later. `pnpm build` builds the browser app and this server, to `dist/retroassembly`; `pnpm start` runs it.
+`pnpm dev` builds and starts it behind Vite (see `vite.config.ts`).
 
-```sh
-go -C server build -o ../dist/retroassembly-go ./cmd/retroassembly
-RETROASSEMBLY_RUN_TIME_PORT=8001 RETROASSEMBLY_GO_NODE_URL=http://localhost:8000 dist/retroassembly-go
-```
+It reads `dist/client`, `src/databases/migrations` and `game-info/game-info.sqlite` from the folder it's started in (or
+`RETROASSEMBLY_GO_CLIENT_ROOT`, `RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY` and
+`RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE`). Without `dist/client`, as in development, it serves the API alone.
 
-It reads `dist/client` and `src/databases/migrations` from the folder it's started in (or
-`RETROASSEMBLY_GO_CLIENT_ROOT` and `RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY`).
+It's built with the `nodynamic` tag, which keeps the WebP encoder from loading a system libwebp: without it, Go links
+the binary against the system's C library, and it no longer runs on a static base image.
 
 ## Checking it
 
 ```sh
-go -C server vet ./... && go -C server test ./...
+node --run=test:go
 ```
-
-`server/test/shared-data.sh` checks the two servers against each other on one data folder: start the Node server and
-this one on the same empty data folder, then run it with `DATA_DIRECTORY`, `NODE_URL` and `GO_URL`.
 
 What the Go server needs from the TypeScript definitions (the default settings, the consoles in order and their names'
 translation keys, which consoles' game pages are cross-origin isolated and whose games come on several discs, the
@@ -77,13 +70,14 @@ downloads) is in `internal/shared/shared.json`, written by `node scripts/go-shar
 out of date.
 
 The login with OIDC is checked against a test provider (`internal/oidctest`), which also runs on its own, over https,
-for checking both servers against it: `go -C server run ./test/oidc-provider -certificate /tmp/oidc-provider.pem`, then
-start the servers with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `RETROASSEMBLY_RUN_TIME_OIDC_ISSUER` set to
+for trying the login by hand: `go -C server run ./test/oidc-provider -certificate /tmp/oidc-provider.pem`, then start
+the server with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `RETROASSEMBLY_RUN_TIME_OIDC_ISSUER` set to
 `https://localhost:8300`, and the client and secret it prints.
 
 How settings are resolved and merged, how games are found and ranked by a search (Fuse.js's typo-tolerant matching
 included), and which files the CDN cache fetches and which covers it finds for a game, are checked against the
-TypeScript code's own answers, in `internal/*/testdata/typescript.json`, written by `node scripts/go-test-fixtures.ts`.
+TypeScript code's own answers, in `internal/*/testdata`. They were written by the Node server's code
+(`scripts/go-test-fixtures.ts, removed with the Node server`, removed with it), and are kept as they were: the answers the Go server must keep giving.
 
 ## Passwords
 

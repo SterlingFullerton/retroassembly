@@ -256,6 +256,24 @@ browser app's `client.*` calls (25 files) to a small typed `fetch` wrapper as ea
   better-sqlite3, sharp, openid-client
 - Update `AGENTS.md` for the new layout and commands
 
+**Status: done.** The Node server, its tests and its dependencies are gone; the Go server is the app's server.
+
+- The browser app's API types are a TypeScript route map (`src/api/routes-types.ts`, with the data in
+  `src/api/types.ts`), with a small client in the shape Hono's had (`src/api/request.ts`), so the pages' calls stayed as
+  they were. Before the Node server was removed, each route's types were checked to match what Hono inferred from it
+- `pnpm dev`: Vite serves the browser app, and builds and starts the Go server on the next port, passing `/api`,
+  `/cdn`, `/login/oidc` and `/logout` to it. `pnpm build` builds both; `pnpm start` runs `dist/retroassembly`
+- Dockerfile: Node builds the browser app, the emulator files and the game info database; Go builds the server for each
+  platform; the image is `distroless/static` with the binary, the built app, the migrations and the game info database.
+  The binary is built with the `nodynamic` tag, so the WebP encoder never loads a system libwebp, which would make it a
+  dynamically linked binary that a static image can't run. In Docker it uses 12 MiB once started
+- CI sets up Go and runs its tests (`node --run=test:go`) before the end-to-end tests
+- The fixtures the Go tests compare against (`server/internal/*/testdata`) were written by the Node server's code; they
+  stay as the answers the Go server must keep giving
+- The unit tests of the Node server's code went with it; what they checked is checked by the Go tests
+- The Docker image was checked by building its Go stage, and running that binary on the runtime image with the built
+  app: the full build downloads libretro's and LaunchBox's databases and wasn't run here
+
 ## Code that both sides use
 
 About 30 server files import code the browser app also uses. What moves where:

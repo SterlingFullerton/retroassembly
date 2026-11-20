@@ -1,11 +1,10 @@
 import { IconButton } from '@radix-ui/themes'
 import { fileOpen } from 'browser-fs-access'
 import { clsx } from 'clsx'
-import type { InferRequestType } from 'hono'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
-import { client, parseResponse } from '#@/api/client.ts'
+import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { DialogThumbnail } from './dialog-thumbnail.tsx'
 

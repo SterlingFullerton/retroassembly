@@ -15,9 +15,15 @@ jobs:
           node-version-file: package.json
           cache: pnpm
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
       - run: pnpm install
       - run: node --run=setup
       - run: node --run=lint
+      - run: node --run=test:go
       - run: node --run=test
 
       - uses: actions/upload-artifact@v7

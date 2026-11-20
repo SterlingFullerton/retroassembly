@@ -1,12 +1,12 @@
 import { attemptAsync, isBrowser } from 'es-toolkit'
-import { type ClientResponse, DetailedError, hc, parseResponse } from 'hono/client'
 import { data, redirect } from 'react-router'
-import type { AppType } from '#@/api/app.ts'
+import { createClient, DetailedError, parseResponse } from '#@/api/request.ts'
+import type { ApiRoutes } from '#@/api/routes-types.ts'
 import { defaultRedirectTo } from '#@/constants/auth.ts'
 import { routes } from '#@/pages/routes.ts'
 
 /** The pages' data, from /api/v1/pages */
-export const pagesClient = hc<AppType>(isBrowser() ? location.origin : 'http://localhost').api.v1.pages
+export const pagesClient = createClient<ApiRoutes>(`${isBrowser() ? location.origin : 'http://localhost'}/api/v1`).pages
 
 /** Where to log in, and come back to the page asked for after */
 export function getLoginUrl(request: Request) {
@@ -33,7 +33,7 @@ export function getPageRequestOptions(request: Request) {
  * A page's data, or what the page shows instead: someone not signed in is sent to log in, and anything else that went
  * wrong (a game that isn't there) is shown on the error page
  */
-export async function readPageData<T extends ClientResponse<unknown>>(request: Request, response: Promise<T>) {
+export async function readPageData<T extends Response>(request: Request, response: Promise<T>) {
   const parsed = parseResponse(response)
   const [error] = await attemptAsync(() => parsed)
   if (error instanceof DetailedError) {

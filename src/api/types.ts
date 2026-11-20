@@ -1,0 +1,196 @@
+// What the server's API sends and takes, as the browser has it: loaded as JSON, so its dates are strings. The rows come
+// from the database schema (src/databases/schema.ts), which the server's own tables follow
+import type { PlatformName } from '#@/constants/platform.ts'
+import type { ResolvedPreference } from '#@/constants/preference.ts'
+import type {
+  favoriteTable,
+  gameSaveTable,
+  launchRecordTable,
+  romTable,
+  sessionTable,
+  stateTable,
+} from '#@/databases/schema.ts'
+
+/** A value as it arrives as JSON: dates as text */
+export type Json<T> = T extends Date
+  ? string
+  : T extends (infer Item)[]
+    ? Json<Item>[]
+    : T extends object
+      ? { [K in keyof T]: Json<T[K]> }
+      : T
+
+export type RomRow = Json<typeof romTable.$inferSelect>
+export type State = Json<typeof stateTable.$inferSelect>
+export type GameSave = Json<typeof gameSaveTable.$inferSelect>
+export type Favorite = Json<typeof favoriteTable.$inferSelect>
+export type LaunchRecord = Json<typeof launchRecordTable.$inferSelect>
+export type Session = Json<typeof sessionTable.$inferSelect>
+export type Preference = Json<ResolvedPreference>
+
+/** A user, as the server names them */
+export interface User {
+  id: string
+  libraryMode: number
+  username: string
+}
+
+/** An account, as the admin sees it */
+export interface Account extends User {
+  createdAt: string
+  isSuper: boolean
+  lastActivityAt: null | string
+}
+
+/** A game in a list: its row, how many discs it's on, and whether the player likes it */
+export type Rom = RomRow & { discCount: number; isFavorite: boolean }
+
+/** A game in a list of picks or a search */
+export type PickedRom = RomRow & { discCount: number; isFavorite: boolean }
+
+/** A game in the play history */
+export interface PlayedRom {
+  core: string
+  count: number
+  discCount: number
+  fileId: null | string
+  fileName: null | string
+  gameBoxartFileIds: null | string
+  gameName: null | string
+  gameTitle: null | string
+  id: string
+  isFavorite: boolean
+  lastLaunched: null | string
+  launchboxGameId: null | number
+  libretroGameId: null | string
+  platform: string
+  rawGameMetadata: RomRow['rawGameMetadata'] | null
+}
+
+/** A game with saves, for Home's "Continue" */
+export interface SavedRom {
+  createdAt: string
+  discCount: number
+  fileId: string
+  fileName: string
+  gameBoxartFileIds: null | string
+  gameName: null | string
+  gameTitle: null | string
+  id: string
+  isFavorite: boolean
+  lastSaved: null | string
+  launchboxGameId: null | number
+  libretroGameId: null | string
+  platform: PlatformName
+  rawGameMetadata: RomRow['rawGameMetadata']
+}
+
+export interface Pagination {
+  current: number
+  pages: number
+  size: number
+  total: number
+}
+
+export const romLetters = ['#', ...'abcdefghijklmnopqrstuvwxyz'] as const
+export type RomLetter = (typeof romLetters)[number]
+
+/** Where a letter's games start, in a list sorted by name */
+export interface RomLetterPage {
+  /** Whether any game starts with it */
+  has: boolean
+  letter: RomLetter
+  /** The page its first game is on */
+  page: number
+}
+
+export interface Disc {
+  fileId: string
+  fileName: string
+  id: string
+  number: number
+}
+
+/** A list of games, with a search's query when it's a search */
+export interface RomList {
+  letters: RomLetterPage[] | undefined
+  pagination: Pagination
+  roms: Rom[]
+  search: { query: string; searched: number } | undefined
+}
+
+/** What every page shares */
+export interface CommonPageData {
+  authMode: 'local' | 'oidc'
+  cdnCache: boolean
+  currentUser: User
+  detectedLanguage: string
+  env: {
+    RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM: string
+    RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT: string
+    RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE: string
+  }
+  isLikelyDesktop: boolean
+  language: string
+  preference: Preference
+  title: string
+}
+
+export type LoginPageData =
+  | { error: { message: string } | null; formType: 'oidc'; redirectTo: string; title: string }
+  | { error: null; formType: 'login' | 'register'; redirectTo: string; title: string }
+  | { redirect: string }
+
+export interface LibraryLayoutData {
+  isAdmin: boolean
+  recentlyLaunchedRoms: PlayedRom[]
+}
+
+export interface HomePageData {
+  discs: Disc[]
+  favoriteRoms: Rom[]
+  gameSave: GameSave | undefined
+  heroReason: 'added' | 'played' | 'saved'
+  inProgressRoms: SavedRom[]
+  newAddedRoms: Rom[]
+  overview: { consoles: { count: number; platform: PlatformName }[] }
+  recentlySavedRoms: SavedRom[]
+  rom: null | SavedRom
+  state: null | State
+  title: string
+}
+
+export type GamesPageData = RomList & { platformCount: number; title: string }
+export type FavoritesPageData = RomList & { title: string }
+export interface HistoryPageData {
+  page: number
+  pagination: Pagination
+  roms: PlayedRom[]
+  search: { query: string } | undefined
+  title: string
+}
+export interface ConsolesPageData {
+  consoles: { count: number; platform: PlatformName }[]
+  title: string
+}
+export type PlatformPageData =
+  | (RomList & { favorite: boolean; platform: PlatformName; title: string })
+  | { redirect: { platform: string } }
+export type RomPageData =
+  | { discs: Disc[]; gameSave: GameSave | undefined; rom: Rom; state: State; states: State[]; title: string }
+  | { redirect: { fileName: string; platform: string } }
+
+export interface SearchPage {
+  pagination: Pagination
+  platform: PlatformName | undefined
+  query: string
+  roms: PickedRom[]
+  trimmedQuery: string
+}
+
+export interface SearchCounts {
+  favorites: number
+  games: number
+  history: number
+  platforms: Partial<Record<PlatformName, number>>
+}

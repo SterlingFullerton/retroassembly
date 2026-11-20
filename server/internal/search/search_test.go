@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// What the TypeScript code answers for the same games and searches, written by scripts/go-test-fixtures.ts. The games
+// What the TypeScript code answers for the same games and searches, written by scripts/go-test-fixtures.ts, removed with the Node server. The games
 // are listed there too; here they're read back from the answers' ids
 type fixtures struct {
 	Normalize []struct {
@@ -29,7 +29,7 @@ type fixtures struct {
 	} `json:"titles"`
 }
 
-// The games scripts/go-test-fixtures.ts ranks, in the same order: file name, platform, LaunchBox name, popularity,
+// The games scripts/go-test-fixtures.ts ranked (removed with the Node server), in the same order: file name, platform, LaunchBox name, popularity,
 // favorite
 var games = []struct {
 	fileName, platform, gameName string

@@ -130,12 +130,10 @@ export const indexedDBSaveStore: SaveStore = {
 async function postSave(save: QueuedSave) {
   if (save.type === 'game') {
     const { core, file, fileType, id, rom } = save
-    // @ts-expect-error the hono client accepts blobs as form values, though its types only list files
     return await client.game_saves.$post({ form: { clientId: id, core, file, fileType, rom } })
   }
   const { core, disc, id, rom, state, thumbnail, type } = save
   const form = { clientId: id, core, rom, state, thumbnail, type, ...(disc ? { disc: String(disc) } : {}) }
-  // @ts-expect-error the hono client accepts blobs as form values, though its types only list files
   return await client.states.$post({ form })
 }
 

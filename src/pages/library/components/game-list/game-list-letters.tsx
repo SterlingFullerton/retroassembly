@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import { type FocusEvent, type PointerEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLoaderData, useNavigate } from 'react-router'
-import type { RomLetter, RomLetterPage } from '#@/controllers/roms/get-rom-letters.ts'
+import type { RomLetter, RomLetterPage } from '#@/api/types.ts'
 import { NavigatableLink } from '../navigatable-link.tsx'
 import { usePageLink } from './game-list-pagination.tsx'
 

@@ -1,7 +1,11 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { customAlphabet } from 'nanoid'
+import { nolookalikes } from 'nanoid-dictionary'
 import type { PlatformName } from '#@/constants/platform.ts'
 import type { PreferenceSnippet } from '../constants/preference.ts'
-import { nanoid } from '../utils/server/nanoid.ts'
+
+// The ids the app gives its rows: 10 characters that can't be mistaken for one another, as the Go server makes them
+const nanoid = customAlphabet(nolookalikes, 10)
 
 export const statusEnum = {
   deleted: 0,

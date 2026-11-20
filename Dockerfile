@@ -1,5 +1,6 @@
 ARG BUILD_IMAGE=node:26.12.1-slim
-ARG PROD_IMAGE=node:26.12.1-alpine
+ARG GO_IMAGE=golang:1.27.4-alpine
+ARG PROD_IMAGE=gcr.io/distroless/static-debian12
 ARG PNPM_VERSION=12.11.2
 
 FROM ${BUILD_IMAGE} AS base
@@ -33,9 +34,10 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 ADD https://buildbot.libretro.com/assets/frontend/database-rdb.zip /inputs/database-rdb.zip
 ADD https://gamesdb.launchbox-app.com/Metadata.zip /inputs/Metadata.zip
 COPY scripts/game-info.ts scripts/
-COPY src/utils/server/game-info src/utils/server/game-info
+COPY scripts/game-info scripts/game-info
 RUN node scripts/game-info.ts /inputs/database-rdb.zip /inputs/Metadata.zip /game-info/game-info.sqlite
 
+# The browser app, which the server sends as it is
 FROM deps AS builder
 ARG RETROASSEMBLY_BUILD_TIME_VITE_VERSION
 ENV RETROASSEMBLY_BUILD_TIME_VITE_VERSION=$RETROASSEMBLY_BUILD_TIME_VITE_VERSION
@@ -44,25 +46,26 @@ COPY . .
 COPY --from=retroarch-cores /cores public/cores
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm i
-RUN node --run=build
+RUN node --run=build:client
 
-FROM ${PROD_IMAGE} AS deps-production
-ARG PNPM_VERSION
-RUN npm i -g pnpm@${PNPM_VERSION}
-WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY patches patches
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm i --prod
+# The server (server/): one static binary, built on the build machine for each platform the image is for
+FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS server
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /src
+COPY server/go.mod server/go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY server ./
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -tags nodynamic -trimpath -ldflags="-s -w" -o /retroassembly ./cmd/retroassembly
 
 FROM ${PROD_IMAGE} AS production
 WORKDIR /app
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/src/databases ./src/databases
-COPY --from=builder /app/dist ./dist
+COPY --from=server /retroassembly ./retroassembly
+COPY --from=builder /app/dist/client ./dist/client
+COPY --from=builder /app/src/databases/migrations ./src/databases/migrations
 COPY --from=game-info /game-info ./game-info
-COPY --from=deps-production /app/node_modules ./node_modules
 
 VOLUME ["/app/data"]
 EXPOSE 8000
-CMD ["node", "--run=start"]
+CMD ["/app/retroassembly"]

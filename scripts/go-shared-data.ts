@@ -4,18 +4,20 @@
 // tests/unit/go-shared-data.test.ts fails when the file is out of date
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { getCompanyLogoUrls } from '#@/consoles/artwork.ts'
 import { shadersRepository } from '#@/consoles/assets.ts'
 import { emulators } from '#@/consoles/emulators.ts'
 import { consoles } from '#@/consoles/registry.ts'
+import { shaders } from '#@/consoles/shaders.ts'
 import type { ConsoleDefinition, EmulatorDefinition } from '#@/consoles/types.ts'
 import { platforms } from '#@/constants/platform.ts'
 import { defaultPreference } from '#@/constants/preference.ts'
 import { locales } from '#@/locales/locales.ts'
 import { repositoryVersions } from '#@/utils/isomorphic/cdn.ts'
-import { fonts } from '#@/utils/isomorphic/fonts.ts'
+import { getShaderUrls } from '#@/utils/isomorphic/emulator-files.ts'
+import { fonts, getFontUrl } from '#@/utils/isomorphic/fonts.ts'
 import { dateFormatMap, defaultLanguage } from '#@/utils/isomorphic/i18n.ts'
-import { getFixedPrefetchUrls } from '#@/utils/server/cdn-prefetch.ts'
-import { gameInfoPlatforms } from '#@/utils/server/game-info/platforms.ts'
+import { gameInfoPlatforms } from './game-info/platforms.ts'
 
 // The messages the server writes itself: its errors, the titles of pages, and why logging in with OIDC failed
 const serverMessages = new Set([
@@ -31,6 +33,30 @@ const serverMessages = new Set([
 
 function isServerMessage(key: string) {
   return serverMessages.has(key) || key.startsWith('auth.oidc_')
+}
+
+/**
+ * The files the CDN cache's prefetch downloads for a category that doesn't depend on the library: the shaders, or the
+ * fonts and companies' logos
+ */
+function getFixedPrefetchUrls(category: 'assets' | 'shaders') {
+  const urls = new Set<string>()
+  if (category === 'shaders') {
+    for (const { id, thumbnail } of shaders) {
+      for (const url of [...getShaderUrls(id), thumbnail]) {
+        urls.add(url)
+      }
+    }
+  }
+  if (category === 'assets') {
+    for (const { path } of fonts) {
+      urls.add(getFontUrl(path))
+    }
+    for (const url of getCompanyLogoUrls()) {
+      urls.add(url)
+    }
+  }
+  return [...urls]
 }
 
 // What the CDN cache needs: which files it may fetch (src/utils/server/cdn-cache.ts), the files the prefetch downloads

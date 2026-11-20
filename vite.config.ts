@@ -1,10 +1,9 @@
 import path from 'node:path'
 import { createConfig } from '@arianrhodsandlot/vite-plus-config'
-import devServer, { defaultOptions } from '@hono/vite-dev-server'
 import { reactRouter } from '@react-router/dev/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { defaults, noop } from 'es-toolkit/compat'
-import { $, execaNode } from 'execa'
+import { $, execa } from 'execa'
 import fs from 'fs-extra'
 import { DateTime } from 'luxon'
 import devtoolsJson from 'vite-plugin-devtools-json'
@@ -58,12 +57,6 @@ export default defineConfig(async (env) => {
     build: { chunkSizeWarningLimit: 1024 },
     clearScreen: false,
     envPrefix: 'RETROASSEMBLY_BUILD_TIME_VITE_',
-    pack: {
-      clean: false,
-      entry: ['scripts/serve.ts', 'src/server/node.ts'],
-      outDir: 'dist',
-      suppressWarnings: [/module level directive may not be preserved/iu],
-    },
     plugins: plugins as UserConfig['plugins'],
     server: {
       allowedHosts: true,
@@ -75,21 +68,34 @@ export default defineConfig(async (env) => {
   }
 
   if (env.command === 'serve') {
-    const { storageDirectory } = getDirectories()
+    // The API is the Go server's (server/), started here on the next port, with the same settings and data folder
+    const { dataDirectory, storageDirectory } = getDirectories()
+    await fs.ensureDir(dataDirectory)
     await fs.ensureDir(storageDirectory)
-    await execaNode`./scripts/migrate.ts`
-    const serverAdapterPlugin = devServer({
-      entry: path.resolve('src', 'server', 'node-dev.ts'),
-      exclude: [
-        ...defaultOptions.exclude,
-        /^\/src\/.+/u,
-        '/.well-known/appspecific/com.chrome.devtools.json',
-        /\?(?:inline|url|no-inline|raw|import(?:&(?:inline|url|no-inline|raw))*)$/u,
-      ],
-      injectClientScript: false,
-    })
-    delete serverAdapterPlugin.handleHotUpdate
-    plugins.push([serverAdapterPlugin])
+    const apiPort = port + 1
+    // React Router's dev server loads this config more than once in the same process; the server is started once
+    if (!Reflect.get(globalThis, 'retroassemblyGoServer')) {
+      Reflect.set(globalThis, 'retroassemblyGoServer', true)
+      // Built rather than run with `go run`, so it starts in this folder, where its defaults (the migrations, the game
+      // info database, the built browser app) are
+      const binary = path.resolve('node_modules', '.cache', 'retroassembly', 'retroassembly-dev')
+      await $({
+        stderr: 'inherit',
+        stdout: 'inherit',
+      })`go -C server build -tags nodynamic -o ${binary} ./cmd/retroassembly`
+      const api = execa(binary, {
+        env: { RETROASSEMBLY_RUN_TIME_PORT: String(apiPort) },
+        reject: false,
+        stderr: 'inherit',
+        stdout: 'inherit',
+      })
+      process.once('exit', () => api.kill())
+    }
+    const target = `http://localhost:${apiPort}`
+    config.server = {
+      ...config.server,
+      proxy: Object.fromEntries(['/api/', '/cdn/', '/login/oidc', '/logout'].map((prefix) => [prefix, { target }])),
+    }
   }
   config.resolve = {
     alias: {

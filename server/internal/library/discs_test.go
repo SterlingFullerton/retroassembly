@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// The answers parseDisc gives (scripts/go-test-fixtures.ts)
+// The answers parseDisc gives (scripts/go-test-fixtures.ts, removed with the Node server)
 func TestParseDisc(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "discs.json"))
 	if err != nil {

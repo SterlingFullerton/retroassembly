@@ -79,10 +79,8 @@ type Config struct {
 	MaxAutoStatesPerRom int
 	// The SQL migrations Drizzle writes, src/databases/migrations
 	MigrationsDirectory string
-	// The Node server, which answers what the Go server doesn't yet. Unset, those requests are answered with 501
-	NodeURL string
-	OIDC    OIDC
-	Port    int
+	OIDC                OIDC
+	Port                int
 	// When set, stored files are sent from there instead of from disk
 	StorageHost string
 }
@@ -158,7 +156,6 @@ func Load() Config {
 		},
 		MaxAutoStatesPerRom: positiveInteger(os.Getenv("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM"), 20),
 		MigrationsDirectory: env("RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY", absolute("src", "databases", "migrations")),
-		NodeURL:             os.Getenv("RETROASSEMBLY_GO_NODE_URL"),
 		OIDC: OIDC{
 			ClientID:          os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
 			ClientSecret:      os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),

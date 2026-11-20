@@ -112,7 +112,7 @@ func show(value *string) string {
 	return *value
 }
 
-// The answers the TypeScript code gives (scripts/go-test-fixtures.ts)
+// The answers the TypeScript code gives (scripts/go-test-fixtures.ts, removed with the Node server)
 func TestMatchesTypeScript(t *testing.T) {
 	loaded, data := loadFixtures(t), loadData(t)
 	for _, test := range loaded.Targets {

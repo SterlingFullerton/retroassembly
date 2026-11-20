@@ -9,7 +9,7 @@ import (
 	"retroassembly/server/internal/shared"
 )
 
-// What the TypeScript code answers for the same inputs, written by scripts/go-test-fixtures.ts
+// What the TypeScript code answers for the same inputs, written by scripts/go-test-fixtures.ts, removed with the Node server
 type fixtures struct {
 	Merge []struct {
 		Result any `json:"result"`

@@ -16,8 +16,9 @@ import (
 )
 
 // Box art and artwork are large PNGs (an arcade box can be 700 KB) shown at a small size. A WebP copy, made once and
-// kept next to the cached file, is about a seventh of the size at the same dimensions. It's made with libwebp, built
-// into the server, at the quality sharp makes it at on the Node server
+// kept next to the cached file, is about a seventh of the size at the same dimensions. It's made with libwebp translated
+// to Go, built into the server (the nodynamic build tag keeps it from loading a system libwebp instead, which would
+// make the server a dynamically linked binary), at the quality sharp made it at on the Node server
 const webPQuality = 82
 
 var webPSources = map[string]bool{"image/jpeg": true, "image/png": true}
