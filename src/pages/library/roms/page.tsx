@@ -1,6 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next'
 import { useLoaderData } from 'react-router'
-import type { loader } from '#@/pages/routes/library-roms.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-roms.tsx'
 import { GameListMain } from '../components/game-list-main.tsx'
 import { GameListActions } from '../components/game-list/game-list-actions.tsx'
 import { PageStats } from '../components/page-stats.tsx'
@@ -24,7 +24,7 @@ export default function LibraryROMsPage() {
       // While searching, how many match is above the results instead
       phoneSummary={
         search ? (
-          <></>
+          <span />
         ) : (
           t('home.gameCount', { count: pagination.total, formatted: pagination.total.toLocaleString(i18n.language) })
         )

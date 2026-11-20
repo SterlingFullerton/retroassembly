@@ -1,5 +1,8 @@
 import { test as base } from '@playwright/test'
-import { nanoid } from '#@/utils/server/nanoid.ts'
+import { customAlphabet } from 'nanoid'
+import { nolookalikes } from 'nanoid-dictionary'
+
+const nanoid = customAlphabet(nolookalikes, 10)
 
 interface User {
   password: string

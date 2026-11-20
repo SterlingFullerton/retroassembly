@@ -1,11 +1,9 @@
-import { getContext } from 'hono/context-storage'
-import { getLibraryOverview } from '#@/controllers/roms/get-home-picks.ts'
-import { getLibraryScope } from '#@/utils/server/library-scope.ts'
+import { getPageRequestOptions, pagesClient, readPageData } from '#@/utils/client/page-data.ts'
 import ConsolesPage from '../library/consoles/page.tsx'
+import type { Route } from './+types/library-consoles.ts'
 
-export async function loader() {
-  const { consoles } = await getLibraryOverview(getLibraryScope())
-  return { consoles, title: getContext().var.t('nav.consoles') }
+export function clientLoader({ request }: Route.ClientLoaderArgs) {
+  return readPageData(request, pagesClient.library.consoles.$get({}, getPageRequestOptions(request)))
 }
 
 export default function LibraryConsolesRoute() {

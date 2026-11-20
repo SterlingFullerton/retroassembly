@@ -1,0 +1,96 @@
+[
+  {
+    "fileName": "Chrono Cross (USA, Canada) (Disc 2).chd",
+    "result": {
+      "group": "Chrono Cross (USA, Canada)",
+      "number": 2
+    }
+  },
+  {
+    "fileName": "Rival Schools - United by Fate (USA) (Disc 2) (Evolution Disc).chd",
+    "result": {
+      "group": "Rival Schools - United by Fate (USA)",
+      "number": 2
+    }
+  },
+  {
+    "fileName": "Final Fantasy VII (USA) (Disc 1 of 3).cue",
+    "result": {
+      "group": "Final Fantasy VII (USA)",
+      "number": 1
+    }
+  },
+  {
+    "fileName": "Policenauts (Japan) (Disk 3).bin",
+    "result": {
+      "group": "Policenauts (Japan)",
+      "number": 3
+    }
+  },
+  {
+    "fileName": "Snatcher (CD 01).cue",
+    "result": {
+      "group": "Snatcher",
+      "number": 1
+    }
+  },
+  {
+    "fileName": "game (disc 2).iso",
+    "result": {
+      "group": "game",
+      "number": 2
+    }
+  },
+  {
+    "fileName": "Game (DISC 10).chd",
+    "result": {
+      "group": "Game",
+      "number": 10
+    }
+  },
+  {
+    "fileName": "Game(Disc 2).chd",
+    "result": null
+  },
+  {
+    "fileName": " Spaced  (Disc 1).cue",
+    "result": {
+      "group": "Spaced",
+      "number": 1
+    }
+  },
+  {
+    "fileName": "(Disc 1).cue",
+    "result": null
+  },
+  {
+    "fileName": "Game (Disc A).cue",
+    "result": null
+  },
+  {
+    "fileName": "Game (Disc 2",
+    "result": null
+  },
+  {
+    "fileName": "Game (Disc 1) (Disc 2).cue",
+    "result": {
+      "group": "Game",
+      "number": 1
+    }
+  },
+  {
+    "fileName": "A (Disc 1 of X).cue",
+    "result": null
+  },
+  {
+    "fileName": "Tekken 3 (USA).cue",
+    "result": null
+  },
+  {
+    "fileName": "Game (Disc 007).cue",
+    "result": {
+      "group": "Game",
+      "number": 7
+    }
+  }
+]

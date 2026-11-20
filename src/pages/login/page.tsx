@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useLoaderData } from 'react-router'
 import { metadata } from '#@/constants/metadata.ts'
-import type { loader } from '../routes/login.tsx'
+import type { clientLoader as loader } from '../routes/login.tsx'
 import { LoginForm } from './components/log-in-form.tsx'
 import { LogInWithOidcButton } from './components/log-in-with-oidc-button.tsx'
 import { PageContainer } from './components/page-container.tsx'

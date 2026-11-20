@@ -1,5 +1,4 @@
 import { DateTime } from 'luxon'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { generatePath, Link } from 'react-router'
 import { platformMap, type PlatformName } from '#@/constants/platform.ts'
@@ -40,9 +39,8 @@ function DayCard({ rom, year }: Readonly<{ rom: any; year: number }>) {
 /** Games first released on today's date, in earlier years; left out on days with none */
 export function OnThisDayRow() {
   const { i18n, t } = useTranslation()
-  const { data, date } = useOnThisDayPicks()
+  const { data, date, year } = useOnThisDayPicks()
   const dateParts = date.split('-')
-  const [year] = useState(() => new Date().getFullYear())
   const games = (data ?? []).filter(
     (rom) => rom.gameReleaseDate && new Date(rom.gameReleaseDate).getUTCFullYear() < year,
   )

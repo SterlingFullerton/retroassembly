@@ -1,7 +1,15 @@
 // What the page and its game storage workers say to each other
 
-export interface StoreMessage { name: string; type: 'store'; url: string }
-export interface ReadMessage { buffer: SharedArrayBuffer; name: string; type: 'read' }
+export interface StoreMessage {
+  name: string
+  type: 'store'
+  url: string
+}
+export interface ReadMessage {
+  buffer: SharedArrayBuffer
+  name: string
+  type: 'read'
+}
 export type WorkerReply =
   | { error: string; type: 'error' }
   | { loaded: number; total?: number; type: 'progress' }

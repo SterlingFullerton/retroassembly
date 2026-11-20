@@ -1,6 +1,6 @@
 import { uniq } from 'es-toolkit'
 import useSWRImmutable from 'swr/immutable'
-import type { Rom } from '#@/controllers/roms/get-roms.ts'
+import type { Rom } from '#@/pages/library/types.ts'
 import { imageLoaded } from '#@/utils/client/image.ts'
 import { getPlatformGameIcon } from '#@/utils/client/library.ts'
 import { getRomCoverCandidates } from '#@/utils/isomorphic/rom-cover-candidates.ts'

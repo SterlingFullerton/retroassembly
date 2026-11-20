@@ -16,17 +16,21 @@ export function usePlayTogetherPicks() {
 }
 
 /** Games released on today's date by this device's clock, which may be a different day from the server's */
-function todayAsMonthDay() {
+function today() {
   const now = new Date()
-  return `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return {
+    date: `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+    year: now.getFullYear(),
+  }
 }
 
 export function useOnThisDayPicks() {
-  const [date] = useState(todayAsMonthDay)
+  // eslint-disable-next-line react/hook-use-state -- today as the page first opened, kept for as long as it stays open
+  const [{ date, year }] = useState(today)
   const picks = useSWR(
     { date, endpoint: 'roms/on_this_day' },
     () => parseResponse(client.roms.on_this_day.$get({ query: { date } })),
     options,
   )
-  return { ...picks, date }
+  return { ...picks, date, year }
 }

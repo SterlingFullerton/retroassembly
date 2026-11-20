@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import type { ReadableStream as WebReadableStream } from 'node:stream/web'
 import { officialRetroArch } from '../src/consoles/assets.ts'
 import { emulators } from '../src/consoles/emulators.ts'
 
@@ -38,10 +39,7 @@ async function download() {
   if (!response.ok || !response.body) {
     throw new Error(`Couldn't download RetroArch: ${response.status}`)
   }
-  await pipeline(
-    Readable.fromWeb(response.body as import('node:stream/web').ReadableStream),
-    createWriteStream(archivePath),
-  )
+  await pipeline(Readable.fromWeb(response.body as WebReadableStream), createWriteStream(archivePath))
   const actual = await sha256(archivePath)
   if (actual !== officialRetroArch.sha256) {
     rmSync(archivePath, { force: true })

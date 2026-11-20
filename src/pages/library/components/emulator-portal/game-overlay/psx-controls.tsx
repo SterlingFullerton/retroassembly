@@ -46,7 +46,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 150 points wide, and 450 tall in portrait, up to Select and Start; on smaller screens
   // they shrink towards their corner, and on short phones enough to stay below the game. Each group hangs off a point
   // with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(150, 4 / 3, 450)
+  const scale = useControlsScale(150, 4 / 3, { portraitHeight: 450 })
 
   return (
     <>

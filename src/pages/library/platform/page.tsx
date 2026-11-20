@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useLoaderData } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
-import type { loader } from '#@/pages/routes/library-platform.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-platform.tsx'
 import { DeviceInfo } from '../components/device-info/device-info.tsx'
 import { GameListMain } from '../components/game-list-main.tsx'
 import { GameListActions } from '../components/game-list/game-list-actions.tsx'

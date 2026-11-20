@@ -47,6 +47,11 @@ export const libretroThumbnailsHost = 'https://thumbnails.libretro.com/'
 // `/cdn/` route, which caches them in the data directory so they keep working without internet access.
 export const cdnCacheHosts = { jsdelivr: cdnHost, 'libretro-thumbnails': libretroThumbnailsHost }
 
+/** In the browser, whether the server serves `/cdn/*`, as the data every page shares tells it */
+export function setCDNCacheEnabled(enabled: boolean) {
+  Reflect.set(globalThis, 'RETROASSEMBLY_CDN_CACHE', enabled)
+}
+
 export function isCDNCacheEnabled() {
   if (typeof document === 'undefined') {
     return globalThis.process?.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE === 'true'

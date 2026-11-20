@@ -15,9 +15,9 @@ import { DatabaseSync } from 'node:sqlite'
 import { camelCase } from 'es-toolkit'
 import { Libretrodb } from 'libretrodb'
 import sax from 'sax'
-import { getCompactName, getGoodcodesBaseCompactName } from '../src/utils/server/game-info/names.ts'
-import { launchboxPlatformNames, libretroPlatformNames } from '../src/utils/server/game-info/platforms.ts'
-import { gameInfoIndexes, gameInfoTables } from '../src/utils/server/game-info/tables.ts'
+import { getCompactName, getGoodcodesBaseCompactName } from './game-info/names.ts'
+import { launchboxPlatformNames, libretroPlatformNames } from './game-info/platforms.ts'
+import { gameInfoIndexes, gameInfoTables } from './game-info/tables.ts'
 
 type Value = null | number | string
 

@@ -162,6 +162,7 @@ interface FileNode {
   stream_ops: Record<string, (...args: never[]) => unknown>
 }
 interface GameFileSystem {
+  // eslint-disable-next-line max-params -- Emscripten's own signature
   createFile: (parent: string, name: string, properties: object, canRead: boolean, canWrite: boolean) => FileNode
   readdir: (path: string) => string[]
   unlink: (path: string) => void
@@ -177,12 +178,17 @@ export function installGame(
   game:
     | { bytes: Uint8Array }
     | {
-        reader: { read: (target: Int8Array, offset: number, position: number, length: number) => number; size: number }
+        reader: {
+          // eslint-disable-next-line max-params -- as Emscripten reads a file
+          read: (target: Int8Array, offset: number, position: number, length: number) => number
+          size: number
+        }
       },
 ) {
   getInner(emulator).on('beforeLaunch', () => {
     const fs = emulator.getEmscriptenFS() as unknown as GameFileSystem
-    const [name] = fs.readdir(contentDirectory).filter((entry) => entry !== '.' && entry !== '..')
+    const name = fs.readdir(contentDirectory).find((entry) => entry !== '.' && entry !== '..') ?? ''
+
     const path = `${contentDirectory}/${name}`
     fs.unlink(path)
     if ('bytes' in game) {
@@ -195,6 +201,7 @@ export function installGame(
     Object.defineProperty(node, 'usedBytes', { get: () => reader.size })
     node.stream_ops = {
       ...node.stream_ops,
+      // eslint-disable-next-line max-params -- Emscripten's own signature
       read: (_stream: unknown, buffer: Int8Array, offset: number, length: number, position: number) =>
         position >= reader.size ? 0 : reader.read(buffer, offset, position, Math.min(length, reader.size - position)),
     }

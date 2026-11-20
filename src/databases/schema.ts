@@ -1,7 +1,12 @@
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { customAlphabet } from 'nanoid'
+import { nolookalikes } from 'nanoid-dictionary'
 import type { PlatformName } from '#@/constants/platform.ts'
 import type { PreferenceSnippet } from '../constants/preference.ts'
-import { nanoid } from '../utils/server/nanoid.ts'
+
+// The ids the app gives its rows: 10 characters that can't be mistaken for one another, as the Go server makes them
+const nanoid = customAlphabet(nolookalikes, 10)
 
 export const statusEnum = {
   deleted: 0,
@@ -120,6 +125,34 @@ export const romTable = sqliteTable(
     // For get-rom.ts: lookup ROM by filename when ID not provided
     index('idx_roms_user_platform_filename').on(table.userId, table.platform, table.fileName),
     index('idx_roms_user_platform_disc_group').on(table.userId, table.platform, table.discGroup),
+    // Search reads every game's names: from here, rather than from rows that also hold kilobytes of game info. The disc
+    // group comes right after the console, so finding a game's other discs, as every list does, can use it too: before
+    // the names, it would be the slowest index for that, and the one SQLite picks
+    index('idx_roms_search').on(
+      table.userId,
+      table.status,
+      table.platform,
+      table.discGroup,
+      table.fileName,
+      table.gameName,
+      table.gameTitle,
+      table.gameDeveloper,
+      table.gamePublisher,
+      table.id,
+    ),
+    // Home's picks of well-rated games filter on LaunchBox's rating and how many gave one, which are in each game's
+    // stored LaunchBox data: kept here, they're read without opening it. The expressions are the server's own
+    // (server/internal/library/lists.go), as an index on an expression is used only for that exact expression
+    index('idx_roms_rating').on(
+      table.userId,
+      table.status,
+      sql`coalesce(json_extract(raw_game_metadata, '$.launchbox.communityRatingCount'), 0)`,
+      sql`coalesce(json_extract(raw_game_metadata, '$.launchbox.communityRating'), 0)`,
+      table.platform,
+      table.discGroup,
+      table.gamePlayers,
+      table.id,
+    ),
   ],
 )
 

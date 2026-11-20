@@ -1,8 +1,8 @@
 import { clsx } from 'clsx'
-import { noop } from 'es-toolkit'
+import { attemptAsync } from 'es-toolkit'
 import { type KeyboardEvent, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigation } from 'react-router'
+import { useLocation, useNavigation } from 'react-router'
 import { normalizeSearch, useLibrarySearch } from '../../hooks/use-library-search.ts'
 import { useViewport } from '../../hooks/use-viewport.ts'
 import { focus } from '../../utils/spatial-navigation.ts'
@@ -31,7 +31,7 @@ export function SearchField() {
 
   const applyTyped = useEffectEvent((value: string) => {
     if (normalizeSearch(value) !== query) {
-      apply(value).catch(noop)
+      queueMicrotask(() => attemptAsync(() => apply(value)))
     }
   })
   useEffect(() => {
@@ -39,23 +39,31 @@ export function SearchField() {
     return () => clearTimeout(timer)
   }, [text])
 
-  // After Enter, into the first game once the list has caught up with what's typed
-  const focusFirstGame = useRef(false)
+  // The search the page shows. It's in the address only once its games have loaded, unlike the search asked for, which
+  // changes the moment it's asked for, and unlike the loading state, which React Router draws a little later
+  const { search } = useLocation()
+  const shownQuery = normalizeSearch(new URLSearchParams(search).get('q') ?? '')
+
+  // After Enter, the search whose first game to go into, once its games are shown
+  const focusAfterSearch = useRef<string | undefined>(undefined)
   useEffect(() => {
-    if (focusFirstGame.current && navigation.state === 'idle') {
-      focusFirstGame.current = false
+    if (focusAfterSearch.current === shownQuery && navigation.state === 'idle') {
+      focusAfterSearch.current = undefined
       focus('.game-entry')
     }
-  }, [navigation.state])
+  }, [navigation.state, shownQuery])
 
   async function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter' || (event.key === 'ArrowDown' && text)) {
       event.preventDefault()
-      focusFirstGame.current = true
-      if (normalizeSearch(text) === query) {
-        focusFirstGame.current = false
+      const typed = normalizeSearch(text)
+      if (typed === shownQuery && navigation.state === 'idle') {
         focus('.game-entry')
-      } else {
+        return
+      }
+      focusAfterSearch.current = typed
+      // Unless it's already been asked for, and is loading
+      if (typed !== query) {
         await apply(text)
       }
     } else if (event.key === 'Escape') {
@@ -150,7 +158,7 @@ export function useSearchShortcut() {
       if (isLargeScreen) {
         focus(`input[name="${fieldName}"]`)
       } else {
-        openPhoneSearch().catch(noop)
+        queueMicrotask(() => attemptAsync(openPhoneSearch))
       }
     }
     globalThis.addEventListener('keydown', handleKeyDown)

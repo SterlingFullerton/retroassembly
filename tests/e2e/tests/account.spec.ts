@@ -28,19 +28,19 @@ test('update password', async ({ page, pages: { library, login }, user }) => {
   await page.getByLabel('current password').fill(user.password)
   await page.getByLabel('new password').first().fill('new_password')
   await page.getByLabel('repeat new password').first().fill('wrong_new_password')
-  await page.getByText('update password').click()
+  await page.getByRole('button', { name: 'update password' }).click()
   await expect(page.getByText('passwords do not match')).toBeAttached()
 
   await page.getByLabel('current password').fill('wrong_password')
   await page.getByLabel('new password').first().fill('new_password')
   await page.getByLabel('repeat new password').first().fill('new_password')
-  await page.getByText('update password').click()
+  await page.getByRole('button', { name: 'update password' }).click()
   await expect(page.getByText('invalid current password')).toBeAttached()
 
   await page.getByLabel('current password').fill(user.password)
   await page.getByLabel('new password').first().fill('new_password')
   await page.getByLabel('repeat new password').first().fill('new_password')
-  await page.getByText('update password').click()
+  await page.getByRole('button', { name: 'update password' }).click()
   await expect(page.getByText('your password has been updated')).toBeAttached()
 
   await library.closeSettings()

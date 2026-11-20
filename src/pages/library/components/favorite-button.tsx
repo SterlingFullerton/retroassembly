@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import { metadata } from '#@/constants/metadata.ts'
-import type { Rom } from '#@/controllers/roms/get-roms.ts'
+import type { Rom } from '#@/pages/library/types.ts'
 import { usePristine } from '../atoms.ts'
 import { useLibraryRefresh } from '../hooks/use-library-refresh.ts'
 

@@ -1,6 +1,5 @@
 import { clsx } from 'clsx'
-import type { CSSProperties } from 'react'
-import { type ReactNode, useEffect } from 'react'
+import { type CSSProperties, type ReactNode, useEffect } from 'react'
 import { getCoverSize } from '#@/constants/cover-sizes.ts'
 import { useSelectedGames } from '../../atoms.ts'
 import { usePreference } from '../../hooks/use-preference.ts'

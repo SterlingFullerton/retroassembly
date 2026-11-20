@@ -2,7 +2,7 @@ import { Button } from '@radix-ui/themes'
 import { type KeyboardEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLoaderData, useLocation, useNavigate } from 'react-router'
-import type { RomsPagination } from '#@/controllers/roms/get-roms.ts'
+import type { Pagination as RomsPagination } from '#@/api/types.ts'
 import { NavigatableLink } from '../navigatable-link.tsx'
 
 /** The address of another page of this list, keeping its sort, order and filters */

@@ -8,7 +8,6 @@ import useSWRImmutable from 'swr/immutable'
 import { client } from '#@/api/client.ts'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { goesFullscreen } from '#@/constants/preference.ts'
-import type { Rom } from '#@/controllers/roms/get-roms.ts'
 import {
   closeAudioContexts,
   installGame,
@@ -47,13 +46,14 @@ import {
 } from '#@/pages/library/atoms.ts'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
+import type { Rom } from '#@/pages/library/types.ts'
 import { bundledSystemFiles } from '#@/pages/library/utils/bundled-cores.ts'
 import { DownloadError, type DownloadKind, downloadWithProgress } from '#@/pages/library/utils/download.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { type Download, getLoadingProgress } from '#@/pages/library/utils/loading-progress.ts'
 import { onCoreDownloadProgress } from '#@/pages/library/utils/nostalgist.ts'
 import { focus, offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
-import type { loader } from '#@/pages/routes/library-platform-rom.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { createDiscList } from '#@/utils/isomorphic/discs.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
 import { usePreference } from '../../../hooks/use-preference.ts'
@@ -201,26 +201,25 @@ export function useEmulatorSessionController({
   const shader =
     platformShader === 'inherit' ? preference.emulator.shader : (platformShader ?? preference.emulator.shader)
 
-  const romObject = useMemo(
-    () =>
-      multiDisc
-        ? [
-            {
-              fileContent: new Blob([createDiscList(discs.map(({ fileName }) => fileName))]),
-              fileName: `${rom.discGroup}.m3u`,
-            },
-            // Only the first disc downloads at the start, so only its progress is shown
-            ...discs.map(({ fileId, fileName }, index) => ({
-              fileContent: index === 0 ? download('game', 'game', getFileUrl(fileId)) : getFileUrl(fileId),
-              fileName,
-            })),
-          ]
-        : // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
-          launchProfile.threads
-          ? { fileContent: new Uint8Array(1), fileName: rom?.fileName }
-          : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName },
-    [discs, download, launchProfile.threads, multiDisc, rom, romUrl],
-  )
+  const romObject = useMemo(() => {
+    if (multiDisc) {
+      return [
+        {
+          fileContent: new Blob([createDiscList(discs.map(({ fileName }) => fileName))]),
+          fileName: `${rom.discGroup}.m3u`,
+        },
+        // Only the first disc downloads at the start, so only its progress is shown
+        ...discs.map(({ fileId, fileName }, index) => ({
+          fileContent: index === 0 ? download('game', 'game', getFileUrl(fileId)) : getFileUrl(fileId),
+          fileName,
+        })),
+      ]
+    }
+    // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
+    return launchProfile.threads
+      ? { fileContent: new Uint8Array(1), fileName: rom?.fileName }
+      : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName }
+  }, [discs, download, launchProfile.threads, multiDisc, rom, romUrl])
   const { bioses } = preference.emulator.platform[rom.platform]
   const bios = useMemo(
     () =>
@@ -345,24 +344,34 @@ export function useEmulatorSessionController({
     report('game', { kind: 'game', loaded, total })
   }
   function getGameFile() {
-    gameFile.current ??= (async () => {
-      if (canStoreGames()) {
-        const name = getStoredName(rom.fileId)
-        try {
-          if (!(await hasStoredGame(name, romUrl))) {
-            await storeGame(name, romUrl, reportGameProgress, { fileName: rom.fileName, platform: rom.platform })
-          }
-          return { name }
-        } catch (error) {
-          console.warn("Couldn't keep the game in the browser's storage, so it's loaded into memory", error)
-        }
-      }
-      return { bytes: await download('game', 'game', romUrl)() }
-    })()
-    gameFile.current.catch(() => {
-      gameFile.current = undefined
-    })
+    gameFile.current ??= loadGameFile()
     return gameFile.current
+  }
+  // A launch that couldn't get the game leaves nothing behind, so the next one tries again
+  async function loadGameFile() {
+    try {
+      return await readGameFile()
+    } catch (error) {
+      gameFile.current = undefined
+      throw error
+    }
+  }
+  async function readGameFile() {
+    if (canStoreGames()) {
+      const name = getStoredName(rom.fileId)
+      try {
+        if (!(await hasStoredGame(name, romUrl))) {
+          await storeGame(name, romUrl, {
+            about: { fileName: rom.fileName, platform: rom.platform },
+            onProgress: reportGameProgress,
+          })
+        }
+        return { name }
+      } catch (error) {
+        console.warn("Couldn't keep the game in the browser's storage, so it's loaded into memory", error)
+      }
+    }
+    return { bytes: await download('game', 'game', romUrl)() }
   }
 
   // Files the emulator needs besides the game (PPSSPP's fonts), downloaded alongside it
@@ -393,7 +402,7 @@ export function useEmulatorSessionController({
     // Fullscreen now, while the tap on Start or Continue still counts: a browser only allows it just after one, and a
     // game can take longer than that to get ready. Nothing is waited for before this
     if (goesFullscreen(preference.emulator.fullscreen) && !document.fullscreenElement) {
-      void toggleFullscreen()
+      queueMicrotask(() => toggleFullscreen())
     }
     // In a lazy session nothing is downloaded until now
     const emulatorFiles = getEmulatorFiles()

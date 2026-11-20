@@ -1,29 +1,19 @@
-import { getContext } from 'hono/context-storage'
-import { countUsers } from '#@/controllers/users/count-users.ts'
-import { getAuthMode, getSafeRedirectTo } from '#@/utils/server/auth.ts'
+import { redirect } from 'react-router'
+import { getPageRequestOptions, pagesClient, readPageData } from '#@/utils/client/page-data.ts'
 import { LoginPage } from '../login/page.tsx'
 import type { Route } from './+types/login.ts'
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const c = getContext()
-  const { currentUser, t } = c.var
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const { searchParams } = new URL(request.url)
-  const redirectTo = getSafeRedirectTo(searchParams.get('redirect_to'))
-
-  if (currentUser) {
-    throw c.redirect(redirectTo)
+  const query = {
+    error: searchParams.get('error') ?? undefined,
+    redirect_to: searchParams.get('redirect_to') ?? undefined,
   }
-
-  const authMode = getAuthMode()
-  if (authMode === 'oidc') {
-    const errorCode = searchParams.get('error')
-    const error = errorCode ? { message: t(`auth.${errorCode}`) } : undefined
-    return { error, formType: 'oidc' as const, redirectTo, title: t('auth.login') }
+  const data = await readPageData(request, pagesClient.login.$get({ query }, getPageRequestOptions(request)))
+  if ('redirect' in data) {
+    throw redirect(data.redirect)
   }
-
-  const userCount = await countUsers()
-  const formType = userCount ? 'login' : 'register'
-  return { formType, redirectTo, title: t('auth.login') }
+  return data
 }
 
 export default function LoginRoute() {

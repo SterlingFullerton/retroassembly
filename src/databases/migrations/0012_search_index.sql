@@ -1,0 +1,1 @@
+CREATE INDEX `idx_roms_search` ON `roms` (`user_id`,`status`,`platform`,`disc_group`,`file_name`,`game_name`,`game_title`,`game_developer`,`game_publisher`,`id`);

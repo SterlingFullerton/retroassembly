@@ -4,9 +4,7 @@ import { describe, it } from 'node:test'
 import { emulators } from '#@/consoles/emulators.ts'
 import { consoles, resolveConsole } from '#@/consoles/registry.ts'
 import type { ConsoleDefinition } from '#@/consoles/types.ts'
-import { cdnCacheHosts } from '#@/utils/isomorphic/cdn.ts'
 import { getCoreUrl, isBundledCore } from '#@/utils/isomorphic/emulator-files.ts'
-import { resolveCDNCacheTarget } from '#@/utils/server/cdn-cache.ts'
 
 // Checks every console in the registry hangs together, so adding or changing one can't leave a piece out
 const entries = Object.entries(consoles as Record<string, ConsoleDefinition>)

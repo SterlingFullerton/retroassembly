@@ -1,3 +1,4 @@
+import { attemptAsync, sumBy } from 'es-toolkit'
 import {
   dataOffset,
   type ReadMessage,
@@ -115,21 +116,21 @@ export async function listStoredGames() {
     writeIndex(index)
   }
   return Object.entries(index)
-    .map(([name, game]) => ({ ...game, name }))
+    .map(([name, game]) => Object.assign(game, { name }))
     .toSorted((a, b) => b.lastPlayed - a.lastPlayed)
 }
 
 /** Removes a stored game; it downloads again the next time it's played */
 export async function removeStoredGame(name: string) {
   const directory = await getDirectory()
-  await directory.removeEntry(name).catch(() => {})
+  await attemptAsync(() => directory.removeEntry(name))
   forget(name)
 }
 
 export async function removeAllStoredGames() {
   const directory = await getDirectory()
   for (const name of Object.keys(readIndex())) {
-    await directory.removeEntry(name).catch(() => {})
+    await attemptAsync(() => directory.removeEntry(name))
   }
   writeIndex({})
 }
@@ -159,7 +160,9 @@ export async function hasStoredGame(name: string, url: string) {
     return false
   }
   try {
-    const file = await (await (await getDirectory()).getFileHandle(name)).getFile()
+    const directory = await getDirectory()
+    const handle = await directory.getFileHandle(name)
+    const file = await handle.getFile()
     if (file.size !== entry.size) {
       forget(name)
       return false
@@ -192,12 +195,12 @@ async function makeRoom(keep: string, needed = 0) {
   const others = Object.entries(index)
     .filter(([name]) => name !== keep)
     .toSorted(([, a], [, b]) => a.lastPlayed - b.lastPlayed)
-  let total = Object.values(index).reduce((sum, { size }) => sum + size, 0) + needed
+  let total = sumBy(Object.values(index), ({ size }) => size) + needed
   for (const [name, { size }] of others) {
     if (total <= storageLimit) {
       break
     }
-    await directory.removeEntry(name).catch(() => {})
+    await attemptAsync(() => directory.removeEntry(name))
     delete index[name]
     total -= size
   }
@@ -205,7 +208,7 @@ async function makeRoom(keep: string, needed = 0) {
   // Files the index doesn't know, from downloads cut short
   for await (const name of (directory as unknown as { keys: () => AsyncIterable<string> }).keys()) {
     if (!index[name] && name !== keep) {
-      await directory.removeEntry(name).catch(() => {})
+      await attemptAsync(() => directory.removeEntry(name))
     }
   }
 }
@@ -227,8 +230,10 @@ function startWorker() {
 export async function storeGame(
   name: string,
   url: string,
-  onProgress?: (loaded: number, total: number | undefined) => void,
-  about?: StoredGameAbout,
+  {
+    about,
+    onProgress,
+  }: { about?: StoredGameAbout; onProgress?: (loaded: number, total: number | undefined) => void } = {},
 ) {
   forget(name)
   function attempt() {
@@ -264,13 +269,14 @@ export async function storeGame(
     stored = await attempt()
   }
   writeIndex({ ...readIndex(), [name]: { ...stored, ...about, lastPlayed: Date.now() } })
-  await makeRoom(name).catch(() => {})
+  await attemptAsync(() => makeRoom(name))
   return stored.size
 }
 
 /** Reads a stored game as the emulator asks, blocking until each read is answered, which takes well under a millisecond */
 export interface GameReader {
   close: () => void
+  // eslint-disable-next-line max-params -- as Emscripten reads a file
   read: (target: Int8Array | Uint8Array, offset: number, position: number, length: number) => number
   size: number
 }
@@ -323,6 +329,7 @@ export async function openGameReader(name: string): Promise<GameReader> {
         setTimeout(() => worker.terminate(), 1000)
       }
     },
+    // eslint-disable-next-line max-params -- as Emscripten reads a file
     read(target, offset, at, length) {
       let done = 0
       while (done < length) {

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { generatePath, useLoaderData } from 'react-router'
 import { routes } from '#@/pages/routes.ts'
-import type { loader } from '#@/pages/routes/library-home.tsx'
+import type { clientLoader as loader } from '#@/pages/routes/library-home.tsx'
 import { GameRow } from './components/game-row.tsx'
 import { HomeEmpty } from './components/home-empty.tsx'
 import { HomeHero } from './components/home-hero.tsx'
