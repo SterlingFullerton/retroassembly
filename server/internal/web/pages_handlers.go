@@ -3,10 +3,10 @@ package web
 import (
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"unicode/utf16"
 
+	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/preference"
 )
@@ -52,7 +52,7 @@ func (s *Server) librarySettings(r *http.Request, scope library.Scope) (library.
 }
 
 func envOr(name, fallback string) string {
-	if value, ok := os.LookupEnv(name); ok {
+	if value, ok := config.Lookup(name); ok {
 		return value
 	}
 	return fallback
@@ -81,9 +81,9 @@ func (s *Server) commonPageData(w http.ResponseWriter, r *http.Request) {
 		library.Field{Key: "detectedLanguage", Value: current.language},
 		// The limits the browser checks, as they're set: the Node server sends the settings' text, not numbers
 		library.Field{Key: "env", Value: obj(
-			"RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM", envOr("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM", "20"),
-			"RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT", envOr("RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT", ""),
-			"RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE", envOr("RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE", "1000"),
+			"MAX_AUTO_STATES", envOr("MAX_AUTO_STATES", "20"),
+			"MAX_ROMS", envOr("MAX_ROMS", ""),
+			"MAX_UPLOAD", envOr("MAX_UPLOAD", "1000"),
 		)},
 		library.Field{Key: "isLikelyDesktop", Value: r.Header.Get("Sec-Ch-Ua-Mobile") != "?1"},
 		library.Field{Key: "language", Value: s.pageLanguage(current.language, pagePath, settings)},

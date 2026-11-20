@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/failure"
 	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/gameinfo"
@@ -290,7 +291,7 @@ func releaseYearOf(launchbox, libretro library.Object) any {
 
 // maxRomCount is how many games a library may hold, Math.trunc(Number(...)) || Infinity: zero for no limit
 func maxRomCount() float64 {
-	count := jsTruncNumber(os.Getenv("RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT"))
+	count := jsTruncNumber(config.Get("MAX_ROMS"))
 	if math.IsNaN(count) {
 		return 0
 	}

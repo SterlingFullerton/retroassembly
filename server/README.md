@@ -19,7 +19,7 @@ longer exist name the Node code a part was ported from, which the history before
 - Games: `GET /api/v1/roms/by_files`, `GET /api/v1/roms/{id}/content`, `GET /api/v1/roms/search_counts`
 - Accounts, for the admin: `GET` and `POST /api/v1/users`, `PATCH` and `DELETE /api/v1/users/{id}`
 - Adding games: `POST /api/v1/roms`, streamed to disk, looked up in the game info database
-  (`RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE`, or `game-info/game-info.sqlite`; without it, games are added by their
+  (`GAME_INFO_DB`, or `game-info/game-info.sqlite`; without it, games are added by their
   file names), and PSP discs compressed to CSO afterwards
 - Editing and deleting games: `PATCH` and `DELETE /api/v1/roms/{id}`, `DELETE /api/v1/roms`, `POST` and
   `DELETE /api/v1/roms/{id}/boxart`, `POST /api/v1/roms/{id}/thumbnail`,
@@ -28,15 +28,15 @@ longer exist name the Node code a part was ported from, which the history before
   `GET /api/v1/roms/on_this_day`, `GET /api/v1/roms/play_together`
 - The pages' data: `GET /api/v1/pages/common` and `/api/v1/pages/login`, and the library's pages
   (`/api/v1/pages/library`, `.../home`, `/roms`, `/consoles`, `/favorites`, `/history`, `/platform`, `/rom`)
-- The CDN cache, with `RETROASSEMBLY_RUN_TIME_CDN_CACHE=true`: `/cdn/*`, which downloads jsDelivr's and libretro's
+- The CDN cache, with `CDN_CACHE=true`: `/cdn/*`, which downloads jsDelivr's and libretro's
   files once and keeps them in the data folder (libretro's art in the artwork folder, when one is set), the covers
   each game list says the cache has, the WebP copies of images (made with libwebp, built into the server), offline
-  mode (`RETROASSEMBLY_RUN_TIME_CDN_OFFLINE`) and the prefetch at startup (`RETROASSEMBLY_RUN_TIME_CDN_PREFETCH`).
+  mode (`CDN_OFFLINE`) and the prefetch at startup (`CDN_PREFETCH`).
   The cache's files are kept as the Node server kept them, so a cache it filled is used as it is
 - Logging in with OIDC: `/login/oidc` and `/login/oidc/callback`. The provider must be reached over https; one with a
   certificate of its own is trusted through `NODE_EXTRA_CA_CERTS`, the setting the Node server read it from (the CDN
   cache trusts the same certificates, for a network that inspects TLS). An identity whose username belongs to an account
-  with a password isn't linked to it, unless `RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS=true` (for a library
+  with a password isn't linked to it, unless `OIDC_LINK_PASSWORD_ACCOUNTS=true` (for a library
   moving from passwords to OIDC, on a provider where users can't pick their own username)
 
 Before it listens, it checks the data folder and any folders set for files, moves box art uploaded before an artwork
@@ -44,7 +44,8 @@ folder was set into it, brings the database up to date, and groups the discs of 
 grouped. Once listening, it fills in the game info of games matched before it was kept, downloads what the CDN prefetch
 names, and compresses PSP ISOs.
 
-It takes the same settings (`RETROASSEMBLY_RUN_TIME_*`) and the same data folder the Node server did: password hashes,
+It takes the same settings the Node server did, by shorter names (`ROMS_DIR` for `RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY`;
+see `Names` in `internal/config`, and the old names still work), and the same data folder: password hashes,
 sessions, ids, file ids and the migrations Drizzle records are all kept as the Node server kept them, so a library the
 Node server set up is used as it is.
 
@@ -77,8 +78,7 @@ The Docker image is Alpine with the binary in `/app/retroassembly`: it has a she
 health check or script that ran `node` in the container needs changing.
 
 It reads `dist/client`, `src/databases/migrations` and `game-info/game-info.sqlite` from the folder it's started in (or
-`RETROASSEMBLY_GO_CLIENT_ROOT`, `RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY` and
-`RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE`). Without `dist/client`, as in development, it serves the API alone.
+`CLIENT_DIR`, `MIGRATIONS_DIR` and `GAME_INFO_DB`). Without `dist/client`, as in development, it serves the API alone.
 
 It's built with the `nodynamic` tag, which keeps the WebP encoder from loading a system libwebp: without it, Go links
 the binary against the system's C library, and it no longer runs on a static base image.
@@ -97,7 +97,7 @@ out of date.
 
 The login with OIDC is checked against a test provider (`internal/oidctest`), which also runs on its own, over https,
 for trying the login by hand: `go -C server run ./test/oidc-provider -certificate /tmp/oidc-provider.pem`, then start
-the server with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `RETROASSEMBLY_RUN_TIME_OIDC_ISSUER` set to
+the server with `NODE_EXTRA_CA_CERTS=/tmp/oidc-provider.pem`, `OIDC_ISSUER` set to
 `https://localhost:8300`, and the client and secret it prints.
 
 How settings are resolved and merged, how games are found and ranked by a search (Fuse.js's typo-tolerant matching

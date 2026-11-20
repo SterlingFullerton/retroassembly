@@ -52,7 +52,7 @@ export function AutosaveSettings() {
             </SettingsTitle>
             <div className='text-xs text-(--gray-11)'>
               {t('emulator.autoSaveSlotsDescription', {
-                count: Number(env.RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM),
+                count: Number(env.MAX_AUTO_STATES),
               })}
             </div>
           </div>

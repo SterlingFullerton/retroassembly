@@ -12,12 +12,11 @@ import { DateTime } from 'luxon'
 import devtoolsJson from 'vite-plugin-devtools-json'
 import { defineConfig, type Plugin, type UserConfig } from 'vite-plus'
 import { logServerInfo } from './scripts/utils.ts'
-import { getDirectories } from './src/constants/env.ts'
+import { getDirectories, getSetting } from './src/constants/env.ts'
 
 defaults(process.env, {
   RETROASSEMBLY_BUILD_TIME_VITE_BUILD_TIME: DateTime.now().setZone('utc').toISO(),
   RETROASSEMBLY_BUILD_TIME_VITE_VERSION: await getVersion(),
-  RETROASSEMBLY_RUN_TIME_PORT: '8000',
 })
 
 async function isPortFree(port: number) {
@@ -84,7 +83,7 @@ function serverInfo() {
 }
 
 export default defineConfig(async (env) => {
-  const envPort = process.env.RETROASSEMBLY_RUN_TIME_PORT || process.env.PORT
+  const envPort = getSetting('PORT')
   const port = envPort ? Math.trunc(Number(envPort)) || 8000 : 8000
   const plugins = [tailwindcss({ optimize: false }), reactRouter(), [devtoolsJson()], serverInfo()]
   const config: UserConfig = {
@@ -124,7 +123,7 @@ export default defineConfig(async (env) => {
         stdout: 'inherit',
       })`go -C server build -tags nodynamic -o ${binary} ./cmd/retroassembly`
       const api = execa(binary, {
-        env: { RETROASSEMBLY_RUN_TIME_PORT: String(apiPort) },
+        env: { PORT: String(apiPort) },
         reject: false,
         stderr: 'inherit',
         stdout: 'inherit',

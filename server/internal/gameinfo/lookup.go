@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/shared"
 )
@@ -626,10 +627,10 @@ func (d *Database) Query(conditions []Condition) ([]library.Object, error) {
 	return results, nil
 }
 
-// DefaultPath is where the game info database is: RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE, or game-info/game-info.sqlite
+// DefaultPath is where the game info database is: GAME_INFO_DB, or game-info/game-info.sqlite
 // in the folder the server is started in
 func DefaultPath() string {
-	if path := os.Getenv("RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE"); path != "" {
+	if path := config.Get("GAME_INFO_DB"); path != "" {
 		absolute, err := filepath.Abs(path)
 		if err == nil {
 			return absolute

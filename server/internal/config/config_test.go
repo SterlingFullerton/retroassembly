@@ -2,6 +2,7 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -64,6 +65,42 @@ func TestJSNumber(t *testing.T) {
 	} {
 		if got := jsNumber(value); got != want {
 			t.Errorf("jsNumber(%q) = %d, want %d", value, got, want)
+		}
+	}
+}
+
+// Each setting is read by its short name, or by its old name when only that is set; the short name wins when both are
+func TestSettingNames(t *testing.T) {
+	t.Setenv("ROMS_DIR", "/games")
+	t.Setenv("RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY", "/old-games")
+	t.Setenv("RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY", "/old-states")
+	t.Setenv("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM", "5")
+	t.Setenv("CDN_CACHE", "true")
+	t.Setenv("RETROASSEMBLY_RUN_TIME_PORT", "9000")
+	t.Setenv("OIDC_SCOPES", "")
+	t.Setenv("RETROASSEMBLY_RUN_TIME_OIDC_SCOPES", "openid")
+	c := Load()
+	if c.Directories.Roms != "/games" {
+		t.Errorf("Roms = %q, want the short name's /games", c.Directories.Roms)
+	}
+	if c.Directories.States != "/old-states" {
+		t.Errorf("States = %q, want the old name's /old-states", c.Directories.States)
+	}
+	if c.MaxAutoStatesPerRom != 5 || !c.CDNCache || c.Port != 9000 {
+		t.Errorf("MaxAutoStatesPerRom %d, CDNCache %v, Port %d; want 5, true, 9000", c.MaxAutoStatesPerRom, c.CDNCache, c.Port)
+	}
+	// Set to nothing by its short name is still set, as before with the old name alone
+	if c.OIDC.Scopes != "" {
+		t.Errorf("Scopes = %q, want empty", c.OIDC.Scopes)
+	}
+	for name, old := range Names {
+		if !strings.HasPrefix(old, "RETROASSEMBLY_") || strings.HasPrefix(name, "RETROASSEMBLY_") {
+			t.Errorf("%s: old name %s", name, old)
+		}
+	}
+	for name := range DirectorySettings {
+		if _, known := Names[name]; !known {
+			t.Errorf("directory setting %s has no entry in Names", name)
 		}
 	}
 }

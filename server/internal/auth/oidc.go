@@ -17,7 +17,7 @@ import (
 // account, without a password
 //
 // An account with a password is only linked when linkPasswordAccounts is set
-// (RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS), as when a library kept with passwords moves to OIDC: on a
+// (OIDC_LINK_PASSWORD_ACCOUNTS), as when a library kept with passwords moves to OIDC: on a
 // provider where users choose their own username, anyone could otherwise take over the account named like theirs,
 // the admin's among them
 func OIDCUser(ctx context.Context, database *sql.DB, issuer, subject, username string, client Client, linkPasswordAccounts bool) (string, error) {

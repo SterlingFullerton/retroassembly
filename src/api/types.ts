@@ -126,9 +126,9 @@ export interface CommonPageData {
   currentUser: User
   detectedLanguage: string
   env: {
-    RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM: string
-    RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT: string
-    RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE: string
+    MAX_AUTO_STATES: string
+    MAX_ROMS: string
+    MAX_UPLOAD: string
   }
   isLikelyDesktop: boolean
   language: string

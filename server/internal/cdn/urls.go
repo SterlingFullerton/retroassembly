@@ -1,5 +1,5 @@
 // Package cdn is the server's cache of CDN files, as src/utils/server/cdn-cache.ts keeps it: with
-// RETROASSEMBLY_RUN_TIME_CDN_CACHE=true, the browser loads jsDelivr's and libretro's files through /cdn/, and the
+// CDN_CACHE=true, the browser loads jsDelivr's and libretro's files through /cdn/, and the
 // server keeps a copy of each in the data folder, so the library keeps working without the internet.
 package cdn
 

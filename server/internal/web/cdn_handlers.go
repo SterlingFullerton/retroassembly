@@ -151,13 +151,13 @@ func (s *Server) allRoms() ([]cdn.Rom, error) {
 	return roms, rows.Err()
 }
 
-// StartPrefetch downloads what RETROASSEMBLY_RUN_TIME_CDN_PREFETCH names into the CDN cache, in the background
+// StartPrefetch downloads what CDN_PREFETCH names into the CDN cache, in the background
 func (s *Server) StartPrefetch() {
 	if s.config.CDNPrefetch == "" {
 		return
 	}
 	if s.cdn == nil {
-		log.Println("RETROASSEMBLY_RUN_TIME_CDN_PREFETCH is ignored unless RETROASSEMBLY_RUN_TIME_CDN_CACHE=true")
+		log.Println("CDN_PREFETCH is ignored unless CDN_CACHE=true")
 		return
 	}
 	go func() {

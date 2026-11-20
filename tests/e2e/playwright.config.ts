@@ -3,7 +3,7 @@ import { attempt, once } from 'es-toolkit'
 import fs from 'fs-extra'
 import { temporaryDirectory } from 'tempy'
 
-const envPort = process.env.RETROASSEMBLY_RUN_TIME_PORT || process.env.PORT
+const envPort = process.env.PORT || process.env.RETROASSEMBLY_RUN_TIME_PORT
 const port = envPort ? Math.trunc(Number(envPort)) || 8000 : 8000
 const tmp = temporaryDirectory({ prefix: 'retroassembly-test-' })
 
@@ -31,7 +31,7 @@ export default defineConfig({
   webServer: {
     command: 'node --run=build && node --run=start',
     env: {
-      RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY: tmp,
+      DATA_DIR: tmp,
       ...process.env,
     },
     port,

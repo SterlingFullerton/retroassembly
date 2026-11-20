@@ -43,7 +43,7 @@ func checkDirectories(c config.Config) error {
 	}
 	var messages []string
 	for setting := range config.DirectorySettings {
-		directory := os.Getenv(setting)
+		directory := config.Get(setting)
 		if directory == "" {
 			continue
 		}
@@ -69,7 +69,7 @@ func checkDirectories(c config.Config) error {
 func moveUploadedArtwork(c config.Config) error {
 	directories := c.Directories
 	if directories.Artwork != "" && !c.CDNCache {
-		log.Println("RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY holds only uploaded box art unless RETROASSEMBLY_RUN_TIME_CDN_CACHE=true: libretro art is otherwise loaded by the browser straight from libretro")
+		log.Println("ARTWORK_DIR holds only uploaded box art unless CDN_CACHE=true: libretro art is otherwise loaded by the browser straight from libretro")
 	}
 	previous := filepath.Join(directories.Storage, "attachments")
 	previousPath, _ := filepath.Abs(previous)

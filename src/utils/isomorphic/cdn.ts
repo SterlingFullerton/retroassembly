@@ -43,7 +43,7 @@ export const repositoryVersions = {
 export const cdnHost = 'https://cdn.jsdelivr.net/'
 export const libretroThumbnailsHost = 'https://thumbnails.libretro.com/'
 
-// With `RETROASSEMBLY_RUN_TIME_CDN_CACHE=true`, files from these hosts are served through the server's
+// With `CDN_CACHE=true`, files from these hosts are served through the server's
 // `/cdn/` route, which caches them in the data directory so they keep working without internet access.
 export const cdnCacheHosts = { jsdelivr: cdnHost, 'libretro-thumbnails': libretroThumbnailsHost }
 
@@ -54,7 +54,8 @@ export function setCDNCacheEnabled(enabled: boolean) {
 
 export function isCDNCacheEnabled() {
   if (typeof document === 'undefined') {
-    return globalThis.process?.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE === 'true'
+    const env = globalThis.process?.env
+    return (env?.CDN_CACHE || env?.RETROASSEMBLY_RUN_TIME_CDN_CACHE) === 'true'
   }
   return globalThis.RETROASSEMBLY_CDN_CACHE === true
 }

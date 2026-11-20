@@ -13,7 +13,7 @@ The Docker build downloads both and rebuilds the database whenever either change
 node scripts/game-info.ts database-rdb.zip Metadata.zip
 ```
 
-It's written to `game-info/game-info.sqlite` (set `RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE` to use another file).
+It's written to `game-info/game-info.sqlite` (set `GAME_INFO_DB` to use another file).
 Without it, games are added by their file names alone.
 
 ## Credit

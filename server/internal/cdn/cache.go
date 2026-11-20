@@ -43,7 +43,7 @@ type Cache struct {
 	// Where libretro's art is kept under its own names, when set
 	artwork string
 	client  *http.Client
-	// With RETROASSEMBLY_RUN_TIME_CDN_OFFLINE=true, pages get only what's in the cache, and nothing is downloaded while
+	// With CDN_OFFLINE=true, pages get only what's in the cache, and nothing is downloaded while
 	// they're browsed; files are added only by the prefetch
 	Offline bool
 

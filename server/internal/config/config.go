@@ -1,4 +1,4 @@
-// Package config reads the RETROASSEMBLY_RUN_TIME_* settings, as src/constants/env.ts does.
+// Package config reads the settings (ROMS_DIR, CDN_CACHE and the rest; see Names), as src/constants/env.ts does.
 package config
 
 import (
@@ -28,12 +28,62 @@ type Directories struct {
 
 // DirectorySettings are the settings that give a kind of file a folder of its own
 var DirectorySettings = map[string]string{
-	"RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY":    "artwork",
-	"RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY":     "bioses",
-	"RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY":      "cache",
-	"RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY": "game saves",
-	"RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY":       "roms",
-	"RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY":     "states",
+	"ARTWORK_DIR": "artwork",
+	"BIOSES_DIR":  "bioses",
+	"CACHE_DIR":   "cache",
+	"SAVES_DIR":   "game saves",
+	"ROMS_DIR":    "roms",
+	"STATES_DIR":  "states",
+}
+
+// Names are the settings, each with the longer name it had before, which is still read when the short one isn't set
+var Names = map[string]string{
+	"ARTWORK_DIR":                 "RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY",
+	"BIOSES_DIR":                  "RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY",
+	"CACHE_DIR":                   "RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY",
+	"CDN_CACHE":                   "RETROASSEMBLY_RUN_TIME_CDN_CACHE",
+	"CDN_OFFLINE":                 "RETROASSEMBLY_RUN_TIME_CDN_OFFLINE",
+	"CDN_PREFETCH":                "RETROASSEMBLY_RUN_TIME_CDN_PREFETCH",
+	"CLIENT_DIR":                  "RETROASSEMBLY_GO_CLIENT_ROOT",
+	"DATA_DIR":                    "RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY",
+	"GAME_INFO_DB":                "RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE",
+	"MAX_AUTO_STATES":             "RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM",
+	"MAX_ROMS":                    "RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT",
+	"MAX_UPLOAD":                  "RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE",
+	"MIGRATIONS_DIR":              "RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY",
+	"OIDC_CLIENT_ID":              "RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID",
+	"OIDC_CLIENT_SECRET":          "RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET",
+	"OIDC_ISSUER":                 "RETROASSEMBLY_RUN_TIME_OIDC_ISSUER",
+	"OIDC_LINK_PASSWORD_ACCOUNTS": "RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS",
+	"OIDC_REDIRECT_URI":           "RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI",
+	"OIDC_REQUIRED_ROLE":          "RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE",
+	"OIDC_SCOPES":                 "RETROASSEMBLY_RUN_TIME_OIDC_SCOPES",
+	"OIDC_SESSION_MAX_AGE":        "RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE",
+	"PORT":                        "RETROASSEMBLY_RUN_TIME_PORT",
+	"ROMS_DIR":                    "RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY",
+	"SAVES_DIR":                   "RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY",
+	"STATES_DIR":                  "RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY",
+	"STORAGE_DIR":                 "RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY",
+	"STORAGE_HOST":                "RETROASSEMBLY_RUN_TIME_STORAGE_HOST",
+}
+
+// Get is a setting by its name, or by its old name when the new one is unset or empty
+func Get(name string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return os.Getenv(Names[name])
+}
+
+// Lookup is a setting by its name, or by its old name, and whether either is set at all, even to nothing
+func Lookup(name string) (string, bool) {
+	if value, set := os.LookupEnv(name); set {
+		return value, true
+	}
+	if old, known := Names[name]; known {
+		return os.LookupEnv(old)
+	}
+	return "", false
 }
 
 type OIDC struct {
@@ -68,11 +118,11 @@ func sessionMaxAge(value string) time.Duration {
 }
 
 type Config struct {
-	// Whether the server keeps its own copies of CDN files (RETROASSEMBLY_RUN_TIME_CDN_CACHE)
+	// Whether the server keeps its own copies of CDN files (CDN_CACHE)
 	CDNCache bool
-	// With the cache on, pages get only what's already in it (RETROASSEMBLY_RUN_TIME_CDN_OFFLINE)
+	// With the cache on, pages get only what's already in it (CDN_OFFLINE)
 	CDNOffline bool
-	// What the cache downloads when the server starts (RETROASSEMBLY_RUN_TIME_CDN_PREFETCH)
+	// What the cache downloads when the server starts (CDN_PREFETCH)
 	CDNPrefetch string
 	// The built browser app, dist/client
 	ClientRoot  string
@@ -88,7 +138,7 @@ type Config struct {
 }
 
 func env(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
+	if value := Get(name); value != "" {
 		return value
 	}
 	return fallback
@@ -97,7 +147,7 @@ func env(name, fallback string) string {
 // setOr is the setting, even when it's set to nothing, or fallback when it isn't set at all, as es-toolkit's defaults
 // fills in the Node server's
 func setOr(name, fallback string) string {
-	if value, set := os.LookupEnv(name); set {
+	if value, set := Lookup(name); set {
 		return value
 	}
 	return fallback
@@ -124,51 +174,51 @@ func absolute(parts ...string) string {
 
 // Load reads the settings. Paths that aren't set are resolved against the current folder, as Node's path.resolve does
 func Load() Config {
-	dataDirectory := env("RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY", absolute("data"))
+	dataDirectory := env("DATA_DIR", absolute("data"))
 	// Not inside the data folder when only that is set: Node resolves the two separately
-	storageDirectory := env("RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY", absolute("data", "storage"))
-	artwork := os.Getenv("RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY")
+	storageDirectory := env("STORAGE_DIR", absolute("data", "storage"))
+	artwork := Get("ARTWORK_DIR")
 	attachments := filepath.Join(storageDirectory, "attachments")
 	if artwork != "" {
 		attachments = filepath.Join(artwork, "attachments")
 	}
 
 	port := 8000
-	if parsed := jsNumber(env("RETROASSEMBLY_RUN_TIME_PORT", os.Getenv("PORT"))); parsed != 0 {
+	if parsed := jsNumber(Get("PORT")); parsed != 0 {
 		port = parsed
 	}
 
 	return Config{
-		CDNCache:    os.Getenv("RETROASSEMBLY_RUN_TIME_CDN_CACHE") == "true",
-		CDNOffline:  os.Getenv("RETROASSEMBLY_RUN_TIME_CDN_OFFLINE") == "true",
-		CDNPrefetch: os.Getenv("RETROASSEMBLY_RUN_TIME_CDN_PREFETCH"),
-		ClientRoot:  env("RETROASSEMBLY_GO_CLIENT_ROOT", absolute("dist", "client")),
+		CDNCache:    Get("CDN_CACHE") == "true",
+		CDNOffline:  Get("CDN_OFFLINE") == "true",
+		CDNPrefetch: Get("CDN_PREFETCH"),
+		ClientRoot:  env("CLIENT_DIR", absolute("dist", "client")),
 		Directories: Directories{
 			Artwork:     artwork,
 			Attachments: attachments,
-			Bioses:      env("RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY", filepath.Join(storageDirectory, "bioses")),
-			Cache:       env("RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY", filepath.Join(dataDirectory, "cache")),
+			Bioses:      env("BIOSES_DIR", filepath.Join(storageDirectory, "bioses")),
+			Cache:       env("CACHE_DIR", filepath.Join(dataDirectory, "cache")),
 			Data:        dataDirectory,
-			GameSaves:   env("RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY", filepath.Join(storageDirectory, "game-saves")),
-			Roms:        env("RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY", filepath.Join(storageDirectory, "roms")),
-			States:      env("RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY", filepath.Join(storageDirectory, "states")),
+			GameSaves:   env("SAVES_DIR", filepath.Join(storageDirectory, "game-saves")),
+			Roms:        env("ROMS_DIR", filepath.Join(storageDirectory, "roms")),
+			States:      env("STATES_DIR", filepath.Join(storageDirectory, "states")),
 			Storage:     storageDirectory,
 		},
-		MaxAutoStatesPerRom: positiveInteger(os.Getenv("RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM"), 20),
-		MigrationsDirectory: env("RETROASSEMBLY_GO_MIGRATIONS_DIRECTORY", absolute("src", "databases", "migrations")),
+		MaxAutoStatesPerRom: positiveInteger(Get("MAX_AUTO_STATES"), 20),
+		MigrationsDirectory: env("MIGRATIONS_DIR", absolute("src", "databases", "migrations")),
 		OIDC: OIDC{
-			ClientID:             os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID"),
-			ClientSecret:         os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET"),
+			ClientID:             Get("OIDC_CLIENT_ID"),
+			ClientSecret:         Get("OIDC_CLIENT_SECRET"),
 			ExtraCertificates:    os.Getenv("NODE_EXTRA_CA_CERTS"),
-			Issuer:               os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_ISSUER"),
-			LinkPasswordAccounts: os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_LINK_PASSWORD_ACCOUNTS") == "true",
-			RedirectURI:          os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI"),
-			RequiredRole:         strings.TrimSpace(os.Getenv("RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE")),
-			Scopes:               setOr("RETROASSEMBLY_RUN_TIME_OIDC_SCOPES", "openid profile email"),
-			SessionMaxAge:        sessionMaxAge(env("RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE", "28800000")),
+			Issuer:               Get("OIDC_ISSUER"),
+			LinkPasswordAccounts: Get("OIDC_LINK_PASSWORD_ACCOUNTS") == "true",
+			RedirectURI:          Get("OIDC_REDIRECT_URI"),
+			RequiredRole:         strings.TrimSpace(Get("OIDC_REQUIRED_ROLE")),
+			Scopes:               setOr("OIDC_SCOPES", "openid profile email"),
+			SessionMaxAge:        sessionMaxAge(env("OIDC_SESSION_MAX_AGE", "28800000")),
 		},
 		Port:        port,
-		StorageHost: os.Getenv("RETROASSEMBLY_RUN_TIME_STORAGE_HOST"),
+		StorageHost: Get("STORAGE_HOST"),
 	}
 }
 

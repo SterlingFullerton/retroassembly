@@ -1,65 +1,48 @@
 import path from 'node:path'
-import { defaults } from 'es-toolkit/compat'
 
-export function getRunTimeEnv() {
-  const runTimeEnv = process.env
+// The settings the dev tools read, by their short names, each with its old name, which is still read when the short one
+// isn't set (as server/internal/config does for the server)
+const settingNames = {
+  ARTWORK_DIR: 'RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY',
+  BIOSES_DIR: 'RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY',
+  CACHE_DIR: 'RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY',
+  CDN_CACHE: 'RETROASSEMBLY_RUN_TIME_CDN_CACHE',
+  DATA_DIR: 'RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY',
+  GAME_INFO_DB: 'RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE',
+  PORT: 'RETROASSEMBLY_RUN_TIME_PORT',
+  ROMS_DIR: 'RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY',
+  SAVES_DIR: 'RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY',
+  STATES_DIR: 'RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY',
+  STORAGE_DIR: 'RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY',
+} as const
 
-  return defaults(
-    { ...runTimeEnv },
-    {
-      RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY: path.resolve('data'),
-      // Built with the app by scripts/game-info.ts
-      RETROASSEMBLY_RUN_TIME_GAME_INFO_DATABASE: path.resolve('game-info', 'game-info.sqlite'),
-      RETROASSEMBLY_RUN_TIME_MAX_AUTO_STATES_PER_ROM: '20',
-      RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT: '',
-      RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE: '1000',
-      RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_ID: '',
-      RETROASSEMBLY_RUN_TIME_OIDC_CLIENT_SECRET: '',
-      RETROASSEMBLY_RUN_TIME_OIDC_ISSUER: '',
-      RETROASSEMBLY_RUN_TIME_OIDC_REDIRECT_URI: '',
-      RETROASSEMBLY_RUN_TIME_OIDC_REQUIRED_ROLE: '',
-      RETROASSEMBLY_RUN_TIME_OIDC_SCOPES: 'openid profile email',
-      RETROASSEMBLY_RUN_TIME_OIDC_SESSION_MAX_AGE: '28800000',
-      RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY: path.resolve('data', 'storage'),
-      RETROASSEMBLY_RUN_TIME_STORAGE_HOST: '',
-    },
-  )
+/** A setting by its short name, or by its old name when the short one is unset or empty */
+export function getSetting(name: keyof typeof settingNames) {
+  return process.env[name] || process.env[settingNames[name]] || ''
 }
 
 /**
  * Each kind of stored file can have a folder of its own, such as the games on a large disk and the saves on a fast one.
  * A kind with no folder set is kept where it always was: in the storage folder, or the cache in the data folder
  */
-export const directorySettings = {
-  artworkDirectory: 'RETROASSEMBLY_RUN_TIME_ARTWORK_DIRECTORY',
-  biosesDirectory: 'RETROASSEMBLY_RUN_TIME_BIOSES_DIRECTORY',
-  cacheDirectory: 'RETROASSEMBLY_RUN_TIME_CACHE_DIRECTORY',
-  gameSavesDirectory: 'RETROASSEMBLY_RUN_TIME_GAME_SAVES_DIRECTORY',
-  romsDirectory: 'RETROASSEMBLY_RUN_TIME_ROMS_DIRECTORY',
-  statesDirectory: 'RETROASSEMBLY_RUN_TIME_STATES_DIRECTORY',
-} as const
-
 export function getDirectories() {
-  const runTimeEnv = getRunTimeEnv()
-  const dataDirectory = runTimeEnv.RETROASSEMBLY_RUN_TIME_DATA_DIRECTORY
-  const storageDirectory = runTimeEnv.RETROASSEMBLY_RUN_TIME_STORAGE_DIRECTORY
-  function own(setting: keyof typeof directorySettings, fallback: string) {
-    return runTimeEnv[directorySettings[setting]] || fallback
-  }
+  const dataDirectory = getSetting('DATA_DIR') || path.resolve('data')
+  // Not inside the data folder when only that is set, as the server resolves the two separately
+  const storageDirectory = getSetting('STORAGE_DIR') || path.resolve('data', 'storage')
   // Box art uploaded for a game, and libretro's covers, title screens and screenshots, when set (see getArtworkPath).
   // Unset, uploaded box art stays in the storage folder and libretro's art in the cache with the emulator files
-  const artworkDirectory = own('artworkDirectory', '')
+  const artworkDirectory = getSetting('ARTWORK_DIR')
   return {
     artworkDirectory,
     attachmentsDirectory: artworkDirectory
       ? path.join(artworkDirectory, 'attachments')
       : path.join(storageDirectory, 'attachments'),
-    biosesDirectory: own('biosesDirectory', path.join(storageDirectory, 'bioses')),
-    cacheDirectory: own('cacheDirectory', path.join(dataDirectory, 'cache')),
+    biosesDirectory: getSetting('BIOSES_DIR') || path.join(storageDirectory, 'bioses'),
+    cacheDirectory: getSetting('CACHE_DIR') || path.join(dataDirectory, 'cache'),
     dataDirectory,
-    gameSavesDirectory: own('gameSavesDirectory', path.join(storageDirectory, 'game-saves')),
-    romsDirectory: own('romsDirectory', path.join(storageDirectory, 'roms')),
-    statesDirectory: own('statesDirectory', path.join(storageDirectory, 'states')),
+    gameSavesDirectory: getSetting('SAVES_DIR') || path.join(storageDirectory, 'game-saves'),
+    romsDirectory: getSetting('ROMS_DIR') || path.join(storageDirectory, 'roms'),
+    statesDirectory: getSetting('STATES_DIR') || path.join(storageDirectory, 'states'),
     storageDirectory,
   }
 }

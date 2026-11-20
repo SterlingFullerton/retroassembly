@@ -12,8 +12,8 @@ import { UploadProgress } from './upload-progress.tsx'
 export function UploadDialog({ platform, toggleOpen }: Readonly<{ platform: PlatformName; toggleOpen: () => void }>) {
   const { t } = useTranslation()
   const { env } = useGlobalLoaderData()
-  const maxFiles = Math.trunc(Number(env.RETROASSEMBLY_RUN_TIME_MAX_UPLOAD_AT_ONCE)) || 1000
-  const maxRomCount = Math.trunc(Number(env.RETROASSEMBLY_RUN_TIME_MAX_ROM_COUNT)) || Infinity
+  const maxFiles = Math.trunc(Number(env.MAX_UPLOAD)) || 1000
+  const maxRomCount = Math.trunc(Number(env.MAX_ROMS)) || Infinity
 
   const { getRootProps, isDragActive } = useDropzone({ onDrop })
   // The upload itself is kept by the library layout: it carries on, and shows its progress, if this dialog is closed

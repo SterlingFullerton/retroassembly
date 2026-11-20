@@ -63,8 +63,11 @@ function getFixedPrefetchUrls(category: 'assets' | 'shaders') {
 // whatever the library holds (src/utils/server/cdn-prefetch.ts), and where libretro keeps each console's art
 function getCDNData() {
   // The prefetch's files by their own addresses, as they are with the cache off
-  const cacheSetting = process.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE
-  process.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE = 'false'
+  const names = ['CDN_CACHE', 'RETROASSEMBLY_RUN_TIME_CDN_CACHE']
+  const settings = names.map((name) => process.env[name])
+  for (const name of names) {
+    process.env[name] = 'false'
+  }
   try {
     return {
       fontPaths: fonts.map(({ path }) => `/${path}`),
@@ -73,10 +76,13 @@ function getCDNData() {
       prefetch: { assets: getFixedPrefetchUrls('assets'), shaders: getFixedPrefetchUrls('shaders') },
     }
   } finally {
-    if (cacheSetting === undefined) {
-      Reflect.deleteProperty(process.env, 'RETROASSEMBLY_RUN_TIME_CDN_CACHE')
-    } else {
-      process.env.RETROASSEMBLY_RUN_TIME_CDN_CACHE = cacheSetting
+    for (const [index, name] of names.entries()) {
+      const setting = settings[index]
+      if (setting === undefined) {
+        Reflect.deleteProperty(process.env, name)
+      } else {
+        process.env[name] = setting
+      }
     }
   }
 }

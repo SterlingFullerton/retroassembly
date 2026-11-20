@@ -7,7 +7,7 @@ import (
 )
 
 // The prefetch downloads files into the cache when the server starts, so they're there without the internet, as
-// src/utils/server/cdn-prefetch.ts does. RETROASSEMBLY_RUN_TIME_CDN_PREFETCH is a comma-separated list of cores,
+// src/utils/server/cdn-prefetch.ts does. CDN_PREFETCH is a comma-separated list of cores,
 // shaders, assets and thumbnails; all means all but thumbnails, as box art and screenshots for every game in the
 // library can take several GB
 
