@@ -14,3 +14,6 @@ tests/e2e/fixtures/files
 
 # RetroArch emulators packed by scripts/retroarch-cores.ts
 /public/cores/
+
+# The game info database built by scripts/game-info.ts
+/game-info/
