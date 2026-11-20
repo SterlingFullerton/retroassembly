@@ -1,7 +1,7 @@
 import { getCDNUrl } from '../utils/isomorphic/cdn.ts'
 
 function getShaderThumbnail(shader: string) {
-  return getCDNUrl('libretro/docs', `/docs/image/shader/${shader}.png`)
+  return getCDNUrl('libretro/docs', `docs/image/shader/${shader}.png`)
 }
 
 export const shaders = [

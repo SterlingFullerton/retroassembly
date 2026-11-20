@@ -80,7 +80,9 @@ export function getCDNUrl(repo: keyof typeof repositoryVersions, filePpath: stri
     'gh',
     encode(ghUser),
     version ? `${encode(ghRepoName)}@${encode(version)}` : encode(ghRepoName),
-    filePpath,
+    // A leading slash would make an empty segment, "//", which the server's router redirects away from, so the address
+    // asked for would never be the one cached
+    filePpath.replace(/^\/+/u, ''),
   ]
   const urlPath = urlPathSegments.join('/')
   url.pathname = urlPath
