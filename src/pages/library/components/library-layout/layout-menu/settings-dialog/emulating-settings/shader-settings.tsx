@@ -40,7 +40,7 @@ export function ShaderSettings() {
                 value={preference.emulator.shader || 'none'}
               />
             </SettingsTitle>
-            <ShaderPreview shader={highlighted ?? preference.emulator.shader} />
+            <ShaderPreview shader={highlighted ?? ''} />
           </div>
 
           <div>

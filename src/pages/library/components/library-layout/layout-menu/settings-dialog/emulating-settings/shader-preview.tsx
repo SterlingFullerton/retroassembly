@@ -3,7 +3,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { shaders } from '#@/consoles/shaders.ts'
 
-/** An example of a shader at work, from libretro's documentation, or a note that there's none. Nothing for no shader */
+/**
+ * An example of a shader at work, from libretro's documentation, or a note that there's none, shown for the shader
+ * highlighted while the list is open. Nothing for no shader
+ */
 export function ShaderPreview({ shader }: Readonly<{ shader: string }>) {
   const { t } = useTranslation()
   const [loaded, setLoaded] = useState('')

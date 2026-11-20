@@ -47,7 +47,7 @@ export function PlatformShaderSettings({ platform }: Readonly<{ platform: Platfo
           onValueChange={handleShaderChange}
           value={platformPreference.shader || 'none'}
         />
-        <ShaderPreview shader={highlighted ?? platformPreference.shader ?? ''} />
+        <ShaderPreview shader={highlighted ?? ''} />
       </div>
     </div>
   )
