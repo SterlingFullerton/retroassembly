@@ -8,7 +8,7 @@ import { i18n } from '#@/utils/isomorphic/i18n.ts'
 import type { Route } from './+types/root.ts'
 import { AppLayout } from './components/app-layout.tsx'
 import { ErrorPage } from './components/error-page.tsx'
-import { LibrarySkeleton } from './components/library-skeleton.tsx'
+import { LibrarySkeleton } from './components/library-skeleton/library-skeleton.tsx'
 import { useReloadOnUpdate } from './hooks/use-reload-on-update.ts'
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
