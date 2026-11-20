@@ -45,6 +45,10 @@ test('launch game from search results', async ({ page, pages: { library, login }
 test('navigate search results with keyboard', async ({ page, pages: { library, login }, roms, user }) => {
   await login.login(user)
   await library.uploadROMs(roms)
+  // On a CPU as slow as a phone's, React draws the search's loading a moment after it's asked for, which is when Enter
+  // used to go into the previous list
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 })
   const [rom] = roms
   await searchBox(page).fill(rom.title)
   await expect(gameEntry(page, rom.title)).toBeVisible()
