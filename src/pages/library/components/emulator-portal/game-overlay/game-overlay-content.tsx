@@ -95,6 +95,30 @@ export function GameOverlayContent() {
                   <GameOverlaySettingsButton />
                   <GameOverlayDiscs />
                   <GameOverlaySavesButton />
+                  {/* On a computer the button is in the bar at the bottom; a smaller screen has no such bar. Only where
+                      the browser can go fullscreen, which an iPhone's can't */}
+                  {globalThis.document?.fullscreenEnabled ? (
+                    <button
+                      className='flex h-12 shrink-0 items-center gap-3 rounded-full border border-solid border-white bg-black/30 px-4 text-white transition-colors hover:bg-white/15 lg:hidden'
+                      data-sn-enabled
+                      data-sn-focus-style={JSON.stringify({
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '24px',
+                      })}
+                      onClick={toggleFullscreen}
+                      type='button'
+                    >
+                      <span
+                        className={clsx(
+                          'size-5',
+                          isFullscreen ? 'icon-[mdi--fullscreen-exit]' : 'icon-[mdi--fullscreen]',
+                        )}
+                      />
+                      <span className='text-[15px]'>
+                        {isFullscreen ? t('emulator.exitFullscreen') : t('emulator.fullscreen')}
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )}

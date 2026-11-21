@@ -68,9 +68,9 @@ export function GameEntryDropdownMenu({ rom }) {
         <DropdownMenu.Trigger>
           <div
             // Above the game's cover, but below the red bars at the top and bottom of a phone's screen, so a tap on a bar
-            // never lands on it
+            // never lands on it. With a mouse it shows while the pointer is over the game; on a touch screen, always
             className={clsx('absolute top-1 right-1 z-1 transition-opacity group-hover:opacity-100', {
-              'opacity-0': !menuOpen,
+              '[@media(hover:hover)]:opacity-0': !menuOpen,
             })}
           >
             <IconButton

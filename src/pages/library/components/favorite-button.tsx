@@ -88,8 +88,8 @@ export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) 
           optimisticIsFavorite
             ? 'text-(--accent-9)'
             : [
-                'text-(--gray-9) hover:text-(--accent-9) lg:opacity-0 lg:group-hover:opacity-100',
-                { 'lg:group-focus-within:opacity-100': !pristine },
+                'text-(--gray-9) hover:text-(--accent-9) [@media(hover:hover)]:lg:opacity-0 [@media(hover:hover)]:lg:group-hover:opacity-100',
+                { '[@media(hover:hover)]:lg:group-focus-within:opacity-100': !pristine },
               ],
         )}
         data-sn-skip=''

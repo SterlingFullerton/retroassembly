@@ -12,6 +12,23 @@ const topBarHeight = 44
 const tabletSide = 600
 const tabletScale = 1.2
 
+function pixels(length: string) {
+  return Number(length.replace('px', '')) || 0
+}
+
+// How far the screen's sides are kept clear, for a notch or rounded corners: the controls start inside this, so it's
+// room they don't have beside the game. The larger of the two sides, as the game is centred between them
+function getSideInset() {
+  const probe = document.createElement('div')
+  probe.style.cssText =
+    'position:fixed;visibility:hidden;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)'
+  document.body.append(probe)
+  const style = getComputedStyle(probe)
+  const inset = Math.max(pixels(style.paddingLeft), pixels(style.paddingRight))
+  probe.remove()
+  return inset
+}
+
 interface Tall {
   /** How far down the game starts in landscape */
   gameTop?: number
@@ -35,7 +52,7 @@ function getControlsScale(sideWidth: number, gameAspectRatio: number, { gameTop 
   if (tablet) {
     return tabletScale
   }
-  const besideGame = (width - (height - gameTop) * gameAspectRatio) / 2
+  const besideGame = (width - (height - gameTop) * gameAspectRatio) / 2 - getSideInset()
   return Math.max(0.6, Math.min(1, height / 390, besideGame / sideWidth))
 }
 

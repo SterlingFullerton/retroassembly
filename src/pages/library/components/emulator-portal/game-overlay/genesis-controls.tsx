@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
+import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { pressedLook } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
@@ -72,13 +73,14 @@ function FaceButton({
 
 export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
+  // Everything is placed and sized in this unit: a point at full size, less on a small screen and more on a tablet, as
+  // for every other console. Each side's controls are about 164 points wide
+  const scale = useControlsScale(164)
 
   return (
     <div
-      className={twMerge(
-        'pointer-events-none absolute inset-0 *:pointer-events-auto',
-        '[--u:min(1px,calc(100vw/390))] landscape:[--u:max(0.6px,min(1px,calc(100vh/390),calc((100vw-100vh*4/3)/2/164)))]',
-      )}
+      className='pointer-events-none absolute inset-0 *:pointer-events-auto'
+      style={{ '--u': `${scale}px` } as CSSProperties}
     >
       {/* The thumb pad */}
       <DPad

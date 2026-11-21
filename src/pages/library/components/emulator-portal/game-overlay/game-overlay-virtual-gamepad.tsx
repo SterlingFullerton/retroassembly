@@ -259,6 +259,14 @@ const faceButtons: [RetroPadButton & ('a' | 'b' | 'x' | 'y'), string][] = [
 export function GameOverlayVirtualGamepad() {
   const { connected } = useGamepads()
   const [gamepadVisible, setGamepadVisible] = useState(!connected)
+  // A controller picked up mid-game puts the on-screen controls away, and one put down brings them back: a browser
+  // only reports a controller once a button on it is pressed, which is after the game has started. The toggle in the
+  // top bar still shows or hides them after that
+  const [wasConnected, setWasConnected] = useState(connected)
+  if (wasConnected !== connected) {
+    setWasConnected(connected)
+    setGamepadVisible(!connected)
+  }
   const { show } = useGameOverlay()
   const touchControls = useTouchControls()
   const [launched] = useEmulatorLaunched()
