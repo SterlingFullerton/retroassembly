@@ -8,7 +8,7 @@ import { GameOverlayButton } from './game-overlay-button.tsx'
 
 export function GameOverlayButtons() {
   const { t } = useTranslation()
-  const { emulator, exit } = useSession()
+  const { exit } = useSession()
   const { saveManualState } = useGameStates()
   const { hide, isPending, setIsPending } = useGameOverlay()
   // A snapshot that couldn't be taken or saved is said on its button for a few seconds, so the player can try again
@@ -23,11 +23,6 @@ export function GameOverlayButtons() {
 
   async function handleClickResume() {
     await hide()
-  }
-
-  async function handleClickRestart() {
-    await hide()
-    emulator?.restart()
   }
 
   async function handleClickSaveState() {
@@ -83,15 +78,10 @@ export function GameOverlayButtons() {
         <span
           className={failed === 'snapshot' ? 'icon-[mdi--alert-circle] size-5' : 'icon-[mdi--content-save] size-5'}
         />
-        {failed === 'snapshot' ? t('emulator.snapshotFailed') : t('emulator.takeSnapshot')}
+        {failed === 'snapshot' ? t('emulator.snapshotFailed') : t('common.save')}
       </GameOverlayButton>
 
       <div className='hidden lg:block lg:flex-1' />
-
-      <GameOverlayButton onClick={handleClickRestart}>
-        <span className='icon-[mdi--restart] size-5' />
-        {t('emulator.restart')}
-      </GameOverlayButton>
 
       <GameOverlayButton onClick={handleClickExit}>
         <span className='icon-[mdi--exit-to-app] size-5' />

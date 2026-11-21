@@ -15,7 +15,7 @@ import { GameOverlayButtons } from './game-overlay-buttons.tsx'
 import { GameOverlayDiscs } from './game-overlay-discs.tsx'
 import { GameOverlaySavesButton } from './game-overlay-saves-button.tsx'
 import { GameOverlaySaves } from './game-overlay-saves.tsx'
-import { GameOverlayVolume } from './game-overlay-volume.tsx'
+import { GameOverlaySettings, GameOverlaySettingsButton } from './game-overlay-settings.tsx'
 
 function handleAnimationComplete(animation) {
   if (animation.opacity === 1) {
@@ -31,6 +31,8 @@ export function GameOverlayContent() {
   }
   const { back, hide, page, visible } = useGameOverlay()
   const onSaves = page === 'saves'
+  // The saves and the settings are pages of their own, which Back leaves
+  const onPage = page !== 'main'
   const goodcodes = getRomGoodcodes(rom)
   const { data: cover } = useRomCover(rom)
   const { emulator, isFullscreen, toggleFullscreen } = useSession()
@@ -39,21 +41,21 @@ export function GameOverlayContent() {
     const status = emulator?.getStatus()
     if (visible) {
       // Back from the saves goes to the menu; from the menu it resumes the game
-      onCancel(onSaves ? back : hide)
+      onCancel(onPage ? back : hide)
     } else if (status === 'running') {
       onCancel(noop)
     } else {
       offCancel()
     }
     return offCancel
-  }, [visible, emulator, hide, back, onSaves])
+  }, [visible, emulator, hide, back, onPage])
 
   return (
     <AnimatePresence>
       {visible ? (
         <motion.div
           animate={{ opacity: 1, scale: 1 }}
-          className='game-overlay p-safe flex flex-col bg-black/70'
+          className='game-overlay p-safe flex flex-col bg-black/70 transition-[background-color] duration-300'
           exit={{ opacity: 0, scale: 1.1 }}
           initial={{ opacity: 0, scale: 1.1 }}
           onAnimationComplete={handleAnimationComplete}
@@ -62,21 +64,23 @@ export function GameOverlayContent() {
           <div
             className={clsx(
               'to-text-transparent h-4 w-full shrink-0 bg-linear-to-b from-black',
-              onSaves ? 'lg:h-8' : 'lg:h-32',
+              onPage ? 'lg:h-8' : 'lg:h-32',
             )}
           />
 
           <div
             className={clsx(
               'flex w-full flex-1 flex-col overflow-auto px-4 lg:mx-auto lg:w-[min(72rem,calc(100%-4rem))] lg:px-0',
-              onSaves ? 'gap-3' : 'gap-8',
+              onPage ? 'gap-3' : 'gap-8',
             )}
           >
-            {onSaves ? (
-              <GameOverlaySaves />
-            ) : (
-              <>
-                <div className='hidden items-center gap-4 lg:flex'>
+            {onSaves ? <GameOverlaySaves /> : null}
+            {page === 'settings' ? <GameOverlaySettings /> : null}
+            {/* On a phone or tablet the menu sits in the middle of the screen; my-auto, unlike centering, still lets a
+                short screen scroll to its top */}
+            {onPage ? null : (
+              <div className='flex flex-col gap-8 max-lg:my-auto'>
+                <div className='game-overlay-title hidden items-center gap-4 lg:flex'>
                   <div className='size-30 shrink-0'>
                     {cover ? (
                       <img alt={goodcodes.rom} className='size-30 object-contain object-center' src={cover.src} />
@@ -88,18 +92,18 @@ export function GameOverlayContent() {
                   <GameOverlayButtons />
                 </div>
                 <div className='flex shrink-0 flex-col gap-5 lg:flex-row lg:items-center lg:gap-4'>
-                  <GameOverlayVolume />
+                  <GameOverlaySettingsButton />
                   <GameOverlayDiscs />
                   <GameOverlaySavesButton />
                 </div>
-              </>
+              </div>
             )}
           </div>
 
           <div
             className={clsx(
               'h-4 w-full shrink-0 bg-linear-to-b from-transparent to-black text-transparent',
-              onSaves ? 'lg:h-20' : 'lg:h-32',
+              onPage ? 'lg:h-20' : 'lg:h-32',
             )}
           />
 

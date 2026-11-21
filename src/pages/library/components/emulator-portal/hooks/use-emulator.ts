@@ -57,6 +57,7 @@ import type { clientLoader as loader } from '#@/pages/routes/library-platform-ro
 import { createDiscList } from '#@/utils/isomorphic/discs.ts'
 import { getGlobalCSSVars } from '#@/utils/isomorphic/misc.ts'
 import { usePreference } from '../../../hooks/use-preference.ts'
+import { takeDeferredShaders } from '../deferred-shaders.ts'
 import type { useEmulatorGamepadMapping } from '../emulator-session-provider.tsx'
 
 type NostalgistOption = Parameters<typeof Nostalgist.prepare>[0]
@@ -150,7 +151,7 @@ export function useEmulatorSessionController({
   // The game's own save as this page last knew it: put back at launch, or read out while playing. `from` is the server's
   // save it came from, so a newer one from another device is fetched instead
   const knownGameSave = useRef<{ content?: Uint8Array; from?: string }>({})
-  const { preference } = usePreference()
+  const { preference, setPreference } = usePreference()
   // The wake lock that keeps the screen on while playing
   const noSleep = useRef<NoSleep | undefined>(undefined)
   // One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
@@ -578,6 +579,25 @@ export function useEmulatorSessionController({
         // The canvas covers the whole page and hides the cursor, so it has to go even if shutting down failed
         emulator?.getCanvas().remove()
         setLaunched(false)
+      }
+      // Shaders picked in the pause menu, saved already, now in the page's settings too, for the next game started
+      const shaders = Object.entries(takeDeferredShaders())
+      if (shaders.length > 0) {
+        setPreference(
+          (current) =>
+            current && {
+              ...current,
+              emulator: {
+                ...current.emulator,
+                platform: {
+                  ...current.emulator.platform,
+                  ...Object.fromEntries(
+                    shaders.map(([platform, shader]) => [platform, { ...current.emulator.platform[platform], shader }]),
+                  ),
+                },
+              },
+            },
+        )
       }
       // Otherwise the browser would keep the shut-down emulator, and the game in its memory, for as long as the page is open
       disconnectOnScreenGamepad(gamepad.current)

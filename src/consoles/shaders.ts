@@ -3,6 +3,20 @@ function getShaderThumbnail(shader: string) {
   return `/assets/shaders/${shader}.webp`
 }
 
+/** The kinds of shader, for the pause menu's shader switcher, by the folder each is in */
+export const shaderGroups = ['crt', 'handheld', 'smoothing'] as const
+export type ShaderGroup = (typeof shaderGroups)[number]
+
+export function getShaderGroup(id: string): ShaderGroup {
+  if (id.startsWith('crt/')) {
+    return 'crt'
+  }
+  if (id.startsWith('handheld/')) {
+    return 'handheld'
+  }
+  return 'smoothing'
+}
+
 export const shaders = [
   { id: '', name: 'disabled', thumbnail: '' },
   { id: 'anti-aliasing/fxaa', name: 'fxaa', thumbnail: getShaderThumbnail('anti-aliasing/fxaa') },

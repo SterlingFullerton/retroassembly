@@ -286,3 +286,24 @@ body:fullscreen:not(.overflow-hidden) {
 .platform-list .rt-CheckboxCardsItem:hover::before {
   background-color: var(--gray-a3) !important;
 }
+
+/* While the shader changes in the pause menu, the menu fades back so the game shows, all but the shader: the
+   menu's dark backdrop, the rows around it and the other controls in its row. Separate rules, as one selector a
+   browser can't read would drop the rest of its rule */
+.game-overlay[data-peek] {
+  background-color: transparent;
+}
+.game-overlay[data-peek] > :not(:has(.game-overlay-shader)) {
+  opacity: 0.12;
+}
+.game-overlay[data-peek] :is(.game-overlay-title, .game-overlay-buttons, .game-overlay-peek-dim) {
+  opacity: 0.12;
+}
+.game-overlay[data-peek] :has(> .game-overlay-shader) > :not(.game-overlay-shader) {
+  opacity: 0.12;
+}
+.game-overlay > *,
+.game-overlay :is(.game-overlay-title, .game-overlay-buttons, .game-overlay-peek-dim),
+.game-overlay :has(> .game-overlay-shader) > * {
+  transition: opacity 0.3s;
+}

@@ -350,7 +350,10 @@ export function attachGamepad(emulator: Nostalgist, gamepad: EmulatorGamepad) {
   globalThis.dispatchEvent(event)
 }
 
-/** Moves a few shaders' files to where their presets look for them, before the emulator launches */
+/**
+ * Moves a few shaders' files to where their presets look for them, and mends a preset the emulator can't start with,
+ * before the emulator launches
+ */
 export function relocateShaderFiles(nostalgist: Nostalgist, path: { join: (...parts: string[]) => string }) {
   const FS = nostalgist.getEmscriptenFS()
   const options = nostalgist.getOptions()
@@ -382,6 +385,15 @@ export function relocateShaderFiles(nostalgist: Nostalgist, path: { join: (...pa
       )
 
       break
+
+    // Its one pass is drawn at the size of the screen, which is still nothing when the game starts, so the game stays
+    // black. A last pass with no size of its own is drawn straight to the screen, at its size: the same picture
+    case 'xbrz/xbrz-freescale': {
+      const preset = path.join('/home/web_user/retroarch/bundle/shaders/shaders_glsl', 'xbrz-freescale.glslp')
+      const text = new TextDecoder().decode(FS.readFile(preset))
+      FS.writeFile(preset, text.replaceAll(/^\s*scale(?:_type)?0\s*=.*$/gmu, ''))
+      break
+    }
   }
 }
 

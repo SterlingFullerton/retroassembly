@@ -8,7 +8,7 @@ export function useFocusIndicatorStyle() {
 
 export const showGameOverlayContentAtom = atom(false)
 // Which page of the pause menu is open: the menu itself, or its saves
-const gameOverlayPageAtom = atom<'main' | 'saves'>('main')
+const gameOverlayPageAtom = atom<'main' | 'saves' | 'settings'>('main')
 export function useGameOverlayPage() {
   return useAtom(gameOverlayPageAtom)
 }

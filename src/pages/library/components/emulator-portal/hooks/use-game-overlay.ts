@@ -41,21 +41,29 @@ export function useGameOverlay() {
     focus('.game-overlay-back button')
   }
 
-  /** Goes back from the saves to the menu, with the focus on the Saves button */
-  async function back() {
-    setPage('main')
+  /** Opens the settings, with the focus on their Back button */
+  async function openSettings() {
+    setPage('settings')
     await delay(0)
-    focus('.game-overlay-saves')
+    focus('.game-overlay-back button')
   }
 
-  // The pause key or buttons go back from the saves, and close the menu from its own page
+  /** Goes back from the saves or the settings to the menu, with the focus on the button that opened them */
+  async function back() {
+    const from = page
+    setPage('main')
+    await delay(0)
+    focus(from === 'settings' ? '.game-overlay-settings' : '.game-overlay-saves')
+  }
+
+  // The pause key or buttons go back from the saves or the settings, and close the menu from its own page
   async function toggle() {
-    if (visible && page === 'saves') {
+    if (visible && page !== 'main') {
       await back()
       return
     }
     await (visible ? hide() : show())
   }
 
-  return { back, hide, isPending, openSaves, page, setIsPending, show, toggle, visible }
+  return { back, hide, isPending, openSaves, openSettings, page, setIsPending, show, toggle, visible }
 }
