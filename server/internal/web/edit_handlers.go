@@ -157,11 +157,17 @@ func (s *Server) imageUpload(w http.ResponseWriter, r *http.Request, scope libra
 
 // POST /api/v1/roms/{id}/boxart: a game's own box art, in place of any it had. Answers the box art's file id
 // removePicture deletes a picture a game no longer shows, when it's one the user added to that game. A file id set
-// some other way, pointing anywhere else, is left alone
+// some other way, pointing anywhere else, is left alone: so is one that only starts in the game's folder and climbs out
+// of it with "..", which would otherwise name any stored file
 func removePicture(scope library.Scope, rom library.Rom, fileID string) {
-	if strings.HasPrefix(fileID, library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID)+"/") {
+	if ownPicture(scope, rom, fileID) {
 		scope.Storage.Delete(fileID)
 	}
+}
+
+func ownPicture(scope library.Scope, rom library.Rom, fileID string) bool {
+	return path.Clean(fileID) == fileID &&
+		strings.HasPrefix(fileID, library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID)+"/")
 }
 
 func (s *Server) addBoxart(w http.ResponseWriter, r *http.Request, scope library.Scope) {

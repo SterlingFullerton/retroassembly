@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { type CSSProperties, type ReactNode, useEffect } from 'react'
+import { useLocation } from 'react-router'
 import { getCoverSize } from '#@/constants/cover-sizes.ts'
 import { useSelectedGames } from '../../atoms.ts'
 import { usePreference } from '../../hooks/use-preference.ts'
@@ -30,9 +31,15 @@ export function GameList({ actionsInHeader, actionsLeading, actionsTrailing, pho
   const { roms } = useRoms()
   const [, setSelectedGames] = useSelectedGames()
 
+  // A selection is of the games shown: another page, sort, search or console starts with none, so deleting the selected
+  // games can't take ones no longer on screen
+  const { pathname, search } = useLocation()
+  const shown = pathname + search
   useEffect(() => {
-    setSelectedGames([])
-  }, [setSelectedGames])
+    if (shown) {
+      setSelectedGames([])
+    }
+  }, [setSelectedGames, shown])
 
   // The cover size setting: how narrow a game may be, so more or fewer fit in a row, on a computer and on a phone
   const { list, phoneList } = getCoverSize(preference.ui.libraryCoverSize)

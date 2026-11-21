@@ -111,6 +111,8 @@ type NewGameSave struct {
 	// The file's extension, as the emulator names it: srm, or dsv for DeSmuME
 	FileType *string
 	Rom      string
+	// How long ago the browser made the save: see NewState
+	SavedAgo time.Duration
 }
 
 var fileTypePattern = regexp.MustCompile(`^[a-z\d]{1,8}$`)
@@ -161,7 +163,7 @@ func CreateGameSave(ctx context.Context, scope Scope, input NewGameSave) (*GameS
 	if err := scope.Storage.Put(fileID, input.Content); err != nil {
 		return nil, err
 	}
-	now := db.Millis(time.Now())
+	now := db.Millis(savedTime(input.SavedAgo))
 	saved, err := scanGameSave(scope.Database.QueryRowContext(ctx, `
 		INSERT INTO game_saves (client_id, core, file_id, id, platform, rom_id, sha1, size, user_id, created_at, status,
 			updated_at)

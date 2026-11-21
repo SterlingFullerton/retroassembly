@@ -4,6 +4,9 @@ import { useSession } from '#@/pages/library/components/emulator-portal/emulator
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useGameStates } from './use-game-states.ts'
 
+// How soon a save that found the game not running is tried again
+const retryMs = 1000
+
 export function useAutosave() {
   const { emulator } = useSession()
   const { preference } = usePreference()
@@ -17,6 +20,21 @@ export function useAutosave() {
   const nextSaveAtRef = useRef<number | null>(null)
   const intervalSeconds = preference.emulator.autoSaveInterval
   const isDisabled = intervalSeconds === 0
+  // The timer outlives the render that set it, so it reads the game and the save as they are when it fires
+  const latest = useRef({ active: false, emulator, intervalSeconds, saveAutoState })
+  useEffect(() => {
+    latest.current = { active: !isDisabled && launched, emulator, intervalSeconds, saveAutoState }
+  })
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     if (isDisabled) {
@@ -36,16 +54,28 @@ export function useAutosave() {
     }
 
     async function triggerAutosave() {
-      const status = emulator?.getStatus()
-      if (status !== 'running') {
+      // Turned off, or the game left, since the timer was set
+      if (!latest.current.active) {
+        timeoutRef.current = null
+        return
+      }
+      // A game that isn't running just now, such as one paused while its tab is in the background, is looked at again
+      // shortly, rather than never saved again
+      if (latest.current.emulator?.getStatus() !== 'running') {
+        nextSaveAtRef.current = Date.now() + retryMs
+        timeoutRef.current = setTimeout(triggerAutosave, retryMs)
         return
       }
 
       try {
-        await saveAutoState()
+        await latest.current.saveAutoState()
       } catch {}
 
-      const ms = intervalSeconds * 1000
+      if (!latest.current.active) {
+        timeoutRef.current = null
+        return
+      }
+      const ms = latest.current.intervalSeconds * 1000
       nextSaveAtRef.current = Date.now() + ms
       timeoutRef.current = setTimeout(triggerAutosave, ms)
     }
@@ -70,5 +100,5 @@ export function useAutosave() {
       nextSaveAtRef.current = Date.now() + delay
       timeoutRef.current = setTimeout(triggerAutosave, delay)
     }
-  }, [intervalSeconds, isDisabled, emulator, overlayVisible, saveAutoState, launched])
+  }, [intervalSeconds, isDisabled, overlayVisible, launched])
 }

@@ -130,12 +130,15 @@ export const indexedDBSaveStore: SaveStore = {
 }
 
 async function postSave(save: QueuedSave) {
+  // How long ago it was made: one that waited to upload keeps its place among the game's saves, rather than becoming
+  // the newest when it arrives. Sent as an age, not a time, so a device's clock being wrong doesn't matter
+  const savedAgo = String(Math.max(0, Date.now() - save.savedAt))
   if (save.type === 'game') {
     const { core, file, fileType, id, rom } = save
-    return await client.game_saves.$post({ form: { clientId: id, core, file, fileType, rom } })
+    return await client.game_saves.$post({ form: { clientId: id, core, file, fileType, rom, savedAgo } })
   }
   const { core, disc, id, rom, state, thumbnail, type } = save
-  const form = { clientId: id, core, rom, state, thumbnail, type, ...(disc ? { disc: String(disc) } : {}) }
+  const form = { clientId: id, core, rom, savedAgo, state, thumbnail, type, ...(disc ? { disc: String(disc) } : {}) }
   return await client.states.$post({ form })
 }
 

@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"time"
 
 	"retroassembly/server/internal/library"
 )
@@ -63,6 +64,10 @@ func (s *Server) createState(w http.ResponseWriter, r *http.Request, scope libra
 	}
 	romValue, romPresent := field(values, "rom")
 	input.Rom = check.String("rom", romValue, romPresent, 0)
+	agoValue, agoPresent := field(values, "savedAgo")
+	if ago, ok := check.OptionalInt("savedAgo", agoValue, agoPresent, 0); ok {
+		input.SavedAgo = time.Duration(ago) * time.Millisecond
+	}
 	stateUpload, thumbnailUpload := formFile(r, "state"), formFile(r, "thumbnail")
 	check.File("state", stateUpload, values, "Blob")
 	check.File("thumbnail", thumbnailUpload, values, "Blob")
@@ -140,6 +145,10 @@ func (s *Server) createGameSave(w http.ResponseWriter, r *http.Request, scope li
 	}
 	romValue, romPresent := field(values, "rom")
 	input.Rom = check.String("rom", romValue, romPresent, 0)
+	agoValue, agoPresent := field(values, "savedAgo")
+	if ago, ok := check.OptionalInt("savedAgo", agoValue, agoPresent, 0); ok {
+		input.SavedAgo = time.Duration(ago) * time.Millisecond
+	}
 	if check.Failed(w) {
 		return
 	}

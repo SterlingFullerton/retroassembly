@@ -51,7 +51,10 @@ export interface ApiRoutes {
   game_saves: {
     ':id': { restore: { $post: Endpoint<Id, GameSave> } }
     $get: Endpoint<{ query: { core: string; rom: string } }, GameSave[]>
-    $post: Endpoint<{ form: { clientId?: string; core: string; file: Blob; fileType?: string; rom: string } }, GameSave>
+    $post: Endpoint<
+      { form: { clientId?: string; core: string; file: Blob; fileType?: string; rom: string; savedAgo?: string } },
+      GameSave
+    >
   }
   launch_records: {
     $get: Endpoint<{ query?: { page?: string; page_size?: string } }, { pagination: Pagination; roms: PlayedRom[] }>
@@ -138,6 +141,7 @@ export interface ApiRoutes {
           core: string
           disc?: string
           rom: string
+          savedAgo?: string
           state: Blob
           thumbnail: Blob
           type: 'auto' | 'manual'

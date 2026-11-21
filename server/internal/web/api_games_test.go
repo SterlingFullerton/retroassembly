@@ -222,6 +222,14 @@ func TestUnusedPicturesAreRemoved(t *testing.T) {
 		t.Fatal("another player's picture was deleted")
 	}
 
+	// Nor does one that starts in the player's own game's folder and climbs out of it to theirs
+	climbing := "attachments/" + player.id + "/nes/" + added.ID + "/../../../../" + theirBoxart
+	player.expect(http.StatusOK, player.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameBoxartFileIds": {climbing}}))
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
+	if !exists(other, theirBoxart) {
+		t.Fatal("another player's picture was deleted through a climbing path")
+	}
+
 	// A deleted game's pictures go with it
 	player.expectJSON(http.StatusOK, &first, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
 	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID, "", nil))

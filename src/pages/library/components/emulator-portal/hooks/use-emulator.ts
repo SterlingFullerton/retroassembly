@@ -445,10 +445,14 @@ export function useEmulatorSessionController({
     const save = await getGameSave()
     if (save && saveFolder) {
       const folderName = saveFolder.slice(saveFolder.lastIndexOf('/') + 1)
-      const [, saveFiles] = await attemptAsync(() => unzipSaveFiles(save, folderName))
-      if (saveFiles) {
-        restoreGameSaveFolder(emulator, saveFolder, saveFiles)
+      // A save that can't be read stops the launch, as one that can't be fetched does (see getGameSave)
+      let saveFiles: SaveFiles
+      try {
+        saveFiles = await unzipSaveFiles(save, folderName)
+      } catch (error) {
+        throw new DownloadError('files', error)
       }
+      restoreGameSaveFolder(emulator, saveFolder, saveFiles)
     } else if (save) {
       restoreGameSave(emulator, save)
     }
@@ -473,16 +477,19 @@ export function useEmulatorSessionController({
   async function getGameSave() {
     const known = knownGameSave.current
     if (gameSave && gameSave.id !== known.from) {
-      const [, content] = await attemptAsync(async () => {
+      // The game has a save, so it isn't started without it: begun empty, its next save would replace the real one as
+      // the newest. The launch fails instead, and can be tried again
+      const [error, content] = await attemptAsync(async () => {
         const response = await fetch(getFileUrl(gameSave.fileId))
         if (!response.ok) {
           throw new Error(`${response.status}`)
         }
         return new Uint8Array(await response.arrayBuffer())
       })
-      if (content) {
-        knownGameSave.current = { content, from: gameSave.id }
+      if (!content) {
+        throw new DownloadError('files', error)
       }
+      knownGameSave.current = { content, from: gameSave.id }
     }
     return knownGameSave.current.content
   }

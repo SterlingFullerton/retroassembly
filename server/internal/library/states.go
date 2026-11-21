@@ -112,6 +112,9 @@ type NewState struct {
 	Core     string
 	Disc     *int64
 	Rom      string
+	// How long ago the browser made the save, by its own clock: a save that waited to upload keeps the time it was
+	// made, rather than becoming the newest when it arrives
+	SavedAgo time.Duration
 	// The save and its picture, read as they're stored rather than held in memory
 	State     io.Reader
 	Thumbnail io.Reader
@@ -151,7 +154,7 @@ func CreateState(ctx context.Context, scope Scope, input NewState) (*State, erro
 		scope.Storage.Delete(stateFileID)
 		return nil, err
 	}
-	now := db.Millis(time.Now())
+	now := db.Millis(savedTime(input.SavedAgo))
 	state, err := scanState(scope.Database.QueryRowContext(ctx, `
 		INSERT INTO states (client_id, core, disc, file_id, platform, rom_id, thumbnail_file_id, type, user_id,
 			created_at, id, status, updated_at)
@@ -238,4 +241,9 @@ func DeleteState(ctx context.Context, scope Scope, id string) error {
 		return failure.New(http.StatusNotFound, "State not found")
 	}
 	return nil
+}
+
+// savedTime is when a save made that long ago was made; never later than now
+func savedTime(ago time.Duration) time.Time {
+	return time.Now().Add(-max(ago, 0))
 }

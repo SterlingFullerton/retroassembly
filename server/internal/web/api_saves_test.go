@@ -129,3 +129,38 @@ func TestGameSaves(t *testing.T) {
 		t.Fatalf("the other player's: %+v", saves)
 	}
 }
+
+// A save that waited in a browser to upload keeps the time it was made: it doesn't become the newest when it arrives
+func TestLateSavesKeepTheirTime(t *testing.T) {
+	api := newAPI(t)
+	player := api.register(t, "player")
+	added := player.addGame("Quest (USA).nes")
+	hour := "3600000"
+
+	var recent, late gameSave
+	send := func(content, savedAgo string) response {
+		return player.multipart(http.MethodPost, "/api/v1/game_saves", map[string]string{"core": "fceumm", "rom": added.ID, "savedAgo": savedAgo},
+			map[string]uploadFile{"file": {content: []byte(content), name: "blob"}})
+	}
+	player.expectJSON(http.StatusOK, &recent, send("recent", "0"))
+	player.expectJSON(http.StatusOK, &late, send("made an hour ago", hour))
+	var saves []gameSave
+	player.expectJSON(http.StatusOK, &saves, player.get("/api/v1/game_saves?core=fceumm&rom="+added.ID))
+	if len(saves) != 2 || saves[0].ID != recent.ID || saves[1].ID != late.ID {
+		t.Fatalf("game saves: %+v, recent %s, late %s", saves, recent.ID, late.ID)
+	}
+	player.expect(http.StatusBadRequest, send("never", "-5"))
+
+	state := func(savedAgo string) response {
+		return player.multipart(http.MethodPost, "/api/v1/states", map[string]string{"core": "fceumm", "rom": added.ID, "type": "manual", "savedAgo": savedAgo},
+			map[string]uploadFile{"state": {content: []byte("state"), name: "blob"}, "thumbnail": {content: []byte("thumbnail"), name: "blob"}})
+	}
+	var recentState, lateState saveState
+	player.expectJSON(http.StatusOK, &recentState, state("0"))
+	player.expectJSON(http.StatusOK, &lateState, state(hour))
+	var states []saveState
+	player.expectJSON(http.StatusOK, &states, player.get("/api/v1/roms/"+added.ID+"/states"))
+	if len(states) != 2 || states[0].ID != recentState.ID || states[1].ID != lateState.ID {
+		t.Fatalf("states: %+v, recent %s, late %s", states, recentState.ID, lateState.ID)
+	}
+}
