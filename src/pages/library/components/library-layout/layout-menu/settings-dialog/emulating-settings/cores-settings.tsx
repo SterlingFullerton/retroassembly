@@ -84,7 +84,7 @@ export function CoresSettings() {
 
         <BIOSOptions platform={selectedPlatform} />
 
-        <PlatformShaderSettings platform={selectedPlatform} />
+        <PlatformShaderSettings key={selectedPlatform} platform={selectedPlatform} />
 
         <div>
           <label className='flex flex-wrap items-center justify-between gap-x-2'>
