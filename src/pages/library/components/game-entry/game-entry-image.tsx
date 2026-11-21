@@ -1,7 +1,7 @@
 import { Skeleton } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { skeletonClassnames } from '../../constants/skeleton-classnames.ts'
@@ -21,7 +21,26 @@ export function GameEntryImage({
 }: Readonly<{ centered?: boolean; framed?: boolean; rom: any }>) {
   const { t } = useTranslation()
   const goodcodes = getRomGoodcodes(rom)
-  const { data: cover, isLoading } = useRomCover(rom)
+  // A cover is only fetched once its game is on screen or nearly: a page of a hundred games doesn't fetch them all
+  const frame = useRef<HTMLDivElement>(null)
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const element = frame.current
+    if (!element || near) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setNear(true)
+        }
+      },
+      { rootMargin: '600px' },
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [near])
+  const { data: cover, isLoading } = useRomCover(rom, { enabled: near })
   const [loaded, setLoaded] = useState(false)
   const shouldShowskeleton = isLoading || !loaded
   const { isLargeScreen } = useViewport()
@@ -47,7 +66,10 @@ export function GameEntryImage({
       />
     )
     return (
-      <div className='relative aspect-square w-full rounded-lg bg-(--gray-a3) transition-[translate,filter] duration-150 group-hover:-translate-y-1 group-hover:brightness-105'>
+      <div
+        className='relative aspect-square w-full rounded-lg bg-(--gray-a3) transition-[translate,filter] duration-150 group-hover:-translate-y-1 group-hover:brightness-105'
+        ref={frame}
+      >
         {shouldShowskeleton ? (
           <div className='absolute inset-2 flex items-center justify-center'>
             <Skeleton
@@ -105,7 +127,10 @@ export function GameEntryImage({
   )
 
   return (
-    <div className='relative aspect-square w-9/10! overflow-hidden transition-[translate,filter] duration-150 group-hover:-translate-y-1 group-hover:brightness-105'>
+    <div
+      className='relative aspect-square w-9/10! overflow-hidden transition-[translate,filter] duration-150 group-hover:-translate-y-1 group-hover:brightness-105'
+      ref={frame}
+    >
       <AnimatePresence>
         {shouldShowskeleton ? (
           <motion.div

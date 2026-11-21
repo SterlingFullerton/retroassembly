@@ -93,8 +93,11 @@ func TestServe(t *testing.T) {
 	if whole.Code != http.StatusOK || whole.Body.String() != "0123456789" {
 		t.Fatalf("whole file: %d %q", whole.Code, whole.Body.String())
 	}
-	if got := whole.Header().Get("Content-Type"); got != "text/plain; charset=utf-8" {
-		t.Errorf("a game is sent as the Node server sends it, got %q", got)
+	if got := whole.Header().Get("Content-Type"); got != "application/octet-stream" {
+		t.Errorf("a game is sent as plain bytes, got %q", got)
+	}
+	if got := whole.Header().Get("Cache-Control"); got != "private, max-age=31536000, immutable" {
+		t.Errorf("a stored file is kept by the browser that fetched it, got %q", got)
 	}
 
 	request := httptest.NewRequest(http.MethodGet, "/", nil)

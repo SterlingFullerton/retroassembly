@@ -191,14 +191,15 @@ func CountSearchMatches(ctx context.Context, scope Scope, platforms []string, qu
 		}
 	}
 	if len(matches) > 0 {
-		ids := make([]any, len(matches))
+		ids := make([]string, len(matches))
 		for i, match := range matches {
 			ids[i] = match.ID
 		}
+		// One list, not a parameter for each match: a broad search matches more games than a query takes parameters
 		err := scope.Database.QueryRowContext(ctx,
-			`SELECT count(DISTINCT rom_id) FROM launch_records WHERE user_id = ? AND status = ? AND rom_id IN (`+
-				placeholders(len(ids))+`)`,
-			append([]any{scope.User.ID, db.StatusNormal}, ids...)...).Scan(&counts.History)
+			`SELECT count(DISTINCT rom_id) FROM launch_records WHERE user_id = ? AND status = ?
+				AND rom_id IN (SELECT value FROM json_each(?))`,
+			scope.User.ID, db.StatusNormal, string(mustJSON(ids))).Scan(&counts.History)
 		if err != nil {
 			return nil, err
 		}

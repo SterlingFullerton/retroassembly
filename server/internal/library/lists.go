@@ -210,8 +210,8 @@ func LaunchHistory(ctx context.Context, scope Scope, platforms []string, page, p
 		for i, match := range matches {
 			ids[i] = match.ID
 		}
-		where += ` AND launch_records.rom_id IN (` + placeholders(len(ids)) + `)`
-		arguments = append(arguments, strings2any(ids)...)
+		where += ` AND launch_records.rom_id IN (SELECT value FROM json_each(?))`
+		arguments = append(arguments, string(mustJSON(ids)))
 	}
 	columnsSQL := make([]string, len(historyColumns))
 	for i, c := range historyColumns {

@@ -207,16 +207,20 @@ func Serve(w http.ResponseWriter, r *http.Request, id, filePath string) {
 		return
 	}
 
-	// Any other kind, a game or a save, is sent as the Node server has always sent it, and never guessed from its bytes
+	// Any other kind, a game or a save, is sent as plain bytes, and never guessed from its own: not as text, which a
+	// proxy in front would compress as it goes, slowing a game that's compressed already and hiding its size
 	contentType, ok := mimeTypes[strings.ToLower(path.Ext(id))]
 	if !ok {
-		contentType = "text/plain; charset=utf-8"
+		contentType = "application/octet-stream"
 	}
 	header.Set("Content-Type", contentType)
 	header.Set("Content-Security-Policy", "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'")
 	header.Set("X-Content-Type-Options", "nosniff")
 	header.Set("ETag", etag)
 	header.Set("Accept-Ranges", "bytes")
+	// What's at a file's id never changes: a game's and a BIOS's is named after its contents, and a save's or a
+	// picture's has an id of its own. So the browser that fetched it keeps it, without asking again; no proxy does
+	header.Set("Cache-Control", "private, max-age=31536000, immutable")
 
 	start, end := int64(0), size-1
 	status := http.StatusOK

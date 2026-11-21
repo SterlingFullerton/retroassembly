@@ -81,7 +81,9 @@ if (isBrowser()) {
     beforeLaunch(nostalgist) {
       relocateShaderFiles(nostalgist, path)
     },
-    cache: true,
+    // Everything fetched is kept between games except the game itself, or every game reached for would stay in memory
+    // for as long as the tab is open
+    cache: { bios: true, core: true, rom: false, shader: true, sram: true, state: true },
     async resolveCoreJs(core) {
       if (typeof core !== 'string') {
         throw new TypeError('Invalid core js file')

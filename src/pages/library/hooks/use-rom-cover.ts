@@ -6,7 +6,8 @@ import { getPlatformGameIcon } from '#@/utils/client/library.ts'
 import { getRomCoverCandidates } from '#@/utils/isomorphic/rom-cover-candidates.ts'
 import { getFileUrl } from '../utils/file.ts'
 
-export function useRomCover(rom: Rom) {
+/** A game's cover: its own picture, or its console's stand-in. Not looked for while `enabled` is false */
+export function useRomCover(rom: Rom, { enabled = true } = {}) {
   // The server notes which images it has for each game; without that note, every possible one is tried
   const { coverCandidates } = rom as { coverCandidates?: string[] }
   const romCovers = [...(coverCandidates ?? getRomCoverCandidates(rom))]
@@ -17,7 +18,7 @@ export function useRomCover(rom: Rom) {
   const platformCover = getPlatformGameIcon(rom.platform)
   const covers = [...uniqueRomCovers, platformCover]
 
-  return useSWRImmutable(covers, async () => {
+  return useSWRImmutable(enabled ? covers : null, async () => {
     for (const romCover of uniqueRomCovers) {
       try {
         await imageLoaded(romCover)

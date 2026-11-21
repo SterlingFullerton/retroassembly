@@ -299,6 +299,21 @@ export function useEmulatorSessionController({
   )
 
   const emulator = data
+  // A game got ready (by reaching for Start, or opening its page) and then left without being played is let go, rather
+  // than held in memory for as long as the tab is open
+  const prepared = useRef({ cache, data, key: '' })
+  useEffect(() => {
+    prepared.current = { cache, data, key: unstable_serialize(options) }
+  })
+  useEffect(
+    () => () => {
+      const { cache: held, data: unplayed, key } = prepared.current
+      if (unplayed?.getStatus() === 'initial') {
+        held.delete(key)
+      }
+    },
+    [],
+  )
   // So its save pictures aren't black (see keepLastFrame)
   useEffect(() => {
     keepLastFrame(launchProfile.canvasThumbnail)

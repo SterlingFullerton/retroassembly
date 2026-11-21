@@ -20,6 +20,13 @@ func init() {
 // keep them but check each time
 var fingerprintedPath = regexp.MustCompile(`^/assets/[^/]+-[\w-]{8}\.\w+$`)
 
+// An emulator's files are in a folder named after its version (/cores/retroarch-1.22.2/), so they never change either
+var versionedPath = regexp.MustCompile(`^/cores/[^/]+-\d[\w.]*/`)
+
+// Artwork that comes with the app (consoles' pictures, the shaders' previews, the logo) changes rarely: it's kept for
+// a day without asking, rather than checked each time a page shows thirty of them
+var artworkPath = regexp.MustCompile(`^/assets/(platforms|shaders|logo)/`)
+
 // The compressed copies the build writes beside its files, in the order they're preferred
 var encodings = []struct{ name, extension string }{{"br", ".br"}, {"zstd", ".zst"}, {"gzip", ".gz"}}
 
@@ -55,8 +62,10 @@ func staticFiles(root string, next http.Handler) http.Handler {
 		}
 
 		header := w.Header()
-		if fingerprintedPath.MatchString(urlPath) {
+		if fingerprintedPath.MatchString(urlPath) || versionedPath.MatchString(urlPath) {
 			header.Set("Cache-Control", "public, immutable, max-age=31536000")
+		} else if artworkPath.MatchString(urlPath) {
+			header.Set("Cache-Control", "public, max-age=86400")
 		} else {
 			header.Set("Cache-Control", "no-cache")
 		}
