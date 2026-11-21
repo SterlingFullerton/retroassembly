@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { client } from '#@/api/client.ts'
 import { shadersRepository } from '#@/consoles/assets.ts'
-import { getShaderGroup, type ShaderGroup, shaderGroups, shaders } from '#@/consoles/shaders.ts'
+import { orderedShaders } from '#@/consoles/shaders.ts'
 import { deferShader } from '#@/pages/library/components/emulator-portal/deferred-shaders.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
+import { ShaderBar } from '#@/pages/library/components/shader-bar.tsx'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { toCDNCacheUrl } from '#@/utils/isomorphic/cdn.ts'
@@ -19,12 +20,6 @@ const repository = `https://cdn.jsdelivr.net/gh/${shadersRepository.repository}@
 interface Look {
   id: string
   name: string
-}
-
-const groupLabels: Record<ShaderGroup, string> = {
-  crt: 'settings.shaderGroupCrt',
-  handheld: 'settings.shaderGroupHandheld',
-  smoothing: 'settings.shaderGroupSmoothing',
 }
 
 function mkdirs(fs: any, directory: string) {
@@ -100,21 +95,7 @@ export function GameOverlayShader() {
   const own = preference.emulator.platform[platform]?.shader
   const forAll = preference.emulator.shader || ''
   // Off, then each kind's shaders together, in the order of the bar under them
-  const looks: Look[] = [
-    { id: '', name: t('settings.shaderOff') },
-    ...shaderGroups.flatMap((group) =>
-      shaders.filter(({ id }) => id && getShaderGroup(id) === group).map(({ id, name }) => ({ id, name })),
-    ),
-  ]
-  // The bar's segments: Off alone, then one for each kind, as long as it has shaders
-  const segments = [
-    { count: 1, label: t('settings.shaderOff'), start: 0 },
-    ...shaderGroups.map((group) => ({
-      count: looks.filter((each) => each.id && getShaderGroup(each.id) === group).length,
-      label: t(groupLabels[group]),
-      start: looks.findIndex((each) => each.id && getShaderGroup(each.id) === group),
-    })),
-  ]
+  const looks: Look[] = orderedShaders.map(({ id, name }) => ({ id, name: id ? name : t('settings.shaderOff') }))
   // What was changed here last, else the settings the game started with
   const changed = emulator ? shownLooks.get(emulator) : undefined
   const startsInherited = changed ? changed.inherited : own === 'inherit' || own === undefined
@@ -305,45 +286,8 @@ export function GameOverlayShader() {
             <span className='icon-[mdi--chevron-right] size-7' />
           </button>
         </div>
-        {/* Where the one shown is: a dash for each, in segments by kind, named underneath. Where the names don't all
-            fit, only the one shown's is */}
-        <div aria-hidden className='flex flex-col gap-1.5 px-3 pt-1 pb-2'>
-          <div className='flex gap-2'>
-            {segments.map((segment) => {
-              const here = index >= segment.start && index < segment.start + segment.count
-              return (
-                <div className='flex min-w-0 basis-0 gap-0.5' key={segment.label} style={{ flexGrow: segment.count }}>
-                  {Array.from({ length: segment.count }, (_, i) => (
-                    <span
-                      className={clsx('h-1 min-w-0.5 flex-1 rounded-full transition-colors', {
-                        'bg-white': segment.start + i === index,
-                        'bg-white/15': !here,
-                        'bg-white/40': here && segment.start + i !== index,
-                      })}
-                      key={i}
-                    />
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-          <div className='@container flex gap-2 text-[11px] leading-none font-semibold tracking-wide uppercase'>
-            {segments.map((segment) => {
-              const here = index >= segment.start && index < segment.start + segment.count
-              return (
-                <span
-                  className={clsx(
-                    'basis-0 truncate transition-colors',
-                    here ? 'min-w-max text-white' : 'invisible min-w-0 text-white/40 @md:visible @md:min-w-max',
-                  )}
-                  key={segment.label}
-                  style={{ flexGrow: segment.count }}
-                >
-                  {segment.count > 1 ? segment.label : ''}
-                </span>
-              )
-            })}
-          </div>
+        <div className='px-3 pt-1 pb-2'>
+          <ShaderBar index={index} tone='overlay' />
         </div>
       </div>
     </section>

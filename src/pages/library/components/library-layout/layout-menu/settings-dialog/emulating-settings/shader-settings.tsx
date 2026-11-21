@@ -1,19 +1,14 @@
 import { Switch } from '@radix-ui/themes'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { goesFullscreen } from '#@/constants/preference.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { SettingsTitle } from '../settings-title.tsx'
-import { ShaderPreview } from './shader-preview.tsx'
-import { ShaderSelect } from './shader-select.tsx'
+import { ShaderSwitcher } from './shader-switcher.tsx'
 
 export function ShaderSettings() {
   const { t } = useTranslation()
   const { isLoading, preference, update } = usePreference()
-  const [highlighted, setHighlighted] = useState<string>()
-
-  async function handleShaderChange(shader: string) {
-    const actualShader = shader === 'none' ? '' : shader
+  async function handleShaderChange(actualShader: string) {
     if (actualShader !== preference.emulator.shader) {
       await update({
         emulator: {
@@ -30,18 +25,11 @@ export function ShaderSettings() {
 
       <div>
         <div className='flex flex-col divide-y divide-(--gray-a4) *:py-2.5'>
-          <div>
-            <SettingsTitle className='mb-0 justify-between text-base font-normal'>
-              {t('settings.shader')}
-              <ShaderSelect
-                disabled={isLoading}
-                onHighlight={setHighlighted}
-                onValueChange={handleShaderChange}
-                value={preference.emulator.shader || 'none'}
-              />
-            </SettingsTitle>
-            <ShaderPreview shader={highlighted ?? ''} />
-          </div>
+          <ShaderSwitcher
+            label={<SettingsTitle className='mb-0 text-base font-normal'>{t('settings.shader')}</SettingsTitle>}
+            onChange={handleShaderChange}
+            value={preference.emulator.shader || ''}
+          />
 
           <div>
             <label className='flex items-center justify-between gap-2'>

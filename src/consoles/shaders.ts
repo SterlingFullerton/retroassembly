@@ -3,7 +3,10 @@ function getShaderThumbnail(shader: string) {
   return `/assets/shaders/${shader}.webp`
 }
 
-/** The kinds of shader, for the pause menu's shader switcher, by the folder each is in */
+/** The test card the previews show, as it is with no shader */
+export const shaderOffPicture = '/assets/shaders/original.png'
+
+/** The kinds of shader, by the folder each is in */
 export const shaderGroups = ['crt', 'handheld', 'smoothing'] as const
 export type ShaderGroup = (typeof shaderGroups)[number]
 
@@ -74,4 +77,20 @@ export const shaders = [
   },
   { id: 'sabr/sabr', name: 'sabr', thumbnail: getShaderThumbnail('sabr/sabr') },
   { id: 'xbrz/xbrz-freescale', name: 'xbrz-freescale', thumbnail: getShaderThumbnail('xbrz/xbrz-freescale') },
+]
+
+/** Every shader in the order the shader switchers go through them: none first, then each kind's together */
+export const orderedShaders = [
+  shaders[0],
+  ...shaderGroups.flatMap((group) => shaders.filter(({ id }) => id && getShaderGroup(id) === group)),
+]
+
+/** The switchers' bar: none alone, then a segment for each kind, where it starts in orderedShaders and how long it is */
+export const shaderSegments: { count: number; group?: ShaderGroup; start: number }[] = [
+  { count: 1, start: 0 },
+  ...shaderGroups.map((group) => ({
+    count: orderedShaders.filter(({ id }) => id && getShaderGroup(id) === group).length,
+    group,
+    start: orderedShaders.findIndex(({ id }) => id && getShaderGroup(id) === group),
+  })),
 ]

@@ -11,4 +11,5 @@ node scripts/shader-previews.ts
 ```
 
 The test card is `docs/image/shader/upscale-test.png` from [libretro/docs](https://github.com/libretro/docs), under the
-MIT license, the card libretro's own shader previews show. The shaders are libretro's, each under its own license.
+MIT license, the card libretro's own shader previews show; `original.png` is a copy of it, shown when shaders are off.
+The shaders are libretro's, each under its own license.
