@@ -38,7 +38,8 @@ export function useUploads() {
       successCount: result.succeeded.length,
     }))
     await refresh()
-    if (result.succeeded.length > 0) {
+    // Only for an upload that all went through: one with failures says so instead (see the upload badge)
+    if (result.succeeded.length > 0 && result.failed.length === 0) {
       await confetti({ disableForReducedMotion: true, particleCount: 150, spread: 180 })
     }
     return result

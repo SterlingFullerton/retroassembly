@@ -202,15 +202,22 @@ export function useEmulatorSessionController({
   const shader =
     platformShader === 'inherit' ? preference.emulator.shader : (platformShader ?? preference.emulator.shader)
 
+  // What the emulator is given depends on the game's files, by name and id, not on the objects the page's data holds
+  // them in: the page's data is fetched afresh while a game runs (when an upload ends, say), and a game made anew
+  // from the same files would take the place of the one running
+  const romFileName = rom?.fileName
+  const discGroup = rom?.discGroup
+  const discFiles = JSON.stringify(discs.map(({ fileId, fileName }) => [fileId, fileName]))
   const romObject = useMemo(() => {
     if (multiDisc) {
+      const files: [fileId: string, fileName: string][] = JSON.parse(discFiles)
       return [
         {
-          fileContent: new Blob([createDiscList(discs.map(({ fileName }) => fileName))]),
-          fileName: `${rom.discGroup}.m3u`,
+          fileContent: new Blob([createDiscList(files.map(([, fileName]) => fileName))]),
+          fileName: `${discGroup}.m3u`,
         },
         // Only the first disc downloads at the start, so only its progress is shown
-        ...discs.map(({ fileId, fileName }, index) => ({
+        ...files.map(([fileId, fileName], index) => ({
           fileContent: index === 0 ? download('game', 'game', getFileUrl(fileId)) : getFileUrl(fileId),
           fileName,
         })),
@@ -218,9 +225,9 @@ export function useEmulatorSessionController({
     }
     // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
     return launchProfile.threads
-      ? { fileContent: new Uint8Array(1), fileName: rom?.fileName }
-      : { fileContent: download('game', 'game', romUrl), fileName: rom?.fileName }
-  }, [discs, download, launchProfile.threads, multiDisc, rom, romUrl])
+      ? { fileContent: new Uint8Array(1), fileName: romFileName }
+      : { fileContent: download('game', 'game', romUrl), fileName: romFileName }
+  }, [discFiles, discGroup, download, launchProfile.threads, multiDisc, romFileName, romUrl])
   const { bioses } = preference.emulator.platform[rom.platform]
   const bios = useMemo(
     () =>
@@ -298,7 +305,12 @@ export function useEmulatorSessionController({
     },
   )
 
-  const emulator = data
+  // The game being played is held from launch to exit, whatever the page's settings or data become meanwhile: were
+  // it only read from what was prepared, a change to either would leave Exit, the pause menu and saving without a game
+  const [playing, setPlaying] = useState<Nostalgist>()
+  const emulator = playing ?? data
+  // A game that couldn't start: said where a game that couldn't be got ready is, with Retry
+  const [startError, setStartError] = useState<unknown>()
   // A game got ready (by reaching for Start, or opening its page) and then left without being played is let go, rather
   // than held in memory for as long as the tab is open
   const prepared = useRef({ cache, data, key: '' })
@@ -415,6 +427,7 @@ export function useEmulatorSessionController({
    * page (`from`)
    */
   async function launch({ from, withState }: { from?: ChosenState; withState?: boolean } = {}) {
+    setStartError(undefined)
     // Fullscreen now, while the tap on Start or Continue still counts: a browser only allows it just after one, and a
     // game can take longer than that to get ready. Nothing is waited for before this
     if (goesFullscreen(preference.emulator.fullscreen) && !document.fullscreenElement) {
@@ -483,9 +496,11 @@ export function useEmulatorSessionController({
     canvas.dataset.snFocusStyle = JSON.stringify({ display: 'none' })
     focus(canvas)
 
+    setPlaying(emulator)
     setLaunched(true)
 
-    await client.launch_records.$post({ form: { core, rom: rom.id } })
+    // Only a note that the game was played: failing to make it doesn't fail a game that has started
+    await attemptAsync(() => client.launch_records.$post({ form: { core, rom: rom.id } }))
   }
 
   /** The game's own save to put back: the latest this page knows, or the server's when it has a newer one */
@@ -527,10 +542,52 @@ export function useEmulatorSessionController({
     ).then(noop)
   }
 
+  /**
+   * Starts the launched game. One that can't start (a BIOS it won't take, a broken file, no memory left) is put away
+   * as an exit would, and the failure said with the game's buttons, rather than left as a black screen with no way out
+   */
   async function start() {
     if (!emulator || !rom) {
       return
     }
+    try {
+      await startGame(emulator)
+    } catch (error) {
+      // Running all the same: only something after the start failed, such as loading the save to continue from
+      if (['paused', 'running'].includes(emulator.getStatus())) {
+        return
+      }
+      await abandon(emulator, error)
+    }
+  }
+
+  /** Puts away a game that was launched but couldn't start, as exit does one that ran */
+  async function abandon(failed: Nostalgist, error: unknown) {
+    try {
+      failed.exit()
+    } catch {}
+    failed.getCanvas().remove()
+    setLaunched(false)
+    setPlaying(undefined)
+    disconnectOnScreenGamepad(gamepad.current)
+    gamepad.current = undefined
+    gameReader.current?.close()
+    gameReader.current = undefined
+    await attemptAsync(closeAudioContexts)
+    noSleep.current?.disable()
+    if (document.fullscreenElement) {
+      await attemptAsync(() => document.exitFullscreen())
+    }
+    setSpatialNavigationPaused(false)
+    setIsFullscreen(false)
+    focus(launchButton)
+    offCancel()
+    // The game is let go: Retry gets it ready afresh
+    await attemptAsync(() => prepare(undefined, { revalidate: false }))
+    setStartError(error ?? new Error('The game could not start'))
+  }
+
+  async function startGame(emulator: Nostalgist) {
     await startWithoutCamera(emulator)
     // The on-screen controls that need more than key presses: the N64's analog stick, the ColecoVision's joystick and
     // keypad, the arcade, Atari and Channel F sticks, the Atari 5200's keypad, the PlayStation's two analog sticks,
@@ -601,6 +658,7 @@ export function useEmulatorSessionController({
         // The canvas covers the whole page and hides the cursor, so it has to go even if shutting down failed
         emulator?.getCanvas().remove()
         setLaunched(false)
+        setPlaying(undefined)
       }
       // Shaders picked in the pause menu, saved already, now in the page's settings too, for the next game started
       const shaders = Object.entries(takeDeferredShaders())
@@ -649,6 +707,12 @@ export function useEmulatorSessionController({
     }
   }
 
+  /** Gets the game ready again, after it couldn't be: what Retry asks for */
+  async function prepareAgain() {
+    setStartError(undefined)
+    return await prepare()
+  }
+
   async function toggleFullscreen() {
     try {
       if (document.fullscreenElement) {
@@ -684,7 +748,7 @@ export function useEmulatorSessionController({
     currentDisc: multiDisc ? currentDisc : undefined,
     discs: multiDisc ? discs : [],
     emulator,
-    error,
+    error: error ?? startError,
     exit,
     isDownloading,
     isFullscreen,
@@ -695,7 +759,7 @@ export function useEmulatorSessionController({
     launchProfile,
     loadingProgress: getLoadingProgress(downloads.current.values()),
     phase: getSessionPhase({ exiting, launched, preparing: isDownloading }),
-    prepare,
+    prepare: prepareAgain,
     setLaunched,
     start,
     switchToDisc,

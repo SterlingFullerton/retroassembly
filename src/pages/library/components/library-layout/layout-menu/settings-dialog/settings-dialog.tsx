@@ -1,7 +1,9 @@
 import { Button, Dialog, ScrollArea, Tabs } from '@radix-ui/themes'
 import { clsx } from 'clsx'
+import { useAtom } from 'jotai'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { preferenceSaveFailedAtom } from '#@/pages/atoms.ts'
 import { useSettingsDialogTabName } from '#@/pages/library/atoms.ts'
 import { DialogRoot } from '../../../dialog-root.tsx'
 import { EmulatingSettings } from './emulating-settings/emulating-settings.tsx'
@@ -31,7 +33,11 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
   const [pointerOpened, setPointerOpened] = useState(false)
   const { content: TabContent } = settingsTabs.find((tab) => tab.name === tabName) || settingsTabs[0]
 
+  // A change that didn't save is said in the note at the bottom, until one saves or the settings are closed
+  const [saveFailed, setSaveFailed] = useAtom(preferenceSaveFailedAtom)
+
   function handleOpenChange(open: boolean) {
+    setSaveFailed(false)
     onOpenChange?.(open)
   }
 
@@ -99,10 +105,17 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
         </div>
 
         <div className='settings-note mt-4 flex justify-between'>
-          <div className='flex items-center gap-2 text-xs text-(--gray-11)'>
-            <span className='icon-[mdi--content-save-check-outline] shrink-0' />
-            {t('settings.immediateEffect')}
-          </div>
+          {saveFailed ? (
+            <div className='flex items-center gap-2 text-xs text-(--red-11)' role='alert'>
+              <span className='icon-[mdi--alert-circle-outline] shrink-0' />
+              {t('settings.saveFailed')}
+            </div>
+          ) : (
+            <div className='flex items-center gap-2 text-xs text-(--gray-11)'>
+              <span className='icon-[mdi--content-save-check-outline] shrink-0' />
+              {t('settings.immediateEffect')}
+            </div>
+          )}
         </div>
 
         <div className='settings-close absolute top-6 right-6'>

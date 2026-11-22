@@ -168,7 +168,15 @@ export function GameOverlayShader() {
     // Saved on the server only: the settings in the page are what the running game was started with, and changing them
     // would have the page prepare a fresh emulator in its place, leaving the menu's buttons on one that isn't running.
     // Leaving the game puts it in them (see deferred-shaders.ts)
-    await client.preference.$post({ json: { emulator: { platform: { [platform]: { shader: saved } } } } })
+    try {
+      await client.preference.$post({ json: { emulator: { platform: { [platform]: { shader: saved } } } } })
+    } catch {
+      // Shown on the game, but not kept for the next one: said with the alert beside the name
+      if (attempt === applying.current) {
+        setStatus('failed')
+      }
+      return
+    }
     deferShader(platform, saved)
   }
 

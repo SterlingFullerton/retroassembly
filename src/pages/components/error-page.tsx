@@ -5,6 +5,19 @@ import { metadata } from '#@/constants/metadata.ts'
 import { routes } from '#@/pages/routes.ts'
 import type { Route } from '../+types/root.ts'
 
+/** Whether an error is a request that never reached the server: what a browser throws when the network fails */
+function isUnreachable(error: unknown) {
+  return (
+    error instanceof TypeError &&
+    /failed to fetch|load failed|networkerror|network request failed/iu.test(error.message)
+  )
+}
+
+// The same page again, with its sort, search and page, which are in its address
+function handleClickRetry() {
+  globalThis.location.reload()
+}
+
 export function ErrorPage({ error }: Readonly<Route.ErrorBoundaryProps>) {
   const { t } = useTranslation()
 
@@ -17,9 +30,13 @@ export function ErrorPage({ error }: Readonly<Route.ErrorBoundaryProps>) {
     status = `${error.status}`
     message = error.status === 404 ? t('error.notFoundCode') : t('common.error')
     details = error.status === 404 ? t('error.pageNotFoundDescription') : error.statusText || details
+  } else if (isUnreachable(error)) {
+    // A request that never got an answer, as on a connection that dropped for a moment: said plainly
+    details = t('error.cannotReachServer')
   } else if (error instanceof Error) {
     details = error.message
-    if (error.stack) {
+    // Where it happened is for whoever is working on the app, not for someone using it
+    if (import.meta.env.DEV && error.stack) {
       stack = error.stack
     }
   }
@@ -38,9 +55,18 @@ export function ErrorPage({ error }: Readonly<Route.ErrorBoundaryProps>) {
               <code>{stack}</code>
             </pre>
           )}
-          <div className='flex justify-center gap-4'>
-            <Button asChild radius='small' size='2' type='button'>
-              <Link reloadDocument to='/'>
+          <div className='flex flex-wrap justify-center gap-4'>
+            <Button onClick={handleClickRetry} radius='small' size='2' type='button'>
+              <span className='icon-[mdi--reload]' />
+              {t('common.retry')}
+            </Button>
+
+            <Button asChild radius='small' size='2' type='button' variant='outline'>
+              <Link
+                className='border-2! bg-(--color-background)! shadow-none! in-[.dark]:border-(--gray-4)!'
+                reloadDocument
+                to='/'
+              >
                 <span className='icon-[mdi--home]' />
                 {t('nav.home')}
               </Link>

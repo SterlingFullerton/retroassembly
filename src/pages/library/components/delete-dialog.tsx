@@ -17,13 +17,17 @@ export function DeleteDialog({ description, onConfirm, onDeleted, title, ...prop
   const { t } = useTranslation()
   const refresh = useLibraryRefresh()
   const [deleting, setDeleting] = useState(false)
+  // Said in the dialog, which stays open: nothing was deleted
+  const [failed, setFailed] = useState(false)
 
   async function handleClickConfirmDelete() {
     setDeleting(true)
+    setFailed(false)
     try {
       await onConfirm()
     } catch {
       setDeleting(false)
+      setFailed(true)
       return
     }
     props.onOpenChange?.(false)
@@ -39,10 +43,16 @@ export function DeleteDialog({ description, onConfirm, onDeleted, title, ...prop
         <AlertDialog.Description className='leading-loose! whitespace-pre-line' size='2'>
           {description}
         </AlertDialog.Description>
+        {failed ? (
+          <p className='mt-3 flex items-center gap-2 text-sm text-(--red-11)' role='alert'>
+            <span className='icon-[mdi--alert-circle-outline] shrink-0' />
+            {t('error.deleteFailed')}
+          </p>
+        ) : null}
 
         <div className='mt-4 flex justify-end gap-3'>
           <AlertDialog.Cancel>
-            <Button disabled={deleting}>
+            <Button disabled={deleting} onClick={() => setFailed(false)}>
               <span className='icon-[mdi--close]' />
               {t('common.cancel')}
             </Button>

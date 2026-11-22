@@ -1,13 +1,14 @@
-import { useAtom } from 'jotai'
+import { useAtom, useSetAtom } from 'jotai'
 import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
 import { defaultPreference, type PreferenceSnippet } from '#@/constants/preference.ts'
-import { preferenceAtom } from '#@/pages/atoms.ts'
+import { preferenceAtom, preferenceSaveFailedAtom } from '#@/pages/atoms.ts'
 
 const { $post } = client.preference
 
 export function usePreference() {
   const [preference, setPreference] = useAtom(preferenceAtom)
+  const setSaveFailed = useSetAtom(preferenceSaveFailedAtom)
 
   const { isMutating: isLoading, trigger } = useSWRMutation(
     { endpoint: 'preference', method: 'post' },
@@ -16,7 +17,16 @@ export function usePreference() {
 
   async function update(value: PreferenceSnippet) {
     if (value) {
-      const newPreference = await parseResponse(trigger(value))
+      // A change that doesn't reach the server leaves its control as it was; the settings say why (see the dialog's
+      // note). It's still thrown, for whoever asked to stop there
+      let newPreference
+      try {
+        newPreference = await parseResponse(trigger(value))
+      } catch (error) {
+        setSaveFailed(true)
+        throw error
+      }
+      setSaveFailed(false)
       setPreference(newPreference)
       return newPreference
     }
