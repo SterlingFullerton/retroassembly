@@ -218,3 +218,36 @@ func TestPlayHistoryFollowsTheLibrary(t *testing.T) {
 		}
 	}
 }
+
+// A search's matches are kept between its requests, but never past a change to the library
+func TestSearchSeesChangesAtOnce(t *testing.T) {
+	api := newAPI(t)
+	player := api.register(t, "player")
+	count := func() int {
+		var counts struct {
+			Games     int `json:"games"`
+			Favorites int `json:"favorites"`
+		}
+		player.expectJSON(http.StatusOK, &counts, player.get("/api/v1/roms/search_counts?query=quest"))
+		return counts.Games*10 + counts.Favorites
+	}
+	first := player.addGame("Quest (USA).nes")
+	if got := count(); got != 10 {
+		t.Fatalf("one game: %d", got)
+	}
+	if got := count(); got != 10 {
+		t.Fatalf("asked again: %d", got)
+	}
+	second := player.addGame("Quest II (USA).nes")
+	if got := count(); got != 20 {
+		t.Fatalf("after adding one: %d", got)
+	}
+	player.expect(http.StatusOK, player.json(http.MethodPost, "/api/v1/favorites", map[string]string{"romId": second.ID}))
+	if got := count(); got != 21 {
+		t.Fatalf("after a favorite: %d", got)
+	}
+	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+first.ID, "", nil))
+	if got := count(); got != 11 {
+		t.Fatalf("after deleting one: %d", got)
+	}
+}

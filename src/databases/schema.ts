@@ -153,6 +153,43 @@ export const romTable = sqliteTable(
       table.gamePlayers,
       table.id,
     ),
+    // A game list sorted by name or by popularity reads its page straight from one of these, in order, rather than
+    // sorting every game for each page. One pair is for the lists of every console, one for a single console's. The
+    // expressions are the server's own (server/internal/library/gamelist.go), as idx_roms_rating's are
+    index('idx_roms_name').on(
+      table.userId,
+      table.status,
+      sql`lower(file_name)`,
+      table.id,
+      table.platform,
+      table.discGroup,
+    ),
+    index('idx_roms_name_platform').on(
+      table.userId,
+      table.status,
+      table.platform,
+      sql`lower(file_name)`,
+      table.id,
+      table.discGroup,
+    ),
+    index('idx_roms_popular').on(
+      table.userId,
+      table.status,
+      sql`CASE WHEN json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') > 0 THEN (json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') * json_extract(raw_game_metadata, '$.launchbox.communityRating') + 350.0) / (json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') + 100) END DESC`,
+      sql`lower(file_name)`,
+      table.id,
+      table.platform,
+      table.discGroup,
+    ),
+    index('idx_roms_popular_platform').on(
+      table.userId,
+      table.status,
+      table.platform,
+      sql`CASE WHEN json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') > 0 THEN (json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') * json_extract(raw_game_metadata, '$.launchbox.communityRating') + 350.0) / (json_extract(raw_game_metadata, '$.launchbox.communityRatingCount') + 100) END DESC`,
+      sql`lower(file_name)`,
+      table.id,
+      table.discGroup,
+    ),
   ],
 )
 

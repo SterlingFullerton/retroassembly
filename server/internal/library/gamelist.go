@@ -68,6 +68,10 @@ type RomList struct {
 	Search     *SearchInfo
 }
 
+// The indexes idx_roms_popular and idx_roms_name (and their _platform pair) hold this expression and the name's, in
+// the order a list sorted most popular first, or by name, reads them: a page is read from one, not sorted from every
+// game. They are used only for these exact expressions, so a change here is a change to them (migration 0014)
+//
 // Popular: the game's LaunchBox rating, weighted by how many people rated it, so a 4.9 from 3 votes doesn't beat a 4.4
 // from 600. It's the rating, pulled towards an average (3.5) as if by 100 more votes; games nobody rated sort last
 const popularity = `CASE WHEN json_extract(roms.raw_game_metadata, '$.launchbox.communityRatingCount') > 0 THEN
@@ -178,6 +182,12 @@ func GetRoms(ctx context.Context, scope Scope, platforms []string, query ListQue
 	// read in the order of their index
 	if orderBy != "added" {
 		order = append(order, "roms.id")
+	}
+
+	// Favorites only: the list starts from the few favorites, so they are sorted, rather than every game read in the
+	// order of a sort's index to find them. A unary + keeps the sort off the index and changes nothing else
+	if query.Favorite {
+		order[0] = "+" + order[0]
 	}
 
 	// Most played: how many times this player has launched the game, then how recently. Counted only for that order

@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"math"
+	"strings"
+	"sync"
+	"time"
 
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/search"
@@ -33,9 +36,82 @@ func number(value any) float64 {
 	return 0
 }
 
+// A search's matches are kept for a short while, as one search asks for them several times: for its list, for the
+// counts beside it, and again for each further page. They are kept only while nothing in the database changes, so a
+// game added, renamed, removed or made a favorite is in the next search
+type searchKey struct {
+	database              *sql.DB
+	user, owner, platform string
+	platforms, query      string
+	favorite              bool
+}
+
+type searchResult struct {
+	matches  []*search.Candidate
+	searched int
+	// The database as it was when they were found (see databaseVersion), and when that was
+	version [2]int64
+	found   time.Time
+}
+
+const (
+	searchesKept    = 32
+	searchesKeptFor = time.Minute
+)
+
+var searches = struct {
+	sync.Mutex
+	results map[searchKey]searchResult
+}{results: map[searchKey]searchResult{}}
+
+// databaseVersion changes whenever the database does: how many rows the server's one connection has changed, and
+// SQLite's own count of changes made by anything else
+func databaseVersion(ctx context.Context, database *sql.DB) (version [2]int64, err error) {
+	err = database.QueryRowContext(ctx,
+		`SELECT total_changes(), (SELECT data_version FROM pragma_data_version)`).Scan(&version[0], &version[1])
+	return version, err
+}
+
 // FindSearchMatches is every game in the list that matches a search, best match first, and how many games were
-// searched. The quick search and a game list's search box both use it, so they find the same games in the same order
+// searched. The quick search and a game list's search box both use it, so they find the same games in the same order.
+// The matches are shared between the requests of one search, and must not be changed
 func FindSearchMatches(ctx context.Context, scope Scope, narrow SearchScope, query string) ([]*search.Candidate, int, error) {
+	key := searchKey{
+		database: scope.Database, favorite: narrow.Favorite, owner: scope.LibraryOwnerID, platform: narrow.Platform,
+		platforms: strings.Join(narrow.Platforms, ","), query: query, user: scope.User.ID,
+	}
+	version, err := databaseVersion(ctx, scope.Database)
+	if err != nil {
+		return nil, 0, err
+	}
+	searches.Lock()
+	kept, found := searches.results[key]
+	searches.Unlock()
+	if found && kept.version == version && time.Since(kept.found) < searchesKeptFor {
+		return kept.matches, kept.searched, nil
+	}
+	matches, searched, err := findSearchMatches(ctx, scope, narrow, query)
+	if err != nil {
+		return nil, 0, err
+	}
+	searches.Lock()
+	defer searches.Unlock()
+	if len(searches.results) >= searchesKept {
+		// Few are kept, so making room is letting go of the stale ones, or else of them all
+		for old, result := range searches.results {
+			if result.version != version || time.Since(result.found) >= searchesKeptFor {
+				delete(searches.results, old)
+			}
+		}
+		if len(searches.results) >= searchesKept {
+			clear(searches.results)
+		}
+	}
+	searches.results[key] = searchResult{found: time.Now(), matches: matches, searched: searched, version: version}
+	return matches, searched, nil
+}
+
+func findSearchMatches(ctx context.Context, scope Scope, narrow SearchScope, query string) ([]*search.Candidate, int, error) {
 	where := `roms.user_id = ? AND roms.status = ? AND ` + listedOnce
 	arguments := []any{scope.User.ID, scope.LibraryOwnerID, db.StatusNormal}
 	if narrow.Platform != "" {
