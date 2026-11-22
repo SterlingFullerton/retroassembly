@@ -12,6 +12,7 @@ import { useSearchFromAddress } from '../../hooks/use-library-search.ts'
 import { useUploadPendingSaves } from '../../hooks/use-upload-pending-saves.ts'
 import { useWarnBeforeLeavingUpload } from '../../hooks/use-uploads.ts'
 import { useViewport } from '../../hooks/use-viewport.ts'
+import { Notice } from '../notice.tsx'
 import { PendingMask } from '../pending-mask.tsx'
 import { FocusIndicator } from './focus-indicator.tsx'
 import { LayoutHeader } from './layout-header/layout-header.tsx'
@@ -81,6 +82,7 @@ export default function LibraryLayout({ children }: Readonly<PropsWithChildren>)
       <PhoneSearchScreen />
 
       <PendingMask />
+      <Notice />
     </>
   )
 }

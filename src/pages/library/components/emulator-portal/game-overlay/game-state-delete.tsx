@@ -2,20 +2,24 @@ import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { useGameStates } from '../hooks/use-game-states.ts'
 
 const { $delete } = client.states[':id']
 export function GameStateDelete({ elementId, id, left }: Readonly<{ elementId: string; id: string; left: string }>) {
   const { t } = useTranslation()
+  const notify = useNotice()
   const { reloadStates } = useGameStates()
 
   const { isMutating, trigger } = useSWRMutation(
     { endpoint: 'roms', method: 'delete', param: { id } },
     () => $delete({ param: { id } }),
     {
+      onError: () => notify(t('error.deleteFailed')),
       async onSuccess() {
         await reloadStates()
       },
+      throwOnError: false,
     },
   )
 

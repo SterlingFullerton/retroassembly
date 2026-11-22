@@ -8,6 +8,7 @@ import { metadata } from '#@/constants/metadata.ts'
 import type { Rom } from '#@/pages/library/types.ts'
 import { usePristine } from '../atoms.ts'
 import { useLibraryRefresh } from '../hooks/use-library-refresh.ts'
+import { useNotice } from '../hooks/use-notice.ts'
 
 interface FavoriteButtonProps {
   rom: Rom
@@ -41,6 +42,7 @@ function showConfetti(element: HTMLElement, isTop: boolean) {
 export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) {
   const { t } = useTranslation()
   const refresh = useLibraryRefresh()
+  const notify = useNotice()
   const [isPending, startTransition] = useTransition()
   const [optimisticIsFavorite, setOptimisticIsFavorite] = useOptimistic(
     rom.isFavorite,
@@ -67,8 +69,13 @@ export function FavoriteButton({ rom, variant }: Readonly<FavoriteButtonProps>) 
 
     startTransition(async () => {
       setOptimisticIsFavorite(nextFavorite)
-      const prommise = rom.isFavorite ? remove() : add()
-      await prommise
+      // A failure is said, and the heart goes back to what it was once this ends
+      try {
+        await (rom.isFavorite ? remove() : add())
+      } catch {
+        notify(t('error.favoriteFailed'))
+        return
+      }
       await refresh()
     })
   }

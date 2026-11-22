@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import type { client, InferResponseType } from '#@/api/client.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
@@ -18,6 +19,7 @@ export function GameState({
   state,
 }: Readonly<{ state: Extract<InferResponseType<typeof client.states.$get>, any[]>[number] }>) {
   const { i18n, t } = useTranslation()
+  const notify = useNotice()
   const { preference } = usePreference()
   const { hide, setIsPending } = useGameOverlay()
   const { core, discs, emulator, switchToDisc } = useSession()
@@ -48,6 +50,8 @@ export function GameState({
     setIsPending(true)
     try {
       await loadState()
+    } catch {
+      notify(t('error.loadSnapshotFailed'))
     } finally {
       setIsPending(false)
     }

@@ -10,6 +10,7 @@ import { client, parseResponse } from '#@/api/client.ts'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
@@ -29,6 +30,7 @@ type Rom = Awaited<ReturnType<typeof loader>>['rom']
 /** Picks a save file from another emulator and keeps it as the game's save; `done` runs once it's kept */
 function useGameSaveUpload(rom: Rom, done: () => Promise<unknown>) {
   const { t } = useTranslation()
+  const notify = useNotice()
   const { preference } = usePreference()
   const core = preference.emulator.platform[rom.platform]?.core ?? ''
   const { saveFileType, saveFolder } = resolveConsole(rom.platform, core)
@@ -41,7 +43,7 @@ function useGameSaveUpload(rom: Rom, done: () => Promise<unknown>) {
     try {
       await client.game_saves.$post({ form: { core, file, fileType: saveFileType, rom: rom.id } })
     } catch {
-      alert(t('error.failedToUploadSave'))
+      notify(t('error.failedToUploadSave'))
       return
     }
     await done()
@@ -116,6 +118,7 @@ function InGameSaveDialog({ rom }: Readonly<{ rom: Rom }>) {
   const { i18n, t } = useTranslation()
   const { preference } = usePreference()
   const refresh = useLibraryRefresh()
+  const notify = useNotice()
   const ago = useAgo()
   const core = preference.emulator.platform[rom.platform]?.core ?? ''
   const dateFormat = preference.ui.dateFormat === 'auto' ? dateFormatMap[i18n.language] : preference.ui.dateFormat
@@ -138,7 +141,12 @@ function InGameSaveDialog({ rom }: Readonly<{ rom: Rom }>) {
   const { isMutating: isRestoring, trigger: restore } = useSWRMutation(
     'game_saves/restore',
     async (_key, { arg: id }: { arg: string }) => {
-      await client.game_saves[':id'].restore.$post({ param: { id } })
+      try {
+        await client.game_saves[':id'].restore.$post({ param: { id } })
+      } catch {
+        notify(t('error.restoreFailed'))
+        return
+      }
       await changed()
     },
   )

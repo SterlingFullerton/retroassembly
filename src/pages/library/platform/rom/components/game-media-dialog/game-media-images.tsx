@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { DialogThumbnail } from './dialog-thumbnail.tsx'
 
@@ -14,6 +15,7 @@ const {
 } = client.roms[':id'].thumbnail
 export function GameMediaImages() {
   const { t } = useTranslation()
+  const notify = useNotice()
   const rom = useRom()
   const [thumbnailFileIds, setThumbnailFileIds] = useState<string[]>(rom.gameThumbnailFileIds?.split(',') || [])
 
@@ -37,9 +39,14 @@ export function GameMediaImages() {
       return
     }
     const file = await fileOpen()
-    if (file) {
+    if (!file) {
+      return
+    }
+    try {
       const thumbnailIds = await uploadThumbnail({ file })
       setThumbnailFileIds(thumbnailIds?.split(',') || [])
+    } catch {
+      notify(t('error.uploadFailed'))
     }
   }
 
@@ -51,8 +58,12 @@ export function GameMediaImages() {
     if (!confirmed) {
       return
     }
-    const thumbnailIds = await deleteThumbnail({ id: rom.id, thumbnailId })
-    setThumbnailFileIds(thumbnailIds?.split(',') || [])
+    try {
+      const thumbnailIds = await deleteThumbnail({ id: rom.id, thumbnailId })
+      setThumbnailFileIds(thumbnailIds?.split(',') || [])
+    } catch {
+      notify(t('error.deleteFailed'))
+    }
   }
 
   return (

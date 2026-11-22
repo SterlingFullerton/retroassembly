@@ -8,6 +8,7 @@ import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import type { clientLoader as loader } from '#@/pages/routes/library-platform-rom.tsx'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
@@ -157,6 +158,7 @@ function SnapshotCard({
   const { t } = useTranslation()
   const { rom } = useLoaderData<typeof loader>()
   const refresh = useLibraryRefresh()
+  const notify = useNotice()
   const ago = useAgo()
   const time = ago(snapshot.createdAt)
   // Downloaded under the game's name and when the snapshot was taken, so several downloads don't overwrite each other
@@ -171,8 +173,13 @@ function SnapshotCard({
   )
 
   async function handleDelete() {
-    if (confirm(`${t('dialog.confirmDeleteTitle')}?`)) {
+    if (!confirm(`${t('dialog.confirmDeleteTitle')}?`)) {
+      return
+    }
+    try {
       await remove()
+    } catch {
+      notify(t('error.deleteFailed'))
     }
   }
 

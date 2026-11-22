@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
 import { platformMap, type PlatformName } from '#@/constants/platform.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { getFileMd5 } from '#@/utils/isomorphic/misc.ts'
 import { SettingsTitle } from '../settings-title.tsx'
@@ -14,6 +15,7 @@ const { $delete, $post } = client.preference.bioses
 
 export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
   const { t } = useTranslation()
+  const notify = useNotice()
   const { isLoading, preference, setPreference } = usePreference()
   const { bioses } = preference.emulator.platform[platform]
 
@@ -23,9 +25,11 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
     { endpoint: 'preference/bioses', method: 'delete' },
     (_key, { arg: fileName }: { arg: string }) => $delete({ query: { file_name: fileName, platform } }),
     {
+      onError: () => notify(t('error.deleteFailed')),
       async onSuccess(response) {
         setPreference(await parseResponse(response))
       },
+      throwOnError: false,
     },
   )
 
@@ -33,9 +37,11 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
     { endpoint: 'preference/bioses', method: 'post' },
     (_key, { arg: form }: { arg: InferRequestType<typeof $post>['form'] }) => $post({ form }),
     {
+      onError: () => notify(t('error.uploadFailed')),
       async onSuccess(response) {
         setPreference(await parseResponse(response))
       },
+      throwOnError: false,
     },
   )
 
