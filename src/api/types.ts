@@ -155,7 +155,6 @@ export interface LibraryLayoutData {
 
 export interface HomePageData {
   discs: Disc[]
-  favoriteRoms: Rom[]
   gameSave: GameSave | undefined
   heroReason: 'added' | 'played' | 'saved'
   inProgressRoms: SavedRom[]

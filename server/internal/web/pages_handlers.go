@@ -493,15 +493,6 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
-	favorites, err := library.GetRoms(ctx, scope, platforms, library.ListQuery{Favorite: true, PageSize: 20, WithoutTotal: true})
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	if err := s.withCovers(favorites.Roms); err != nil {
-		writeError(w, err)
-		return
-	}
 	launched, err := library.LaunchHistory(ctx, scope, platforms, 1, 1, "")
 	if err != nil {
 		writeError(w, err)
@@ -579,7 +570,7 @@ func (s *Server) homePageData(w http.ResponseWriter, r *http.Request, scope libr
 	if rom != nil {
 		romValue = rom
 	}
-	data := obj("discs", discs, "favoriteRoms", favorites.Roms)
+	data := obj("discs", discs)
 	if gameSave != nil {
 		data = append(data, library.Field{Key: "gameSave", Value: gameSave})
 	}

@@ -28,7 +28,7 @@ function ShuffleButton({ onClick }: Readonly<{ onClick: () => void }>) {
 
 export function LibraryHomePage() {
   const { t } = useTranslation()
-  const { favoriteRoms, newAddedRoms } = useLoaderData<typeof loader>()
+  const { newAddedRoms } = useLoaderData<typeof loader>()
   const rediscover = useRediscoverPicks()
   const playTogether = usePlayTogetherPicks()
   // A game can qualify for both rows; it's shown in Rediscover only
@@ -57,20 +57,13 @@ export function LibraryHomePage() {
 
       <OnThisDayRow />
 
-      {/* Side by side on a computer when there are both; Recently added alone takes the whole width */}
-      <div className={favoriteRoms.length > 0 ? 'xl:grid xl:grid-cols-2 xl:gap-8' : ''}>
-        {favoriteRoms.length > 0 ? (
-          <HomeRow link={generatePath(routes.libraryFavorites)} title={t('nav.favorites')}>
-            <GameRow roms={favoriteRoms} />
-          </HomeRow>
-        ) : null}
-        <HomeRow
-          link={`${generatePath(routes.libraryRoms)}?${new URLSearchParams({ direction: 'desc', sort: 'added' })}`}
-          title={t('home.recentlyAdded')}
-        >
-          <GameRow roms={newAddedRoms} />
-        </HomeRow>
-      </div>
+      {/* Favorites have no row here: they're a click away in the sidebar */}
+      <HomeRow
+        link={`${generatePath(routes.libraryRoms)}?${new URLSearchParams({ direction: 'desc', sort: 'added' })}`}
+        title={t('home.recentlyAdded')}
+      >
+        <GameRow roms={newAddedRoms} />
+      </HomeRow>
 
       {playTogetherRoms?.length ? (
         <HomeRow
