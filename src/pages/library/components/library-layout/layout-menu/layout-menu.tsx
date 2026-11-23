@@ -16,8 +16,11 @@ const DeviceStorageDialog = lazy(async () => {
   return { default: DeviceStorageDialog }
 })
 
-/** Settings, theme, device storage, about and log out. `inBar` is the phone's red bar, where it's a large icon like search beside it */
-export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
+/**
+ * Settings, theme, device storage, about and log out. `large` is a large icon: in the phone's red bar, like search beside
+ * it, and beside the logo in the sidebar
+ */
+export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
   const { t } = useTranslation()
   const [, setSpatialNavigationPaused] = useSpatialNavigationPaused()
 
@@ -42,11 +45,18 @@ export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
   return (
     <>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {inBar ? (
+        {/* Down moves on to what's under the button rather than opening the menu; Enter and Space open it */}
+        <DropdownMenu.Trigger
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault()
+            }
+          }}
+        >
+          {large ? (
             <button
               aria-label={t('common.menu')}
-              className='grid size-10 place-items-center text-white'
+              className='grid size-10 place-items-center rounded text-white transition-colors hover:bg-white/10'
               title={t('common.menu')}
               type='button'
             >

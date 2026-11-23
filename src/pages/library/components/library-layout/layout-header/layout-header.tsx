@@ -129,7 +129,7 @@ export function LayoutHeader() {
               <span className='icon-[mdi--magnify] size-6' />
             </button>
           )}
-          <div className='size-10 shrink-0'>{isNotLargeScreen ? <LayoutMenu inBar /> : null}</div>
+          <div className='size-10 shrink-0'>{isNotLargeScreen ? <LayoutMenu large /> : null}</div>
         </div>
       </header>
       <div className='h-12 w-full bg-(--accent-9) lg:hidden' />
