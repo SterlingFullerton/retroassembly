@@ -4,19 +4,27 @@ import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
+import type { Account } from '#@/api/types.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { AccountFormField } from '#@/pages/components/account-form-field.tsx'
 import { minPasswordLength } from '#@/pages/components/min-password-length.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { useAgo } from '#@/pages/library/platform/rom/components/use-ago.ts'
+import { AccountAdminControls } from './account-admin-controls.tsx'
+import { DeleteOwnAccount } from './delete-own-account.tsx'
+import { SignedInDevices } from './signed-in-devices.tsx'
 
 const { $patch } = client.auth.password
 
 interface UserTabContentProps {
+  /** The account as the admins' list has it, for an admin: its name and role can then be changed */
+  account?: Account
   canDelete: boolean
+  /** The user may delete this account, their own: anyone but the library's owner */
+  canDeleteOwn?: boolean
   onDelete?: () => void
   user: {
-    /** When the account was made and last used, which only the admin's list of accounts has */
+    /** When the account was made and last used, which only the admins' list of accounts has */
     createdAt?: string
     id: string
     lastActivityAt?: null | string
@@ -24,7 +32,13 @@ interface UserTabContentProps {
   }
 }
 
-export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabContentProps>) {
+export function UserTabContent({
+  account,
+  canDelete,
+  canDeleteOwn = false,
+  onDelete,
+  user,
+}: Readonly<UserTabContentProps>) {
   const { t } = useTranslation()
   const { mutate } = useSWRConfig()
   const { authMode, currentUser } = useGlobalLoaderData()
@@ -130,6 +144,8 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
           {t('auth.lastActive')}: {user.lastActivityAt ? ago(user.lastActivityAt) : t('common.never')}
         </Text>
       ) : null}
+
+      {account ? <AccountAdminControls user={account} /> : null}
 
       {/* Library mode toggle - only for non-super users (shown to super user) */}
       {canDelete ? (
@@ -294,6 +310,8 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
           </form>
         </>
       ) : null}
+      {isCurrentUser ? <SignedInDevices /> : null}
+      {isCurrentUser && canDeleteOwn ? <DeleteOwnAccount /> : null}
     </Flex>
   )
 }

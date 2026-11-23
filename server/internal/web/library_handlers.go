@@ -50,7 +50,7 @@ func (s *Server) updatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = auth.UpdatePassword(r.Context(), s.database, current.user, current.token, values["password"], values["new_password"], s.authMode)
-	end(!wrongPassword(err))
+	end(outcomeOf(err))
 	if err != nil {
 		writeError(w, err)
 		return

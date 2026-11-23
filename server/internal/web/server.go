@@ -49,7 +49,7 @@ type Server struct {
 	threadedConsoles map[string]bool
 }
 
-// adminID is the admin's account: the oldest one still in use
+// adminID is the library's owner: the oldest admin still in use
 func (s *Server) adminID(r *http.Request) (string, error) {
 	return auth.AdminID(r.Context(), s.database)
 }
@@ -226,7 +226,10 @@ func (s *Server) Handler() (http.Handler, error) {
 		"PATCH /api/v1/roms/{id}":                             s.signedIn(s.updateRom),
 		"GET /api/v1/users":                                   s.signedIn(s.listAccounts),
 		"POST /api/v1/users":                                  s.signedIn(s.addAccount),
-		"PATCH /api/v1/users/{id}":                            s.signedIn(s.setLibraryMode),
+		"PATCH /api/v1/users/{id}":                            s.signedIn(s.updateAccount),
+		"POST /api/v1/users/current/delete":                   s.signedIn(s.deleteOwnAccount),
+		"GET /api/v1/sessions":                                s.signedIn(s.listSessions),
+		"DELETE /api/v1/sessions/others":                      s.signedIn(s.endOtherSessions),
 		"DELETE /api/v1/users/{id}":                           s.signedIn(s.deleteAccount),
 		"PUT /api/v1/users/{id}/password":                     s.signedIn(s.resetPassword),
 		"DELETE /api/v1/roms/{id}":                            s.signedIn(s.deleteRom),

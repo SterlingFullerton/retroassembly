@@ -24,16 +24,13 @@ export function AccountsSettings() {
     parseResponse(client.users.$get()),
   )
 
-  // Check if current user is super user (first user)
-  const isSuperUser = users && users.length > 0 && users[0].id === currentUser.id
-
-  // Non-super users: Just show password change form without tabs
-  if (!isSuperUser) {
+  // Everyone else has only their own account: its password, where they're signed in, and deleting it
+  if (!isAdmin) {
     return (
       <div>
         <SettingsTitle>{t('common.accounts')}</SettingsTitle>
         <div>
-          <UserTabContent canDelete={false} user={currentUser} />
+          <UserTabContent canDelete={false} canDeleteOwn user={currentUser} />
         </div>
       </div>
     )
@@ -65,6 +62,16 @@ export function AccountsSettings() {
                     {t('common.current')}
                   </Badge>
                 ) : null}
+                {user.isSuper ? (
+                  <Badge color='amber' ml='2' size='1'>
+                    {t('auth.owner')}
+                  </Badge>
+                ) : null}
+                {user.role === 'admin' && !user.isSuper ? (
+                  <Badge color='gray' ml='2' size='1'>
+                    {t('auth.admin')}
+                  </Badge>
+                ) : null}
               </Tabs.Trigger>
             ))}
             <Tabs.Trigger
@@ -83,7 +90,13 @@ export function AccountsSettings() {
 
           {users?.map((user) => (
             <Tabs.Content key={user.id} value={user.id}>
-              <UserTabContent canDelete={!user.isSuper} onDelete={() => setDeleteDialogOpen(true)} user={user} />
+              <UserTabContent
+                account={user}
+                canDelete={!user.isSuper}
+                canDeleteOwn={!user.isSuper}
+                onDelete={() => setDeleteDialogOpen(true)}
+                user={user}
+              />
             </Tabs.Content>
           ))}
         </Tabs.Root>

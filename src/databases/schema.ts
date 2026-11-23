@@ -18,6 +18,12 @@ export const libraryModeEnum = {
   shared: 1,
 }
 
+// An admin manages the accounts. The oldest admin is the library's owner: accounts that share a library see theirs
+export const roleEnum = {
+  admin: 'admin',
+  user: 'user',
+} as const
+
 export const authenticationMethodEnum = {
   oidc: 'oidc',
   password: 'password',
@@ -47,6 +53,9 @@ export const userTable = sqliteTable(
     passwordHash: text(),
     registrationIp: text(),
     registrationUserAgent: text(),
+    role: text({ enum: [roleEnum.admin, roleEnum.user] })
+      .notNull()
+      .default(roleEnum.user),
     username: text().notNull(),
     ...baseSchema,
   },

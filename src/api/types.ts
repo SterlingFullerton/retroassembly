@@ -32,14 +32,28 @@ export type Preference = Json<ResolvedPreference>
 export interface User {
   id: string
   libraryMode: number
+  /** Admins manage the accounts */
+  role: 'admin' | 'user'
   username: string
 }
 
-/** An account, as the admin sees it */
+/** An account, as the admins see it */
 export interface Account extends User {
   createdAt: string
+  /** The library's owner: the oldest admin, who can't be deleted or made an ordinary user */
   isSuper: boolean
   lastActivityAt: null | string
+}
+
+/** A device the user is signed in on */
+export interface SignedInDevice {
+  createdAt: string
+  /** The one asking */
+  current: boolean
+  id: string
+  ip: null | string
+  lastActivityAt: string
+  userAgent: null | string
 }
 
 /** A game in a list: its row, how many discs it's on, and whether the player likes it */

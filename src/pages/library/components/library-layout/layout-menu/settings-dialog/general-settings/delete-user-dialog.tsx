@@ -44,7 +44,7 @@ export function DeleteUserDialog({ onOpenChange, onSuccess, open, userId }: Read
             {t('auth.deleteUser')}
           </div>
         </AlertDialog.Title>
-        <AlertDialog.Description>{t('dialog.confirmActionMessage')}</AlertDialog.Description>
+        <AlertDialog.Description>{t('auth.deleteAccountWarning')}</AlertDialog.Description>
         {error ? (
           <p className='mt-3 flex items-center gap-2 text-sm text-(--red-11)' role='alert'>
             <span className='icon-[mdi--alert-circle-outline] shrink-0' />

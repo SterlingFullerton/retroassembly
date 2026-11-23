@@ -261,3 +261,195 @@ func TestAdminResetsAForgottenPassword(t *testing.T) {
 	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
 	other.expect(http.StatusOK, other.get("/api/v1/preference"))
 }
+
+type roleAccount struct {
+	ID       string `json:"id"`
+	IsSuper  bool   `json:"isSuper"`
+	Role     string `json:"role"`
+	Username string `json:"username"`
+}
+
+func TestAdminsAreMadeAndUnmade(t *testing.T) {
+	api := newAPI(t)
+	owner := api.register(t, "owner")
+	helper := api.register(t, "helper")
+	player := api.register(t, "player")
+	setRole := func(by *apiUser, id, role string) response {
+		return by.form(http.MethodPatch, "/api/v1/users/"+id, url.Values{"role": {role}})
+	}
+
+	// The first account is the admin and the library's owner; the rest are users
+	var accounts []roleAccount
+	owner.expectJSON(http.StatusOK, &accounts, owner.get("/api/v1/users"))
+	if accounts[0].Role != "admin" || !accounts[0].IsSuper || accounts[1].Role != "user" || accounts[2].Role != "user" {
+		t.Fatalf("accounts: %+v", accounts)
+	}
+
+	// A user can't make themselves an admin; an admin can make them one, and they then manage accounts
+	helper.expect(http.StatusForbidden, setRole(helper, helper.id, "admin"))
+	owner.expect(http.StatusBadRequest, setRole(owner, helper.id, "boss"))
+	owner.expect(http.StatusOK, setRole(owner, helper.id, "admin"))
+	helper.expectJSON(http.StatusOK, &accounts, helper.get("/api/v1/users"))
+	if accounts[1].Role != "admin" || accounts[1].IsSuper {
+		t.Fatalf("accounts: %+v", accounts)
+	}
+	helper.expect(http.StatusOK, helper.form(http.MethodPost, "/api/v1/users",
+		url.Values{"libraryMode": {"1"}, "password": {"password-guest"}, "username": {"guest"}}))
+
+	// The owner keeps their role, library and account, and their password is theirs alone to change
+	helper.expect(http.StatusUnprocessableEntity, setRole(helper, owner.id, "user"))
+	helper.expect(http.StatusUnprocessableEntity, helper.form(http.MethodPatch, "/api/v1/users/"+owner.id,
+		url.Values{"libraryMode": {"1"}}))
+	helper.expect(http.StatusUnprocessableEntity, helper.send(http.MethodDelete, "/api/v1/users/"+owner.id, "", nil))
+	helper.expect(http.StatusUnprocessableEntity, helper.form(http.MethodPut, "/api/v1/users/"+owner.id+"/password",
+		url.Values{"new_password": {"another-password"}}))
+
+	// Shared libraries are still the owner's, whoever else is an admin
+	if owned := api.count(t, `SELECT count(*) FROM users WHERE status = 1 AND role = 'admin'`); owned != 2 {
+		t.Fatalf("%d admins", owned)
+	}
+
+	// Made a user again, they're refused once more
+	owner.expect(http.StatusOK, setRole(owner, helper.id, "user"))
+	helper.expect(http.StatusForbidden, helper.get("/api/v1/users"))
+	player.expect(http.StatusForbidden, player.get("/api/v1/users"))
+}
+
+func TestAdminRenamesAnAccount(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	player := api.register(t, "player")
+	api.register(t, "other")
+	rename := func(by *apiUser, id, username string) response {
+		return by.form(http.MethodPatch, "/api/v1/users/"+id, url.Values{"username": {username}})
+	}
+
+	player.expect(http.StatusForbidden, rename(player, player.id, "champion"))
+	admin.expect(http.StatusBadRequest, rename(admin, player.id, "two words"))
+	admin.expect(http.StatusConflict, rename(admin, player.id, "Other"))
+	admin.expect(http.StatusBadRequest, admin.form(http.MethodPatch, "/api/v1/users/"+player.id, url.Values{}))
+
+	// Only its capitals, then a new name; the owner can be renamed too
+	admin.expect(http.StatusOK, rename(admin, player.id, "Player"))
+	admin.expect(http.StatusOK, rename(admin, player.id, "champion"))
+	admin.expect(http.StatusOK, rename(admin, admin.id, "boss"))
+
+	// They stay signed in, and sign in with the new name and the same password
+	player.expect(http.StatusOK, player.get("/api/v1/preference"))
+	again := api.browser(t)
+	again.expect(http.StatusOK, again.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-player"}, "username": {"champion"}}))
+	again.expect(http.StatusUnauthorized, again.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-player"}, "username": {"player"}}))
+}
+
+func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	player := api.register(t, "player")
+	other := api.register(t, "other")
+
+	// Each has a game of their own, a favorite, and settings
+	kept := other.addGame("kept.nes")
+	gone := player.addGame("gone.nes")
+	for user, game := range map[*apiUser]game{other: kept, player: gone} {
+		user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/favorites", map[string]string{"romId": game.ID}))
+		user.expect(http.StatusOK, user.form(http.MethodPost, "/api/v1/launch_records", url.Values{"core": {"fceumm"}, "rom": {game.ID}}))
+		user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/preference", map[string]any{"ui": map[string]any{"language": "fr"}}))
+	}
+	left := func(table, userID string) int {
+		query := `SELECT count(*) FROM ` + table + ` WHERE user_id = ?`
+		if table != "user_preferences" && table != "sessions" {
+			query += ` AND status = 1`
+		}
+		return api.count(t, query, userID)
+	}
+	for _, table := range []string{"roms", "favorites", "launch_records", "user_preferences", "sessions"} {
+		if left(table, player.id) == 0 {
+			t.Fatalf("the player has nothing in %s to begin with", table)
+		}
+	}
+
+	admin.expect(http.StatusNotFound, admin.send(http.MethodDelete, "/api/v1/users/nobody", "", nil))
+	admin.expect(http.StatusOK, admin.send(http.MethodDelete, "/api/v1/users/"+player.id, "", nil))
+
+	for _, table := range []string{"roms", "favorites", "launch_records", "user_preferences", "sessions"} {
+		if count := left(table, player.id); count != 0 {
+			t.Errorf("the deleted account still has %d in %s", count, table)
+		}
+		if left(table, other.id) == 0 {
+			t.Errorf("another account lost what it had in %s", table)
+		}
+	}
+	player.expect(http.StatusUnauthorized, player.get("/api/v1/preference"))
+	other.expect(http.StatusOK, other.get("/api/v1/roms/"+kept.ID+"/content"))
+
+	// The name is free again, and a new account with it starts with nothing
+	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
+		url.Values{"libraryMode": {"0"}, "password": {"password-player"}, "username": {"player"}}))
+	again := api.login(t, "player")
+	if again.id == player.id || left("roms", again.id) != 0 {
+		t.Fatal("the new account has the deleted one's games")
+	}
+}
+
+func TestSomeoneDeletesTheirOwnAccount(t *testing.T) {
+	api := newAPI(t)
+	owner := api.register(t, "owner")
+	player := api.register(t, "player")
+	deleteOwn := func(by *apiUser, password string) response {
+		return by.form(http.MethodPost, "/api/v1/users/current/delete", url.Values{"password": {password}})
+	}
+
+	// Not without their password, and never the owner
+	player.expect(http.StatusUnauthorized, deleteOwn(player, "not-my-password"))
+	owner.expect(http.StatusUnprocessableEntity, deleteOwn(owner, "password-owner"))
+	stranger := api.browser(t)
+	stranger.expect(http.StatusUnauthorized, deleteOwn(stranger, "password-player"))
+
+	player.expect(http.StatusOK, deleteOwn(player, "password-player"))
+	player.expect(http.StatusUnauthorized, player.get("/api/v1/preference"))
+	again := api.browser(t)
+	again.expect(http.StatusUnauthorized, again.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-player"}, "username": {"player"}}))
+	if api.count(t, `SELECT count(*) FROM users WHERE status = 1`) != 1 {
+		t.Fatal("the owner should be the only account left")
+	}
+}
+
+func TestSignedInDevicesAreListedAndSignedOut(t *testing.T) {
+	api := newAPI(t)
+	api.register(t, "admin")
+	phone := api.register(t, "player")
+	laptop := api.login(t, "player")
+	tablet := api.login(t, "player")
+
+	type device struct {
+		Current bool   `json:"current"`
+		ID      string `json:"id"`
+	}
+	var devices []device
+	laptop.expectJSON(http.StatusOK, &devices, laptop.get("/api/v1/sessions"))
+	current := 0
+	for _, each := range devices {
+		if each.Current {
+			current++
+		}
+	}
+	if len(devices) != 3 || current != 1 {
+		t.Fatalf("devices: %+v", devices)
+	}
+
+	// Signed out everywhere else, and only there
+	laptop.expect(http.StatusOK, laptop.send(http.MethodDelete, "/api/v1/sessions/others", "", nil))
+	laptop.expect(http.StatusOK, laptop.get("/api/v1/preference"))
+	phone.expect(http.StatusUnauthorized, phone.get("/api/v1/preference"))
+	tablet.expect(http.StatusUnauthorized, tablet.get("/api/v1/preference"))
+	laptop.expectJSON(http.StatusOK, &devices, laptop.get("/api/v1/sessions"))
+	if len(devices) != 1 || !devices[0].Current {
+		t.Fatalf("devices: %+v", devices)
+	}
+	if api.count(t, `SELECT count(*) FROM sessions WHERE user_id = ?`, laptop.id) != 1 {
+		t.Fatal("the other sessions are still kept")
+	}
+}

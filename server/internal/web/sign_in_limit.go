@@ -72,9 +72,27 @@ func (l *signInLimit) waitFor(key string, limit int, now time.Time) time.Duratio
 	return failureWindow - now.Sub(counted.since)
 }
 
+// How a password check ended: the password was right, it was wrong, or there was none to judge, as when a sign-up is
+// refused for its username
+type signInOutcome int
+
+const (
+	signedIn signInOutcome = iota
+	wrongPasswordGiven
+	notChecked
+)
+
+// outcomeOf is how a sign-in that ended with err went: only a password that didn't match counts against it
+func outcomeOf(err error) signInOutcome {
+	if wrongPassword(err) {
+		return wrongPasswordGiven
+	}
+	return signedIn
+}
+
 // begin starts a password check for an address and username, or is the error to answer with: too many failures, or
-// too many checks under way. A started check is ended with the function it returns, saying whether it succeeded
-func (l *signInLimit) begin(address, username string) (func(succeeded bool), error) {
+// too many checks under way. A started check is ended with the function it returns, saying how it went
+func (l *signInLimit) begin(address, username string) (func(signInOutcome), error) {
 	now := time.Now()
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
@@ -90,14 +108,18 @@ func (l *signInLimit) begin(address, username string) (func(succeeded bool), err
 		return nil, failure.New(http.StatusTooManyRequests, "Too many sign-ins at once. Try again in a moment")
 	}
 	l.hashing[address]++
-	return func(succeeded bool) {
+	return func(outcome signInOutcome) {
 		l.mutex.Lock()
 		defer l.mutex.Unlock()
 		if l.hashing[address]--; l.hashing[address] <= 0 {
 			delete(l.hashing, address)
 		}
+		// Nothing learned about the password: the count of wrong ones stays as it was
+		if outcome == notChecked {
+			return
+		}
 		key := accountKey(address, username)
-		if succeeded || l.maxFailuresPerAccount == 0 {
+		if outcome == signedIn || l.maxFailuresPerAccount == 0 {
 			delete(l.failed, key)
 			return
 		}

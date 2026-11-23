@@ -71,11 +71,15 @@ func OIDCUser(ctx context.Context, database *sql.DB, issuer, subject, username s
 		}
 	case errors.Is(err, sql.ErrNoRows):
 		userID = ids.New()
+		role, roleErr := firstRole(ctx, transaction)
+		if roleErr != nil {
+			return "", roleErr
+		}
 		_, err = transaction.ExecContext(ctx, `
-			INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, username, created_at,
-				id, status, updated_at)
-			VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
-			0, optional(client.IP), optional(client.UserAgent), username, now, userID, db.StatusNormal, now)
+			INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, role, username,
+				created_at, id, status, updated_at)
+			VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			0, optional(client.IP), optional(client.UserAgent), role, username, now, userID, db.StatusNormal, now)
 		if err != nil {
 			return "", err
 		}

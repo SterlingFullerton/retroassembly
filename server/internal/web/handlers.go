@@ -59,7 +59,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	session, user, err := auth.Login(r.Context(), s.database, values["username"], values["password"], client(r))
-	end(!wrongPassword(err))
+	end(outcomeOf(err))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -82,12 +82,14 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	defer end(true)
 	user, err := s.signUp(r, values["username"], values["password"])
 	if err != nil {
+		// A refused sign-up says nothing about anyone's password, so it doesn't clear the wrong ones counted for a name
+		end(notChecked)
 		writeError(w, err)
 		return
 	}
+	end(signedIn)
 	// Signed in straight away. The Node server checks the new password again first, which costs another hash
 	session, err := auth.StartPasswordSession(r.Context(), s.database, user.ID, client(r))
 	if err != nil {

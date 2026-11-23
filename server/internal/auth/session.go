@@ -39,7 +39,9 @@ func (t JSTime) MarshalJSON() ([]byte, error) {
 type User struct {
 	ID          string `json:"id"`
 	LibraryMode int    `json:"libraryMode"`
-	Username    string `json:"username"`
+	// "admin" for those who manage the accounts, "user" for everyone else
+	Role     string `json:"role"`
+	Username string `json:"username"`
 }
 
 // Session is a sessions row, as the API answers it, in the order of the Node server's columns
@@ -117,12 +119,12 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 		user                               User
 	)
 	err := database.QueryRowContext(ctx, `
-		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.library_mode, u.username
+		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.library_mode, u.role, u.username
 		FROM sessions s INNER JOIN users u ON s.user_id = u.id
 		WHERE s.token = ? AND s.status = ? AND u.status = ? AND s.authentication_method = ? AND s.expires_at > ?
 		LIMIT 1`,
 		token, db.StatusNormal, db.StatusNormal, method, db.Millis(now),
-	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.LibraryMode, &user.Username)
+	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.LibraryMode, &user.Role, &user.Username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -201,9 +203,9 @@ func Login(ctx context.Context, database *sql.DB, username, password string, cli
 	err = sql.ErrNoRows
 	if name != "" {
 		err = database.QueryRowContext(ctx,
-			`SELECT id, library_mode, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
+			`SELECT id, library_mode, role, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
 			name, db.StatusNormal,
-		).Scan(&user.ID, &user.LibraryMode, &user.Username, &passwordHash)
+		).Scan(&user.ID, &user.LibraryMode, &user.Role, &user.Username, &passwordHash)
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, err
@@ -332,13 +334,18 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 			return nil, errRegistrationClosed
 		}
 	}
+	// The first account is the admin, and the library's owner
+	role, err := firstRole(ctx, transaction)
+	if err != nil {
+		return nil, err
+	}
 	now := db.Millis(time.Now())
-	user := User{ID: ids.New(), LibraryMode: libraryMode, Username: username}
+	user := User{ID: ids.New(), LibraryMode: libraryMode, Role: role, Username: username}
 	_, err = transaction.ExecContext(ctx, `
-		INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, username, created_at,
-			id, status, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		user.LibraryMode, passwordHash, optional(client.IP), optional(client.UserAgent), username, now, user.ID,
+		INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, role, username,
+			created_at, id, status, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		user.LibraryMode, passwordHash, optional(client.IP), optional(client.UserAgent), role, username, now, user.ID,
 		db.StatusNormal, now,
 	)
 	if err != nil {
@@ -350,21 +357,31 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 	return &user, nil
 }
 
-// LibraryOwnerID is whose library the user sees: their own, or the admin's (the oldest account still in use) for an
+// firstRole is the role a new account gets: admin while there's no admin, as for the first account, and user after
+func firstRole(ctx context.Context, query interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}) (string, error) {
+	var admins int
+	err := query.QueryRowContext(ctx, `SELECT count(*) FROM users WHERE status = ? AND role = ?`, db.StatusNormal, RoleAdmin).Scan(&admins)
+	if err != nil || admins > 0 {
+		return RoleUser, err
+	}
+	return RoleAdmin, nil
+}
+
+// LibraryOwnerID is whose library the user sees: their own, or the owner's (the oldest admin still in use) for an
 // account that shares the admin's library
 func LibraryOwnerID(ctx context.Context, database *sql.DB, user *User) (string, error) {
 	const shared = 1
 	if user.LibraryMode != shared {
 		return user.ID, nil
 	}
-	var adminID string
-	err := database.QueryRowContext(ctx,
-		`SELECT id FROM users WHERE status = ? ORDER BY created_at ASC LIMIT 1`, db.StatusNormal).Scan(&adminID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return user.ID, nil
-	}
+	adminID, err := AdminID(ctx, database)
 	if err != nil {
 		return "", err
+	}
+	if adminID == "" {
+		return user.ID, nil
 	}
 	return adminID, nil
 }

@@ -25,6 +25,7 @@ import type {
   SearchCounts,
   SearchPage,
   Session,
+  SignedInDevice,
   State,
   User,
 } from './types.ts'
@@ -153,10 +154,15 @@ export interface ApiRoutes {
   users: {
     ':id': {
       $delete: Endpoint<Id, { success: true }>
-      $patch: Endpoint<Id & { form: { libraryMode: string } }, User>
+      $patch: Endpoint<Id & { form: { libraryMode?: string; role?: string; username?: string } }, User>
       password: { $put: Endpoint<Id & { form: { new_password: string } }, { success: true }> }
     }
     $get: Endpoint<NoInput, Account[]>
     $post: Endpoint<{ form: { libraryMode?: string; password?: string; username: string } }, User>
+    current: { delete: { $post: Endpoint<{ form: { password?: string } }, { success: true }> } }
+  }
+  sessions: {
+    $get: Endpoint<NoInput, SignedInDevice[]>
+    others: { $delete: Endpoint<NoInput, { ended: number }> }
   }
 }

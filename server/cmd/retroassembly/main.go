@@ -108,6 +108,17 @@ func run() error {
 	if _, err := db.Migrate(database, c.MigrationsDirectory); err != nil {
 		return err
 	}
+	// Sessions that were signed out of or have expired are forgotten, now and once a day
+	go func() {
+		for {
+			if removed, err := auth.RemoveEndedSessions(context.Background(), database); err != nil {
+				log.Printf("Ended sessions weren't removed: %v", err)
+			} else if removed > 0 {
+				log.Printf("Removed %d ended sessions", removed)
+			}
+			time.Sleep(24 * time.Hour)
+		}
+	}()
 	data, err := shared.Load()
 	if err != nil {
 		return err

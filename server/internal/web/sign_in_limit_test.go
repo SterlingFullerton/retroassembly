@@ -15,7 +15,7 @@ func TestSignInLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		end(false)
+		end(wrongPasswordGiven)
 	}
 	if _, err := limit.begin("192.0.2.1", " Admin "); !isStatus(err, http.StatusTooManyRequests) {
 		t.Fatalf("after %d failures: %v", limit.maxFailuresPerAccount, err)
@@ -26,11 +26,11 @@ func TestSignInLimit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v: %v", attempt, err)
 		}
-		end(true)
+		end(signedIn)
 	}
 
 	// Sign-ins under way from one address are limited, and a finished one makes room
-	var ends []func(bool)
+	var ends []func(signInOutcome)
 	for range maxHashingPerAddress {
 		end, err := limit.begin("192.0.2.3", "someone")
 		if err != nil {
@@ -41,7 +41,7 @@ func TestSignInLimit(t *testing.T) {
 	if _, err := limit.begin("192.0.2.3", "someone"); !isStatus(err, http.StatusTooManyRequests) {
 		t.Fatalf("one too many under way: %v", err)
 	}
-	ends[0](true)
+	ends[0](signedIn)
 	if _, err := limit.begin("192.0.2.3", "someone"); err != nil {
 		t.Fatal(err)
 	}
@@ -60,9 +60,34 @@ func TestSignInLimitOff(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		end(false)
+		end(wrongPasswordGiven)
 	}
 	if len(limit.failed) != 0 {
 		t.Fatalf("failures counted: %v", limit.failed)
+	}
+}
+
+func TestRefusedSignUpKeepsTheCount(t *testing.T) {
+	limit := newSignInLimit(2)
+	for range 2 {
+		end, err := limit.begin("address", "name")
+		if err != nil {
+			t.Fatal(err)
+		}
+		end(wrongPasswordGiven)
+	}
+	// Nothing was learned about the password, so the two wrong ones still count
+	if _, err := limit.begin("address", "name"); err == nil {
+		t.Fatal("a third try was allowed")
+	}
+	limit = newSignInLimit(2)
+	end, _ := limit.begin("address", "name")
+	end(wrongPasswordGiven)
+	end, _ = limit.begin("address", "name")
+	end(notChecked)
+	end, _ = limit.begin("address", "name")
+	end(wrongPasswordGiven)
+	if _, err := limit.begin("address", "name"); err == nil {
+		t.Fatal("a sign-up refused in between cleared the count")
 	}
 }
