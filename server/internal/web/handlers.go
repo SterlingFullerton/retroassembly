@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,8 +65,20 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
+	s.endReplacedSession(r, session)
 	setSessionCookie(w, r, session)
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
+}
+
+// endReplacedSession ends the session the browser was signed in with before it signed in again, which nothing would
+// use any more: its cookie is about to be replaced. Left alone, each sign-in would leave another behind until it
+// expired, and the list of signed-in devices would fill with them
+func (s *Server) endReplacedSession(r *http.Request, session *auth.Session) {
+	if previous := stateOf(r).token; previous != "" && previous != session.Token {
+		if err := auth.InvalidateSession(r.Context(), s.database, previous); err != nil {
+			log.Printf("The session signed in over wasn't ended: %v", err)
+		}
+	}
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +109,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
+	s.endReplacedSession(r, session)
 	setSessionCookie(w, r, session)
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
 }

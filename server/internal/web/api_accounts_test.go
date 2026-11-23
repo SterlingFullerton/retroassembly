@@ -453,3 +453,20 @@ func TestSignedInDevicesAreListedAndSignedOut(t *testing.T) {
 		t.Fatal("the other sessions are still kept")
 	}
 }
+
+func TestSigningInAgainReplacesTheSession(t *testing.T) {
+	api := newAPI(t)
+	api.register(t, "admin")
+	player := api.register(t, "player")
+	for range 3 {
+		player.expect(http.StatusOK, player.form(http.MethodPost, "/api/v1/auth/login",
+			url.Values{"password": {"password-player"}, "username": {"player"}}))
+	}
+	// One browser, one session, however many times it signed in; another browser has its own
+	other := api.login(t, "player")
+	if sessions := api.count(t, `SELECT count(*) FROM sessions WHERE user_id = ? AND status = 1`, player.id); sessions != 2 {
+		t.Fatalf("%d sessions for 2 browsers", sessions)
+	}
+	player.expect(http.StatusOK, player.get("/api/v1/preference"))
+	other.expect(http.StatusOK, other.get("/api/v1/preference"))
+}

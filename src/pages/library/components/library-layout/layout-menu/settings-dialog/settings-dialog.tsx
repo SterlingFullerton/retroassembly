@@ -1,21 +1,26 @@
-import { Button, Dialog, ScrollArea, Tabs } from '@radix-ui/themes'
+import { Button, Dialog, ScrollArea } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { useAtom } from 'jotai'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { preferenceSaveFailedAtom } from '#@/pages/atoms.ts'
+import { Tabs } from '#@/pages/components/tabs.tsx'
 import { useSettingsDialogTabName } from '#@/pages/library/atoms.ts'
 import { DialogRoot } from '../../../dialog-root.tsx'
 import { EmulatingSettings } from './emulating-settings/emulating-settings.tsx'
+import { AccountsSettings } from './general-settings/accounts-settings.tsx'
 import { GeneralSettings } from './general-settings/general-settings.tsx'
 import { InputsSettings } from './inputs-settings/inputs-setting.tsx'
 import { LibrarySettings } from './library-settings/library-settings.tsx'
 
-const settingsTabs = [
+// Each tab's name is its message, `settings.<name>`, unless it gives another
+const settingsTabs: { content: () => ReactNode; iconClass: string; label?: string; name: string }[] = [
   { content: LibrarySettings, iconClass: 'icon-[mdi--bookshelf]', name: 'library' },
   { content: InputsSettings, iconClass: 'icon-[mdi--controller]', name: 'inputs' },
   { content: EmulatingSettings, iconClass: 'icon-[simple-icons--retroarch]', name: 'emulating' },
   { content: GeneralSettings, iconClass: 'icon-[mdi--cog]', name: 'general' },
+  // The user's own account and, for an admin, everyone's
+  { content: AccountsSettings, iconClass: 'icon-[mdi--account]', label: 'common.accounts', name: 'accounts' },
 ]
 
 // Whether the mouse or a finger, or the keyboard, was used last
@@ -72,22 +77,22 @@ export function SettingsDialog({ onOpenChange, ...props }: Readonly<Dialog.RootP
             A tab opens when clicked, or with Enter or a controller's confirm button: the arrow keys and a controller only
             move between them, and so does the mouse, which moves the focus as it passes over them
           */}
-          <Tabs.Root activationMode='manual' asChild onValueChange={handleValueChange} value={tabName}>
+          <Tabs.Root asChild onValueChange={handleValueChange} value={tabName}>
             <div className='settings-fill'>
               <Tabs.List>
-                {settingsTabs.map(({ iconClass, name }) => (
-                  <Tabs.Trigger aria-label={t(`settings.${name}`)} key={name} value={name}>
+                {settingsTabs.map(({ iconClass, name, label = `settings.${name}` }) => (
+                  <Tabs.Trigger aria-label={t(label)} key={name} value={name}>
                     <span
                       className={clsx('size-5', iconClass, {
                         'mr-2': name === tabName,
                         'mr-2 max-sm:mr-0': name !== tabName,
                       })}
                     />
-                    {/* On a phone only the open tab is named, so all four fit across */}
+                    {/* On a phone only the open tab is named, so all five fit across */}
                     <span
                       className={clsx('text-lg capitalize max-sm:text-base', { 'max-sm:hidden': name !== tabName })}
                     >
-                      {t(`settings.${name}`)}
+                      {t(label)}
                     </span>
                   </Tabs.Trigger>
                 ))}
