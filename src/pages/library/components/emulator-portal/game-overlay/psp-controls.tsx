@@ -33,16 +33,10 @@ const faceButtons: [
   color: string,
   className: string,
 ][] = [
-  [
-    'Triangle',
-    'x',
-    'triangle',
-    '#3fcf8e',
-    'right-[64px] bottom-[307px] landscape:right-[48px] landscape:bottom-[251px]',
-  ],
-  ['Square', 'y', 'square', '#e88ac8', 'right-[112px] bottom-[259px] landscape:right-[86px] landscape:bottom-[213px]'],
-  ['Circle', 'a', 'circle', '#ff5a5a', 'right-[16px] bottom-[259px] landscape:right-[10px] landscape:bottom-[213px]'],
-  ['Cross', 'b', 'cross', '#7aa8ff', 'right-[64px] bottom-[211px] landscape:right-[48px] landscape:bottom-[175px]'],
+  ['Triangle', 'x', 'triangle', '#3fcf8e', 'right-[64px] bottom-[307px] landscape:bottom-[242px]'],
+  ['Square', 'y', 'square', '#e88ac8', 'right-[112px] bottom-[259px] landscape:bottom-[194px]'],
+  ['Circle', 'a', 'circle', '#ff5a5a', 'right-[16px] bottom-[259px] landscape:bottom-[194px]'],
+  ['Cross', 'b', 'cross', '#7aa8ff', 'right-[64px] bottom-[211px] landscape:bottom-[146px]'],
 ]
 
 const black: CSSProperties = {
@@ -54,19 +48,17 @@ const black: CSSProperties = {
 const shoulder = twMerge(
   pressed,
   'absolute bottom-[366px] grid h-12 w-34 place-items-center text-sm font-extrabold text-[#c8c8ce]',
-  'landscape:bottom-[296px] landscape:h-10 landscape:w-27.5 landscape:text-xs',
+  'landscape:bottom-[292px] landscape:h-11 landscape:w-33 landscape:text-xs',
 )
-
-// The top bar with pause, Select and Start, drawn over the top of the game's picture
-const topBarHeight = 44
 
 export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 150 points wide, and 450 tall in portrait; they shrink on smaller screens. Sideways the
   // game fills the screen's height, under the top bar, and the controls sit over its edges: they keep the size they had
   // when the game was kept below the bar, rather than shrinking to stay clear of it
-  const scale = useControlsScale(150, 480 / 272, { gameTop: topBarHeight, portraitHeight: 450 })
-  // In landscape each side is centred in the height below the top bar; its tallest part, L or R, tops out at 336 points
+  const scale = useControlsScale(480 / 272, { portraitHeight: 450 })
+  // In landscape each side is centred in the height below the top bar; its tallest part, L or R, tops out at 336 points,
+  // and the buttons are as large as in portrait, with less space between them
   const side = { '--controls-height': `${336 * scale}px`, scale } as CSSProperties
 
   return (
@@ -82,9 +74,9 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
         >
           L
         </VirtualGamepadButton>
-        <DPad className='absolute bottom-[214px] left-5 size-34 landscape:bottom-[176px] landscape:left-4 landscape:size-27.5' />
+        <DPad className='absolute bottom-[214px] left-5 size-34 landscape:bottom-[152px] landscape:left-4 landscape:size-33' />
         <Thumbstick
-          className='absolute bottom-17 left-16 size-30 landscape:bottom-14 landscape:left-10 landscape:size-26'
+          className='absolute bottom-17 left-16 size-30 landscape:bottom-10 landscape:left-10 landscape:size-26'
           stick='left'
         />
       </div>
@@ -103,17 +95,13 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
         {faceButtons.map(([label, buttonName, symbol, color, className]) => (
           <VirtualGamepadButton
             buttonName={buttonName}
-            className={twMerge(
-              pressed,
-              'absolute grid size-11.5 place-items-center rounded-full landscape:size-9',
-              className,
-            )}
+            className={twMerge(pressed, 'absolute grid size-11.5 place-items-center rounded-full', className)}
             group='face'
             key={label}
             style={{ ...black, color }}
             title={label}
           >
-            <svg aria-hidden className='size-5 landscape:size-4' viewBox='0 0 24 24'>
+            <svg aria-hidden className='size-5' viewBox='0 0 24 24'>
               {symbols[symbol]}
             </svg>
           </VirtualGamepadButton>

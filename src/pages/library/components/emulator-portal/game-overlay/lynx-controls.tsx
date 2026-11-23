@@ -24,12 +24,12 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
   // Each side's controls are about 120 points wide in landscape; the Lynx's picture is wide (about 16:10), which leaves
   // little room beside it. On smaller screens they shrink towards their corner. Each group hangs off a point with no
   // size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(120, 160 / 102)
+  const scale = useControlsScale(160 / 102)
 
   return (
     <>
       <Corner scale={scale} side='left' visible={visible}>
-        <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-14 landscape:left-2.5 landscape:size-26.5' />
+        <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-14 landscape:left-2.5 landscape:size-33' />
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>

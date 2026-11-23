@@ -60,7 +60,7 @@ export function Atari5200Controls({
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
 
   return (
     <>

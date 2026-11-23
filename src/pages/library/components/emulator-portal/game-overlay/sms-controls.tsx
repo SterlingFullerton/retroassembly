@@ -27,7 +27,7 @@ function SegaEightBitControls({ kind, visible }: Readonly<{ kind: keyof typeof c
   const { label, numbers, picture, title } = consoles[kind]
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Game
   // Gear's picture is almost square (10:9), so in landscape it leaves more room beside it
-  const scale = useControlsScale(160, picture)
+  const scale = useControlsScale(picture)
 
   return (
     <>

@@ -17,7 +17,7 @@ const pressed = pressedLook(125)
 export function PcEngineControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
   const buttonStyle: CSSProperties = {
     background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
     boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006, 0 0 0 2px #3a3a42',

@@ -55,7 +55,7 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
   const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
   const { emulator } = useSession()
   const field = useRef<HTMLInputElement>(null)
   const [typing, setTyping] = useState(false)
@@ -199,7 +199,7 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
         <div className='absolute bottom-[250px] left-0 -translate-x-1/2 landscape:top-[52px] landscape:bottom-auto landscape:left-3 landscape:translate-x-0'>
           <button
             aria-pressed={typing}
-            className='flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold tracking-wider whitespace-nowrap text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22] active:scale-95 active:brightness-125'
+            className='touch-tall relative flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold tracking-wider whitespace-nowrap text-[#e8e8ea] shadow-[0_2px_3px_#0008,inset_0_1px_0_#ffffff22] active:scale-95 active:brightness-125'
             onClick={toggleKeyboard}
             onPointerDown={keepFocus}
             style={plainStyle}

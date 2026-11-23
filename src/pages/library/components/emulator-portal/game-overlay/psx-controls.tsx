@@ -18,10 +18,10 @@ export const pressed = pressedLook(125)
 // Each face button: its symbol and colour, and its place in the diamond in portrait and in landscape. The diamond, like
 // the d-pad, sits midway between the bumpers above and the sticks below
 export const faceButtons: [label: string, buttonName: RetroPadButton, color: string, className: string][] = [
-  ['△', 'x', '#3fcf8e', 'right-[64px] bottom-[267px] landscape:right-[48px] landscape:bottom-[227px]'],
-  ['□', 'y', '#e88ac8', 'right-[112px] bottom-[219px] landscape:right-[86px] landscape:bottom-[189px]'],
-  ['○', 'a', '#ff5a5a', 'right-[16px] bottom-[219px] landscape:right-[10px] landscape:bottom-[189px]'],
-  ['✕', 'b', '#7aa8ff', 'right-[64px] bottom-[171px] landscape:right-[48px] landscape:bottom-[151px]'],
+  ['△', 'x', '#3fcf8e', 'right-[64px] bottom-[267px] landscape:bottom-[212px]'],
+  ['□', 'y', '#e88ac8', 'right-[112px] bottom-[219px] landscape:bottom-[164px]'],
+  ['○', 'a', '#ff5a5a', 'right-[16px] bottom-[219px] landscape:bottom-[164px]'],
+  ['✕', 'b', '#7aa8ff', 'right-[64px] bottom-[171px] landscape:bottom-[116px]'],
 ]
 export const faceStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #4a4a52, #2a2a30 60%, #18181c)',
@@ -31,14 +31,14 @@ export const faceStyle: CSSProperties = {
 // The bumpers are short, flat and light; the triggers taller, darker and curved, sitting behind and above them
 export const bumper = twMerge(
   pressed,
-  'absolute bottom-[336px] h-5.5 w-35 rounded-md text-[11px] font-extrabold text-[#3a3a40] shadow-[0_2px_3px_#0008,inset_0_1px_0_#fff]',
-  'landscape:bottom-[284px] landscape:w-33',
+  'touch-tall-down absolute bottom-[336px] h-5.5 w-35 rounded-md text-[11px] font-extrabold text-[#3a3a40] shadow-[0_2px_3px_#0008,inset_0_1px_0_#fff]',
+  'landscape:bottom-[260px] landscape:w-33',
 )
 export const bumperStyle: CSSProperties = { background: 'linear-gradient(#e6e6ea, #b4b4bc)' }
 const trigger = twMerge(
   pressed,
-  'absolute bottom-[364px] flex h-8 w-35 items-start justify-center rounded-t-[18px] rounded-b-md pt-1.25 text-[11px] font-extrabold text-[#d8d8de] shadow-[0_2px_4px_#0009,inset_0_1px_0_#ffffff40]',
-  'landscape:bottom-[312px] landscape:w-33',
+  'touch-tall-up absolute bottom-[364px] flex h-8 w-35 items-start justify-center rounded-t-[18px] rounded-b-md pt-1.25 text-[11px] font-extrabold text-[#d8d8de] shadow-[0_2px_4px_#0009,inset_0_1px_0_#ffffff40]',
+  'landscape:bottom-[288px] landscape:w-33',
 )
 const triggerStyle: CSSProperties = { background: 'linear-gradient(#7a7a84, #4a4a52)' }
 
@@ -46,7 +46,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 150 points wide, and 450 tall in portrait, up to Select and Start; on smaller screens
   // they shrink towards their corner, and on short phones enough to stay below the game. Each group hangs off a point
   // with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(150, 4 / 3, { portraitHeight: 450 })
+  const scale = useControlsScale(4 / 3, { portraitHeight: 450 })
 
   return (
     <>
@@ -61,9 +61,9 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
         <VirtualGamepadButton buttonName='l' className={twMerge(bumper, 'left-4 landscape:left-3')} style={bumperStyle}>
           L1
         </VirtualGamepadButton>
-        <DPad className='absolute bottom-[174px] left-5 size-34 landscape:bottom-[152px] landscape:left-4 landscape:size-27.5' />
+        <DPad className='absolute bottom-[174px] left-5 size-34 landscape:bottom-[120px] landscape:left-4 landscape:size-33' />
         <Thumbstick
-          className='absolute bottom-7 left-16 size-30 landscape:bottom-6.5 landscape:left-10 landscape:size-26'
+          className='absolute bottom-7 left-16 size-30 landscape:bottom-2 landscape:left-10 landscape:size-26'
           stick='left'
         />
       </Corner>
@@ -86,11 +86,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
         {faceButtons.map(([label, buttonName, color, className]) => (
           <VirtualGamepadButton
             buttonName={buttonName}
-            className={twMerge(
-              pressed,
-              'absolute size-11.5 rounded-full text-xl font-bold landscape:size-9 landscape:text-base',
-              className,
-            )}
+            className={twMerge(pressed, 'absolute size-11.5 rounded-full text-xl font-bold', className)}
             group='face'
             key={label}
             style={{ ...faceStyle, color }}
@@ -100,7 +96,7 @@ export function PsxControls({ visible }: Readonly<{ visible: boolean }>) {
           </VirtualGamepadButton>
         ))}
         <Thumbstick
-          className='absolute right-16 bottom-7 size-30 landscape:right-10 landscape:bottom-6.5 landscape:size-26'
+          className='absolute right-16 bottom-7 size-30 landscape:right-10 landscape:bottom-2 landscape:size-26'
           stick='right'
         />
       </Corner>

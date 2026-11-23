@@ -64,3 +64,40 @@
     pointer-events: none;
   }
 }
+
+/* A tablet, such as an iPad: its shorter side is at least 600 points (use-controls-scale.ts says the same) */
+@custom-variant tablet (@media (min-width: 600px) and (min-height: 600px));
+
+/* An on-screen button drawn slimmer than a finger, such as a shoulder button: touches land on it from a band 44 points
+   tall. `touch-tall` centres the band on the button; `-up` and `-down` grow it one way only, for a button with a
+   neighbour on the other side. The button must be positioned */
+@utility touch-tall {
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    height: max(100%, 44px);
+    translate: 0 -50%;
+  }
+}
+
+@utility touch-tall-up {
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: max(100%, 44px);
+  }
+}
+
+@utility touch-tall-down {
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: max(100%, 44px);
+  }
+}

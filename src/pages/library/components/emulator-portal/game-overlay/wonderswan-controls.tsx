@@ -22,10 +22,10 @@ const round = twMerge(pressed, 'absolute rounded-full font-extrabold text-[#e8e8
 
 // The Y pad: each button's RetroPad button and its place in portrait and in landscape
 const yButtons: [label: string, buttonName: RetroPadButton, className: string][] = [
-  ['Y1', 'r2', 'left-[75px] bottom-[335px] landscape:left-[45px] landscape:bottom-[240px]'],
-  ['Y2', 'r', 'left-[121px] bottom-[289px] landscape:left-[81px] landscape:bottom-[204px]'],
-  ['Y3', 'l2', 'left-[75px] bottom-[243px] landscape:left-[45px] landscape:bottom-[168px]'],
-  ['Y4', 'l', 'left-[29px] bottom-[289px] landscape:left-[9px] landscape:bottom-[204px]'],
+  ['Y1', 'r2', 'left-[75px] bottom-[335px] landscape:left-[54px] landscape:bottom-[274px]'],
+  ['Y2', 'r', 'left-[121px] bottom-[289px] landscape:left-[98px] landscape:bottom-[230px]'],
+  ['Y3', 'l2', 'left-[75px] bottom-[243px] landscape:left-[54px] landscape:bottom-[186px]'],
+  ['Y4', 'l', 'left-[29px] bottom-[289px] landscape:left-[10px] landscape:bottom-[230px]'],
 ]
 
 export function WonderSwanControls({
@@ -35,7 +35,7 @@ export function WonderSwanControls({
   // Each side's controls are about 120 points wide in landscape; the WonderSwan's picture is wide (14:9), which leaves
   // little room beside it. On smaller screens they shrink towards their corner. Each group hangs off a point with no
   // size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(120, 14 / 9)
+  const scale = useControlsScale(14 / 9)
 
   return (
     <>
@@ -45,7 +45,7 @@ export function WonderSwanControls({
         {yButtons.map(([label, buttonName, className]) => (
           <VirtualGamepadButton
             buttonName={buttonName}
-            className={twMerge(round, 'size-11.5 text-base landscape:size-9 landscape:text-[13px]', className)}
+            className={twMerge(round, 'size-11.5 text-base landscape:size-11 landscape:text-[15px]', className)}
             group='y'
             key={label}
             style={buttonStyle}
@@ -55,7 +55,7 @@ export function WonderSwanControls({
           </VirtualGamepadButton>
         ))}
         {/* The X pad */}
-        <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-14 landscape:left-2.5 landscape:size-26.5' />
+        <DPad className='absolute bottom-17 left-4.5 size-40 landscape:bottom-12 landscape:left-2.5 landscape:size-33' />
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>

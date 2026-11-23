@@ -13,8 +13,8 @@ const paleBar = 'linear-gradient(#e6e6ea, #a8a8b0)'
 
 const shoulder = twMerge(
   pressed,
-  'absolute bottom-[262px] h-7.5 w-27.5 rounded-t-[15px] rounded-b-lg text-sm font-extrabold text-[#3a3a40] shadow-[0_2px_4px_#0008,inset_0_1px_0_#fff]',
-  'landscape:bottom-[290px] landscape:w-25',
+  'touch-tall absolute bottom-[262px] h-7.5 w-27.5 rounded-t-[15px] rounded-b-lg text-sm font-extrabold text-[#3a3a40] shadow-[0_2px_4px_#0008,inset_0_1px_0_#fff]',
+  'landscape:bottom-[290px] landscape:w-33',
 )
 const face = twMerge(
   pressed,
@@ -25,7 +25,7 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 120 points wide; on smaller screens they shrink towards their corner. The GBA's
   // picture is 3:2, wider than the other consoles', so in landscape it leaves less room beside it. Each group hangs off
   // a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(120, 3 / 2)
+  const scale = useControlsScale(3 / 2)
 
   return (
     <>
@@ -39,7 +39,7 @@ export function GbaControls({ visible }: Readonly<{ visible: boolean }>) {
           L
         </VirtualGamepadButton>
         {/* The d-pad */}
-        <DPad className='absolute bottom-19 left-5.5 size-35 landscape:bottom-22.5 landscape:left-3 landscape:size-27' />
+        <DPad className='absolute bottom-19 left-5.5 size-35 landscape:bottom-22.5 landscape:left-3 landscape:size-33' />
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>

@@ -13,7 +13,7 @@ const pressed = pressedLook(90)
 export function Atari2600Controls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
   const fireStyle: CSSProperties = {
     background: 'radial-gradient(circle at 40% 30%, #ff6a5a, #d0281c 60%, #8a140c)',
     boxShadow: '0 3px 5px #000c, inset 0 -3px 0 #0004, inset 0 2px 0 #ff9a90',

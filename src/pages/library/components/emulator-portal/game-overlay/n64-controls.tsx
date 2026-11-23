@@ -14,7 +14,7 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 const pressed = pressedLook(75)
 const shoulder = twMerge(
   pressed,
-  'h-7.5 rounded-t-2xl rounded-b-lg text-[13px] font-bold text-[#2b2d31] shadow-[inset_0_1px_0_#fff8,0_2px_3px_#0006]',
+  'touch-tall-up relative h-7.5 rounded-t-2xl rounded-b-lg text-[13px] font-bold text-[#2b2d31] shadow-[inset_0_1px_0_#fff8,0_2px_3px_#0006]',
 )
 const shoulderStyle: CSSProperties = { background: 'linear-gradient(#c9cbce, #9da0a4)' }
 const roundButton = twMerge(
@@ -42,7 +42,7 @@ function CButton({
 }: Readonly<{ children: ReactNode; className: string; direction: keyof typeof cButtons }>) {
   return (
     <VirtualGamepadButton
-      className={twMerge(roundButton, 'size-9.5 text-xs text-[#6b5300]', className)}
+      className={twMerge(roundButton, 'size-11 text-xs text-[#6b5300]', className)}
       group='face'
       onVirtualPressEnd={cButtons[direction].handleEnd}
       onVirtualPressStart={cButtons[direction].handleStart}
@@ -73,7 +73,7 @@ function AnalogStick() {
 
 export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
   // Each hand's column is 184 points wide; on smaller screens they shrink from their corners
-  const scale = useControlsScale(184)
+  const scale = useControlsScale()
   return (
     <>
       <div
@@ -87,9 +87,9 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
           L
         </VirtualGamepadButton>
         {/* The D-pad at the left edge, the stick below it towards the middle, where the left thumb rests */}
-        <div className='relative h-59'>
+        <div className='relative h-63'>
           {/* The d-pad */}
-          <DPad className='absolute top-0 left-0 size-24' />
+          <DPad className='absolute top-0 left-0 size-33' />
           <div className='absolute bottom-0 left-1/2 -translate-x-1/2'>
             <AnalogStick />
           </div>
@@ -107,7 +107,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
           R
         </VirtualGamepadButton>
         {/* As tall as the left hand's controls, so L and R line up; the buttons sit at its foot */}
-        <div className='relative h-59'>
+        <div className='relative h-63'>
           {/* Z is by the right thumb rather than on the left shoulder: the left thumb is on the stick, and Z is usually
               pressed with B or A. It sits just under R, above the C buttons. Being in the same group as them, a thumb
               can roll between them */}
@@ -115,7 +115,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
             buttonName='l2'
             className={twMerge(
               pressed,
-              'absolute top-0 left-0 h-9 w-14 rounded-xl text-[15px] font-bold text-[#e9e9e9] shadow-[inset_0_1px_0_#fff6,0_2px_3px_#0006]',
+              'absolute top-0 left-0 h-11 w-14 rounded-xl text-[15px] font-bold text-[#e9e9e9] shadow-[inset_0_1px_0_#fff6,0_2px_3px_#0006]',
             )}
             group='face'
             style={{ background: 'linear-gradient(#7b7e83, #5e6166)' }}
@@ -123,21 +123,21 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
             Z
           </VirtualGamepadButton>
           <div className='absolute inset-x-0 bottom-0 h-52'>
-            <CButton className='top-0 left-[98px]' direction='up'>
+            <CButton className='top-0 left-[88px]' direction='up'>
               ▲
             </CButton>
-            <CButton className='top-9.5 left-[60px]' direction='left'>
+            <CButton className='top-10 left-[48px]' direction='left'>
               ◀
             </CButton>
-            <CButton className='top-9.5 left-[136px]' direction='right'>
+            <CButton className='top-10 left-[128px]' direction='right'>
               ▶
             </CButton>
-            <CButton className='top-19 left-[98px]' direction='down'>
+            <CButton className='top-20 left-[88px]' direction='down'>
               ▼
             </CButton>
             <VirtualGamepadButton
               buttonName='y'
-              className={twMerge(roundButton, 'top-29 left-4.5 size-13 text-[17px]')}
+              className={twMerge(roundButton, 'top-31 left-3 size-13 text-[17px]')}
               group='face'
               style={gloss('#56d36d', '#1d9a35', '#146b25')}
             >
@@ -145,7 +145,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
             </VirtualGamepadButton>
             <VirtualGamepadButton
               buttonName='b'
-              className={twMerge(roundButton, 'top-35 left-19 size-16.5 text-xl')}
+              className={twMerge(roundButton, 'top-35.5 left-19 size-16.5 text-xl')}
               group='face'
               style={gloss('#5d8cff', '#1f4fd6', '#163a9e')}
             >

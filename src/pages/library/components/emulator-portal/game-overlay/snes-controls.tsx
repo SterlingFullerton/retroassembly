@@ -49,7 +49,7 @@ const faceButtons: [label: string, buttonName: RetroPadButton, style: CSSPropert
 
 const shoulder = twMerge(
   pressed,
-  'absolute bottom-[262px] h-7.5 w-27.5 rounded-t-[15px] rounded-b-lg text-sm font-extrabold text-[#3a3a3e] shadow-[0_2px_4px_#0008,inset_0_1px_0_#fff]',
+  'touch-tall absolute bottom-[262px] h-7.5 w-27.5 rounded-t-[15px] rounded-b-lg text-sm font-extrabold text-[#3a3a3e] shadow-[0_2px_4px_#0008,inset_0_1px_0_#fff]',
   'landscape:bottom-[222px] landscape:w-28',
 )
 const shoulderStyle: CSSProperties = { background: 'linear-gradient(#e2e2e6, #a8a8b0)' }
@@ -57,7 +57,7 @@ const shoulderStyle: CSSProperties = { background: 'linear-gradient(#e2e2e6, #a8
 export function SnesControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
 
   return (
     <>

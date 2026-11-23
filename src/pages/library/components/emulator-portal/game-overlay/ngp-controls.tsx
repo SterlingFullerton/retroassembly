@@ -19,7 +19,7 @@ export function NgpControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Pocket's
   // picture is almost square, so in landscape it leaves more room beside it. Each group hangs off a point with no size
   // at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160, 160 / 152)
+  const scale = useControlsScale(160 / 152)
 
   return (
     <>

@@ -17,47 +17,47 @@ const buttonStyle: CSSProperties = {
   background: 'radial-gradient(circle at 40% 30%, #5a5a62, #2e2e34 60%, #18181c)',
   boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ffffff30, inset 0 -3px 0 #0006',
 }
-const round = twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold text-[#e8e8ea] landscape:text-sm')
+const round = twMerge(pressed, 'absolute rounded-full text-[22px] font-extrabold text-[#e8e8ea] landscape:text-lg')
 const bumper = twMerge(
   pressed,
-  'absolute bottom-[360px] h-5.5 w-37.5 rounded-md text-[11px] font-extrabold text-[#3a3a40] shadow-[0_2px_3px_#0008,inset_0_1px_0_#fff]',
-  'landscape:bottom-[312px] landscape:w-19',
+  'touch-tall absolute bottom-[360px] h-5.5 w-37.5 rounded-md text-[11px] font-extrabold text-[#3a3a40] shadow-[0_2px_3px_#0008,inset_0_1px_0_#fff]',
+  'landscape:bottom-[312px] landscape:w-33',
 )
 const bumperStyle: CSSProperties = { background: 'linear-gradient(#e6e6ea, #b4b4bc)' }
 // The standard gamepad's L2, L3, R2 and R3
 const rightDPadButtons = { down: 10, left: 7, right: 11, up: 6 }
 
 export function VbControls({ visible }: Readonly<{ visible: boolean }>) {
-  // Each side's controls are 88 points wide in landscape, where the picture, 384 by 224, leaves about that much beside
-  // it; on smaller screens they shrink towards their corner. Each group hangs off a point with no size at its corner,
+  // In landscape the picture, 384 by 224, leaves little room beside it, so the controls sit over its edges; on smaller
+  // screens they shrink towards their corner. Each group hangs off a point with no size at its corner,
   // which is where it shrinks towards
-  const scale = useControlsScale(88, 384 / 224)
+  const scale = useControlsScale(384 / 224)
 
   return (
     <>
       <Corner scale={scale} side='left' visible={visible}>
         <VirtualGamepadButton
           buttonName='l'
-          className={twMerge(bumper, 'left-4.5 landscape:left-1.5')}
+          className={twMerge(bumper, 'left-4.5 landscape:left-2')}
           style={bumperStyle}
           title='L'
         >
           L
         </VirtualGamepadButton>
-        <DPad className='absolute bottom-42 left-3.25 size-40 landscape:bottom-26 landscape:left-1 landscape:size-20' />
+        <DPad className='absolute bottom-42 left-3.25 size-40 landscape:bottom-24 landscape:left-2 landscape:size-33' />
       </Corner>
 
       <Corner scale={scale} side='right' visible={visible}>
         <VirtualGamepadButton
           buttonName='r'
-          className={twMerge(bumper, 'right-4.5 landscape:right-1.5')}
+          className={twMerge(bumper, 'right-4.5 landscape:right-2')}
           style={bumperStyle}
           title='R'
         >
           R
         </VirtualGamepadButton>
         <DPad
-          className='absolute right-3.25 bottom-42 size-40 landscape:right-1 landscape:bottom-26 landscape:size-20'
+          className='absolute right-3.25 bottom-42 size-40 landscape:right-2 landscape:bottom-24 landscape:size-33'
           gamepadButtons={rightDPadButtons}
           group='right-dpad'
         />
@@ -65,7 +65,7 @@ export function VbControls({ visible }: Readonly<{ visible: boolean }>) {
           buttonName='b'
           className={twMerge(
             round,
-            'right-25 bottom-17.5 size-15.5 landscape:right-11.5 landscape:bottom-8.5 landscape:size-9.5',
+            'right-25 bottom-17.5 size-15.5 landscape:right-16 landscape:bottom-3 landscape:size-12',
           )}
           group='face'
           style={buttonStyle}
@@ -77,7 +77,7 @@ export function VbControls({ visible }: Readonly<{ visible: boolean }>) {
           buttonName='a'
           className={twMerge(
             round,
-            'right-6 bottom-22 size-15.5 landscape:right-1 landscape:bottom-13 landscape:size-9.5',
+            'right-6 bottom-22 size-15.5 landscape:right-2 landscape:bottom-8.5 landscape:size-12',
           )}
           group='face'
           style={buttonStyle}

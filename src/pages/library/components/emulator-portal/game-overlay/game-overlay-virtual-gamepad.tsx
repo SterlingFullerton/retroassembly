@@ -174,7 +174,7 @@ export function DSControls({
       </TopBarButtons>
       <div
         className={twMerge(
-          'bottom-safe absolute inset-x-0 h-47',
+          'bottom-safe tablet:portrait:h-60 absolute inset-x-0 h-50',
           // Covers the whole screen in landscape, so only its buttons take touches: the game's touchscreen is between them
           'landscape:top-safe landscape:pointer-events-none landscape:h-auto landscape:*:pointer-events-auto',
           clsx({ hidden: !visible }),
@@ -185,8 +185,8 @@ export function DSControls({
           buttonName='l'
           className={twMerge(
             dsButton,
-            'absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl',
-            'landscape:left-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+            'touch-tall-down tablet:h-11 tablet:w-36 absolute top-0 left-0 h-7.5 w-30 rounded-br-2xl',
+            'landscape:left-safe-offset-3 landscape:top-14 landscape:h-11 landscape:w-36 landscape:rounded-2xl',
           )}
         >
           L
@@ -195,8 +195,8 @@ export function DSControls({
           buttonName='r'
           className={twMerge(
             dsButton,
-            'absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl',
-            'landscape:right-safe-offset-3 landscape:top-14 landscape:h-9 landscape:w-36 landscape:rounded-2xl',
+            'touch-tall-down tablet:h-11 tablet:w-36 absolute top-0 right-0 h-7.5 w-30 rounded-bl-2xl',
+            'landscape:right-safe-offset-3 landscape:top-14 landscape:h-11 landscape:w-36 landscape:rounded-2xl',
           )}
         >
           R
@@ -206,8 +206,8 @@ export function DSControls({
           buttonName='l3'
           className={twMerge(
             dsButton,
-            'absolute bottom-3 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
-            'landscape:left-safe-offset-39 landscape:top-1 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
+            'touch-tall absolute bottom-4 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
+            'landscape:left-safe-offset-39 landscape:top-2.5 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
           )}
           title='Mic'
         >
@@ -219,14 +219,14 @@ export function DSControls({
         {/* The d-pad */}
         <DPad
           className={twMerge(
-            'absolute top-10.5 left-2.5 size-33',
+            'tablet:portrait:top-13 tablet:portrait:left-4 tablet:size-42 absolute top-10.5 left-2.5 size-36',
             'landscape:left-safe-offset-4 landscape:top-auto landscape:bottom-14',
           )}
         />
 
         <div
           className={twMerge(
-            'absolute top-10.5 right-2.5 grid size-33 grid-cols-3 grid-rows-3 font-semibold *:size-11 *:rounded-full',
+            'tablet:portrait:top-13 tablet:portrait:right-4 tablet:size-42 tablet:text-lg tablet:*:size-14 absolute top-10.5 right-2.5 grid size-36 grid-cols-3 grid-rows-3 font-semibold *:size-12 *:rounded-full',
             'landscape:right-safe-offset-4 landscape:top-auto landscape:bottom-14',
           )}
         >
@@ -247,6 +247,10 @@ export function DSControls({
     </>
   )
 }
+
+// Pause, rewind, fast forward and the other icons in the top bar: each a square a finger can hit, a little narrower on
+// phones under 375 points wide so the longest bar still fits
+const barIcon = 'size-11 rounded max-[374px]:portrait:w-9'
 
 // X, Y, A and B around a diamond, by their grid cells
 const faceButtons: [RetroPadButton & ('a' | 'b' | 'x' | 'y'), string][] = [
@@ -305,7 +309,7 @@ export function GameOverlayVirtualGamepad() {
     >
       <div className='top-safe p-x-2 absolute inset-x-0 flex'>
         <VirtualGamepadButton
-          className={twMerge('left-safe absolute rounded p-2', clsx({ hidden: !gamepadVisible }))}
+          className={twMerge(barIcon, 'left-safe absolute', clsx({ hidden: !gamepadVisible }))}
           onClick={async () => await show()}
         >
           <span className='icon-[mdi--pause]' />
@@ -314,7 +318,8 @@ export function GameOverlayVirtualGamepad() {
         {controls === 'colecovision' || controls === 'atari5200' ? (
           <VirtualGamepadButton
             className={twMerge(
-              'left-safe-offset-10 absolute rounded p-2',
+              barIcon,
+              'left-safe-offset-11 absolute',
               clsx({ 'bg-[#ff9a4a] text-[#3a1a00]': keypadOpen, hidden: !gamepadVisible }),
             )}
             onClick={() => setKeypadOpen(!keypadOpen)}
@@ -326,10 +331,10 @@ export function GameOverlayVirtualGamepad() {
 
         {/* Rewind and fast forward aren't buttons of the console, so they sit up here with pause rather than among its
             controls */}
-        <div className='right-safe absolute flex gap-1'>
+        <div className='right-safe absolute flex'>
           {rewindEnabled ? (
             <VirtualGamepadCommandButton
-              className={twMerge('rounded p-2', clsx({ hidden: !gamepadVisible }))}
+              className={twMerge(barIcon, clsx({ hidden: !gamepadVisible }))}
               command='REWIND'
               title='Rewind'
             >
@@ -337,14 +342,14 @@ export function GameOverlayVirtualGamepad() {
             </VirtualGamepadCommandButton>
           ) : null}
           <VirtualGamepadCommandButton
-            className={twMerge('rounded p-2', clsx({ hidden: !gamepadVisible }))}
+            className={twMerge(barIcon, clsx({ hidden: !gamepadVisible }))}
             command='FAST_FORWARD_HOLD'
             title='Fast forward'
           >
             <span className='icon-[mdi--fast-forward]' />
           </VirtualGamepadCommandButton>
           <VirtualGamepadButton
-            className='rounded p-2'
+            className={barIcon}
             onClick={() => setGamepadVisible(!gamepadVisible)}
             title='Toggle gamepad'
           >
@@ -397,14 +402,14 @@ export function GameOverlayVirtualGamepad() {
             )}
           >
             <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='l' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              <VirtualGamepadButton buttonName='l' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
                 L1
               </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='l2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              <VirtualGamepadButton buttonName='l2' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
                 L2
               </VirtualGamepadButton>
             </div>
-            <DPad className='size-42' />
+            <DPad className='tablet:size-50 size-42' />
           </div>
 
           <div
@@ -414,14 +419,14 @@ export function GameOverlayVirtualGamepad() {
             )}
           >
             <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='r2' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              <VirtualGamepadButton buttonName='r2' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
                 R2
               </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='r' className='flex-1 rounded px-2 py-1 ring ring-white/20'>
+              <VirtualGamepadButton buttonName='r' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
                 R1
               </VirtualGamepadButton>
             </div>
-            <div className='grid grid-cols-3 grid-rows-3 *:size-14 *:rounded-full'>
+            <div className='tablet:text-lg tablet:*:size-16.5 grid grid-cols-3 grid-rows-3 *:size-14 *:rounded-full'>
               {faceButtons.map(([button, position]) => (
                 <VirtualGamepadButton
                   buttonName={button}

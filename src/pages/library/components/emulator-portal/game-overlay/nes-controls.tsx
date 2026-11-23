@@ -69,7 +69,7 @@ function FlipDiskButton({ core }: Readonly<{ core: string }>) {
 export function NesControls({ diskCore, visible }: Readonly<{ diskCore?: string; visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
   const buttonStyle: CSSProperties = {
     background: 'radial-gradient(circle at 40% 30%, #ff5a5a, #d01818 60%, #8a0c0c)',
     boxShadow: '0 3px 4px #000a, inset 0 2px 0 #ff9a9a, inset 0 -3px 0 #0004',

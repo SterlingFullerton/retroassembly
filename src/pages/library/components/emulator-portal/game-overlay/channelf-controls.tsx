@@ -31,7 +31,7 @@ export function ChannelFControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Channel
   // F's picture is wider than 4:3, about 102 by 64, so in landscape it leaves less room beside it. Each group hangs off
   // a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160, 102 / 64)
+  const scale = useControlsScale(102 / 64)
 
   return (
     <>

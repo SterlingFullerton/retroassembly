@@ -5,11 +5,11 @@ import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
 
 // Start, Select and the console's other buttons that aren't for playing (Mode, Run, Reset, Flip disk and so on) sit in
 // the top bar straight after pause, in its style, on every console and both ways up: a label with no background that
-// lights up while pressed. On phones narrower than 360 points the labels lose their spacing, so the longest bar, the
+// lights up while pressed, as tall as a finger needs. On phones narrower than 375 points the labels lose their spacing, so the longest bar, the
 // Lynx's, still fits beside rewind, fast forward and the gamepad toggle.
 const topBarButton = twMerge(
-  'h-8 rounded p-2 text-[10px] font-semibold tracking-wider whitespace-nowrap text-white/75 data-[touching=true]:bg-white/25',
-  'max-[359px]:portrait:px-1 max-[359px]:portrait:tracking-normal',
+  'h-11 rounded px-1.5 text-[10px] font-semibold tracking-wider whitespace-nowrap text-white/75 data-[touching=true]:bg-white/25',
+  'max-[374px]:portrait:px-1 max-[374px]:portrait:tracking-normal',
 )
 
 export function TopBarButton({ className, ...props }: Readonly<ComponentProps<typeof VirtualGamepadButton>>) {
@@ -25,7 +25,7 @@ export function TopBarButtons({
 }: Readonly<{ afterKeypad?: boolean; children: ReactNode; visible: boolean }>) {
   return (
     <div
-      className={clsx('top-safe absolute flex', afterKeypad ? 'left-safe-offset-20' : 'left-safe-offset-10', {
+      className={clsx('top-safe absolute flex', afterKeypad ? 'left-safe-offset-22' : 'left-safe-offset-11', {
         hidden: !visible,
       })}
     >

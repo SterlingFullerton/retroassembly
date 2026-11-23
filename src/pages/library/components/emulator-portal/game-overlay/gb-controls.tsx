@@ -15,7 +15,7 @@ export function GbControls({ visible }: Readonly<{ visible: boolean }>) {
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. The Game Boy's
   // picture is almost square (10:9), so in landscape it leaves more room beside it. Each group hangs off a point with
   // no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160, 10 / 9)
+  const scale = useControlsScale(10 / 9)
   const buttonStyle: CSSProperties = {
     background: 'radial-gradient(circle at 40% 30%, #e05a95, #a3205e 60%, #6a1038)',
     boxShadow: '0 3px 4px #000a, inset 0 2px 0 #f090bb, inset 0 -3px 0 #0004',

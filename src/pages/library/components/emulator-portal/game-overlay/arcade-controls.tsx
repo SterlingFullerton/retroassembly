@@ -42,25 +42,25 @@ const buttons: [label: string, buttonName: RetroPadButton, style: CSSProperties,
     '3',
     'y',
     colored(['#8ac6ff', '#2a7fd4', '#154f8a'], '#001a33'),
-    'right-41 bottom-49 size-10.5 text-sm landscape:right-21.5 landscape:bottom-43 landscape:size-9.5',
+    'right-41 bottom-49 size-11.5 text-sm landscape:right-22 landscape:bottom-43',
   ],
   [
     '4',
     'x',
     colored(['#9af0a6', '#2fb84a', '#1a7a2c'], '#00300a'),
-    'right-28.5 bottom-47.5 size-10.5 text-sm landscape:right-10 landscape:bottom-43 landscape:size-9.5',
+    'right-28.5 bottom-47.5 size-11.5 text-sm landscape:right-9.5 landscape:bottom-43',
   ],
   [
     '5',
     'r',
     colored(['#ffffff', '#d6d6dc', '#8f8f96'], '#222'),
-    'right-16 bottom-46 size-10.5 text-sm landscape:right-21.5 landscape:bottom-54.5 landscape:size-9.5',
+    'right-16 bottom-46 size-11.5 text-sm landscape:right-22 landscape:bottom-55.5',
   ],
   [
     '6',
     'l',
     colored(['#5a5a60', '#222226', '#0c0c0e'], '#ddd'),
-    'right-3.5 bottom-44.5 size-10.5 text-sm landscape:right-10 landscape:bottom-54.5 landscape:size-9.5',
+    'right-3.5 bottom-44.5 size-11.5 text-sm landscape:right-9.5 landscape:bottom-55.5',
   ],
 ]
 
@@ -68,7 +68,7 @@ export function ArcadeControls({ visible }: Readonly<{ visible: boolean }>) {
   const { t } = useTranslation()
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
-  const scale = useControlsScale(160)
+  const scale = useControlsScale()
 
   return (
     <>
