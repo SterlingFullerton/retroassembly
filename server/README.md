@@ -97,6 +97,17 @@ the folders the settings name: those earlier images wrote.
 It reads `dist/client`, `src/databases/migrations` and `game-info/game-info.sqlite` from the folder it's started in (or
 `CLIENT_DIR`, `MIGRATIONS_DIR` and `GAME_INFO_DB`). Without `dist/client`, as in development, it serves the API alone.
 
+### Upgrades and going back
+
+A version that changes the database first copies it beside itself, as `retroassembly.sqlite.before-<first change>` in
+the data folder, then makes its changes in one transaction. The five newest copies are kept. If the copy can't be made,
+the database is left as it was and the server doesn't start.
+
+To go back to an earlier version after such an upgrade, stop the container, put that copy back as
+`retroassembly.sqlite`, and start the earlier image. Anything saved since the upgrade is not in the copy. An earlier
+version started on an upgraded database refuses to start and says so, rather than running with tables it doesn't
+expect.
+
 It's built with the `nodynamic` tag, which keeps the WebP encoder from loading a system libwebp: without it, Go links
 the binary against the system's C library, and it no longer runs on a static base image.
 

@@ -6,10 +6,13 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -58,6 +61,7 @@ type journal struct {
 type migration struct {
 	hash       string
 	statements []string
+	tag        string
 	when       int64
 }
 
@@ -80,16 +84,29 @@ func readMigrations(directory string) ([]migration, error) {
 		migrations = append(migrations, migration{
 			hash:       hex.EncodeToString(sum[:]),
 			statements: strings.Split(string(query), "--> statement-breakpoint"),
+			tag:        entry.Tag,
 			when:       entry.When,
 		})
 	}
 	return migrations, nil
 }
 
-// Migrate applies the migrations in directory that the database doesn't have yet, exactly as Drizzle's migrator does,
-// so the Node server and this one can take turns on the same database. Drizzle records each migration applied in
-// __drizzle_migrations with its file's SHA-256 and its journal time, and applies every migration newer than the newest
-// one recorded, all in one transaction
+// ErrNewerDatabase is Migrate's answer to a database a newer version has upgraded: this one doesn't know its tables
+var ErrNewerDatabase = errors.New("the database was upgraded by a newer version of RetroAssembly")
+
+// backupsKept is how many of the copies made before upgrades are kept; older ones are removed
+const backupsKept = 5
+
+// Migrate applies the migrations in directory that the database doesn't have yet, all in one transaction, and records
+// each as Drizzle's migrator does (its file's SHA-256 and its journal time in __drizzle_migrations), so a database the
+// Node server set up carries on.
+//
+// A migration is one the database has when its journal time is recorded. Drizzle applies only those newer than the
+// newest recorded, which passes over one merged in later with an earlier time; here that one is applied too.
+//
+// Before a database in use is changed, it's copied beside itself as <file>.before-<first migration applied>, which is
+// what to put back to return to the version before. A database with a migration newer than any in directory was
+// upgraded by a newer version, and is refused with ErrNewerDatabase rather than run with tables this one doesn't expect
 func Migrate(database *sql.DB, directory string) (applied int, err error) {
 	migrations, err := readMigrations(directory)
 	if err != nil {
@@ -102,10 +119,34 @@ func Migrate(database *sql.DB, directory string) (applied int, err error) {
 			)`); err != nil {
 		return 0, err
 	}
-	var last sql.NullFloat64
-	err = database.QueryRow(`SELECT created_at FROM "__drizzle_migrations" ORDER BY created_at DESC LIMIT 1`).Scan(&last)
-	if err != nil && err != sql.ErrNoRows {
+	recorded, err := recordedMigrations(database)
+	if err != nil {
 		return 0, err
+	}
+	var newestKnown int64
+	for _, m := range migrations {
+		newestKnown = max(newestKnown, m.when)
+	}
+	for when := range recorded {
+		if when > newestKnown {
+			return 0, fmt.Errorf("%w: start that version, or put back the copy of the database made before it upgraded (%s)",
+				ErrNewerDatabase, backupPattern(database))
+		}
+	}
+	var pending []migration
+	for _, m := range migrations {
+		if !recorded[m.when] {
+			pending = append(pending, m)
+		}
+	}
+	if len(pending) == 0 {
+		return 0, nil
+	}
+	// A new database has nothing to keep
+	if len(recorded) > 0 {
+		if err := backup(database, pending[0].tag); err != nil {
+			return 0, fmt.Errorf("the database wasn't upgraded, as it couldn't be copied first: %w", err)
+		}
 	}
 
 	tx, err := database.Begin()
@@ -117,16 +158,13 @@ func Migrate(database *sql.DB, directory string) (applied int, err error) {
 			tx.Rollback()
 		}
 	}()
-	for _, m := range migrations {
-		if last.Valid && int64(last.Float64) >= m.when {
-			continue
-		}
+	for _, m := range pending {
 		for _, statement := range m.statements {
 			if strings.TrimSpace(statement) == "" {
 				continue
 			}
 			if _, err = tx.Exec(statement); err != nil {
-				return 0, fmt.Errorf("migration %s: %w", m.hash, err)
+				return 0, fmt.Errorf("migration %s: %w", m.tag, err)
 			}
 		}
 		if _, err = tx.Exec(`INSERT INTO "__drizzle_migrations" ("hash", "created_at") VALUES(?, ?)`, m.hash, m.when); err != nil {
@@ -135,4 +173,114 @@ func Migrate(database *sql.DB, directory string) (applied int, err error) {
 		applied++
 	}
 	return applied, tx.Commit()
+}
+
+// recordedMigrations are the journal times of the migrations the database has
+func recordedMigrations(database *sql.DB) (map[int64]bool, error) {
+	rows, err := database.Query(`SELECT created_at FROM "__drizzle_migrations"`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	recorded := map[int64]bool{}
+	for rows.Next() {
+		var when sql.NullFloat64
+		if err := rows.Scan(&when); err != nil {
+			return nil, err
+		}
+		if when.Valid {
+			recorded[int64(when.Float64)] = true
+		}
+	}
+	return recorded, rows.Err()
+}
+
+// databaseFile is the file the database is kept in; empty for one in memory
+func databaseFile(database *sql.DB) (string, error) {
+	rows, err := database.Query(`PRAGMA database_list`)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var sequence int
+		var name, file string
+		if err := rows.Scan(&sequence, &name, &file); err != nil {
+			return "", err
+		}
+		if name == "main" {
+			return file, nil
+		}
+	}
+	return "", rows.Err()
+}
+
+const backupInfix = ".before-"
+
+// backupPattern says where the copies made before upgrades are, for a message
+func backupPattern(database *sql.DB) string {
+	file, err := databaseFile(database)
+	if err != nil || file == "" {
+		return "<database>" + backupInfix + "*"
+	}
+	return file + backupInfix + "*"
+}
+
+// backup copies the database beside itself before the migration named is applied, and removes all but the newest
+// copies. One already there is kept: it was made by an upgrade that then failed, so it holds the same database
+func backup(database *sql.DB, tag string) error {
+	file, err := databaseFile(database)
+	if err != nil || file == "" {
+		return err
+	}
+	target := file + backupInfix + tag
+	if _, err := os.Stat(target); err == nil {
+		return nil
+	}
+	// Written under another name first, so a copy cut short is never taken for a whole one
+	partial := target + ".partial"
+	if err := os.Remove(partial); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if _, err := database.Exec(`VACUUM INTO ?`, partial); err != nil {
+		os.Remove(partial)
+		return err
+	}
+	if err := os.Rename(partial, target); err != nil {
+		return err
+	}
+	log.Printf("Copied the database to %s before upgrading it", target)
+	// The copy is made, so the upgrade goes ahead whether or not older copies could be cleared
+	if err := removeOldBackups(file); err != nil {
+		log.Printf("Couldn't remove older copies of the database: %v", err)
+	}
+	return nil
+}
+
+func removeOldBackups(file string) error {
+	copies, err := filepath.Glob(file + backupInfix + "*")
+	if err != nil {
+		return err
+	}
+	type copyOf struct {
+		path     string
+		modified time.Time
+	}
+	var kept []copyOf
+	for _, path := range copies {
+		info, err := os.Stat(path)
+		if err != nil || info.IsDir() || strings.HasSuffix(path, ".partial") {
+			continue
+		}
+		kept = append(kept, copyOf{path, info.ModTime()})
+	}
+	sort.Slice(kept, func(i, j int) bool { return kept[i].modified.After(kept[j].modified) })
+	for index, each := range kept {
+		if index >= backupsKept {
+			if err := os.Remove(each.path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
