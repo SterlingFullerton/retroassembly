@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { pressedLook, StickLook, useStick } from './controls-kit.tsx'
+import { pressedLook, seeThrough, StickLook, useStick } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -79,6 +79,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
       <div
         className={twMerge(
           'bottom-safe left-safe absolute flex w-46 origin-bottom-left flex-col gap-2 p-2',
+          seeThrough,
           clsx({ hidden: !visible }),
         )}
         style={{ scale }}
@@ -99,6 +100,7 @@ export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {
       <div
         className={twMerge(
           'bottom-safe right-safe absolute flex w-46 origin-bottom-right flex-col gap-2 p-2',
+          seeThrough,
           clsx({ hidden: !visible }),
         )}
         style={{ scale }}

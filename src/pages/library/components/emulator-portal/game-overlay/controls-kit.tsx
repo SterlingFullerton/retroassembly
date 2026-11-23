@@ -21,6 +21,10 @@ export function pressedLook(brightness: keyof typeof pressedLooks) {
   return pressedLooks[brightness]
 }
 
+// In landscape the controls sit over the game's edges, so they're see-through there: the game shows through them. In
+// portrait they're below the game, and solid
+export const seeThrough = 'landscape:opacity-55'
+
 const corners = {
   left: 'bottom-safe left-safe absolute size-0 origin-top-left',
   right: 'bottom-safe right-safe absolute size-0 origin-top-left',
@@ -37,7 +41,7 @@ export function Corner({
   visible,
 }: Readonly<{ children: ReactNode; scale: number; side: keyof typeof corners; visible: boolean }>) {
   return (
-    <div className={clsx(corners[side], { hidden: !visible })} style={{ scale }}>
+    <div className={clsx(corners[side], seeThrough, { hidden: !visible })} style={{ scale }}>
       {children}
     </div>
   )

@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
-import { pressedLook } from './controls-kit.tsx'
+import { pressedLook, seeThrough } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { TopBarButton, TopBarButtons } from './top-bar-buttons.tsx'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -25,6 +25,7 @@ const pressed = pressedLook(150)
 const face = twMerge(
   pressed,
   scaled,
+  seeThrough,
   'rounded-full font-bold text-[#f2f2f2] shadow-[0_3px_5px_#000c,inset_0_1px_0_#ffffff30]',
 )
 const faceBackground = 'radial-gradient(circle at 38% 30%, #4a4a4e, #161618 65%, #0a0a0b)'
@@ -86,6 +87,7 @@ export function GenesisControls({ visible }: Readonly<{ visible: boolean }>) {
         className={twMerge(
           'absolute bottom-[calc(56*var(--u)+env(safe-area-inset-bottom))] left-[calc(16*var(--u)+env(safe-area-inset-left))] size-[calc(150*var(--u))]',
           'landscape:left-[calc(12*var(--u)+env(safe-area-inset-left))] landscape:size-[calc(140*var(--u))]',
+          seeThrough,
           hidden,
         )}
       />

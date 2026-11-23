@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
+import { seeThrough } from './controls-kit.tsx'
 import { DPad } from './dpad.tsx'
 import { pressed } from './psx-controls.tsx'
 import { Thumbstick } from './thumbstick.tsx'
@@ -64,7 +65,11 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
   return (
     <>
       <div
-        className={twMerge('bottom-safe left-safe controls-centred absolute size-0 origin-top-left', hidden)}
+        className={twMerge(
+          'bottom-safe left-safe controls-centred absolute size-0 origin-top-left',
+          seeThrough,
+          hidden,
+        )}
         style={side}
       >
         <VirtualGamepadButton
@@ -82,7 +87,11 @@ export function PspControls({ visible }: Readonly<{ visible: boolean }>) {
       </div>
 
       <div
-        className={twMerge('bottom-safe right-safe controls-centred absolute size-0 origin-top-left', hidden)}
+        className={twMerge(
+          'bottom-safe right-safe controls-centred absolute size-0 origin-top-left',
+          seeThrough,
+          hidden,
+        )}
         style={side}
       >
         <VirtualGamepadButton
