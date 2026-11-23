@@ -15,6 +15,8 @@ export interface LaunchButtonProgress {
 interface LaunchButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Smaller, for buttons side by side, as on Home */
   compact?: boolean
+  /** Until a wide screen, a square holding only the button's icon; its name is still read out */
+  iconOnly?: boolean
   /** Shares the row's whole width with the button beside it, rather than stopping at its usual width */
   stretch?: boolean
   progress?: LaunchButtonProgress
@@ -25,6 +27,7 @@ export function LaunchButton({
   children,
   compact = false,
   disabled,
+  iconOnly = false,
   stretch = false,
   progress,
   variant = 'solid',
@@ -36,6 +39,7 @@ export function LaunchButton({
       aria-disabled={disabled ? 'true' : 'false'}
       className={clsx('launch-button group block', {
         'lg:max-w-56': compact && !stretch,
+        'max-lg:w-12 max-lg:flex-none!': iconOnly,
         'min-w-0 flex-1': stretch || compact,
         'opacity-50': disabled && !progress,
         'w-full lg:w-80': !stretch && !compact,

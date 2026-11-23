@@ -254,15 +254,18 @@ function GameButtonsContent({
     )
   }
 
+  // Start as a square beside Continue. While it shows how far its game has got, it has its usual share for the words
+  const startIconOnly = compact && Boolean(state) && !(pressed === 'start' && progress)
+
   const buttons = (
     <div
       ref={buttonsRef}
       className={clsx(
         'flex w-full',
         compact
-          ? // Continue, with the save's picture, gets more of the row than Start; each stops at its usual width, so
-            // neither runs past a narrow banner. On the smallest phones there's no room for both names, so they stack
-            'flex-row gap-2 max-[359px]:flex-col lg:gap-3 [&>button:first-of-type:not(:last-of-type)]:flex-[3] [&>button:last-of-type]:flex-[2]'
+          ? // Continue takes the row. Beside it, until a wide screen, Start is a square with only its icon, so Continue's
+            // name is never cut short; from there Start has its name and its usual share
+            'flex-row gap-2 lg:gap-3 [&>button:first-of-type:not(:last-of-type)]:flex-[3] [&>button:last-of-type]:flex-[2]'
           : 'flex-col gap-4 xl:flex-row',
       )}
     >
@@ -318,8 +321,10 @@ function GameButtonsContent({
         compact={compact}
         stretch={stretch}
         disabled={isPreparing}
+        iconOnly={startIconOnly}
         onClick={handleClickStart}
         progress={pressed === 'start' ? progress : undefined}
+        title={startIconOnly ? t('emulator.start') : undefined}
         variant={state ? 'outline' : 'solid'}
         {...warmUpHandlers}
       >
@@ -331,7 +336,13 @@ function GameButtonsContent({
               : ['size-6', mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--play]'],
           )}
         />
-        <span className={clsx('flex-1 truncate font-semibold', compact ? 'pl-6 text-base lg:text-lg' : 'text-2xl')}>
+        <span
+          className={clsx(
+            'flex-1 truncate font-semibold',
+            compact ? 'pl-6 text-base lg:text-lg' : 'text-2xl',
+            startIconOnly && 'max-lg:sr-only',
+          )}
+        >
           {t('emulator.start')}
         </span>
       </LaunchButton>
