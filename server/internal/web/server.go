@@ -228,6 +228,7 @@ func (s *Server) Handler() (http.Handler, error) {
 		"POST /api/v1/users":                                  s.signedIn(s.addAccount),
 		"PATCH /api/v1/users/{id}":                            s.signedIn(s.setLibraryMode),
 		"DELETE /api/v1/users/{id}":                           s.signedIn(s.deleteAccount),
+		"PUT /api/v1/users/{id}/password":                     s.signedIn(s.resetPassword),
 		"DELETE /api/v1/roms/{id}":                            s.signedIn(s.deleteRom),
 		"DELETE /api/v1/roms":                                 s.signedIn(s.deleteRoms),
 		"POST /api/v1/roms/{id}/boxart":                       s.signedIn(s.addBoxart),

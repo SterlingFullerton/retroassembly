@@ -1,6 +1,7 @@
 import { Button, DropdownMenu } from '@radix-ui/themes'
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { useSettingsDialogOpen, useSpatialNavigationPaused } from '../../../atoms.ts'
 import { AboutDialog } from './about-dialog.tsx'
 import { LogoutDialog } from './logout-dialog.tsx'
@@ -22,6 +23,8 @@ const DeviceStorageDialog = lazy(async () => {
  */
 export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
   const { t } = useTranslation()
+  const { currentUser } = useGlobalLoaderData()
+  const username = currentUser && 'username' in currentUser ? currentUser.username : ''
   const [, setSpatialNavigationPaused] = useSpatialNavigationPaused()
 
   const [settingsDialogOpen, setSettingsDialogOpen] = useSettingsDialogOpen()
@@ -75,6 +78,16 @@ export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Content variant='solid'>
+          {/* Who's signed in */}
+          {username ? (
+            <>
+              <DropdownMenu.Label>
+                <span className='icon-[mdi--account] mr-2' />
+                <span className='max-w-48 truncate'>{username}</span>
+              </DropdownMenu.Label>
+              <DropdownMenu.Separator />
+            </>
+          ) : null}
           <DropdownMenu.Item onClick={handleClickSettings}>
             <span className='icon-[mdi--cog]' />
             {t('nav.settings')}

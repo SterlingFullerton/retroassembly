@@ -31,7 +31,7 @@ func (s *Server) addAccount(w http.ResponseWriter, r *http.Request, scope librar
 	if check.Failed(w) {
 		return
 	}
-	user, err := auth.AddAccount(r.Context(), s.database, scope.User, username, password, int(libraryMode), s.authMode, client(r))
+	user, err := auth.AddAccount(r.Context(), s.database, scope.User, username, password, libraryMode, s.authMode, client(r))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -65,6 +65,19 @@ func (s *Server) setLibraryMode(w http.ResponseWriter, r *http.Request, scope li
 // DELETE /api/v1/users/{id}: an account the admin deletes
 func (s *Server) deleteAccount(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	if err := auth.DeleteAccount(r.Context(), s.database, scope.User, r.PathValue("id")); err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// PUT /api/v1/users/{id}/password: a new password the admin gives an account whose owner forgot theirs
+func (s *Server) resetPassword(w http.ResponseWriter, r *http.Request, scope library.Scope) {
+	values, ok := form(w, r, "new_password")
+	if !ok {
+		return
+	}
+	if err := auth.ResetPassword(r.Context(), s.database, scope.User, r.PathValue("id"), values["new_password"], s.authMode); err != nil {
 		writeError(w, err)
 		return
 	}

@@ -184,3 +184,80 @@ func TestSessionLifetime(t *testing.T) {
 	}
 	admin.expect(http.StatusUnauthorized, admin.get("/api/v1/preference"))
 }
+
+func TestUsernamesFollowTheRule(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	add := func(username string) response {
+		return admin.form(http.MethodPost, "/api/v1/users",
+			url.Values{"libraryMode": {"1"}, "password": {"password-friend"}, "username": {username}})
+	}
+
+	for _, username := range []string{"", "   ", "a", "two words", "<b>bold</b>", "name@host", "abcdefghijklmnopqrstuvwxyz0123456"} {
+		admin.expect(http.StatusBadRequest, add(username))
+	}
+	for _, username := range []string{"Friend", "jo", "anna.b-2_x", "Zoë", "太郎"} {
+		admin.expect(http.StatusOK, add(username))
+	}
+	// A name taken in other capitals is taken
+	admin.expect(http.StatusConflict, add("friend"))
+	admin.expect(http.StatusConflict, add("ADMIN"))
+	if count := api.count(t, `SELECT count(*) FROM users WHERE status = 1`); count != 6 {
+		t.Fatalf("%d accounts, not the admin and the 5 added", count)
+	}
+
+	// And signs in whatever capitals it's typed with
+	friend := api.browser(t)
+	friend.expect(http.StatusOK, friend.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-friend"}, "username": {"fRIEND"}}))
+	friend.expect(http.StatusUnauthorized, friend.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-friend"}, "username": {"friendly"}}))
+}
+
+func TestLibraryModeIsOwnOrShared(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	player := api.register(t, "player")
+
+	for _, mode := range []string{"2", "-1", "0.5", "NaN"} {
+		admin.expect(http.StatusBadRequest, admin.form(http.MethodPatch, "/api/v1/users/"+player.id,
+			url.Values{"libraryMode": {mode}}))
+		admin.expect(http.StatusBadRequest, admin.form(http.MethodPost, "/api/v1/users",
+			url.Values{"libraryMode": {mode}, "password": {"password-other"}, "username": {"other"}}))
+	}
+	if mode := api.count(t, `SELECT library_mode FROM users WHERE id = ?`, player.id); mode != 0 {
+		t.Fatalf("library mode is %d", mode)
+	}
+}
+
+func TestAdminResetsAForgottenPassword(t *testing.T) {
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	player := api.register(t, "player")
+	other := api.register(t, "other")
+	reset := func(by *apiUser, id, password string) response {
+		return by.form(http.MethodPut, "/api/v1/users/"+id+"/password", url.Values{"new_password": {password}})
+	}
+
+	// Only the admin, only for someone else, and only a password long enough
+	other.expect(http.StatusForbidden, reset(other, player.id, "another-password"))
+	stranger := api.browser(t)
+	stranger.expect(http.StatusUnauthorized, reset(stranger, player.id, "another-password"))
+	admin.expect(http.StatusUnprocessableEntity, reset(admin, admin.id, "another-password"))
+	admin.expect(http.StatusBadRequest, reset(admin, player.id, "short"))
+	admin.expect(http.StatusNotFound, reset(admin, "nobody", "another-password"))
+	player.expect(http.StatusOK, player.get("/api/v1/preference"))
+
+	admin.expect(http.StatusOK, reset(admin, player.id, "another-password"))
+
+	// They're signed out everywhere, the old password is gone and the new one works
+	player.expect(http.StatusUnauthorized, player.get("/api/v1/preference"))
+	again := api.browser(t)
+	again.expect(http.StatusUnauthorized, again.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-player"}, "username": {"player"}}))
+	again.expect(http.StatusOK, again.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"another-password"}, "username": {"player"}}))
+	// Nobody else is touched
+	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
+	other.expect(http.StatusOK, other.get("/api/v1/preference"))
+}

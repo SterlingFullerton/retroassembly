@@ -154,6 +154,7 @@ export interface ApiRoutes {
     ':id': {
       $delete: Endpoint<Id, { success: true }>
       $patch: Endpoint<Id & { form: { libraryMode: string } }, User>
+      password: { $put: Endpoint<Id & { form: { new_password: string } }, { success: true }> }
     }
     $get: Endpoint<NoInput, Account[]>
     $post: Endpoint<{ form: { libraryMode?: string; password?: string; username: string } }, User>

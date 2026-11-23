@@ -193,10 +193,18 @@ func Login(ctx context.Context, database *sql.DB, username, password string, cli
 		user         User
 		passwordHash sql.NullString
 	)
-	err := database.QueryRowContext(ctx,
-		`SELECT id, library_mode, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
-		strings.TrimSpace(username), db.StatusNormal,
-	).Scan(&user.ID, &user.LibraryMode, &user.Username, &passwordHash)
+	// Capitals don't matter: "Jack" signs in to "jack"
+	name, err := usernameInUse(ctx, database, strings.TrimSpace(username))
+	if err != nil {
+		return nil, nil, err
+	}
+	err = sql.ErrNoRows
+	if name != "" {
+		err = database.QueryRowContext(ctx,
+			`SELECT id, library_mode, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
+			name, db.StatusNormal,
+		).Scan(&user.ID, &user.LibraryMode, &user.Username, &passwordHash)
+	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, err
 	}
@@ -276,14 +284,16 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 		}
 	}
 	username = strings.TrimSpace(username)
-	var existing string
-	err := database.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
-		username, db.StatusNormal).Scan(&existing)
-	if err == nil {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
+	if !ValidUsername(username) {
+		return nil, errInvalidUsername
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
+	// Taken whatever its capitals, so "Jack" can't be added beside "jack"
+	existing, err := usernameInUse(ctx, database, username)
+	if err != nil {
 		return nil, err
+	}
+	if existing != "" {
+		return nil, failure.New(http.StatusConflict, "Username already exists")
 	}
 	if authMode == "local" && password == "" {
 		return nil, failure.New(http.StatusBadRequest, "Password is required")
@@ -309,13 +319,11 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 		return nil, err
 	}
 	defer transaction.Rollback()
-	err = transaction.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ? AND status = ? LIMIT 1`,
-		username, db.StatusNormal).Scan(&existing)
-	if err == nil {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
+	if existing, err = usernameInUse(ctx, transaction, username); err != nil {
 		return nil, err
+	}
+	if existing != "" {
+		return nil, failure.New(http.StatusConflict, "Username already exists")
 	}
 	if firstOnly {
 		if taken, err := hasAccounts(ctx, transaction); err != nil {

@@ -8,6 +8,7 @@ import { libraryModeEnum } from '#@/databases/schema.ts'
 import { AccountFormField } from '#@/pages/components/account-form-field.tsx'
 import { minPasswordLength } from '#@/pages/components/min-password-length.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
+import { useAgo } from '#@/pages/library/platform/rom/components/use-ago.ts'
 
 const { $patch } = client.auth.password
 
@@ -15,7 +16,10 @@ interface UserTabContentProps {
   canDelete: boolean
   onDelete?: () => void
   user: {
+    /** When the account was made and last used, which only the admin's list of accounts has */
+    createdAt?: string
     id: string
+    lastActivityAt?: null | string
     libraryMode: number
   }
 }
@@ -27,6 +31,10 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
   const [passwordError, setPasswordError] = useState<null | string>(null)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [libraryModeUpdating, setLibraryModeUpdating] = useState(false)
+  const [libraryModeError, setLibraryModeError] = useState<null | string>(null)
+  const [resetError, setResetError] = useState<null | string>(null)
+  const [resetDone, setResetDone] = useState(false)
+  const ago = useAgo()
 
   const isCurrentUser = user.id === currentUser.id
   const isSharedLibrary = user.libraryMode === libraryModeEnum.shared
@@ -68,14 +76,46 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
     },
   )
 
+  // A new password for someone who forgot theirs, which the admin gives them
+  const { isMutating: isResettingPassword, trigger: handleReset } = useSWRMutation(
+    { endpoint: `users/${user.id}/password`, method: 'put' },
+    async (_key, { arg: event }: { arg: SubmitEvent<HTMLFormElement> }) => {
+      event.preventDefault()
+      setResetError(null)
+      setResetDone(false)
+      const formElement = event.currentTarget
+      const formData = new FormData(formElement)
+      if (formData.get('new_password') !== formData.get('repeat_new_password')) {
+        setResetError(t('auth.passwordsDoNotMatch'))
+        return
+      }
+      await client.users[':id'].password.$put({
+        form: { new_password: `${formData.get('new_password')?.toString()}` },
+        param: { id: user.id },
+      })
+      setResetDone(true)
+      formElement.reset()
+    },
+    {
+      onError: (err) => {
+        setResetError(err.message || t('error.unknown'))
+      },
+      throwOnError: false,
+    },
+  )
+
   async function handleLibraryModeChange(checked: boolean) {
     setLibraryModeUpdating(true)
+    setLibraryModeError(null)
     try {
       await client.users[':id'].$patch({
         form: { libraryMode: checked ? String(libraryModeEnum.shared) : String(libraryModeEnum.isolated) },
         param: { id: user.id },
       })
       await mutate({ endpoint: 'users', method: 'get' })
+    } catch (error) {
+      // Said under the box, which goes back to what the account still has
+      setLibraryModeError((error as { message?: string })?.message || t('error.unknown'))
     } finally {
       setLibraryModeUpdating(false)
     }
@@ -83,6 +123,14 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
 
   return (
     <Flex className={isCurrentUser ? '' : 'py-4'} direction='column' gap='4'>
+      {user.createdAt ? (
+        <Text className='opacity-70' size='2'>
+          {t('common.created')}: {ago(user.createdAt)}
+          {' · '}
+          {t('auth.lastActive')}: {user.lastActivityAt ? ago(user.lastActivityAt) : t('common.never')}
+        </Text>
+      ) : null}
+
       {/* Library mode toggle - only for non-super users (shown to super user) */}
       {canDelete ? (
         <>
@@ -103,7 +151,67 @@ export function UserTabContent({ canDelete, onDelete, user }: Readonly<UserTabCo
                 </Text>
               </div>
             </label>
+            {libraryModeError ? (
+              <Text as='p' className='mt-2' color='red' role='alert' size='2'>
+                {libraryModeError}
+              </Text>
+            ) : null}
           </div>
+
+          {authMode === 'local' && !isCurrentUser ? (
+            <form className='flex flex-col gap-2 lg:w-xl' onSubmit={handleReset}>
+              <Flex align='center' gap='2'>
+                <span className='icon-[mdi--lock-reset]' />
+                <Text size='3' weight='bold'>
+                  {t('auth.setNewPassword')}
+                </Text>
+              </Flex>
+              <Text className='opacity-70' size='1'>
+                {t('auth.setNewPasswordNote')}
+              </Text>
+              <div className='grid-cols-2 gap-4 lg:grid'>
+                <AccountFormField
+                  autoComplete='new-password'
+                  iconClass='icon-[mdi--password-add]'
+                  label={t('auth.newPassword')}
+                  minLength={minPasswordLength}
+                  name='new_password'
+                  required
+                  size='2'
+                  type='password'
+                />
+                <AccountFormField
+                  autoComplete='new-password'
+                  iconClass='icon-[mdi--password-check]'
+                  label={t('auth.repeatNewPassword')}
+                  name='repeat_new_password'
+                  required
+                  size='2'
+                  type='password'
+                />
+              </div>
+              <Button className='mt-2!' loading={isResettingPassword} type='submit' variant='soft'>
+                <span className='icon-[mdi--password-check]' />
+                {t('auth.setNewPassword')}
+              </Button>
+              {resetDone ? (
+                <Callout.Root className='mt-2'>
+                  <Callout.Icon>
+                    <span className='icon-[mdi--check]' />
+                  </Callout.Icon>
+                  <Callout.Text>{t('auth.passwordSet')}</Callout.Text>
+                </Callout.Root>
+              ) : null}
+              {resetError ? (
+                <Callout.Root className='mt-2' color='red'>
+                  <Callout.Icon>
+                    <span className='icon-[mdi--information]' />
+                  </Callout.Icon>
+                  <Callout.Text>{resetError}</Callout.Text>
+                </Callout.Root>
+              ) : null}
+            </form>
+          ) : null}
 
           <div className='lg:w-xl'>
             <Button
