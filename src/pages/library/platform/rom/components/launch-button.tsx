@@ -17,7 +17,7 @@ interface LaunchButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   compact?: boolean
   /** Until a wide screen, a square holding only the button's icon; its name is still read out */
   iconOnly?: boolean
-  /** Shares the row's whole width with the button beside it, rather than stopping at its usual width */
+  /** On a phone, shares the row's whole width with the button beside it; from there it stops at its usual width */
   stretch?: boolean
   progress?: LaunchButtonProgress
   variant?: ButtonProps['variant']
@@ -42,6 +42,7 @@ export function LaunchButton({
         'max-lg:w-12 max-lg:flex-none!': iconOnly,
         'min-w-0 flex-1': stretch || compact,
         'opacity-50': disabled && !progress,
+        'sm:max-w-80': stretch,
         'w-full lg:w-80': !stretch && !compact,
       })}
       data-sn-enabled
