@@ -26,7 +26,7 @@ export const modifierKeyNames: Record<string, string> = {
 
 const arrowNames: Record<string, string> = { down: '↓', left: '←', right: '→', up: '↑' }
 
-function keyName(key: string) {
+export function keyName(key: string) {
   // RetroArch calls the number keys num0 to num9
   const numberKey = /^num(?<digit>\d)$/u.exec(key)?.groups?.digit
   return numberKey ?? arrowNames[key] ?? modifierKeyNames[key] ?? capitalize(key)
@@ -40,7 +40,7 @@ function joinKeys(...keys: (string | undefined)[]) {
 }
 
 // The keypad's keys, shown as one range when they are on the number keys
-function keypadKeyNames(keypad: Record<string, string>) {
+export function keypadKeyNames(keypad: Record<string, string>) {
   const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
   if (labels.every((label) => keypad[label] === `num${label}`)) {
     return '1 – 0'

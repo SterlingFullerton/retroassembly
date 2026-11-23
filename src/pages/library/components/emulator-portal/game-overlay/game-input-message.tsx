@@ -61,9 +61,10 @@ export function GameInputMessage() {
     ))
   }
 
-  // The keys, as this console's controller; built from the console registry and the keyboard mapping
+  // The keys the emulator itself answers to; the console's buttons are on the pause menu's picture of its controller
   const hints = rom && core ? getKeyboardHints(resolveConsole(rom.platform, core), sharedKeyboardMapping) : []
   return hints
+    .filter(({ message }) => 'text' in message && message.text !== 'emulator.insertCoin')
     .filter(({ message }) => rewindEnabled || !('text' in message && message.text === 'emulator.rewind'))
     .map(({ keyNames, message }) => (
       <GameInputMessageItem key={keyNames.join(',')} keyNames={keyNames}>

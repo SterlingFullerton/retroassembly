@@ -16,6 +16,7 @@ import { GameOverlayDiscs } from './game-overlay-discs.tsx'
 import { GameOverlaySavesButton } from './game-overlay-saves-button.tsx'
 import { GameOverlaySaves } from './game-overlay-saves.tsx'
 import { GameOverlaySettings, GameOverlaySettingsButton } from './game-overlay-settings.tsx'
+import { KeyboardPad } from './keyboard-pad.tsx'
 
 function handleAnimationComplete(animation) {
   if (animation.opacity === 1) {
@@ -120,6 +121,7 @@ export function GameOverlayContent() {
                     </button>
                   ) : null}
                 </div>
+                <KeyboardPad />
               </div>
             )}
           </div>
