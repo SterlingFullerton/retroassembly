@@ -1,5 +1,5 @@
-import { atom, useAtom } from 'jotai'
-import type { CSSProperties } from 'react'
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { type CSSProperties, useMemo } from 'react'
 
 const focusIndicatorStyleAtom = atom<CSSProperties>({})
 export function useFocusIndicatorStyle() {
@@ -30,6 +30,22 @@ export function useSpatialNavigationPaused() {
 const selectedGamesAtom = atom<string[]>([])
 export function useSelectedGames() {
   return useAtom(selectedGamesAtom)
+}
+
+// For a game in a list: whether any are selected and whether it is, so selecting one redraws it alone, not the page
+const isSelectingAtom = atom((get) => get(selectedGamesAtom).length > 0)
+export function useGameSelection(id: string) {
+  const selecting = useAtomValue(isSelectingAtom)
+  const selected = useAtomValue(useMemo(() => atom((get) => get(selectedGamesAtom).includes(id)), [id]))
+  const setSelectedGames = useSetAtom(selectedGamesAtom)
+
+  function setSelected(next: boolean) {
+    setSelectedGames((games) =>
+      next ? [...games.filter((game) => game !== id), id] : games.filter((game) => game !== id),
+    )
+  }
+
+  return { selected, selecting, setSelected }
 }
 
 const pristineAtom = atom(true)

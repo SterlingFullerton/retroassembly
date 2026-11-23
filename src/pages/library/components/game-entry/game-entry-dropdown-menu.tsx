@@ -6,7 +6,7 @@ import { client, parseResponse } from '#@/api/client.ts'
 import { libraryModeEnum } from '#@/databases/schema.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { routes } from '#@/pages/routes.ts'
-import { useSelectedGames } from '../../atoms.ts'
+import { useGameSelection } from '../../atoms.ts'
 import { useGameActions } from '../../hooks/use-game-actions.ts'
 import { DeleteDialog } from '../delete-dialog.tsx'
 
@@ -16,7 +16,7 @@ export function GameEntryDropdownMenu({ rom }) {
   const { actions } = useGameActions()
   const [menuOpen, setMenuOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedGames, setSelectedGames] = useSelectedGames()
+  const { selected, selecting, setSelected } = useGameSelection(rom.id)
   // Deleting the game, or on the history page removing it from the history
   const deleteAction = actions.find(({ name }) => name === 'delete')
 
@@ -29,11 +29,11 @@ export function GameEntryDropdownMenu({ rom }) {
   }
 
   function handleCheckedChange(checked: boolean) {
-    setSelectedGames(checked ? [...selectedGames, rom.id] : selectedGames.filter((id) => id !== rom.id))
+    setSelected(checked)
   }
 
   function handleClickSelect() {
-    setSelectedGames([...selectedGames, rom.id])
+    setSelected(true)
   }
 
   function handleClickDelete() {
@@ -54,10 +54,10 @@ export function GameEntryDropdownMenu({ rom }) {
     return
   }
 
-  if (selectedGames.length > 0) {
+  if (selecting) {
     return (
       <div className='absolute top-1 right-1 z-1'>
-        <Checkbox checked={selectedGames.includes(rom.id)} onCheckedChange={handleCheckedChange} value={rom.id} />
+        <Checkbox checked={selected} onCheckedChange={handleCheckedChange} value={rom.id} />
       </div>
     )
   }

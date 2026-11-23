@@ -268,7 +268,8 @@ func GetRom(ctx context.Context, scope Scope, platforms []string, id string) (Ob
 // FindRomByFile is the id of a game in the library by its file name and console; empty when there's none
 func FindRomByFile(ctx context.Context, scope Scope, platform, fileName string) (string, error) {
 	var id string
-	err := scope.Database.QueryRowContext(ctx, `SELECT id FROM roms
+	// The index is named: left to choose, SQLite walks every game of the console in a wider one
+	err := scope.Database.QueryRowContext(ctx, `SELECT id FROM roms INDEXED BY idx_roms_user_platform_filename
 		WHERE file_name = ? AND platform = ? AND user_id = ? AND status = ? ORDER BY file_name LIMIT 1`,
 		fileName, platform, scope.LibraryOwnerID, db.StatusNormal).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {

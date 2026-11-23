@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { Outlet } from 'react-router'
 import { getPageRequestOptions, pagesClient, readPageData } from '#@/utils/client/page-data.ts'
 import { setCDNCacheEnabled } from '#@/utils/isomorphic/cdn.ts'
-import { i18n } from '#@/utils/isomorphic/i18n.ts'
+import { setLanguage } from '#@/utils/isomorphic/i18n.ts'
 import type { Route } from './+types/root.ts'
 import { AppLayout } from './components/app-layout.tsx'
 import { ErrorPage } from './components/error-page.tsx'
@@ -19,7 +19,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const data = await readPageData(request, response)
   setCDNCacheEnabled(data.cdnCache)
   // Switched before the page is drawn, so it never shows in another language first
-  await i18n.changeLanguage(data.language)
+  await setLanguage(data.language)
   return data
 }
 

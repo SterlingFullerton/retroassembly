@@ -242,14 +242,23 @@ const (
 	imageBodyLimit = 100 << 20
 	// A save state, an in-game save or a BIOS file
 	fileBodyLimit = 512 << 20
+	// How much of a form's files is held in memory before the rest waits on disk
+	formMemory = 1 << 20
+	// The same for a save: most are a few MiB and are written straight to storage, not to the temporary folder first
+	saveFormMemory = 32 << 20
 )
 
 // parseForm reads a multipart or URL-encoded form of at most limit bytes, answering 413 for a larger one, 400 for one
 // that can't be read, and false
 func parseForm(w http.ResponseWriter, r *http.Request, limit int64) bool {
+	return parseFormHolding(w, r, limit, formMemory)
+}
+
+// parseFormHolding is parseForm holding up to memory bytes of the form's files in memory; any more waits on disk, in
+// the temporary folder, until it's read
+func parseFormHolding(w http.ResponseWriter, r *http.Request, limit, memory int64) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, limit)
-	// Files past the first MiB of a form wait on disk, rather than in memory, until they're read
-	if err := r.ParseMultipartForm(1 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	if err := r.ParseMultipartForm(memory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
 			writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")

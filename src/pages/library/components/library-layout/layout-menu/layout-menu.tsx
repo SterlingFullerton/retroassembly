@@ -1,12 +1,20 @@
 import { Button, DropdownMenu } from '@radix-ui/themes'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettingsDialogOpen, useSpatialNavigationPaused } from '../../../atoms.ts'
 import { AboutDialog } from './about-dialog.tsx'
-import { DeviceStorageDialog } from './device-storage-dialog.tsx'
 import { LogoutDialog } from './logout-dialog.tsx'
-import { SettingsDialog } from './settings-dialog/settings-dialog.tsx'
 import { ThemeMenuItem } from './theme-menu-item.tsx'
+
+// The two large dialogs aren't needed to browse the library, so their code is fetched when one is first opened
+const SettingsDialog = lazy(async () => {
+  const { SettingsDialog } = await import('./settings-dialog/settings-dialog.tsx')
+  return { default: SettingsDialog }
+})
+const DeviceStorageDialog = lazy(async () => {
+  const { DeviceStorageDialog } = await import('./device-storage-dialog.tsx')
+  return { default: DeviceStorageDialog }
+})
 
 /** Settings, theme, device storage, about and log out. `inBar` is the phone's red bar, where it's a large icon like search beside it */
 export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
@@ -17,6 +25,14 @@ export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false)
   const [storageDialogOpen, setStorageDialogOpen] = useState(false)
+  const [settingsDialogOpened, setSettingsDialogOpened] = useState(false)
+  const [storageDialogOpened, setStorageDialogOpened] = useState(false)
+  if (settingsDialogOpen && !settingsDialogOpened) {
+    setSettingsDialogOpened(true)
+  }
+  if (storageDialogOpen && !storageDialogOpened) {
+    setStorageDialogOpened(true)
+  }
 
   function handleClickSettings() {
     setSettingsDialogOpen(true)
@@ -77,10 +93,19 @@ export function LayoutMenu({ inBar = false }: Readonly<{ inBar?: boolean }>) {
         </DropdownMenu.Content>
       </DropdownMenu.Root>
 
-      <SettingsDialog onOpenChange={setSettingsDialogOpen} open={settingsDialogOpen} />
+      {/* Fetched when first opened, then kept, so closing still animates */}
+      {settingsDialogOpened ? (
+        <Suspense fallback={null}>
+          <SettingsDialog onOpenChange={setSettingsDialogOpen} open={settingsDialogOpen} />
+        </Suspense>
+      ) : null}
       <LogoutDialog onOpenChange={setLogoutDialogOpen} open={logoutDialogOpen} />
       <AboutDialog onOpenChange={setAboutDialogOpen} open={aboutDialogOpen} />
-      <DeviceStorageDialog onOpenChange={setStorageDialogOpen} open={storageDialogOpen} />
+      {storageDialogOpened ? (
+        <Suspense fallback={null}>
+          <DeviceStorageDialog onOpenChange={setStorageDialogOpen} open={storageDialogOpen} />
+        </Suspense>
+      ) : null}
     </>
   )
 }

@@ -1,9 +1,9 @@
 import { Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
-import { locales } from '#@/locales/locales.ts'
+import { localeNames } from '#@/locales/names.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
-import { dateFormatMap, dateFormats } from '#@/utils/isomorphic/i18n.ts'
+import { dateFormatMap, dateFormats, setLanguage } from '#@/utils/isomorphic/i18n.ts'
 import { SettingsTitle } from '../settings-title.tsx'
 
 export function LanguageSettings() {
@@ -24,7 +24,7 @@ export function LanguageSettings() {
               onValueChange={async (value) => {
                 await update({ ui: { language: value } })
                 const language = value === 'auto' ? detectedLanguage : value
-                await i18n.changeLanguage(language)
+                await setLanguage(language)
               }}
               size='2'
               value={preference.ui.language}
@@ -32,9 +32,9 @@ export function LanguageSettings() {
               <Select.Trigger disabled={isLoading} />
               <Select.Content>
                 <Select.Item value='auto'>
-                  {t('common.auto')} ({locales.find(({ code }) => code === detectedLanguage)?.name})
+                  {t('common.auto')} ({localeNames.find(({ code }) => code === detectedLanguage)?.name})
                 </Select.Item>
-                {locales.map((locale) => (
+                {localeNames.map((locale) => (
                   <Select.Item key={locale.code} value={locale.code}>
                     {locale.name}
                   </Select.Item>

@@ -12,23 +12,9 @@ import ru from './ru.json' with { type: 'json' }
 import zhCN from './zh-CN.json' with { type: 'json' }
 import zhTW from './zh-TW.json' with { type: 'json' }
 
-export const localeCodes = [
-  'cs',
-  'de',
-  'en',
-  'en-CA',
-  'es',
-  'fr',
-  'it',
-  'ja',
-  'ko',
-  'pt',
-  'ru',
-  'zh-CN',
-  'zh-TW',
-] as const
-
-export type LocalCode = (typeof localeCodes)[number]
+// Every language's text at once: for the scripts and tests that go through them all. The app itself loads one language
+// at a time (utils/isomorphic/i18n.ts)
+export { type LocalCode, localeCodes } from './names.ts'
 
 export const locales = [
   { code: 'cs', name: 'Čeština', translation: cs },

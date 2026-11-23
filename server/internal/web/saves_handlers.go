@@ -46,7 +46,7 @@ func (s *Server) listRomStates(w http.ResponseWriter, r *http.Request, scope lib
 }
 
 func (s *Server) createState(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r, fileBodyLimit) {
+	if !parseFormHolding(w, r, fileBodyLimit, saveFormMemory) {
 		return
 	}
 	values := r.PostForm
@@ -125,7 +125,7 @@ func (s *Server) listGameSaves(w http.ResponseWriter, r *http.Request, scope lib
 }
 
 func (s *Server) createGameSave(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	if !parseForm(w, r, fileBodyLimit) {
+	if !parseFormHolding(w, r, fileBodyLimit, saveFormMemory) {
 		return
 	}
 	values := r.PostForm

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { generatePath } from 'react-router'
 import { routes } from '#@/pages/routes.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
-import { useSelectedGames } from '../../atoms.ts'
+import { useGameSelection } from '../../atoms.ts'
 import { useDate } from '../../hooks/use-date.ts'
 import { FavoriteButton } from '../favorite-button.tsx'
 import { NavigatableLink } from '../navigatable-link.tsx'
@@ -27,7 +27,7 @@ export interface GameEntryLabel {
 
 /** A game in a list or a row of Home; `label` adds one of its own to the console line, such as how many can play */
 export function GameEntry({ label, rom }: Readonly<{ label?: GameEntryLabel; rom: any }>) {
-  const [selectedGames, setSelectedGames] = useSelectedGames()
+  const { selected, selecting, setSelected } = useGameSelection(rom.id)
   const { t } = useTranslation()
   const { formatDateRelative } = useDate()
   // Only History's games have lastLaunched
@@ -37,13 +37,10 @@ export function GameEntry({ label, rom }: Readonly<{ label?: GameEntryLabel; rom
     fileName: rom.fileName,
     platform: rom.platform,
   })
-  const selecting = selectedGames.length > 0
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (selecting) {
       event.preventDefault()
-      setSelectedGames(
-        selectedGames.includes(rom.id) ? selectedGames.filter((id) => id !== rom.id) : [...selectedGames, rom.id],
-      )
+      setSelected(!selected)
     }
   }
 

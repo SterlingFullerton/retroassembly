@@ -76,3 +76,28 @@ func TestUpdateDiscGroups(t *testing.T) {
 		}
 	}
 }
+
+func TestMergeDiscGroupLeavesOtherGamesAlone(t *testing.T) {
+	database := setup(t)
+	_, err := database.Exec(`
+		INSERT INTO roms (file_name, platform, created_at, id, status, updated_at, file_id, user_id, disc_group, disc_number) VALUES
+			('FF7 (Disc 1).cue', 'psx', 1, 'ff1', 1, 1, 'roms/psx/1.cue', 'u1', 'FF7', 1),
+			('FF7 (Disc 2).cue', 'psx', 2, 'ff2', 1, 1, 'roms/psx/2.cue', 'u1', 'FF7', 2),
+			('MGS (Disc 1).cue', 'psx', 3, 'mgs1', 1, 1, 'roms/psx/3.cue', 'u1', 'MGS', 1),
+			('MGS (Disc 2).cue', 'psx', 4, 'mgs2', 1, 1, 'roms/psx/4.cue', 'u1', 'MGS', 2);
+		INSERT INTO launch_records (id, core, platform, rom_id, user_id, created_at, updated_at, status)
+			VALUES ('l1', 'c', 'psx', 'ff2', 'u1', 1, 1, 1), ('l2', 'c', 'psx', 'mgs2', 'u1', 1, 1, 1)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := MergeDiscGroup(t.Context(), database, DiscGroup{UserID: "u1", Platform: "psx", Group: "FF7"}); err != nil {
+		t.Fatal(err)
+	}
+	var got string
+	if err := database.QueryRow(`SELECT group_concat(rom_id, ' ') FROM (SELECT rom_id FROM launch_records ORDER BY id)`).Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got != "ff1 mgs2" {
+		t.Errorf("history is on %q, want the first game's moved to its disc 1 and the other left", got)
+	}
+}

@@ -58,7 +58,27 @@ func UpdateDiscGroups(ctx context.Context, database *sql.DB, consoles []string) 
 	if err := assignDiscGroups(ctx, transaction, consoles); err != nil {
 		return err
 	}
-	if err := mergeDiscGroups(ctx, transaction); err != nil {
+	if err := mergeDiscGroups(ctx, transaction, nil); err != nil {
+		return err
+	}
+	return transaction.Commit()
+}
+
+// DiscGroup names one game on several discs in one player's library
+type DiscGroup struct {
+	UserID, Platform string
+	Group            any
+}
+
+// MergeDiscGroup keeps one game's saves, favorites and history together after a disc of it is added, without going
+// through the rest of the library as UpdateDiscGroups does
+func MergeDiscGroup(ctx context.Context, database *sql.DB, group DiscGroup) error {
+	transaction, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer transaction.Rollback()
+	if err := mergeDiscGroups(ctx, transaction, &group); err != nil {
 		return err
 	}
 	return transaction.Commit()
@@ -109,8 +129,13 @@ func assignDiscGroups(ctx context.Context, transaction *sql.Tx, consoles []strin
 
 // mergeDiscGroups moves each player's saves, favorites and play history from a game's other discs to the disc that
 // stands for it (the lowest-numbered one in the library), so the game has them all in one place. Saves keep which disc
-// they were made on
-func mergeDiscGroups(ctx context.Context, transaction *sql.Tx) error {
+// they were made on. With only, just that game's discs are gone through
+func mergeDiscGroups(ctx context.Context, transaction *sql.Tx, only *DiscGroup) error {
+	filter, arguments := "", []any{}
+	if only != nil {
+		filter = ` AND roms.user_id = ? AND roms.platform = ? AND roms.disc_group = ?`
+		arguments = []any{only.UserID, only.Platform, only.Group}
+	}
 	rows, err := transaction.QueryContext(ctx, `
 		SELECT roms.id, roms.disc_number, (
 			SELECT first.id FROM roms first
@@ -119,7 +144,7 @@ func mergeDiscGroups(ctx context.Context, transaction *sql.Tx) error {
 			ORDER BY first.disc_number, first.created_at LIMIT 1
 		) AS representative
 		FROM roms
-		WHERE roms.disc_group IS NOT NULL AND roms.status = 1`)
+		WHERE roms.disc_group IS NOT NULL AND roms.status = 1`+filter, arguments...)
 	if err != nil {
 		return err
 	}

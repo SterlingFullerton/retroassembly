@@ -82,6 +82,20 @@ const preparations = new Map<string, Promise<Nostalgist | undefined>>()
 const remapDirectory = '/home/web_user/retroarch/userdata/config/remaps'
 
 // A save that's one byte over and over is what an emulator writes before the game has saved anything
+let drawsGames = false
+/** Whether the browser can draw a game at all: WebGL can be turned off, or refused on some devices */
+function canDrawGames() {
+  if (drawsGames) {
+    return true
+  }
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+  // The test's own drawing surface is given back at once; browsers allow only so many
+  context?.getExtension('WEBGL_lose_context')?.loseContext()
+  drawsGames = Boolean(context)
+  return drawsGames
+}
+
 function isBlank(content: Uint8Array) {
   return content.every((byte) => byte === content[0])
 }
@@ -551,6 +565,10 @@ export function useEmulatorSessionController({
       return
     }
     try {
+      // Without it the game would run unseen, on a black screen
+      if (!canDrawGames()) {
+        throw new Error('This browser has WebGL turned off or unavailable')
+      }
       await startGame(emulator)
     } catch (error) {
       // Running all the same: only something after the start failed, such as loading the save to continue from

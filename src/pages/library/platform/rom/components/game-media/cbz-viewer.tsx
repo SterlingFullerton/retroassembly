@@ -1,5 +1,5 @@
-import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js'
-import { useEffect, useRef, useState } from 'react'
+import { BlobReader, BlobWriter, HttpRangeReader, ZipReader } from '@zip.js/zip.js'
+import { useEffect, useState } from 'react'
 
 const imageExtensions = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
 
@@ -7,25 +7,37 @@ interface CbzViewerProps {
   src: string
 }
 
+/**
+ * A comic or manual, its pages one under another. The file is read a part at a time and each page shown as soon as
+ * it's unpacked, so the first appears without waiting for the whole file; closing it stops the rest
+ */
 export function CbzViewer({ src }: Readonly<CbzViewerProps>) {
   const [pages, setPages] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const pageUrlsRef = useRef<string[]>([])
 
   useEffect(() => {
     const controller = new AbortController()
+    const { signal } = controller
+    // Every page unpacked so far, shown or not, to let go of when the comic is closed
+    const urls: string[] = []
 
-    async function load() {
+    async function getEntries() {
+      // A server that can't send parts of a file sends it whole
       try {
-        const response = await fetch(src, { signal: controller.signal })
+        return await new ZipReader(new HttpRangeReader(src)).getEntries()
+      } catch {
+        const response = await fetch(src, { signal })
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.status}`)
         }
-        const blob = await response.blob()
-        const reader = new ZipReader(new BlobReader(blob))
-        const entries = await reader.getEntries()
+        return await new ZipReader(new BlobReader(await response.blob())).getEntries()
+      }
+    }
 
+    async function load() {
+      try {
+        const entries = await getEntries()
         const imageEntries = entries
           .filter((entry) => !entry.directory)
           .filter((entry) => {
@@ -34,26 +46,26 @@ export function CbzViewer({ src }: Readonly<CbzViewerProps>) {
           })
           .toSorted((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true }))
 
-        const urls: string[] = []
         for (const entry of imageEntries) {
-          const data = await entry.getData?.(new BlobWriter())
+          if (signal.aborted) {
+            return
+          }
+          const data = await entry.getData?.(new BlobWriter(), { signal })
           if (data) {
             urls.push(URL.createObjectURL(data))
+            if (!signal.aborted) {
+              setPages([...urls])
+              setLoading(false)
+            }
           }
         }
-
-        if (controller.signal.aborted) {
-          return
-        }
-
-        pageUrlsRef.current = urls
-        setPages(urls)
       } catch {
-        if (!controller.signal.aborted) {
+        // With some pages showing, the comic stays as far as it got
+        if (!signal.aborted && urls.length === 0) {
           setError(true)
         }
       } finally {
-        if (!controller.signal.aborted) {
+        if (!signal.aborted) {
           setLoading(false)
         }
       }
@@ -65,7 +77,7 @@ export function CbzViewer({ src }: Readonly<CbzViewerProps>) {
 
     return () => {
       controller.abort()
-      for (const url of pageUrlsRef.current) {
+      for (const url of urls) {
         URL.revokeObjectURL(url)
       }
     }

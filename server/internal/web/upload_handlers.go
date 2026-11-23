@@ -465,8 +465,9 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 		s.compressor.Compress(fileID)
 	}
 	// A new disc of a game may stand for it now (disc 1 added after disc 2), so its saves and history follow
-	if rom.Get("discGroup") != nil {
-		if err := library.UpdateDiscGroups(ctx, s.database, s.multiDiscList); err != nil {
+	if group := rom.Get("discGroup"); group != nil {
+		merge := library.DiscGroup{UserID: scope.User.ID, Platform: platform, Group: group}
+		if err := library.MergeDiscGroup(ctx, s.database, merge); err != nil {
 			return nil, err
 		}
 	}
