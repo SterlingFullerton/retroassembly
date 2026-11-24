@@ -3,8 +3,6 @@ import { clsx } from 'clsx'
 import { useState } from 'react'
 import { useLocation } from 'react-router'
 import { client, parseResponse } from '#@/api/client.ts'
-import { libraryModeEnum } from '#@/databases/schema.ts'
-import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { routes } from '#@/pages/routes.ts'
 import { useGameSelection } from '../../atoms.ts'
 import { useGameActions } from '../../hooks/use-game-actions.ts'
@@ -12,7 +10,6 @@ import { DeleteDialog } from '../delete-dialog.tsx'
 
 export function GameEntryDropdownMenu({ rom }) {
   const { pathname } = useLocation()
-  const { currentUser } = useGlobalLoaderData()
   const { actions } = useGameActions()
   const [menuOpen, setMenuOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -46,7 +43,8 @@ export function GameEntryDropdownMenu({ rom }) {
     handler?.()
   }
 
-  if (currentUser?.libraryMode === libraryModeEnum.shared) {
+  // Nothing to offer: a game in the library, to someone who can't delete games
+  if (actions.length === 0) {
     return
   }
 

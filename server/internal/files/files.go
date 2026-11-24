@@ -100,8 +100,8 @@ func biosFileIDs(ctx context.Context, database *sql.DB, userID string) ([]string
 	return fileIDs, nil
 }
 
-// CanRead tells whether the reader may read a stored file: their own, or, for a user who shares another's library,
-// that library's ROMs, box art and BIOS files. Save states and game saves are each user's own
+// CanRead tells whether the reader may read a stored file: the library's games and the pictures added to them, the
+// BIOS files in their settings or the library owner's, and their own save states and game saves
 func CanRead(ctx context.Context, database *sql.DB, reader Reader, id string) (bool, error) {
 	kind, ok := KindOf(id)
 	if !ok {
@@ -109,7 +109,8 @@ func CanRead(ctx context.Context, database *sql.DB, reader Reader, id string) (b
 	}
 	switch kind.Name {
 	case "attachment":
-		return kind.UserID == reader.UserID || kind.UserID == reader.LibraryOwnerID, nil
+		// Pictures of the library's games, which everyone signed in sees
+		return true, nil
 	case "bios":
 		owners := []string{reader.UserID}
 		if reader.LibraryOwnerID != "" && reader.LibraryOwnerID != reader.UserID {

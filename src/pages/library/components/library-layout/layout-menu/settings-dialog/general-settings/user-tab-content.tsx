@@ -1,11 +1,9 @@
-import { Button, Callout, Checkbox, Flex, Text } from '@radix-ui/themes'
+import { Button, Callout, Flex, Text } from '@radix-ui/themes'
 import { useState, type SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSWRConfig } from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { client } from '#@/api/client.ts'
 import type { Account } from '#@/api/types.ts'
-import { libraryModeEnum } from '#@/databases/schema.ts'
 import { AccountFormField } from '#@/pages/components/account-form-field.tsx'
 import { minPasswordLength } from '#@/pages/components/min-password-length.ts'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
@@ -28,7 +26,6 @@ interface UserTabContentProps {
     createdAt?: string
     id: string
     lastActivityAt?: null | string
-    libraryMode: number
   }
 }
 
@@ -40,18 +37,14 @@ export function UserTabContent({
   user,
 }: Readonly<UserTabContentProps>) {
   const { t } = useTranslation()
-  const { mutate } = useSWRConfig()
   const { authMode, currentUser } = useGlobalLoaderData()
   const [passwordError, setPasswordError] = useState<null | string>(null)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
-  const [libraryModeUpdating, setLibraryModeUpdating] = useState(false)
-  const [libraryModeError, setLibraryModeError] = useState<null | string>(null)
   const [resetError, setResetError] = useState<null | string>(null)
   const [resetDone, setResetDone] = useState(false)
   const ago = useAgo()
 
   const isCurrentUser = user.id === currentUser.id
-  const isSharedLibrary = user.libraryMode === libraryModeEnum.shared
 
   const { isMutating: isUpdatingPassword, trigger: handleSubmit } = useSWRMutation(
     { endpoint: 'auth/password', method: 'patch' },
@@ -118,23 +111,6 @@ export function UserTabContent({
     },
   )
 
-  async function handleLibraryModeChange(checked: boolean) {
-    setLibraryModeUpdating(true)
-    setLibraryModeError(null)
-    try {
-      await client.users[':id'].$patch({
-        form: { libraryMode: checked ? String(libraryModeEnum.shared) : String(libraryModeEnum.isolated) },
-        param: { id: user.id },
-      })
-      await mutate({ endpoint: 'users', method: 'get' })
-    } catch (error) {
-      // Said under the box, which goes back to what the account still has
-      setLibraryModeError((error as { message?: string })?.message || t('error.unknown'))
-    } finally {
-      setLibraryModeUpdating(false)
-    }
-  }
-
   return (
     <Flex className={isCurrentUser ? '' : 'py-4'} direction='column' gap='4'>
       {user.createdAt ? (
@@ -147,33 +123,9 @@ export function UserTabContent({
 
       {account ? <AccountAdminControls user={account} /> : null}
 
-      {/* Library mode toggle - only for non-super users (shown to super user) */}
+      {/* What an admin does to someone else's account: a new password, and deleting it */}
       {canDelete ? (
         <>
-          <div className='mt-2! lg:w-xl'>
-            <label className='flex cursor-pointer items-start gap-2'>
-              <Checkbox
-                checked={isSharedLibrary}
-                disabled={libraryModeUpdating}
-                name='libraryMode'
-                onCheckedChange={handleLibraryModeChange}
-              />
-              <div className='flex flex-col'>
-                <Text size='2' weight='medium'>
-                  {t('auth.libraryModeShared')}
-                </Text>
-                <Text className='opacity-70' size='1'>
-                  {t('auth.libraryModeDescription')}
-                </Text>
-              </div>
-            </label>
-            {libraryModeError ? (
-              <Text as='p' className='mt-2' color='red' role='alert' size='2'>
-                {libraryModeError}
-              </Text>
-            ) : null}
-          </div>
-
           {authMode === 'local' && !isCurrentUser ? (
             <form className='flex flex-col gap-2 lg:w-xl' onSubmit={handleReset}>
               <Flex align='center' gap='2'>

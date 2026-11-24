@@ -449,7 +449,8 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 		metadata = append(metadata, library.Field{Key: "libretro", Value: nullable(libretro)})
 		add("raw_game_metadata", string(library.MustJSON(metadata)))
 	}
-	add("user_id", scope.User.ID)
+	// Kept under the library's account, whoever added it
+	add("user_id", scope.LibraryOwnerID)
 
 	rom, replaced, err := library.SaveUploadedRom(ctx, scope, platform, file.fileName, fields)
 	unlock()
@@ -466,7 +467,7 @@ func (s *Server) addRom(ctx context.Context, scope library.Scope, file *upload, 
 	}
 	// A new disc of a game may stand for it now (disc 1 added after disc 2), so its saves and history follow
 	if group := rom.Get("discGroup"); group != nil {
-		merge := library.DiscGroup{UserID: scope.User.ID, Platform: platform, Group: group}
+		merge := library.DiscGroup{UserID: scope.LibraryOwnerID, Platform: platform, Group: group}
 		if err := library.MergeDiscGroup(ctx, s.database, merge); err != nil {
 			return nil, err
 		}

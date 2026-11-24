@@ -1,16 +1,15 @@
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
-import { libraryModeEnum } from '#@/databases/schema.ts'
-import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { routes } from '#@/pages/routes.ts'
+import { usePermissions } from './use-permissions.ts'
 
 export function useGameActions() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
-  const { currentUser } = useGlobalLoaderData()
   const pageType = pathname === routes.libraryHistory ? 'history' : 'library'
 
-  const isSharedLibrary = currentUser?.libraryMode === libraryModeEnum.shared
+  // Games are selected to be deleted, which is for admins
+  const { canDeleteGames } = usePermissions()
 
   const actionsMap = {
     history: [
@@ -23,9 +22,8 @@ export function useGameActions() {
         type: 'launch_records',
       },
     ],
-    library: isSharedLibrary
-      ? []
-      : [
+    library: canDeleteGames
+      ? [
           {
             confirmDescription: '',
             icon: 'icon-[mdi--checkbox-multiple-marked]',
@@ -41,7 +39,8 @@ export function useGameActions() {
             text: t('game.deleteRom'),
             type: 'roms',
           },
-        ],
+        ]
+      : [],
   } as const
 
   const actions = actionsMap[pageType]

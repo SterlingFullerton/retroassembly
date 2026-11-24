@@ -18,9 +18,12 @@ export const libraryModeEnum = {
   shared: 1,
 }
 
-// An admin manages the accounts. The oldest admin is the library's owner: accounts that share a library see theirs
+// What an account may do in the server's one library: a player plays; a contributor also adds and edits games; an
+// admin also deletes them and manages the accounts. `user` is what there was before, which reads as player
 export const roleEnum = {
   admin: 'admin',
+  contributor: 'contributor',
+  player: 'player',
   user: 'user',
 } as const
 
@@ -53,7 +56,7 @@ export const userTable = sqliteTable(
     passwordHash: text(),
     registrationIp: text(),
     registrationUserAgent: text(),
-    role: text({ enum: [roleEnum.admin, roleEnum.user] })
+    role: text({ enum: [roleEnum.admin, roleEnum.contributor, roleEnum.player, roleEnum.user] })
       .notNull()
       .default(roleEnum.user),
     username: text().notNull(),

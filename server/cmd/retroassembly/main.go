@@ -123,6 +123,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The server has one library; games kept in accounts' own, from before it did, are brought into it
+	if moved, replaced, err := library.MergeLibraries(context.Background(), database, files.Storage{Path: c.FilePath}); err != nil {
+		return err
+	} else if moved+replaced > 0 {
+		log.Printf("Brought %d games into the server's library; %d more were already in it", moved, replaced)
+	}
 	if err := library.UpdateDiscGroups(context.Background(), database, data.MultiDiscConsoles); err != nil {
 		return err
 	}

@@ -56,11 +56,12 @@ func TestSaveStates(t *testing.T) {
 		t.Fatalf("stored state: %q", body)
 	}
 
-	// Another player can't see, read, add to or delete them
-	other.expect(http.StatusNotFound, other.get("/api/v1/roms/"+added.ID+"/states"))
+	// Another player has the game but none of these saves, and can't read or delete them
+	if body := other.expect(http.StatusOK, other.get("/api/v1/roms/"+added.ID+"/states")); string(bytes.TrimSpace(body)) != "[]" {
+		t.Fatalf("the other player's states: %s", body)
+	}
 	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+manual.FileID))
 	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+manual.ThumbnailFileID))
-	other.expect(http.StatusNotFound, other.saveState(added.ID, "manual", ""))
 	other.expect(http.StatusNotFound, other.send(http.MethodDelete, "/api/v1/states/"+manual.ID, "", nil))
 
 	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/states/"+manual.ID, "", nil))
@@ -121,9 +122,8 @@ func TestGameSaves(t *testing.T) {
 	}
 	player.expect(http.StatusNotFound, player.send(http.MethodPost, "/api/v1/game_saves/missing/restore", "", nil))
 
-	// Another player has none of them, and can't restore or add to them
+	// Another player has none of them, and can't restore or read them
 	other.expect(http.StatusNotFound, other.send(http.MethodPost, "/api/v1/game_saves/"+first.ID+"/restore", "", nil))
-	other.expect(http.StatusNotFound, send(other, "mine"))
 	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+second.FileID))
 	if saves := list(other); len(saves) != 0 {
 		t.Fatalf("the other player's: %+v", saves)

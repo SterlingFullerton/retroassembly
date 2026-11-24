@@ -6,7 +6,6 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/preference"
@@ -165,7 +164,7 @@ func (s *Server) libraryLayoutData(w http.ResponseWriter, r *http.Request, scope
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, obj("isAdmin", scope.User.Role == auth.RoleAdmin, "recentlyLaunchedRoms", recent.Roms))
+	writeJSON(w, http.StatusOK, obj("isAdmin", scope.User.IsAdmin(), "recentlyLaunchedRoms", recent.Roms))
 }
 
 // listQuery is a game list's sort, order, page and search, from the page's address, as getRomsQuery reads them

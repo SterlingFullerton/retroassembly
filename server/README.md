@@ -59,8 +59,11 @@ Where it differs from the Node server, on purpose:
 - A request that changes something (anything but `GET`, `HEAD` and `OPTIONS`) from another site, as the browser's
   `Sec-Fetch-Site` header says (or, from a browser without it, its `Origin`), is refused with 403. Pages may be framed
   only by the sites `FRAME_ANCESTORS` lists, the app itself by default
-- Only the first account can sign up; the admin adds the others, unless `OPEN_SIGNUP=true` lets anyone sign up (sharing
-  the admin's library with `SIGNUP_SHARES_LIBRARY=true`). New passwords are at least 8 characters
+- The server has one library, and each account a role in it: a player plays; a contributor also adds and edits games;
+  an admin also deletes them and manages the accounts. Saves, favorites and history are each account's own. Games
+  that accounts kept in libraries of their own, before this, are brought into the server's when it starts.
+- Only the first account can sign up, and is the admin; an admin adds the others, unless `OPEN_SIGNUP=true` lets anyone
+  sign up, as a player. New passwords are at least 8 characters
 - At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. One address
   may have 8 sign-ins under way, and 10 wrong passwords for a username in 15 minutes, 50 for all (`SIGN_IN_ATTEMPTS`
   sets the 10, 0 for no limit); past that, it's answered with 429. Signing in to an account that doesn't exist takes as

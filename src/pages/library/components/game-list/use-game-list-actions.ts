@@ -1,7 +1,6 @@
 import { useLocation } from 'react-router'
 import { getDefaultRomsDirection, getListOrder } from '#@/constants/roms-order.ts'
-import { libraryModeEnum } from '#@/databases/schema.ts'
-import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
+import { usePermissions } from '#@/pages/library/hooks/use-permissions.ts'
 import { routes } from '../../../routes.ts'
 import { useSelectedGames } from '../../atoms.ts'
 import { isSearchablePath } from '../../hooks/use-library-search.ts'
@@ -11,12 +10,12 @@ export function useGameListActions() {
   const { roms } = useRoms()
   const [selectedGames, setSelectedGames] = useSelectedGames()
   const { pathname, search } = useLocation()
-  const { currentUser } = useGlobalLoaderData()
 
   const isHistoryPage = pathname === routes.libraryHistory
   const isFavoritesPage = pathname === routes.libraryFavorites
-  const isSharedLibrary = currentUser?.libraryMode === libraryModeEnum.shared
-  const shouldHideActions = isHistoryPage || isSharedLibrary
+  // Selecting games is for deleting them, which is for admins
+  const { canDeleteGames } = usePermissions()
+  const shouldHideActions = isHistoryPage || !canDeleteGames
 
   const searchParams = new URLSearchParams(search)
   // The Games page and a console's page can be searched

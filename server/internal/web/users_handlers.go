@@ -25,8 +25,18 @@ func (s *Server) addAccount(w http.ResponseWriter, r *http.Request, scope librar
 	if !parseForm(w, r, textBodyLimit) {
 		return
 	}
-	var check validation
-	libraryMode := check.number("libraryMode", r.PostForm, 0)
+	var (
+		check       validation
+		libraryMode *float64
+		role        string
+	)
+	if _, present := field(r.PostForm, "libraryMode"); present {
+		mode := check.number("libraryMode", r.PostForm, 0)
+		libraryMode = &mode
+	}
+	if value, present := field(r.PostForm, "role"); present {
+		role = check.String("role", value, present, 1)
+	}
 	passwordValue, passwordPresent := field(r.PostForm, "password")
 	password, _ := check.OptionalString("password", passwordValue, passwordPresent, 0, 0)
 	usernameValue, usernamePresent := field(r.PostForm, "username")
@@ -34,7 +44,7 @@ func (s *Server) addAccount(w http.ResponseWriter, r *http.Request, scope librar
 	if check.Failed(w) {
 		return
 	}
-	user, err := auth.AddAccount(r.Context(), s.database, scope.User, username, password, libraryMode, s.authMode, client(r))
+	user, err := auth.AddAccount(r.Context(), s.database, scope.User, username, password, role, libraryMode, s.authMode, client(r))
 	if err != nil {
 		writeError(w, err)
 		return

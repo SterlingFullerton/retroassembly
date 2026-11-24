@@ -50,12 +50,14 @@ func TestGameImages(t *testing.T) {
 	if !strings.HasPrefix(boxart, "attachments/"+player.id+"/nes/"+added.ID+"/") || !strings.HasSuffix(boxart, ".png") {
 		t.Fatalf("box art: %s", boxart)
 	}
-	// The stored image is the one uploaded, and only its owner can read it
+	// The stored image is the one uploaded, and anyone signed in can read it, as they can the game
 	if body := player.expect(http.StatusOK, player.get("/api/v1/files/"+boxart)); !bytes.Equal(body, image["file"].content) {
 		t.Fatalf("stored box art: %q", body)
 	}
 	other := api.register(t, "other")
-	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+boxart))
+	other.expect(http.StatusOK, other.get("/api/v1/files/"+boxart))
+	stranger := api.browser(t)
+	stranger.expect(http.StatusUnauthorized, stranger.get("/api/v1/files/"+boxart))
 	player.expect(http.StatusBadRequest, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, nil))
 	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
 	if api.count(t, `SELECT count(*) FROM roms WHERE id = ? AND game_boxart_file_ids IS NULL`, added.ID) != 1 {
@@ -129,33 +131,60 @@ func TestGameFiles(t *testing.T) {
 		map[string]string{"platform": "nes"}, map[string]uploadFile{"file": {content: []byte("x"), name: "Quest.txt"}}))
 }
 
-// Another player's games are out of reach: not found, as if they weren't there
-func TestGamesOfOthers(t *testing.T) {
+// The library is everyone's to play. Contributors add games and edit them; only admins delete them; players do neither
+func TestRolesInTheLibrary(t *testing.T) {
 	api := newAPI(t)
-	owner := api.register(t, "owner")
-	other := api.register(t, "other")
-	added := owner.addGame("Quest (USA).nes")
+	admin := api.register(t, "admin")
+	contributor := api.register(t, "contributor")
+	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
+		url.Values{"password": {"password-player"}, "role": {"player"}, "username": {"player"}}))
+	player := api.login(t, "player")
+	added := admin.addGame("Quest (USA).nes")
 	image := map[string]uploadFile{"file": {content: []byte("image"), name: "cover.png"}}
-
-	other.expect(http.StatusNotFound, other.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameName": {"Mine"}}))
-	other.expect(http.StatusNotFound, other.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
-	other.expect(http.StatusNotFound, other.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/thumbnail", nil, image))
-	other.expect(http.StatusNotFound, other.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
-	other.expect(http.StatusNotFound, other.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/thumbnail/x", "", nil))
-	other.expect(http.StatusNotFound, other.get("/api/v1/roms/"+added.ID+"/content"))
-	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+added.FileID))
-	other.expect(http.StatusNotFound, other.send(http.MethodDelete, "/api/v1/roms/"+added.ID, "", nil))
-	other.expect(http.StatusOK, other.send(http.MethodDelete, "/api/v1/roms?ids="+added.ID, "", nil))
-
-	var found []any
-	other.expectJSON(http.StatusOK, &found, other.get("/api/v1/roms/by_files?ids="+url.QueryEscape(added.FileID)))
-	if len(found) != 0 {
-		t.Fatalf("found: %v", found)
+	upload := func(user *apiUser, fileName string) response {
+		return user.multipart(http.MethodPost, "/api/v1/roms", map[string]string{"platform": "nes"},
+			map[string]uploadFile{"file": {content: []byte("NES\x1a" + fileName), name: fileName}})
 	}
-	if api.count(t, `SELECT count(*) FROM roms WHERE id = ? AND status = 1 AND game_name IS NOT 'Mine'`, added.ID) != 1 {
-		t.Fatal("another player changed or deleted the game")
+
+	// Everyone sees and plays the same games
+	for _, user := range []*apiUser{admin, contributor, player} {
+		user.expect(http.StatusOK, user.get("/api/v1/roms/"+added.ID+"/content"))
+		user.expect(http.StatusOK, user.get("/api/v1/files/"+added.FileID))
+		var found []any
+		user.expectJSON(http.StatusOK, &found, user.get("/api/v1/roms/by_files?ids="+url.QueryEscape(added.FileID)))
+		if len(found) != 1 {
+			t.Fatalf("found: %v", found)
+		}
 	}
-	owner.expect(http.StatusOK, owner.get("/api/v1/roms/"+added.ID+"/content"))
+
+	// A player changes nothing
+	player.expect(http.StatusForbidden, player.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameName": {"Mine"}}))
+	player.expect(http.StatusForbidden, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
+	player.expect(http.StatusForbidden, player.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/thumbnail", nil, image))
+	player.expect(http.StatusForbidden, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID+"/boxart", "", nil))
+	player.expect(http.StatusForbidden, upload(player, "Mine.nes"))
+	player.expect(http.StatusForbidden, player.send(http.MethodDelete, "/api/v1/roms/"+added.ID, "", nil))
+	player.expect(http.StatusForbidden, player.send(http.MethodDelete, "/api/v1/roms?ids="+added.ID, "", nil))
+
+	// A contributor adds to the library and edits what's in it, whoever added it, but deletes nothing
+	var theirs game
+	contributor.expectJSON(http.StatusOK, &theirs, upload(contributor, "Theirs.nes"))
+	contributor.expect(http.StatusOK, contributor.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameName": {"Renamed"}}))
+	contributor.expect(http.StatusOK, contributor.multipart(http.MethodPost, "/api/v1/roms/"+added.ID+"/boxart", nil, image))
+	contributor.expect(http.StatusForbidden, contributor.send(http.MethodDelete, "/api/v1/roms/"+added.ID, "", nil))
+	contributor.expect(http.StatusForbidden, contributor.send(http.MethodDelete, "/api/v1/roms?ids="+theirs.ID, "", nil))
+	if api.count(t, `SELECT count(*) FROM roms WHERE status = 1 AND user_id = ?`, admin.id) != 2 {
+		t.Fatal("the library should have both games, kept under its owner")
+	}
+	if api.count(t, `SELECT count(*) FROM roms WHERE id = ? AND game_name = 'Renamed'`, added.ID) != 1 {
+		t.Fatal("the contributor's edit wasn't saved")
+	}
+	// What a contributor added, everyone plays
+	player.expect(http.StatusOK, player.get("/api/v1/roms/"+theirs.ID+"/content"))
+
+	// An admin deletes, for everyone
+	admin.expect(http.StatusOK, admin.send(http.MethodDelete, "/api/v1/roms/"+theirs.ID, "", nil))
+	player.expect(http.StatusNotFound, player.get("/api/v1/roms/"+theirs.ID+"/content"))
 }
 
 // An account that shares the admin's library sees the admin's games, and can't change them

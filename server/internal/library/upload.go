@@ -25,7 +25,7 @@ type RomField struct {
 	Value  any
 }
 
-// SaveUploadedRom stores an uploaded game: as a new game, or over the game the user already has with its file name on
+// SaveUploadedRom stores an uploaded game: as a new game, or over the game the library already has with its file name on
 // that console. Only the fields given are set on a game that's there already, as Drizzle leaves out what's undefined.
 // Uploaded again with other content, the game's old file id is returned too, to be removed with RemoveUnusedRomFiles
 func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string, fields []RomField) (Object, string, error) {
@@ -39,7 +39,7 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 	var existing, previousFileID string
 	err = transaction.QueryRowContext(ctx,
 		`SELECT id, file_id FROM roms WHERE user_id = ? AND platform = ? AND status = ? AND file_name = ? LIMIT 1`,
-		scope.User.ID, platform, db.StatusNormal, fileName).Scan(&existing, &previousFileID)
+		scope.LibraryOwnerID, platform, db.StatusNormal, fileName).Scan(&existing, &previousFileID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, "", err
 	}

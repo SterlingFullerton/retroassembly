@@ -115,22 +115,12 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 }
 
 // signUp adds an account from the login page: only the first, which is the admin, unless OPEN_SIGNUP lets anyone make
-// one. Those share the admin's library with SIGNUP_SHARES_LIBRARY
+// one. Those are players, until an admin makes them more
 func (s *Server) signUp(r *http.Request, username, password string) (*auth.User, error) {
 	if !s.config.OpenSignup {
 		return auth.RegisterFirst(r.Context(), s.database, username, password, s.authMode, client(r))
 	}
-	libraryMode := 0
-	if s.config.SignupSharesLibrary {
-		adminID, err := s.adminID(r)
-		if err != nil {
-			return nil, err
-		}
-		if adminID != "" {
-			libraryMode = 1
-		}
-	}
-	return auth.CreateUser(r.Context(), s.database, username, password, libraryMode, s.authMode, client(r))
+	return auth.CreateUser(r.Context(), s.database, username, password, auth.RolePlayer, s.authMode, client(r))
 }
 
 // currentUser is whoever is signed in, or nothing; open to everyone

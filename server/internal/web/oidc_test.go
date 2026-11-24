@@ -152,7 +152,7 @@ func TestOIDCLogin(t *testing.T) {
 
 func TestOIDCLinksAccounts(t *testing.T) {
 	o := newOIDCSetup(t, "")
-	if _, err := auth.CreateUser(t.Context(), o.database, "alice", "", 0, "oidc", auth.Client{}); err != nil {
+	if _, err := auth.CreateUser(t.Context(), o.database, "alice", "", auth.RolePlayer, "oidc", auth.Client{}); err != nil {
 		t.Fatal(err)
 	}
 	o.provider.SetIdentity(oidctest.Identity{Subject: "alice-1", Username: " alice "})
@@ -181,7 +181,7 @@ func TestOIDCLinksAccounts(t *testing.T) {
 // could otherwise take it over
 func TestOIDCPasswordAccounts(t *testing.T) {
 	o := newOIDCSetup(t, "")
-	if _, err := auth.CreateUser(t.Context(), o.database, "admin", "admin-pass-1", 0, "local", auth.Client{}); err != nil {
+	if _, err := auth.CreateUser(t.Context(), o.database, "admin", "admin-pass-1", auth.RoleAdmin, "local", auth.Client{}); err != nil {
 		t.Fatal(err)
 	}
 	o.provider.SetIdentity(oidctest.Identity{Subject: "chosen", Username: "admin"})

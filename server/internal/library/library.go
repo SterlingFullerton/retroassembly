@@ -23,7 +23,8 @@ import (
 type Scope struct {
 	Database *sql.DB
 	// The user's language
-	Language       string
+	Language string
+	// The account the server's one library is kept under, whoever is asking
 	LibraryOwnerID string
 	// A message in the user's language
 	Messages func(language, key string, values map[string]any) string
@@ -39,12 +40,6 @@ func (s Scope) T(key string, values map[string]any) string {
 		return key
 	}
 	return s.Messages(s.Language, key, values)
-}
-
-// SharesLibrary tells whether the user sees someone else's library, which they may only read
-func (s Scope) SharesLibrary() bool {
-	const shared = 1
-	return s.User.LibraryMode == shared
 }
 
 // Rom is the little a write needs to know about a game

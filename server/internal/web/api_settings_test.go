@@ -93,8 +93,10 @@ func TestBIOSFiles(t *testing.T) {
 	if body := player.expect(http.StatusOK, player.get("/api/v1/files/"+bioses[0].FileID)); !bytes.Equal(body, bios) {
 		t.Fatalf("stored: %q", body)
 	}
-	// Only those whose settings have it may read it
-	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+bioses[0].FileID))
+	// The owner's BIOS files are everyone's to play with; a stranger's no one's
+	other.expect(http.StatusOK, other.get("/api/v1/files/"+bioses[0].FileID))
+	stranger := api.browser(t)
+	stranger.expect(http.StatusUnauthorized, stranger.get("/api/v1/files/"+bioses[0].FileID))
 
 	// One of the same name takes the place of the first
 	saved = add(player, "disksys.rom", []byte("a newer BIOS"))
@@ -112,10 +114,13 @@ func TestBIOSFiles(t *testing.T) {
 		t.Fatalf("left: %+v", left)
 	}
 
-	// The other player's BIOS files are untouched by any of it
+	// The other player has what the owner has left, as the owner's and not their own
 	other.expectJSON(http.StatusOK, &saved, other.get("/api/v1/preference"))
-	if len(saved.Emulator.Platform["nes"].Bioses) != 0 {
-		t.Fatalf("the other player's: %+v", saved.Emulator.Platform["nes"].Bioses)
+	if left := saved.Emulator.Platform["nes"].Bioses; len(left) != 1 || left[0].FileName != "other.rom" || !left[0].Shared {
+		t.Fatalf("the other player's: %+v", left)
+	}
+	if api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ?`, other.id) != 0 {
+		t.Fatal("the other player's settings were written to")
 	}
 }
 
@@ -168,19 +173,20 @@ func TestSharedLibraryBIOSFiles(t *testing.T) {
 		t.Fatalf("the friend's NES BIOS files: %+v", nes)
 	}
 
+	// A contributor has them as a player does
 	separate.expectJSON(http.StatusOK, &separateSettings, separate.get("/api/v1/preference"))
-	if bioses := separateSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 0 {
-		t.Fatalf("a player with their own library got the admin's: %+v", bioses)
+	if bioses := separateSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 3 || !bioses[0].Shared {
+		t.Fatalf("a contributor's Channel F BIOS files: %+v", bioses)
 	}
-	separate.expect(http.StatusNotFound, separate.get("/api/v1/files/"+channelF[0].FileID))
+	separate.expect(http.StatusOK, separate.get("/api/v1/files/"+channelF[0].FileID))
 
-	// Once the admin stops sharing their library with the friend, the admin's BIOS files go with it
-	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+friend.id, url.Values{"libraryMode": {"0"}}))
+	// And the friend still has them once made a contributor
+	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+friend.id, url.Values{"role": {"contributor"}}))
 	friend.expectJSON(http.StatusOK, &friendSettings, friend.get("/api/v1/preference"))
-	if bioses := friendSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 0 {
-		t.Fatalf("after the library was no longer shared: %+v", bioses)
+	if bioses := friendSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 3 {
+		t.Fatalf("once a contributor: %+v", bioses)
 	}
-	friend.expect(http.StatusNotFound, friend.get("/api/v1/files/"+channelF[0].FileID))
+	friend.expect(http.StatusOK, friend.get("/api/v1/files/"+channelF[0].FileID))
 }
 
 // A console's name is part of a BIOS file's path, so only the app's consoles are taken, in settings and for BIOS files
@@ -203,6 +209,8 @@ func TestBIOSFilesOnlyForKnownConsoles(t *testing.T) {
 // Whoever has a BIOS file in their settings may download it, so a file id copied into one's settings is left out
 func TestBIOSFileIDsCantBeCopiedIn(t *testing.T) {
 	api := newAPI(t)
+	// The library owner's BIOS files are everyone's; this is about one that someone else keeps in their own settings
+	api.register(t, "admin")
 	owner := api.register(t, "owner")
 	other := api.register(t, "other")
 	var saved settings

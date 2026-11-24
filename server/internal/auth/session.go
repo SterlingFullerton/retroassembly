@@ -37,9 +37,10 @@ func (t JSTime) MarshalJSON() ([]byte, error) {
 
 // User is the signed-in user, as the API answers it
 type User struct {
-	ID          string `json:"id"`
-	LibraryMode int    `json:"libraryMode"`
-	// "admin" for those who manage the accounts, "user" for everyone else
+	ID string `json:"id"`
+	// What pages from before there were roles read instead of the role: 1 for a player, who can't change the library
+	LibraryMode int `json:"libraryMode"`
+	// "player", "contributor" or "admin" (see RolePlayer)
 	Role     string `json:"role"`
 	Username string `json:"username"`
 }
@@ -119,18 +120,19 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 		user                               User
 	)
 	err := database.QueryRowContext(ctx, `
-		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.library_mode, u.role, u.username
+		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.role, u.username
 		FROM sessions s INNER JOIN users u ON s.user_id = u.id
 		WHERE s.token = ? AND s.status = ? AND u.status = ? AND s.authentication_method = ? AND s.expires_at > ?
 		LIMIT 1`,
 		token, db.StatusNormal, db.StatusNormal, method, db.Millis(now),
-	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.LibraryMode, &user.Role, &user.Username)
+	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.Role, &user.Username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
+	user.withRole(user.Role)
 
 	newExpiresAt, newLastActivity := db.Time(expiresAt), db.Time(lastActivity)
 	update := false
@@ -203,9 +205,10 @@ func Login(ctx context.Context, database *sql.DB, username, password string, cli
 	err = sql.ErrNoRows
 	if name != "" {
 		err = database.QueryRowContext(ctx,
-			`SELECT id, library_mode, role, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
+			`SELECT id, role, username, password_hash FROM users WHERE username = ? AND status = ? LIMIT 1`,
 			name, db.StatusNormal,
-		).Scan(&user.ID, &user.LibraryMode, &user.Role, &user.Username, &passwordHash)
+		).Scan(&user.ID, &user.Role, &user.Username, &passwordHash)
+		user.withRole(user.Role)
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, err
@@ -256,16 +259,16 @@ var (
 	errRegistrationClosed = failure.New(http.StatusForbidden, "Registration is closed: ask the admin for an account")
 )
 
-// CreateUser adds an account, with its own library (libraryMode 0) or the admin's (1). With passwords, a password is
+// CreateUser adds an account with a role, though the first account is always the admin. With passwords, a password is
 // needed; with OIDC, there are none
-func CreateUser(ctx context.Context, database *sql.DB, username, password string, libraryMode int, authMode string, client Client) (*User, error) {
-	return createUser(ctx, database, username, password, libraryMode, authMode, client, false)
+func CreateUser(ctx context.Context, database *sql.DB, username, password, role, authMode string, client Client) (*User, error) {
+	return createUser(ctx, database, username, password, role, authMode, client, false)
 }
 
 // RegisterFirst adds the first account, which becomes the admin. Once there's an account, the admin adds the others,
 // so anyone who can reach the server can't make one for themselves
 func RegisterFirst(ctx context.Context, database *sql.DB, username, password, authMode string, client Client) (*User, error) {
-	return createUser(ctx, database, username, password, 0, authMode, client, true)
+	return createUser(ctx, database, username, password, RoleAdmin, authMode, client, true)
 }
 
 func hasAccounts(ctx context.Context, query interface {
@@ -276,7 +279,7 @@ func hasAccounts(ctx context.Context, query interface {
 	return count > 0, err
 }
 
-func createUser(ctx context.Context, database *sql.DB, username, password string, libraryMode int, authMode string, client Client, firstOnly bool) (*User, error) {
+func createUser(ctx context.Context, database *sql.DB, username, password, role, authMode string, client Client, firstOnly bool) (*User, error) {
 	if firstOnly {
 		// Checked before the password is hashed, so refusing costs nothing, and again below with the account added
 		if taken, err := hasAccounts(ctx, database); err != nil {
@@ -335,12 +338,13 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 		}
 	}
 	// The first account is the admin, and the library's owner
-	role, err := firstRole(ctx, transaction)
+	role, err = firstRole(ctx, transaction, role)
 	if err != nil {
 		return nil, err
 	}
 	now := db.Millis(time.Now())
-	user := User{ID: ids.New(), LibraryMode: libraryMode, Role: role, Username: username}
+	user := User{ID: ids.New(), Username: username}
+	user.withRole(role)
 	_, err = transaction.ExecContext(ctx, `
 		INSERT INTO users (library_mode, password_hash, registration_ip, registration_user_agent, role, username,
 			created_at, id, status, updated_at)
@@ -357,33 +361,30 @@ func createUser(ctx context.Context, database *sql.DB, username, password string
 	return &user, nil
 }
 
-// firstRole is the role a new account gets: admin while there's no admin, as for the first account, and user after
+// firstRole is the role a new account gets: admin while there's no admin, as for the first account, and the one asked
+// for after
 func firstRole(ctx context.Context, query interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
-}) (string, error) {
+}, role string) (string, error) {
 	var admins int
 	err := query.QueryRowContext(ctx, `SELECT count(*) FROM users WHERE status = ? AND role = ?`, db.StatusNormal, RoleAdmin).Scan(&admins)
 	if err != nil || admins > 0 {
-		return RoleUser, err
+		return Role(role), err
 	}
 	return RoleAdmin, nil
 }
 
-// LibraryOwnerID is whose library the user sees: their own, or the owner's (the oldest admin still in use) for an
-// account that shares the admin's library
+// LibraryOwnerID is the account the server's one library is kept under: its owner, the oldest admin still in use.
+// Everyone sees that library; what they may change in it is their role's to say
 func LibraryOwnerID(ctx context.Context, database *sql.DB, user *User) (string, error) {
-	const shared = 1
-	if user.LibraryMode != shared {
-		return user.ID, nil
-	}
-	adminID, err := AdminID(ctx, database)
+	ownerID, err := AdminID(ctx, database)
 	if err != nil {
 		return "", err
 	}
-	if adminID == "" {
+	if ownerID == "" {
 		return user.ID, nil
 	}
-	return adminID, nil
+	return ownerID, nil
 }
 
 // UpdatePassword changes the signed-in user's password, once their current one is checked, and ends their other

@@ -129,7 +129,7 @@ func storeImage(r *http.Request, scope library.Scope, rom library.Rom, field str
 		return "", err
 	}
 	defer file.Close()
-	fileID := path.Join(library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID), ids.New()+extension(upload.Filename))
+	fileID := path.Join(library.PicturesFolder(scope.LibraryOwnerID, rom.Platform, rom.ID), ids.New()+extension(upload.Filename))
 	return fileID, scope.Storage.Put(fileID, file)
 }
 
@@ -165,9 +165,8 @@ func removePicture(scope library.Scope, rom library.Rom, fileID string) {
 	}
 }
 
-func ownPicture(scope library.Scope, rom library.Rom, fileID string) bool {
-	return path.Clean(fileID) == fileID &&
-		strings.HasPrefix(fileID, library.PicturesFolder(scope.User.ID, rom.Platform, rom.ID)+"/")
+func ownPicture(_ library.Scope, rom library.Rom, fileID string) bool {
+	return library.IsPictureOf(fileID, rom.Platform, rom.ID)
 }
 
 func (s *Server) addBoxart(w http.ResponseWriter, r *http.Request, scope library.Scope) {

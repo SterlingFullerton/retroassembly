@@ -11,6 +11,8 @@ import { CreateUserDialog } from './create-user-dialog.tsx'
 import { DeleteUserDialog } from './delete-user-dialog.tsx'
 import { UserTabContent } from './user-tab-content.tsx'
 
+const roleNames = { admin: 'auth.admin', contributor: 'auth.contributor', player: 'auth.player' }
+
 export function AccountsSettings() {
   const { t } = useTranslation()
   const { mutate } = useSWRConfig()
@@ -68,11 +70,11 @@ export function AccountsSettings() {
                     {t('auth.owner')}
                   </Badge>
                 ) : null}
-                {user.role === 'admin' && !user.isSuper ? (
+                {user.isSuper ? null : (
                   <Badge color='gray' ml='2' size='1'>
-                    {t('auth.admin')}
+                    {t(roleNames[user.role] ?? roleNames.player)}
                   </Badge>
-                ) : null}
+                )}
               </Tabs.Trigger>
             ))}
             <Tabs.Trigger

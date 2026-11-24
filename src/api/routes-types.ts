@@ -154,11 +154,11 @@ export interface ApiRoutes {
   users: {
     ':id': {
       $delete: Endpoint<Id, { success: true }>
-      $patch: Endpoint<Id & { form: { libraryMode?: string; role?: string; username?: string } }, User>
+      $patch: Endpoint<Id & { form: { role?: string; username?: string } }, User>
       password: { $put: Endpoint<Id & { form: { new_password: string } }, { success: true }> }
     }
     $get: Endpoint<NoInput, Account[]>
-    $post: Endpoint<{ form: { libraryMode?: string; password?: string; username: string } }, User>
+    $post: Endpoint<{ form: { password?: string; role?: string; username: string } }, User>
     current: { delete: { $post: Endpoint<{ form: { password?: string } }, { success: true }> } }
   }
   sessions: {

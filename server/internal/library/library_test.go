@@ -51,9 +51,6 @@ func TestFindRom(t *testing.T) {
 	if _, err := FindRom(ctx, owner, "rom2"); !errors.As(err, &known) || known.Status != 404 {
 		t.Fatalf("a deleted game is not found: %v", err)
 	}
-	if !sharing.SharesLibrary() || owner.SharesLibrary() {
-		t.Fatal("SharesLibrary")
-	}
 }
 
 func TestFavorites(t *testing.T) {

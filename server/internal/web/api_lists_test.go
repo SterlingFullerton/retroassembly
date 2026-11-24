@@ -41,7 +41,8 @@ func TestPlayHistory(t *testing.T) {
 	player.expect(http.StatusOK, play(player, first.ID))
 	player.expect(http.StatusOK, play(player, second.ID))
 	player.expect(http.StatusOK, play(player, first.ID))
-	other.expect(http.StatusNotFound, play(other, first.ID))
+	// Someone else's plays are their own history
+	other.expect(http.StatusOK, play(other, first.ID))
 
 	var history gameList
 	player.expectJSON(http.StatusOK, &history, player.get("/api/v1/launch_records"))
@@ -60,7 +61,7 @@ func TestPlayHistory(t *testing.T) {
 
 	// Another player's history is their own, and they can't clear the player's
 	other.expectJSON(http.StatusOK, &history, other.get("/api/v1/launch_records"))
-	if len(history.Roms) != 0 {
+	if got := gameIDs(history.Roms); len(got) != 1 || got[0] != first.ID {
 		t.Fatalf("the other player's history: %+v", history)
 	}
 	other.expect(http.StatusOK, other.send(http.MethodDelete, "/api/v1/roms/"+first.ID+"/launch_records", "", nil))
@@ -92,8 +93,9 @@ func TestLibraryPages(t *testing.T) {
 	if len(consoles.Consoles) != 1 || consoles.Consoles[0].Platform != "nes" || consoles.Consoles[0].Count != 2 {
 		t.Fatalf("consoles: %+v", consoles)
 	}
+	// Everyone sees the one library
 	other.expectJSON(http.StatusOK, &consoles, other.get("/api/v1/pages/library/consoles"))
-	if len(consoles.Consoles) != 0 {
+	if len(consoles.Consoles) != 1 || consoles.Consoles[0].Count != 2 {
 		t.Fatalf("the other player's consoles: %+v", consoles)
 	}
 
@@ -120,7 +122,11 @@ func TestLibraryPages(t *testing.T) {
 		t.Fatalf("game page: %+v", page)
 	}
 	player.expect(http.StatusNotFound, player.get("/api/v1/pages/library/rom?platform=nes&file_name=Missing.nes"))
-	other.expect(http.StatusNotFound, other.get("/api/v1/pages/library/rom?platform=nes&file_name="+url.QueryEscape(quest.FileName)))
+	// The same game's page for anyone else, with no saves of the player's
+	other.expectJSON(http.StatusOK, &page, other.get("/api/v1/pages/library/rom?platform=nes&file_name="+url.QueryEscape(quest.FileName)))
+	if page.Rom.ID != quest.ID {
+		t.Fatalf("the other player's game page: %+v", page)
+	}
 }
 
 func TestSearchAndPicks(t *testing.T) {
@@ -141,7 +147,7 @@ func TestSearchAndPicks(t *testing.T) {
 	}
 	player.expect(http.StatusBadRequest, player.get("/api/v1/roms/search"))
 	other.expectJSON(http.StatusOK, &found, other.get("/api/v1/roms/search?query=quest"))
-	if len(found.Roms) != 0 {
+	if len(found.Roms) != 1 {
 		t.Fatalf("the other player's search: %+v", found)
 	}
 
@@ -158,7 +164,7 @@ func TestSearchAndPicks(t *testing.T) {
 	}
 	player.expect(http.StatusBadRequest, player.get("/api/v1/roms/on_this_day?date=June%2030"))
 	other.expectJSON(http.StatusOK, &picks, other.get("/api/v1/roms/on_this_day?date=06-30"))
-	if len(picks) != 0 {
+	if len(picks) != 1 {
 		t.Fatalf("the other player's: %+v", picks)
 	}
 
@@ -196,26 +202,28 @@ func TestSignedOutIsRefused(t *testing.T) {
 	}
 }
 
-// Play history is of the library the user sees now: once the admin's is no longer shared, its games leave the list
-func TestPlayHistoryFollowsTheLibrary(t *testing.T) {
+// Play history is each account's own, and stays whatever role the account is given
+func TestPlayHistoryOutlastsARoleChange(t *testing.T) {
 	api := newAPI(t)
 	admin := api.register(t, "admin")
 	added := admin.addGame("Quest (USA).nes")
 	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
-		url.Values{"libraryMode": {"1"}, "password": {"password-guest"}, "username": {"guest"}}))
+		url.Values{"password": {"password-guest"}, "role": {"player"}, "username": {"guest"}}))
 	guest := api.login(t, "guest")
 	guest.expect(http.StatusOK, guest.form(http.MethodPost, "/api/v1/launch_records", url.Values{"core": {"fceumm"}, "rom": {added.ID}}))
 	var history gameList
-	guest.expectJSON(http.StatusOK, &history, guest.get("/api/v1/launch_records"))
-	if len(history.Roms) != 1 {
-		t.Fatalf("while shared: %+v", history)
-	}
-	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+guest.id, url.Values{"libraryMode": {"0"}}))
-	for _, path := range []string{"/api/v1/launch_records", "/api/v1/pages/library/history"} {
-		guest.expectJSON(http.StatusOK, &history, guest.get(path))
-		if len(history.Roms) != 0 || history.Pagination.Total != 0 {
-			t.Fatalf("%s once no longer shared: %+v", path, history)
+	for _, role := range []string{"contributor", "admin", "player"} {
+		admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+guest.id, url.Values{"role": {role}}))
+		for _, path := range []string{"/api/v1/launch_records", "/api/v1/pages/library/history"} {
+			guest.expectJSON(http.StatusOK, &history, guest.get(path))
+			if len(history.Roms) != 1 || history.Pagination.Total != 1 {
+				t.Fatalf("%s as %s: %+v", path, role, history)
+			}
 		}
+	}
+	admin.expectJSON(http.StatusOK, &history, admin.get("/api/v1/launch_records"))
+	if len(history.Roms) != 0 {
+		t.Fatalf("the admin has the guest's history: %+v", history)
 	}
 }
 

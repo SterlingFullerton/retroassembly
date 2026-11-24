@@ -14,10 +14,60 @@ import (
 	"retroassembly/server/internal/failure"
 )
 
+// What an account may do in the server's one library: a player plays, and keeps their own saves, favorites and
+// history; a contributor also adds games and edits them; an admin also deletes games and manages the accounts
 const (
-	RoleAdmin = "admin"
-	RoleUser  = "user"
+	RoleAdmin       = "admin"
+	RoleContributor = "contributor"
+	RolePlayer      = "player"
 )
+
+// Role is a stored role as one of the three: anything else, such as "user" from before there were three, is a player
+func Role(stored string) string {
+	if stored == RoleAdmin || stored == RoleContributor {
+		return stored
+	}
+	return RolePlayer
+}
+
+// CanAddGames tells whether the user may add games to the library and edit them
+func (u *User) CanAddGames() bool {
+	return u != nil && (u.Role == RoleAdmin || u.Role == RoleContributor)
+}
+
+// IsAdmin tells whether the user manages the accounts and may delete games
+func (u *User) IsAdmin() bool {
+	return u != nil && u.Role == RoleAdmin
+}
+
+// withRole sets a user's role, and the library mode older pages read from it: 1, read only, for a player
+func (u *User) withRole(stored string) {
+	u.Role = Role(stored)
+	u.LibraryMode = 0
+	if u.Role == RolePlayer {
+		u.LibraryMode = 1
+	}
+}
+
+// roleFor is the role an account is given: the one named, or, for a page that still sends a library mode, a
+// contributor for 0 (its own library, as it was) and a player for 1 (the shared one, read only)
+func roleFor(role string, libraryMode *float64) (string, error) {
+	switch {
+	case role == RoleAdmin || role == RoleContributor || role == RolePlayer:
+		return role, nil
+	case role == "user":
+		return RolePlayer, nil
+	case role != "":
+		return "", failure.New(http.StatusBadRequest, "Role must be player, contributor or admin")
+	case libraryMode == nil:
+		return RolePlayer, nil
+	case !validLibraryMode(*libraryMode):
+		return "", errInvalidLibraryMode
+	case *libraryMode == 0:
+		return RoleContributor, nil
+	}
+	return RolePlayer, nil
+}
 
 // AdminID is the library's owner: the oldest admin still in use, whose library the accounts that share one see, and
 // who can't be deleted or made an ordinary user. Empty when there are no accounts
@@ -33,7 +83,7 @@ func AdminID(ctx context.Context, database *sql.DB) (string, error) {
 
 // assertIsAdmin refuses anyone but an admin, and is the owner's id
 func assertIsAdmin(ctx context.Context, database *sql.DB, user *User) (string, error) {
-	if user == nil || user.Role != RoleAdmin {
+	if !user.IsAdmin() {
 		return "", failure.Forbidden
 	}
 	return AdminID(ctx, database)
@@ -132,6 +182,11 @@ func Accounts(ctx context.Context, database *sql.DB, user *User) ([]Account, err
 			return nil, err
 		}
 		account.CreatedAt = JSTime(db.Time(createdAt))
+		account.Role = Role(account.Role)
+		account.LibraryMode = 0
+		if account.Role == RolePlayer {
+			account.LibraryMode = 1
+		}
 		account.IsSuper = account.ID == ownerID
 		if activity.Valid {
 			when := JSTime(db.Time(activity.Int64))
@@ -142,20 +197,22 @@ func Accounts(ctx context.Context, database *sql.DB, user *User) ([]Account, err
 	return accounts, rows.Err()
 }
 
-// AddAccount adds an account for someone else. Only for admins
-func AddAccount(ctx context.Context, database *sql.DB, admin *User, username, password string, libraryMode float64, authMode string, client Client) (*User, error) {
+// AddAccount adds an account for someone else, with the role named or the one its library mode stands for (see
+// roleFor). Only for admins
+func AddAccount(ctx context.Context, database *sql.DB, admin *User, username, password, role string, libraryMode *float64, authMode string, client Client) (*User, error) {
 	if _, err := assertIsAdmin(ctx, database, admin); err != nil {
 		return nil, err
 	}
-	if !validLibraryMode(libraryMode) {
-		return nil, errInvalidLibraryMode
+	role, err := roleFor(role, libraryMode)
+	if err != nil {
+		return nil, err
 	}
-	return CreateUser(ctx, database, username, password, int(libraryMode), authMode, client)
+	return CreateUser(ctx, database, username, password, role, authMode, client)
 }
 
 // AccountChanges is what an admin changes about an account; what's nil stays as it is
 type AccountChanges struct {
-	// Its own library (0) or the owner's (1)
+	// From a page that still sends it: 0 makes a player a contributor and 1 a contributor a player
 	LibraryMode *float64
 	Role        *string
 	Username    *string
@@ -169,13 +226,20 @@ func UpdateAccount(ctx context.Context, database *sql.DB, admin *User, id string
 		return nil, err
 	}
 	if id == ownerID && (changes.LibraryMode != nil || changes.Role != nil) {
-		return nil, failure.New(http.StatusUnprocessableEntity, "The library's owner keeps their library and role")
+		return nil, failure.New(http.StatusUnprocessableEntity, "The owner stays an admin")
 	}
-	if changes.LibraryMode != nil && !validLibraryMode(*changes.LibraryMode) {
-		return nil, errInvalidLibraryMode
-	}
-	if changes.Role != nil && *changes.Role != RoleAdmin && *changes.Role != RoleUser {
-		return nil, failure.New(http.StatusBadRequest, "Role must be admin or user")
+	var role string
+	if changes.Role != nil {
+		if *changes.Role == "" {
+			return nil, failure.New(http.StatusBadRequest, "Role must be player, contributor or admin")
+		}
+		if role, err = roleFor(*changes.Role, nil); err != nil {
+			return nil, err
+		}
+	} else if changes.LibraryMode != nil {
+		if role, err = roleFor("", changes.LibraryMode); err != nil {
+			return nil, err
+		}
 	}
 	transaction, err := database.BeginTx(ctx, nil)
 	if err != nil {
@@ -184,8 +248,8 @@ func UpdateAccount(ctx context.Context, database *sql.DB, admin *User, id string
 	defer transaction.Rollback()
 	var updated User
 	err = transaction.QueryRowContext(ctx,
-		`SELECT id, library_mode, role, username FROM users WHERE id = ? AND status = ? LIMIT 1`, id, db.StatusNormal).
-		Scan(&updated.ID, &updated.LibraryMode, &updated.Role, &updated.Username)
+		`SELECT id, role, username FROM users WHERE id = ? AND status = ? LIMIT 1`, id, db.StatusNormal).
+		Scan(&updated.ID, &updated.Role, &updated.Username)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, failure.New(http.StatusNotFound, "User not found")
 	}
@@ -207,12 +271,11 @@ func UpdateAccount(ctx context.Context, database *sql.DB, admin *User, id string
 		}
 		updated.Username = username
 	}
-	if changes.LibraryMode != nil {
-		updated.LibraryMode = int(*changes.LibraryMode)
+	// A library mode alone leaves an admin an admin: it only ever told players from contributors
+	if role != "" && (changes.Role != nil || Role(updated.Role) != RoleAdmin) {
+		updated.Role = role
 	}
-	if changes.Role != nil {
-		updated.Role = *changes.Role
-	}
+	updated.withRole(updated.Role)
 	if _, err := transaction.ExecContext(ctx,
 		`UPDATE users SET library_mode = ?, role = ?, username = ?, updated_at = ? WHERE id = ?`,
 		updated.LibraryMode, updated.Role, updated.Username, db.Millis(time.Now()), id); err != nil {

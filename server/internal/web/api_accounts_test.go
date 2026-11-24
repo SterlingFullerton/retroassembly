@@ -122,33 +122,33 @@ func TestSignInAttemptsAreLimited(t *testing.T) {
 		url.Values{"password": {"password-admin"}, "username": {"admin"}}))
 }
 
-// With OPEN_SIGNUP anyone makes an account at the login page, and with SIGNUP_SHARES_LIBRARY it shares the admin's
-// library; the first account is the admin all the same
+// With OPEN_SIGNUP anyone makes an account at the login page: a player, who can't change the library. The first
+// account is the admin all the same
 func TestOpenSignup(t *testing.T) {
-	for _, shares := range []bool{false, true} {
-		t.Setenv("OPEN_SIGNUP", "true")
-		t.Setenv("SIGNUP_SHARES_LIBRARY", map[bool]string{false: "false", true: "true"}[shares])
-		api := newAPI(t)
-		var page struct {
-			SignupOpen bool `json:"signupOpen"`
-		}
-		stranger := api.browser(t)
-		stranger.expectJSON(http.StatusOK, &page, stranger.get("/api/v1/pages/login"))
-		if !page.SignupOpen {
-			t.Fatal("the login page doesn't say sign-up is open")
-		}
-		var accounts []account
-		for _, name := range []string{"admin", "friend"} {
-			stranger.expect(http.StatusOK, stranger.form(http.MethodPost, "/api/v1/auth/register",
-				url.Values{"password": {"password-" + name}, "username": {name}}))
-		}
-		admin := api.login(t, "admin")
-		admin.expectJSON(http.StatusOK, &accounts, admin.get("/api/v1/users"))
-		want := map[bool]int{false: 0, true: 1}[shares]
-		if len(accounts) != 2 || !accounts[0].IsSuper || accounts[0].LibraryMode != 0 || accounts[1].LibraryMode != want {
-			t.Fatalf("shares %v: %+v", shares, accounts)
-		}
+	t.Setenv("OPEN_SIGNUP", "true")
+	api := newAPI(t)
+	var page struct {
+		SignupOpen bool `json:"signupOpen"`
 	}
+	stranger := api.browser(t)
+	stranger.expectJSON(http.StatusOK, &page, stranger.get("/api/v1/pages/login"))
+	if !page.SignupOpen {
+		t.Fatal("the login page doesn't say sign-up is open")
+	}
+	for _, name := range []string{"admin", "friend"} {
+		stranger.expect(http.StatusOK, stranger.form(http.MethodPost, "/api/v1/auth/register",
+			url.Values{"password": {"password-" + name}, "username": {name}}))
+	}
+	admin := api.login(t, "admin")
+	var accounts []roleAccount
+	admin.expectJSON(http.StatusOK, &accounts, admin.get("/api/v1/users"))
+	if len(accounts) != 2 || !accounts[0].IsSuper || accounts[0].Role != "admin" || accounts[1].Role != "player" {
+		t.Fatalf("accounts: %+v", accounts)
+	}
+	added := admin.addGame("Quest (USA).nes")
+	friend := api.login(t, "friend")
+	friend.expect(http.StatusOK, friend.get("/api/v1/roms/"+added.ID+"/content"))
+	friend.expect(http.StatusForbidden, friend.form(http.MethodPatch, "/api/v1/roms/"+added.ID, url.Values{"gameName": {"Mine"}}))
 }
 
 // A session's token can't be guessed, and a password session renews itself while used, but not past 90 days
@@ -278,10 +278,10 @@ func TestAdminsAreMadeAndUnmade(t *testing.T) {
 		return by.form(http.MethodPatch, "/api/v1/users/"+id, url.Values{"role": {role}})
 	}
 
-	// The first account is the admin and the library's owner; the rest are users
+	// The first account is the admin and the library's owner; these others were added as contributors
 	var accounts []roleAccount
 	owner.expectJSON(http.StatusOK, &accounts, owner.get("/api/v1/users"))
-	if accounts[0].Role != "admin" || !accounts[0].IsSuper || accounts[1].Role != "user" || accounts[2].Role != "user" {
+	if accounts[0].Role != "admin" || !accounts[0].IsSuper || accounts[1].Role != "contributor" || accounts[2].Role != "contributor" {
 		t.Fatalf("accounts: %+v", accounts)
 	}
 
@@ -309,8 +309,8 @@ func TestAdminsAreMadeAndUnmade(t *testing.T) {
 		t.Fatalf("%d admins", owned)
 	}
 
-	// Made a user again, they're refused once more
-	owner.expect(http.StatusOK, setRole(owner, helper.id, "user"))
+	// Made a player, they're refused once more
+	owner.expect(http.StatusOK, setRole(owner, helper.id, "player"))
 	helper.expect(http.StatusForbidden, helper.get("/api/v1/users"))
 	player.expect(http.StatusForbidden, player.get("/api/v1/users"))
 }
@@ -349,7 +349,7 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 	player := api.register(t, "player")
 	other := api.register(t, "other")
 
-	// Each has a game of their own, a favorite, and settings
+	// Each added a game to the library, and has a favorite, a play and settings of their own
 	kept := other.addGame("kept.nes")
 	gone := player.addGame("gone.nes")
 	for user, game := range map[*apiUser]game{other: kept, player: gone} {
@@ -364,7 +364,7 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 		}
 		return api.count(t, query, userID)
 	}
-	for _, table := range []string{"roms", "favorites", "launch_records", "user_preferences", "sessions"} {
+	for _, table := range []string{"favorites", "launch_records", "user_preferences", "sessions"} {
 		if left(table, player.id) == 0 {
 			t.Fatalf("the player has nothing in %s to begin with", table)
 		}
@@ -373,7 +373,7 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 	admin.expect(http.StatusNotFound, admin.send(http.MethodDelete, "/api/v1/users/nobody", "", nil))
 	admin.expect(http.StatusOK, admin.send(http.MethodDelete, "/api/v1/users/"+player.id, "", nil))
 
-	for _, table := range []string{"roms", "favorites", "launch_records", "user_preferences", "sessions"} {
+	for _, table := range []string{"favorites", "launch_records", "user_preferences", "sessions"} {
 		if count := left(table, player.id); count != 0 {
 			t.Errorf("the deleted account still has %d in %s", count, table)
 		}
@@ -382,14 +382,19 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 		}
 	}
 	player.expect(http.StatusUnauthorized, player.get("/api/v1/preference"))
+	// The games they added are the library's, and stay
 	other.expect(http.StatusOK, other.get("/api/v1/roms/"+kept.ID+"/content"))
+	other.expect(http.StatusOK, other.get("/api/v1/roms/"+gone.ID+"/content"))
+	if games := api.count(t, `SELECT count(*) FROM roms WHERE status = 1`); games != 2 {
+		t.Fatalf("%d games left in the library", games)
+	}
 
-	// The name is free again, and a new account with it starts with nothing
+	// The name is free again, and a new account with it starts with nothing of the old one's
 	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
-		url.Values{"libraryMode": {"0"}, "password": {"password-player"}, "username": {"player"}}))
+		url.Values{"password": {"password-player"}, "role": {"player"}, "username": {"player"}}))
 	again := api.login(t, "player")
-	if again.id == player.id || left("roms", again.id) != 0 {
-		t.Fatal("the new account has the deleted one's games")
+	if again.id == player.id || left("favorites", again.id) != 0 {
+		t.Fatal("the new account has the deleted one's favorites")
 	}
 }
 

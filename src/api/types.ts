@@ -28,12 +28,14 @@ export type LaunchRecord = Json<typeof launchRecordTable.$inferSelect>
 export type Session = Json<typeof sessionTable.$inferSelect>
 export type Preference = Json<ResolvedPreference>
 
+export type Role = 'admin' | 'contributor' | 'player'
+
 /** A user, as the server names them */
 export interface User {
   id: string
   libraryMode: number
-  /** Admins manage the accounts */
-  role: 'admin' | 'user'
+  /** A player plays; a contributor also adds and edits games; an admin also deletes them and manages the accounts */
+  role: Role
   username: string
 }
 

@@ -1,17 +1,18 @@
-import { Button, Checkbox, Text, TextField } from '@radix-ui/themes'
+import { Button, Text, TextField } from '@radix-ui/themes'
 import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSWRConfig } from 'swr'
 import { client } from '#@/api/client.ts'
 import type { Account } from '#@/api/types.ts'
+import { RolePicker } from './role-picker.tsx'
 
 function messageOf(error: unknown, fallback: string) {
   return (error as { message?: string })?.message || fallback
 }
 
 /**
- * What an admin changes about an account besides its library: its name, and whether it's an admin too. The library's
- * owner keeps their role, so only their name is offered
+ * What an admin changes about an account: its name and its role. The library's owner stays an admin, so only their
+ * name is offered
  */
 export function AccountAdminControls({ user }: Readonly<{ user: Account }>) {
   const { t } = useTranslation()
@@ -68,23 +69,9 @@ export function AccountAdminControls({ user }: Readonly<{ user: Account }>) {
         </Button>
       </form>
 
+      {/* The owner stays an admin */}
       {user.isSuper ? null : (
-        <label className='flex cursor-pointer items-start gap-2'>
-          <Checkbox
-            checked={user.role === 'admin'}
-            disabled={busy}
-            name='role'
-            onCheckedChange={(checked) => change({ role: checked ? 'admin' : 'user' })}
-          />
-          <div className='flex flex-col'>
-            <Text size='2' weight='medium'>
-              {t('auth.admin')}
-            </Text>
-            <Text className='opacity-70' size='1'>
-              {t('auth.adminDescription')}
-            </Text>
-          </div>
-        </label>
+        <RolePicker disabled={busy} onValueChange={(role) => change({ role })} value={user.role} />
       )}
 
       {error ? (

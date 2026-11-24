@@ -3,11 +3,10 @@ import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType } from '#@/api/client.ts'
-import { libraryModeEnum } from '#@/databases/schema.ts'
-import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
 import { usePristine } from '#@/pages/library/atoms.ts'
 import { DialogRoot } from '#@/pages/library/components/dialog-root.tsx'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
+import { usePermissions } from '#@/pages/library/hooks/use-permissions.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { GameMediaBoxart } from '../game-media-dialog/game-media-boxart.tsx'
 import { GameMediaImages } from '../game-media-dialog/game-media-images.tsx'
@@ -33,7 +32,7 @@ function focusOnOpen(event: Event, pristine: boolean) {
 export function GameInfoDialog() {
   const rom = useRom()
   const { t } = useTranslation()
-  const { currentUser } = useGlobalLoaderData()
+  const { canAddGames } = usePermissions()
   const refresh = useLibraryRefresh()
   const [open, setOpen] = useState(false)
   const [pristine] = usePristine()
@@ -72,8 +71,8 @@ export function GameInfoDialog() {
     await handleOpenChange(false)
   }
 
-  // Players of a shared library can't change it
-  if (currentUser?.libraryMode === libraryModeEnum.shared) {
+  // Editing a game is for contributors and admins
+  if (!canAddGames) {
     return
   }
 

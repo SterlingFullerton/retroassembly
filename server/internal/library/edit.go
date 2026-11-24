@@ -15,9 +15,17 @@ import (
 	"retroassembly/server/internal/files"
 )
 
-// AssertCanWrite refuses accounts that share someone else's library, which they may only read
+// AssertCanWrite refuses players, who may only play: adding games and editing them is for contributors and admins
 func AssertCanWrite(scope Scope) error {
-	if scope.SharesLibrary() {
+	if !scope.User.CanAddGames() {
+		return failure.New(http.StatusForbidden, scope.T("error.sharedLibraryReadOnly", nil))
+	}
+	return nil
+}
+
+// AssertCanDelete refuses anyone but an admin: a deleted game is gone for everyone
+func AssertCanDelete(scope Scope) error {
+	if !scope.User.IsAdmin() {
 		return failure.New(http.StatusForbidden, scope.T("error.sharedLibraryReadOnly", nil))
 	}
 	return nil
@@ -38,7 +46,7 @@ var editableColumns = map[string]string{
 	"gameTitle":            "game_title",
 }
 
-// UpdateRom changes fields of a game in the user's own library (nil clears one), and is the game as it is now
+// UpdateRom changes fields of a game in the library (nil clears one), and is the game as it is now
 func UpdateRom(ctx context.Context, scope Scope, id string, fields map[string]any) (Object, error) {
 	if err := AssertCanWrite(scope); err != nil {
 		return nil, err
@@ -63,7 +71,7 @@ func UpdateRom(ctx context.Context, scope Scope, id string, fields map[string]an
 		set = append(set, editableColumns[key]+" = ?")
 		arguments = append(arguments, value)
 	}
-	arguments = append(arguments, id, scope.User.ID)
+	arguments = append(arguments, id, scope.LibraryOwnerID)
 	return scanObject(scope.Database.QueryRowContext(ctx,
 		`UPDATE roms SET `+strings.Join(set, ", ")+` WHERE id = ? AND user_id = ? RETURNING `+selectColumns("", romColumns),
 		arguments...), romColumns)
@@ -76,10 +84,10 @@ func RomFiles(ctx context.Context, scope Scope, id string) (boxart, thumbnails *
 	return boxart, thumbnails, err
 }
 
-// DeleteRoms deletes games from the user's own library, and their play history. A game's file goes once no game uses
-// it any more
+// DeleteRoms deletes games from the library, and everyone's play history of them. A game's file goes once no game
+// uses it any more. Only for admins
 func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
-	if err := AssertCanWrite(scope); err != nil {
+	if err := AssertCanDelete(scope); err != nil {
 		return err
 	}
 	if len(ids) == 0 {
@@ -87,19 +95,21 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 	}
 	now := db.Millis(time.Now())
 	arguments := append([]any{db.StatusDeleted, now}, strings2any(ids)...)
-	arguments = append(arguments, scope.User.ID)
 	rows, err := scope.Database.QueryContext(ctx,
 		`UPDATE roms SET status = ?, updated_at = ? WHERE id IN (`+placeholders(len(ids))+`) AND user_id = ?
-		RETURNING file_id, id, platform`,
-		arguments...)
+		RETURNING file_id, id, platform, game_boxart_file_ids, game_thumbnail_file_ids`,
+		append(arguments, scope.LibraryOwnerID)...)
 	if err != nil {
 		return err
 	}
 	seen := map[string]bool{}
 	var fileIDs, pictureFolders []string
 	for rows.Next() {
-		var fileID, id, platform string
-		if err := rows.Scan(&fileID, &id, &platform); err != nil {
+		var (
+			fileID, id, platform string
+			boxart, thumbnails   sql.NullString
+		)
+		if err := rows.Scan(&fileID, &id, &platform, &boxart, &thumbnails); err != nil {
 			rows.Close()
 			return err
 		}
@@ -107,14 +117,20 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 			seen[fileID] = true
 			fileIDs = append(fileIDs, fileID)
 		}
-		pictureFolders = append(pictureFolders, PicturesFolder(scope.User.ID, platform, id))
+		pictureFolders = append(pictureFolders, PicturesFolder(scope.LibraryOwnerID, platform, id))
+		// A game that came from a library of someone's own, before there was one for all, has its pictures in theirs
+		for _, picture := range strings.Split(boxart.String+","+thumbnails.String, ",") {
+			if IsPictureOf(picture, platform, id) {
+				pictureFolders = append(pictureFolders, path.Dir(picture))
+			}
+		}
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return err
 	}
 	if _, err := scope.Database.ExecContext(ctx,
-		`UPDATE launch_records SET status = ?, updated_at = ? WHERE rom_id IN (`+placeholders(len(ids))+`) AND user_id = ?`,
+		`UPDATE launch_records SET status = ?, updated_at = ? WHERE rom_id IN (`+placeholders(len(ids))+`)`,
 		arguments...); err != nil {
 		return err
 	}
@@ -125,7 +141,15 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 	return RemoveUnusedRomFiles(ctx, scope, fileIDs)
 }
 
-// PicturesFolder is where the box art and screenshots a user adds to a game are kept
+// IsPictureOf tells whether a stored file is a picture added to that game: in its folder, under whichever account
+// the library was kept, and nowhere it climbs out to with ".."
+func IsPictureOf(fileID, platform, romID string) bool {
+	parts := strings.Split(fileID, "/")
+	return path.Clean(fileID) == fileID && len(parts) == 5 && parts[0] == "attachments" && parts[1] != "" &&
+		parts[2] == platform && parts[3] == romID
+}
+
+// PicturesFolder is where the box art and screenshots added to a game are kept, under the library's account
 func PicturesFolder(userID, platform, romID string) string {
 	return path.Join("attachments", userID, platform, romID)
 }
