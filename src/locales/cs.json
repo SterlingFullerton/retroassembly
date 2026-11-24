@@ -60,6 +60,7 @@
   "bios.expectedFile": "Očekávaný soubor BIOS: ",
   "bios.expectedFile_other": "Očekávané soubory BIOS: ",
   "bios.fileNameNotExpected": "Podle názvu vybraného souboru se nejedná o očekávaný BIOS soubor.",
+  "bios.managedByAdmin": "Soubory BIOS přidává správce, pro všechny.",
   "bios.requiredForLaunch": "Hru nelze spustit bez požadovaného <tooltip/>: <strong>{{biosList}}</strong>.",
   "bios.titleWithPlatform": "BIOS pro {{platform}}",
   "common.about": "O aplikaci",

@@ -7,6 +7,7 @@ import useSWRMutation from 'swr/mutation'
 import { client, type InferRequestType, parseResponse } from '#@/api/client.ts'
 import { platformMap, type PlatformName } from '#@/constants/platform.ts'
 import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
+import { usePermissions } from '#@/pages/library/hooks/use-permissions.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { getFileMd5 } from '#@/utils/isomorphic/misc.ts'
 import { SettingsTitle } from '../settings-title.tsx'
@@ -16,6 +17,7 @@ const { $delete, $post } = client.preference.bioses
 export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
   const { t } = useTranslation()
   const notify = useNotice()
+  const { canManageBioses } = usePermissions()
   const { isLoading, preference, setPreference } = usePreference()
   const { bioses } = preference.emulator.platform[platform]
 
@@ -139,18 +141,23 @@ export function BIOSOptions({ platform }: { readonly platform: PlatformName }) {
         </div>
 
         <div className='flex flex-col gap-1'>
-          <div>
-            <Button
-              disabled={disabled && !isUploading}
-              loading={isUploading}
-              onClick={handleClickUpload}
-              size='2'
-              variant='soft'
-            >
-              <span className='icon-[mdi--upload]' />
-              {t('common.upload')}
-            </Button>
-          </div>
+          {/* The server has one set of BIOS files, which admins add to; everyone else is told so */}
+          {canManageBioses ? (
+            <div>
+              <Button
+                disabled={disabled && !isUploading}
+                loading={isUploading}
+                onClick={handleClickUpload}
+                size='2'
+                variant='soft'
+              >
+                <span className='icon-[mdi--upload]' />
+                {t('common.upload')}
+              </Button>
+            </div>
+          ) : (
+            <div className='text-xs opacity-80'>{t('bios.managedByAdmin')}</div>
+          )}
           <div className='gap-1 text-xs'>
             <span className='opacity-80'>{t('bios.expectedFile', { count: expectedBioses.length })}</span>
             {shownBioses.map((bios, index) => (

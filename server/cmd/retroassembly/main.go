@@ -22,6 +22,7 @@ import (
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/library"
+	"retroassembly/server/internal/preference"
 	"retroassembly/server/internal/shared"
 	"retroassembly/server/internal/web"
 )
@@ -128,6 +129,14 @@ func run() error {
 		return err
 	} else if moved+replaced > 0 {
 		log.Printf("Brought %d games into the server's library; %d more were already in it", moved, replaced)
+	}
+	// And one set of BIOS files, in the owner's settings; those accounts kept in their own are brought into it
+	if ownerID, err := auth.AdminID(context.Background(), database); err != nil {
+		return err
+	} else if brought, err := preference.MergeBioses(context.Background(), database, ownerID); err != nil {
+		return err
+	} else if brought > 0 {
+		log.Printf("Brought %d BIOS files into the server's", brought)
 	}
 	if err := library.UpdateDiscGroups(context.Background(), database, data.MultiDiscConsoles); err != nil {
 		return err

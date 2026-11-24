@@ -124,69 +124,83 @@ func TestBIOSFiles(t *testing.T) {
 	}
 }
 
-// A player who shares the admin's library uses the admin's BIOS files, on each console they haven't added any for. One
-// with a library of their own doesn't
-func TestSharedLibraryBIOSFiles(t *testing.T) {
+// The server has one set of BIOS files, which everyone plays with and only admins change
+func TestServerBIOSFiles(t *testing.T) {
 	api := newAPI(t)
-	admin := api.register(t, "admin")
-	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
-		url.Values{"libraryMode": {"1"}, "password": {"password-friend"}, "username": {"friend"}}))
+	owner := api.register(t, "owner")
+	contributor := api.register(t, "contributor")
+	second := api.register(t, "second")
+	owner.expect(http.StatusOK, owner.form(http.MethodPatch, "/api/v1/users/"+second.id, url.Values{"role": {"admin"}}))
+	owner.expect(http.StatusOK, owner.form(http.MethodPost, "/api/v1/users",
+		url.Values{"password": {"password-friend"}, "role": {"player"}, "username": {"friend"}}))
 	friend := api.login(t, "friend")
-	separate := api.register(t, "separate")
-	add := func(user *apiUser, platform, name string) {
-		user.expect(http.StatusOK, user.multipart(http.MethodPost, "/api/v1/preference/bioses",
-			map[string]string{"platform": platform}, map[string]uploadFile{"file": {content: []byte(name), name: name}}))
+	add := func(user *apiUser, platform, name string) response {
+		return user.multipart(http.MethodPost, "/api/v1/preference/bioses",
+			map[string]string{"platform": platform}, map[string]uploadFile{"file": {content: []byte(name), name: name}})
+	}
+	remove := func(user *apiUser, platform, name string) response {
+		return user.send(http.MethodDelete, "/api/v1/preference/bioses?platform="+platform+"&file_name="+name, "", nil)
 	}
 	for _, name := range []string{"sl31253.bin", "sl31254.bin", "sl90025.bin"} {
-		add(admin, "channelf", name)
+		owner.expect(http.StatusOK, add(owner, "channelf", name))
 	}
-	add(admin, "nes", "disksys.rom")
-	add(friend, "nes", "mine.rom")
 
-	var adminSettings, friendSettings, separateSettings settings
-	admin.expectJSON(http.StatusOK, &adminSettings, admin.get("/api/v1/preference"))
-	friend.expectJSON(http.StatusOK, &friendSettings, friend.get("/api/v1/preference"))
-	channelF := friendSettings.Emulator.Platform["channelf"].Bioses
-	if len(channelF) != 3 || channelF[0].FileID != adminSettings.Emulator.Platform["channelf"].Bioses[0].FileID {
-		t.Fatalf("the friend's Channel F BIOS files: %+v", channelF)
-	}
-	for _, bios := range channelF {
-		if body := friend.expect(http.StatusOK, friend.get("/api/v1/files/"+bios.FileID)); string(body) != bios.FileName {
-			t.Fatalf("%s: %q", bios.FileName, body)
+	// Everyone has them, and can read them; only admins see them as theirs to remove
+	var ownerSettings settings
+	owner.expectJSON(http.StatusOK, &ownerSettings, owner.get("/api/v1/preference"))
+	first := ownerSettings.Emulator.Platform["channelf"].Bioses[0].FileID
+	for user, manages := range map[*apiUser]bool{owner: true, second: true, contributor: false, friend: false} {
+		var seen settings
+		user.expectJSON(http.StatusOK, &seen, user.get("/api/v1/preference"))
+		bioses := seen.Emulator.Platform["channelf"].Bioses
+		if len(bioses) != 3 || bioses[0].FileID != first {
+			t.Fatalf("Channel F BIOS files: %+v", bioses)
 		}
-		if !bios.Shared {
-			t.Fatalf("%s isn't marked as the admin's", bios.FileName)
+		for _, bios := range bioses {
+			if bios.Shared == manages {
+				t.Fatalf("%s marked shared %v for someone who manages them: %v", bios.FileName, bios.Shared, manages)
+			}
+			if body := user.expect(http.StatusOK, user.get("/api/v1/files/"+bios.FileID)); string(body) != bios.FileName {
+				t.Fatalf("%s: %q", bios.FileName, body)
+			}
 		}
 	}
-	if adminSettings.Emulator.Platform["channelf"].Bioses[0].Shared {
-		t.Fatal("the admin's own BIOS files are marked shared")
-	}
-	// Sent back with other settings, the admin's aren't saved as the friend's
-	friend.expect(http.StatusOK, friend.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
-		"platform": map[string]any{"channelf": map[string]any{"bioses": channelF, "rewindEnabled": false}},
-	}}))
-	if api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ? AND emulator LIKE '%sl31253%'`, friend.id) != 0 {
-		t.Fatal("the admin's BIOS files were saved in the friend's settings")
-	}
-	// Their own BIOS files for a console are used in place of the admin's
-	if nes := friendSettings.Emulator.Platform["nes"].Bioses; len(nes) != 1 || nes[0].FileName != "mine.rom" {
-		t.Fatalf("the friend's NES BIOS files: %+v", nes)
+
+	// Players and contributors change nothing
+	for _, user := range []*apiUser{contributor, friend} {
+		user.expect(http.StatusForbidden, add(user, "nes", "disksys.rom"))
+		user.expect(http.StatusForbidden, remove(user, "channelf", "sl31253.bin"))
+		// Sent back with other settings, the server's aren't saved as their own
+		var seen settings
+		user.expectJSON(http.StatusOK, &seen, user.get("/api/v1/preference"))
+		user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
+			"platform": map[string]any{"channelf": map[string]any{"bioses": seen.Emulator.Platform["channelf"].Bioses, "rewindEnabled": false}},
+		}}))
+		if api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ? AND emulator LIKE '%sl31253%'`, user.id) != 0 {
+			t.Fatal("the server's BIOS files were saved in someone's own settings")
+		}
 	}
 
-	// A contributor has them as a player does
-	separate.expectJSON(http.StatusOK, &separateSettings, separate.get("/api/v1/preference"))
-	if bioses := separateSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 3 || !bioses[0].Shared {
-		t.Fatalf("a contributor's Channel F BIOS files: %+v", bioses)
+	// Another admin adds to the same set and removes from it, and it's kept in the owner's settings
+	var after settings
+	second.expectJSON(http.StatusOK, &after, add(second, "nes", "disksys.rom"))
+	if nes := after.Emulator.Platform["nes"].Bioses; len(nes) != 1 || nes[0].Shared {
+		t.Fatalf("NES BIOS files as the second admin sees them: %+v", nes)
 	}
-	separate.expect(http.StatusOK, separate.get("/api/v1/files/"+channelF[0].FileID))
-
-	// And the friend still has them once made a contributor
-	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+friend.id, url.Values{"role": {"contributor"}}))
-	friend.expectJSON(http.StatusOK, &friendSettings, friend.get("/api/v1/preference"))
-	if bioses := friendSettings.Emulator.Platform["channelf"].Bioses; len(bioses) != 3 {
-		t.Fatalf("once a contributor: %+v", bioses)
+	second.expectJSON(http.StatusOK, &after, remove(second, "channelf", "sl31253.bin"))
+	if left := after.Emulator.Platform["channelf"].Bioses; len(left) != 2 {
+		t.Fatalf("Channel F BIOS files left: %+v", left)
 	}
-	friend.expect(http.StatusOK, friend.get("/api/v1/files/"+channelF[0].FileID))
+	if api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ? AND emulator LIKE '%disksys%'`, owner.id) != 1 ||
+		api.count(t, `SELECT count(*) FROM user_preferences WHERE user_id = ? AND emulator LIKE '%bioses/%'`, second.id) != 0 {
+		t.Fatal("the second admin's changes aren't in the owner's settings alone")
+	}
+	var seen settings
+	friend.expectJSON(http.StatusOK, &seen, friend.get("/api/v1/preference"))
+	if len(seen.Emulator.Platform["channelf"].Bioses) != 2 || len(seen.Emulator.Platform["nes"].Bioses) != 1 {
+		t.Fatalf("what the friend has now: %+v", seen.Emulator.Platform)
+	}
+	friend.expect(http.StatusNotFound, friend.get("/api/v1/files/"+first))
 }
 
 // A console's name is part of a BIOS file's path, so only the app's consoles are taken, in settings and for BIOS files
@@ -206,65 +220,61 @@ func TestBIOSFilesOnlyForKnownConsoles(t *testing.T) {
 	}
 }
 
-// Whoever has a BIOS file in their settings may download it, so a file id copied into one's settings is left out
+// BIOS files are only ever added by uploading one: a file id written into settings is left out, the server's as well
+// as one's own, so it can't name some other stored file to download
 func TestBIOSFileIDsCantBeCopiedIn(t *testing.T) {
 	api := newAPI(t)
-	// The library owner's BIOS files are everyone's; this is about one that someone else keeps in their own settings
-	api.register(t, "admin")
-	owner := api.register(t, "owner")
+	admin := api.register(t, "admin")
 	other := api.register(t, "other")
 	var saved settings
-	owner.expectJSON(http.StatusOK, &saved, owner.multipart(http.MethodPost, "/api/v1/preference/bioses",
+	admin.expectJSON(http.StatusOK, &saved, admin.multipart(http.MethodPost, "/api/v1/preference/bioses",
 		map[string]string{"platform": "psx"}, map[string]uploadFile{"file": {content: []byte("a BIOS"), name: "scph5501.bin"}}))
 	id := saved.Emulator.Platform["psx"].Bioses[0].FileID
+	copied := map[string]any{"emulator": map[string]any{
+		"platform": map[string]any{"nes": map[string]any{"bioses": []any{map[string]any{"fileId": id, "fileName": "disksys.rom"}}}},
+	}}
 
-	other.expectJSON(http.StatusOK, &saved, other.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
-		"platform": map[string]any{"psx": map[string]any{"bioses": []any{map[string]any{"fileId": id, "fileName": "scph5501.bin"}}}},
-	}}))
-	if len(saved.Emulator.Platform["psx"].Bioses) != 0 {
-		t.Fatalf("copied in: %+v", saved.Emulator.Platform["psx"].Bioses)
+	for _, user := range []*apiUser{other, admin} {
+		user.expectJSON(http.StatusOK, &saved, user.json(http.MethodPost, "/api/v1/preference", copied))
+		if len(saved.Emulator.Platform["nes"].Bioses) != 0 || len(saved.Emulator.Platform["psx"].Bioses) != 1 {
+			t.Fatalf("copied in: %+v", saved.Emulator.Platform)
+		}
 	}
-	other.expect(http.StatusNotFound, other.get("/api/v1/files/"+id))
-
-	// The owner's own settings, saved with their BIOS files in them, keep them
-	owner.expectJSON(http.StatusOK, &saved, owner.json(http.MethodPost, "/api/v1/preference", map[string]any{"emulator": map[string]any{
-		"platform": map[string]any{"psx": map[string]any{"bioses": []any{map[string]any{"fileId": id, "fileName": "scph5501.bin"}}}},
-	}}))
-	if len(saved.Emulator.Platform["psx"].Bioses) != 1 {
-		t.Fatalf("the owner's own: %+v", saved.Emulator.Platform["psx"].Bioses)
+	if api.count(t, `SELECT count(*) FROM user_preferences WHERE emulator LIKE '%disksys%'`) != 0 {
+		t.Fatal("a copied file id was saved")
 	}
 }
 
-// A BIOS file goes once it's in no one's settings, and stays while it's in anyone's
+// A BIOS file goes once it's no longer among the server's
 func TestUnusedBIOSFilesAreRemoved(t *testing.T) {
 	api := newAPI(t)
 	first := api.register(t, "first")
 	second := api.register(t, "second")
+	first.expect(http.StatusOK, first.form(http.MethodPatch, "/api/v1/users/"+second.id, url.Values{"role": {"admin"}}))
 	add := func(user *apiUser, content string) string {
 		var saved settings
 		user.expectJSON(http.StatusOK, &saved, user.multipart(http.MethodPost, "/api/v1/preference/bioses",
 			map[string]string{"platform": "nes"}, map[string]uploadFile{"file": {content: []byte(content), name: "disksys.rom"}}))
+		if len(saved.Emulator.Platform["nes"].Bioses) != 1 {
+			t.Fatalf("NES BIOS files: %+v", saved.Emulator.Platform["nes"].Bioses)
+		}
 		return saved.Emulator.Platform["nes"].Bioses[0].FileID
 	}
 	onDisk := func(fileID string) bool {
 		path, _ := api.config.FilePath(fileID)
 		return files.Exists(path)
 	}
-	shared := add(first, "a BIOS")
-	if add(second, "a BIOS") != shared {
-		t.Fatal("the same content stored twice")
+	stored := add(first, "a BIOS")
+	if add(second, "a BIOS") != stored || !onDisk(stored) {
+		t.Fatal("the same content stored twice, or not at all")
 	}
-	first.expect(http.StatusOK, first.send(http.MethodDelete, "/api/v1/preference/bioses?platform=nes&file_name=disksys.rom", "", nil))
-	if !onDisk(shared) {
-		t.Fatal("removed while another player has it")
-	}
-	// Replaced by other content, it's in no one's settings
+	// Replaced by other content, it's no longer the server's
 	newer := add(second, "a newer BIOS")
-	if onDisk(shared) || !onDisk(newer) {
+	if onDisk(stored) || !onDisk(newer) {
 		t.Fatal("the replaced file is kept, or the new one missing")
 	}
-	second.expect(http.StatusOK, second.send(http.MethodDelete, "/api/v1/preference/bioses?platform=nes&file_name=disksys.rom", "", nil))
+	first.expect(http.StatusOK, first.send(http.MethodDelete, "/api/v1/preference/bioses?platform=nes&file_name=disksys.rom", "", nil))
 	if onDisk(newer) {
-		t.Fatal("kept once no one has it")
+		t.Fatal("kept once removed")
 	}
 }

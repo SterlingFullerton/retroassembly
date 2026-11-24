@@ -60,6 +60,7 @@
   "bios.expectedFile": "必要なBIOSファイル: ",
   "bios.expectedFile_other": "期待されるBIOSファイル: ",
   "bios.fileNameNotExpected": "選択されたファイル名によると、これは期待されるBIOSファイルではありません。",
+  "bios.managedByAdmin": "BIOSファイルは管理者が全員のために追加します。",
   "bios.requiredForLaunch": "必要な <tooltip/> がないとゲームを起動できません: <strong>{{biosList}}</strong>。",
   "bios.titleWithPlatform": "{{platform}}のBIOS",
   "common.about": "概要",

@@ -62,6 +62,8 @@ Where it differs from the Node server, on purpose:
 - The server has one library, and each account a role in it: a player plays; a contributor also adds and edits games;
   an admin also deletes them and manages the accounts. Saves, favorites and history are each account's own. Games
   that accounts kept in libraries of their own, before this, are brought into the server's when it starts.
+- The server has one set of BIOS files too, kept in the owner's settings: everyone plays with them and only admins
+  add or remove them. Those accounts kept in their own settings are brought into it when the server starts.
 - Only the first account can sign up, and is the admin; an admin adds the others, unless `OPEN_SIGNUP=true` lets anyone
   sign up, as a player. New passwords are at least 8 characters
 - At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. One address

@@ -2,6 +2,7 @@ import { Button, Callout, Tooltip } from '@radix-ui/themes'
 import { Trans, useTranslation } from 'react-i18next'
 import { metadata } from '#@/constants/metadata.ts'
 import { useSettingsDialogOpen, useSettingsDialogTabName } from '#@/pages/library/atoms.ts'
+import { usePermissions } from '#@/pages/library/hooks/use-permissions.ts'
 
 interface BioseMissingMessageProps {
   bioses: {
@@ -13,6 +14,7 @@ interface BioseMissingMessageProps {
 
 export function BioseMissingMessage({ bioses }: Readonly<BioseMissingMessageProps>) {
   const { t } = useTranslation()
+  const { canManageBioses } = usePermissions()
   const [, setSettingsDialogOpen] = useSettingsDialogOpen()
   const [, setSettingsDialogTabName] = useSettingsDialogTabName()
   const tooltipContent = t(
@@ -47,9 +49,14 @@ export function BioseMissingMessage({ bioses }: Readonly<BioseMissingMessageProp
           i18nKey='bios.requiredForLaunch'
           values={{ biosList }}
         />{' '}
-        <Button className='-mt-1!' onClick={handleClickUpload} size='1' type='button'>
-          <span className='icon-[mdi--cog]' /> {t('upload.uploadEllipsis')}
-        </Button>
+        {/* Only an admin adds BIOS files; anyone else is told who does */}
+        {canManageBioses ? (
+          <Button className='-mt-1!' onClick={handleClickUpload} size='1' type='button'>
+            <span className='icon-[mdi--cog]' /> {t('upload.uploadEllipsis')}
+          </Button>
+        ) : (
+          t('bios.managedByAdmin')
+        )}
       </Callout.Text>
     </Callout.Root>
   )

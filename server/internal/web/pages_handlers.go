@@ -68,7 +68,7 @@ func (s *Server) commonPageData(w http.ResponseWriter, r *http.Request) {
 	var settings preference.Object
 	if current.user != nil {
 		var err error
-		if settings, err = s.preference.Get(r.Context(), s.database, current.user.ID, current.libraryOwnerID); err != nil {
+		if settings, err = s.settings(r, current.user, current.libraryOwnerID); err != nil {
 			writeError(w, err)
 			return
 		}

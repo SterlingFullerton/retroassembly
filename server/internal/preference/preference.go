@@ -383,8 +383,7 @@ func (s *Settings) withoutUnknownPlatforms(snippet Object) {
 	}
 }
 
-// withoutSharedBioses leaves out of settings being saved the BIOS files marked shared: they're the library owner's, and
-// saved as the player's they would stay after the library is no longer shared
+// withoutSharedBioses leaves out of settings being saved the BIOS files marked shared, a mark only shown, never kept
 func withoutSharedBioses(snippet Object) {
 	for _, value := range section(section(snippet, "emulator"), "platform") {
 		settings, _ := value.(Object)
@@ -402,8 +401,9 @@ func withoutSharedBioses(snippet Object) {
 	}
 }
 
-// withLibraryBioses gives a player who shares another's library that library owner's BIOS files, on each console they
-// haven't added any of their own for. Each is marked shared, as only its owner can remove it
+// withLibraryBioses gives everyone the server's BIOS files, which are kept in the library owner's settings: on every
+// console, whatever is in their own. Each is marked shared, as it isn't theirs to remove; an admin, who may, is shown
+// them without the mark (see Unshared)
 func withLibraryBioses(ctx context.Context, database *sql.DB, resolved Object, userID, libraryOwnerID string) (Object, error) {
 	if libraryOwnerID == "" || libraryOwnerID == userID {
 		return resolved, nil
@@ -412,23 +412,169 @@ func withLibraryBioses(ctx context.Context, database *sql.DB, resolved Object, u
 	if err != nil {
 		return nil, err
 	}
-	platforms := section(section(resolved, "emulator"), "platform")
-	for platform, bioses := range owned {
-		settings, ok := platforms[platform].(Object)
+	for platform, value := range section(section(resolved, "emulator"), "platform") {
+		settings, ok := value.(Object)
 		if !ok {
 			continue
 		}
-		if own, _ := settings["bioses"].([]any); len(own) == 0 {
-			shared := clone(bioses).([]any)
-			for _, item := range shared {
-				if bios, ok := item.(Object); ok {
-					bios["shared"] = true
-				}
-			}
-			settings["bioses"] = shared
+		shared := []any{}
+		if bioses, ok := owned[platform]; ok {
+			shared = clone(bioses).([]any)
 		}
+		for _, item := range shared {
+			if bios, ok := item.(Object); ok {
+				bios["shared"] = true
+			}
+		}
+		settings["bioses"] = shared
 	}
 	return resolved, nil
+}
+
+// Unshared is settings with their BIOS files not marked shared, for someone who may add and remove them
+func Unshared(resolved Object) Object {
+	for _, value := range section(section(resolved, "emulator"), "platform") {
+		settings, _ := value.(Object)
+		bioses, _ := settings["bioses"].([]any)
+		for _, item := range bioses {
+			if bios, ok := item.(Object); ok {
+				delete(bios, "shared")
+			}
+		}
+	}
+	return resolved
+}
+
+// MergeBioses brings the BIOS files accounts kept in their own settings, from before the server kept one set for all,
+// into the owner's: each that the owner has none of that name for, on that console. The accounts' own are then
+// dropped. It's how many were brought in. With none left, as on every start after the first, it does nothing
+func MergeBioses(ctx context.Context, database *sql.DB, libraryOwnerID string) (int, error) {
+	if libraryOwnerID == "" {
+		return 0, nil
+	}
+	transaction, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer transaction.Rollback()
+	rows, err := transaction.QueryContext(ctx,
+		`SELECT user_id, emulator FROM user_preferences WHERE user_id != ? AND emulator LIKE '%"bioses"%' ORDER BY created_at ASC`,
+		libraryOwnerID)
+	if err != nil {
+		return 0, err
+	}
+	others := map[string]Object{}
+	var order []string
+	for rows.Next() {
+		var (
+			userID   string
+			emulator sql.NullString
+		)
+		if err := rows.Scan(&userID, &emulator); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		settings, err := readColumn(emulator)
+		if err != nil {
+			rows.Close()
+			return 0, err
+		}
+		others[userID] = settings
+		order = append(order, userID)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	// What each has, console by console, and whether there's anything to drop from their settings
+	type addition struct {
+		platform string
+		bios     Object
+	}
+	var additions []addition
+	changed := map[string]bool{}
+	for _, userID := range order {
+		for platform, value := range section(others[userID], "platform") {
+			settings, _ := value.(Object)
+			if _, has := settings["bioses"]; !has {
+				continue
+			}
+			bioses, _ := settings["bioses"].([]any)
+			for _, item := range bioses {
+				if bios, ok := item.(Object); ok {
+					additions = append(additions, addition{platform, bios})
+				}
+			}
+			delete(settings, "bioses")
+			changed[userID] = true
+		}
+	}
+	if len(changed) == 0 {
+		return 0, nil
+	}
+
+	var ownerEmulator sql.NullString
+	err = transaction.QueryRowContext(ctx, `SELECT emulator FROM user_preferences WHERE user_id = ? LIMIT 1`, libraryOwnerID).
+		Scan(&ownerEmulator)
+	hasRow := err == nil
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	owner, err := readColumn(ownerEmulator)
+	if err != nil {
+		return 0, err
+	}
+	if owner == nil {
+		owner = Object{}
+	}
+	platforms, _ := owner["platform"].(Object)
+	if platforms == nil {
+		platforms = Object{}
+		owner["platform"] = platforms
+	}
+	brought := 0
+	for _, each := range additions {
+		settings, _ := platforms[each.platform].(Object)
+		if settings == nil {
+			settings = Object{}
+			platforms[each.platform] = settings
+		}
+		bioses, _ := settings["bioses"].([]any)
+		named := false
+		for _, item := range bioses {
+			if bios, ok := item.(Object); ok && bios["fileName"] == each.bios["fileName"] {
+				named = true
+			}
+		}
+		if !named {
+			delete(each.bios, "shared")
+			settings["bioses"] = append(bioses, each.bios)
+			brought++
+		}
+	}
+
+	now := db.Millis(time.Now())
+	if brought > 0 {
+		if hasRow {
+			_, err = transaction.ExecContext(ctx, `UPDATE user_preferences SET emulator = ?, updated_at = ? WHERE user_id = ?`,
+				column(owner), now, libraryOwnerID)
+		} else {
+			_, err = transaction.ExecContext(ctx, `
+				INSERT INTO user_preferences (emulator, input, ui, user_id, created_at, id, status, updated_at)
+				VALUES (?, NULL, NULL, ?, ?, ?, ?, ?)`, column(owner), libraryOwnerID, now, ids.New(), db.StatusNormal, now)
+		}
+		if err != nil {
+			return 0, err
+		}
+	}
+	for userID := range changed {
+		if _, err := transaction.ExecContext(ctx, `UPDATE user_preferences SET emulator = ?, updated_at = ? WHERE user_id = ?`,
+			column(others[userID]), now, userID); err != nil {
+			return 0, err
+		}
+	}
+	return brought, transaction.Commit()
 }
 
 // normalize puts chosen consoles in the app's usual order and leaves out the ones it doesn't have; null removes them
@@ -467,14 +613,26 @@ func column(value any) any {
 
 // Update saves part of a user's settings over what they have, and is their settings, resolved: updatePreference
 func (s *Settings) Update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object) (Object, error) {
+	// BIOS files are the server's, kept in the owner's settings and changed only with UpdateBioses
+	withoutBioses(snippet)
 	return s.update(ctx, database, userID, libraryOwnerID, snippet, "")
 }
 
-// UpdateBioses saves a console's BIOS files, among them one the user just uploaded (newFileID), which Update would
-// leave out as not theirs
-func (s *Settings) UpdateBioses(ctx context.Context, database *sql.DB, userID, libraryOwnerID, platform string, bioses []any, newFileID string) (Object, error) {
+// withoutBioses leaves BIOS files out of settings being saved
+func withoutBioses(snippet Object) {
+	for _, value := range section(section(snippet, "emulator"), "platform") {
+		if settings, ok := value.(Object); ok {
+			delete(settings, "bioses")
+		}
+	}
+}
+
+// UpdateBioses saves a console's BIOS files for the server, in the library owner's settings, among them one just
+// uploaded (newFileID). Only files already there, and that one, are kept: a file id from anywhere else is left out
+func (s *Settings) UpdateBioses(ctx context.Context, database *sql.DB, libraryOwnerID, platform string, bioses []any, newFileID string) error {
 	snippet := Object{"emulator": Object{"platform": Object{platform: Object{"bioses": bioses}}}}
-	return s.update(ctx, database, userID, libraryOwnerID, snippet, newFileID)
+	_, err := s.update(ctx, database, libraryOwnerID, libraryOwnerID, snippet, newFileID)
+	return err
 }
 
 func (s *Settings) update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object, newFileID string) (Object, error) {

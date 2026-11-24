@@ -60,6 +60,7 @@
   "bios.expectedFile": "預期的BIOS檔案：",
   "bios.expectedFile_other": "預期的BIOS檔案：",
   "bios.fileNameNotExpected": "根據所選檔案名稱，這不是預期的BIOS檔案。",
+  "bios.managedByAdmin": "BIOS 檔案由管理員為所有人新增。",
   "bios.requiredForLaunch": "缺少必要的 <tooltip/> 時無法啟動遊戲：<strong>{{biosList}}</strong>。",
   "bios.titleWithPlatform": "{{platform}}的BIOS",
   "common.about": "關於",

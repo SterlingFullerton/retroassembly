@@ -60,6 +60,7 @@
   "bios.expectedFile": "Ожидаемый файл BIOS: ",
   "bios.expectedFile_other": "Ожидаемые файлы BIOS: ",
   "bios.fileNameNotExpected": "Согласно имени выбранного файла, это не ожидаемый файл BIOS.",
+  "bios.managedByAdmin": "Файлы BIOS добавляет администратор — для всех.",
   "bios.requiredForLaunch": "Без требуемого <tooltip/> игру запустить нельзя: <strong>{{biosList}}</strong>.",
   "bios.titleWithPlatform": "BIOS {{platform}}",
   "common.about": "О программе",

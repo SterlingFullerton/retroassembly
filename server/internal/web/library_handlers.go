@@ -106,8 +106,25 @@ func (s *Server) removeLaunchRecords(w http.ResponseWriter, r *http.Request, sco
 	writeJSON(w, http.StatusOK, nil)
 }
 
+// settings is the user's settings, resolved, as their pages show them: with the server's BIOS files, which an admin
+// may change and so sees without the mark that keeps everyone else from trying
+func (s *Server) settings(r *http.Request, user *auth.User, libraryOwnerID string) (preference.Object, error) {
+	resolved, err := s.preference.Get(r.Context(), s.database, user.ID, libraryOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	return shownTo(user, resolved), nil
+}
+
+func shownTo(user *auth.User, resolved preference.Object) preference.Object {
+	if user.IsAdmin() {
+		return preference.Unshared(resolved)
+	}
+	return resolved
+}
+
 func (s *Server) getPreference(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID)
+	resolved, err := s.settings(r, scope.User, scope.LibraryOwnerID)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -121,6 +138,7 @@ func (s *Server) savePreference(w http.ResponseWriter, r *http.Request, scope li
 		writeError(w, err)
 		return
 	}
+	resolved = shownTo(scope.User, resolved)
 	writeJSON(w, http.StatusOK, resolved)
 }
 
@@ -140,14 +158,17 @@ func (s *Server) updatePreference(w http.ResponseWriter, r *http.Request, scope 
 	s.savePreference(w, r, scope, snippet)
 }
 
-// The BIOS files the user added themselves for a console, or an error for a console the app doesn't have. Asked as
-// the owner of their own library, so the BIOS files of a library they share aren't among them: those stay the owner's
+// The server's BIOS files for a console, which are kept in the library owner's settings, or an error for a console
+// the app doesn't have or for anyone but an admin, who alone may change them
 func (s *Server) bioses(r *http.Request, scope library.Scope, platform string) ([]any, error) {
 	// Only a console the app has: the name is part of the BIOS file's path
 	if _, known := s.platformNames[platform]; !known {
 		return nil, failure.New(http.StatusBadRequest, "Unknown platform")
 	}
-	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.User.ID)
+	if !scope.User.IsAdmin() {
+		return nil, failure.Forbidden
+	}
+	resolved, err := s.preference.Get(r.Context(), s.database, scope.LibraryOwnerID, scope.LibraryOwnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +182,6 @@ func (s *Server) bioses(r *http.Request, scope library.Scope, platform string) (
 	return bioses, nil
 }
 
-func biosesSnippet(platform string, bioses []any) preference.Object {
-	return preference.Object{"emulator": preference.Object{"platform": preference.Object{
-		platform: preference.Object{"bioses": bioses},
-	}}}
-}
-
 // extension is a file name's extension as Node's path.parse gives it: none for a name that only starts with a dot
 func extension(name string) string {
 	base := path.Base(name)
@@ -176,8 +191,8 @@ func extension(name string) string {
 	return ""
 }
 
-// addBIOS stores a BIOS file, once however many users add it, and adds it to the user's settings for its console,
-// in place of one of the same name
+// addBIOS stores a BIOS file and adds it to the server's for its console, in place of one of the same name. Only for
+// admins
 func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	if !parseForm(w, r, fileBodyLimit) {
 		return
@@ -242,7 +257,7 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 	if !replaced {
 		bioses = append(bioses, preference.Object{"fileId": fileID, "fileName": upload.Filename})
 	}
-	resolved, err := s.preference.UpdateBioses(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID, platform, bioses, fileID)
+	err = s.preference.UpdateBioses(r.Context(), s.database, scope.LibraryOwnerID, platform, bioses, fileID)
 	unlock()
 	unlock = func() {}
 	if err != nil {
@@ -250,6 +265,11 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 		return
 	}
 	s.removeUnusedBioses(r, previous)
+	resolved, err := s.settings(r, scope.User, scope.LibraryOwnerID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, resolved)
 }
 
@@ -270,7 +290,7 @@ func (s *Server) removeUnusedBioses(r *http.Request, fileIDs []string) {
 	}
 }
 
-// deleteBIOS takes a BIOS file out of the user's settings for its console, and deletes it once no one else has it
+// deleteBIOS takes a BIOS file out of the server's for its console, and deletes the file. Only for admins
 func (s *Server) deleteBIOS(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	query := r.URL.Query()
 	var check validation
@@ -296,11 +316,15 @@ func (s *Server) deleteBIOS(w http.ResponseWriter, r *http.Request, scope librar
 			removed = append(removed, id)
 		}
 	}
-	resolved, err := s.preference.Update(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID, biosesSnippet(platform, kept))
-	if err != nil {
+	if err := s.preference.UpdateBioses(r.Context(), s.database, scope.LibraryOwnerID, platform, kept, ""); err != nil {
 		writeError(w, err)
 		return
 	}
 	s.removeUnusedBioses(r, removed)
+	resolved, err := s.settings(r, scope.User, scope.LibraryOwnerID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, resolved)
 }

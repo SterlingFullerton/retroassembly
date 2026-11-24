@@ -60,6 +60,7 @@
   "bios.expectedFile": "필요한 BIOS 파일: ",
   "bios.expectedFile_other": "예상되는 BIOS 파일들: ",
   "bios.fileNameNotExpected": "선택된 파일 이름에 따르면, 이것은 예상되는 BIOS 파일이 아닙니다.",
+  "bios.managedByAdmin": "BIOS 파일은 관리자가 모두를 위해 추가합니다.",
   "bios.requiredForLaunch": "필수 <tooltip/> 없이는 게임을 실행할 수 없습니다: <strong>{{biosList}}</strong>.",
   "bios.titleWithPlatform": "{{platform}}의 BIOS",
   "common.about": "정보",

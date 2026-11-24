@@ -60,6 +60,7 @@
   "bios.expectedFile": "Archivo BIOS esperado: ",
   "bios.expectedFile_other": "Archivos BIOS esperados: ",
   "bios.fileNameNotExpected": "Según el nombre del archivo seleccionado, no es un archivo BIOS esperado.",
+  "bios.managedByAdmin": "Los archivos BIOS los añade un administrador, para todos.",
   "bios.requiredForLaunch": "El juego no puede iniciarse sin el <tooltip/> requerido: <strong>{{biosList}}</strong>.",
   "bios.titleWithPlatform": "BIOS de {{platform}}",
   "common.about": "Acerca de",
