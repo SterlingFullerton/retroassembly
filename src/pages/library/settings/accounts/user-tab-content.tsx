@@ -21,6 +21,8 @@ interface UserTabContentProps {
   /** The user may delete this account, their own: anyone but the library's owner */
   canDeleteOwn?: boolean
   onDelete?: () => void
+  /** The user's own password, devices and deleting their account are shown, when the account is theirs */
+  ownSettings?: boolean
   user: {
     /** When the account was made and last used, which only the admins' list of accounts has */
     createdAt?: string
@@ -34,6 +36,7 @@ export function UserTabContent({
   canDelete,
   canDeleteOwn = false,
   onDelete,
+  ownSettings = true,
   user,
 }: Readonly<UserTabContentProps>) {
   const { t } = useTranslation()
@@ -45,6 +48,7 @@ export function UserTabContent({
   const ago = useAgo()
 
   const isCurrentUser = user.id === currentUser.id
+  const showOwn = isCurrentUser && ownSettings
 
   const { isMutating: isUpdatingPassword, trigger: handleSubmit } = useSWRMutation(
     { endpoint: 'auth/password', method: 'patch' },
@@ -112,7 +116,7 @@ export function UserTabContent({
   )
 
   return (
-    <Flex className={isCurrentUser ? '' : 'py-4'} direction='column' gap='4'>
+    <Flex className={showOwn ? '' : 'py-4'} direction='column' gap='4'>
       {user.createdAt ? (
         <Text className='opacity-70' size='2'>
           {t('common.created')}: {ago(user.createdAt)}
@@ -198,9 +202,9 @@ export function UserTabContent({
       ) : null}
 
       {/* Password change section - only for current user */}
-      {isCurrentUser && authMode === 'local' ? (
+      {showOwn && authMode === 'local' ? (
         <>
-          <Flex align='center' className='pt-4' gap='2'>
+          <Flex align='center' gap='2'>
             <span className='icon-[mdi--lock-reset]' />
             <Text size='3' weight='bold'>
               {t('auth.changePassword')}
@@ -262,8 +266,8 @@ export function UserTabContent({
           </form>
         </>
       ) : null}
-      {isCurrentUser ? <SignedInDevices /> : null}
-      {isCurrentUser && canDeleteOwn ? <DeleteOwnAccount /> : null}
+      {showOwn ? <SignedInDevices /> : null}
+      {showOwn && canDeleteOwn ? <DeleteOwnAccount /> : null}
     </Flex>
   )
 }

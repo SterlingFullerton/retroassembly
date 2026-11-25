@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { getNavigationKeys } from '#@/input/navigation-keys.ts'
 import { useConfirmButtonStyle } from './use-confirm-button-style.ts'
 import { useGamepadMapping } from './use-gamepad-mapping.ts'
 import { useKeyboardMapping } from './use-keyboard-mapping.ts'
@@ -8,15 +9,12 @@ export function useInputMapping() {
   const keyboardMapping = useKeyboardMapping()
   const confirmButtonStyle = useConfirmButtonStyle()
 
-  const confirmKey = {
-    nintendo: keyboardMapping.input_player1_a,
-    xbox: keyboardMapping.input_player1_b,
-  }[confirmButtonStyle]
-
-  const cancelKey = {
-    nintendo: keyboardMapping.input_player1_b,
-    xbox: keyboardMapping.input_player1_a,
-  }[confirmButtonStyle]
+  // The library's own keys, which start out as the shared layout's
+  const navigationKeys = useMemo(
+    () => getNavigationKeys(keyboardMapping, confirmButtonStyle),
+    [keyboardMapping, confirmButtonStyle],
+  )
+  const { $cancel: cancelKey, $confirm: confirmKey } = navigationKeys
 
   const confirmButton = {
     nintendo: gamepadMapping.input_player1_a_btn,
@@ -36,8 +34,9 @@ export function useInputMapping() {
       confirmKey,
       gamepad: gamepadMapping,
       keyboard: keyboardMapping,
+      navigationKeys,
     }),
-    [gamepadMapping, keyboardMapping, cancelButton, cancelKey, confirmButton, confirmKey],
+    [gamepadMapping, keyboardMapping, navigationKeys, cancelButton, cancelKey, confirmButton, confirmKey],
   )
   return mapping
 }

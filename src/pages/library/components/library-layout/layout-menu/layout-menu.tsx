@@ -1,17 +1,14 @@
 import { Button, DropdownMenu } from '@radix-ui/themes'
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
-import { useSettingsDialogOpen, useSpatialNavigationPaused } from '../../../atoms.ts'
+import { getSettingsPath, useSettingsOrigin } from '../../../settings/sections.ts'
 import { AboutDialog } from './about-dialog.tsx'
 import { LogoutDialog } from './logout-dialog.tsx'
 import { ThemeMenuItem } from './theme-menu-item.tsx'
 
-// The two large dialogs aren't needed to browse the library, so their code is fetched when one is first opened
-const SettingsDialog = lazy(async () => {
-  const { SettingsDialog } = await import('./settings-dialog/settings-dialog.tsx')
-  return { default: SettingsDialog }
-})
+// The large dialog isn't needed to browse the library, so its code is fetched when it's first opened
 const DeviceStorageDialog = lazy(async () => {
   const { DeviceStorageDialog } = await import('./device-storage-dialog.tsx')
   return { default: DeviceStorageDialog }
@@ -25,24 +22,20 @@ export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
   const { t } = useTranslation()
   const { currentUser } = useGlobalLoaderData()
   const username = currentUser && 'username' in currentUser ? currentUser.username : ''
-  const [, setSpatialNavigationPaused] = useSpatialNavigationPaused()
+  const navigate = useNavigate()
+  const { linkState } = useSettingsOrigin()
 
-  const [settingsDialogOpen, setSettingsDialogOpen] = useSettingsDialogOpen()
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false)
   const [storageDialogOpen, setStorageDialogOpen] = useState(false)
-  const [settingsDialogOpened, setSettingsDialogOpened] = useState(false)
   const [storageDialogOpened, setStorageDialogOpened] = useState(false)
-  if (settingsDialogOpen && !settingsDialogOpened) {
-    setSettingsDialogOpened(true)
-  }
   if (storageDialogOpen && !storageDialogOpened) {
     setStorageDialogOpened(true)
   }
 
-  function handleClickSettings() {
-    setSettingsDialogOpen(true)
-    setSpatialNavigationPaused(true)
+  // The settings are a page, which goes back to where it was opened from
+  async function handleClickSettings() {
+    await navigate(getSettingsPath(), { state: linkState })
   }
 
   return (
@@ -116,14 +109,9 @@ export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
         </DropdownMenu.Content>
       </DropdownMenu.Root>
 
-      {/* Fetched when first opened, then kept, so closing still animates */}
-      {settingsDialogOpened ? (
-        <Suspense fallback={null}>
-          <SettingsDialog onOpenChange={setSettingsDialogOpen} open={settingsDialogOpen} />
-        </Suspense>
-      ) : null}
       <LogoutDialog onOpenChange={setLogoutDialogOpen} open={logoutDialogOpen} />
       <AboutDialog onOpenChange={setAboutDialogOpen} open={aboutDialogOpen} />
+      {/* Fetched when first opened, then kept, so closing still animates */}
       {storageDialogOpened ? (
         <Suspense fallback={null}>
           <DeviceStorageDialog onOpenChange={setStorageDialogOpen} open={storageDialogOpen} />

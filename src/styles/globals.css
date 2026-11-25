@@ -190,8 +190,9 @@ a.pending:focus {
 }
 
 /*
- * On a phone, upright or sideways, Settings fills the screen like a page of its own: its tabs at the top, the note at
- * the bottom and the rest scrolling between them, clear of an iPhone's notch and home bar
+ * On a phone, upright or sideways, the large dialogs fill the screen like a page of their own: the title at the top and
+ * the rest scrolling under it, clear of an iPhone's notch and home bar. `settings-dialog` is the settings' list of
+ * consoles to choose from
  */
 @media (width < 40rem), (height < 32rem) {
   .rt-BaseDialogScrollPadding:has(> .settings-dialog),
@@ -224,12 +225,6 @@ a.pending:focus {
     height: auto;
     min-height: 0;
   }
-  /* Sideways, the screen is short: the note gives its room to the settings */
-  @media (height < 32rem) {
-    .settings-dialog .settings-note {
-      display: none;
-    }
-  }
   /* Device storage's list scrolls under its title */
   .device-storage-dialog .device-storage-scroll,
   .edit-game-dialog .edit-game-scroll {
@@ -245,12 +240,7 @@ a.pending:focus {
   }
 }
 
-/* Settings opened with the mouse or a finger: no focus ring on its tabs until a key is pressed (see settings-dialog.tsx) */
-.no-tab-focus-ring .rt-BaseTabListTrigger:focus-visible .rt-BaseTabListTriggerInner {
-  outline: none;
-}
-
-/* Settings only scrolls up and down: its content is as wide as the dialog, never wider */
+/* The list of consoles only scrolls up and down: its content is as wide as the dialog, never wider */
 .settings-scroll [data-radix-scroll-area-viewport] > div {
   display: block !important;
   flex-shrink: 1;

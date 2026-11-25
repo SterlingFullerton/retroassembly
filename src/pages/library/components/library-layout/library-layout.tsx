@@ -1,7 +1,8 @@
 import { ScrollArea } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import type { PropsWithChildren } from 'react'
-import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
+import { Link, useMatch } from 'react-router'
 import { metadata } from '#@/constants/metadata.ts'
 import { Logo } from '#@/pages/components/logo.tsx'
 import { usePageTitle } from '#@/pages/library/hooks/use-library-data.ts'
@@ -23,6 +24,7 @@ import { PhoneNavBar } from './phone-nav-bar.tsx'
 import { PhoneSearchScreen } from './phone-search/phone-search-screen.tsx'
 import { useSearchShortcut } from './search-field.tsx'
 import { SidebarContainer } from './sidebar-container.tsx'
+import { SettingsSidebar } from './sidebar-links/settings-sidebar.tsx'
 import { SidebarConsolesHeading } from './sidebar-links/sidebar-consoles-heading.tsx'
 import { SidebarLinks } from './sidebar-links/sidebar-links.tsx'
 import { StatusBar } from './status-bar.tsx'
@@ -32,10 +34,14 @@ function getPostfixedTitle(title: string) {
 }
 
 export default function LibraryLayout({ children }: Readonly<PropsWithChildren>) {
-  const title = usePageTitle()
+  const { t } = useTranslation()
+  const pageTitle = usePageTitle()
   useUploadPendingSaves()
   useWarnBeforeLeavingUpload()
   const { isLargeScreen } = useViewport()
+  // With the settings open the sidebar lists their sections in place of the library's pages and consoles
+  const inSettings = Boolean(useMatch(`${routes.librarySettings}/*`))
+  const title = inSettings ? t('nav.settings') : pageTitle
 
   useFocusRestoration()
   useCrossOriginIsolatedNavigation()
@@ -62,11 +68,17 @@ export default function LibraryLayout({ children }: Readonly<PropsWithChildren>)
             </Link>
             {isLargeScreen ? <LayoutMenu large /> : null}
           </div>
-          <SidebarLinks part='pinned' />
-          <SidebarConsolesHeading />
-          <ScrollArea className='flex-1' size='2'>
-            <SidebarLinks part='rest' />
-          </ScrollArea>
+          {inSettings ? (
+            <SettingsSidebar />
+          ) : (
+            <>
+              <SidebarLinks part='pinned' />
+              <SidebarConsolesHeading />
+              <ScrollArea className='flex-1' size='2'>
+                <SidebarLinks part='rest' />
+              </ScrollArea>
+            </>
+          )}
         </SidebarContainer>
 
         <LayoutMain>{children}</LayoutMain>

@@ -1,6 +1,6 @@
 import { Button } from '@radix-ui/themes'
 import { clsx } from 'clsx'
-import { type FocusEvent, useLayoutEffect, useRef } from 'react'
+import { type FocusEvent, type ReactNode, useLayoutEffect, useRef } from 'react'
 import scrollIntoView from 'smooth-scroll-into-view-if-needed'
 import { NavigatableLink } from '../../navigatable-link.tsx'
 
@@ -13,7 +13,16 @@ async function handleFocus(event: FocusEvent<HTMLAnchorElement>) {
   })
 }
 
-export function SidebarLink({ active, children, title, to }) {
+interface SidebarLinkProps {
+  active: boolean
+  children: ReactNode
+  /** What the link carries to its page (see useSettingsOrigin) */
+  state?: unknown
+  title: string
+  to: string
+}
+
+export function SidebarLink({ active, children, state, title, to }: Readonly<SidebarLinkProps>) {
   const ref = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -35,6 +44,7 @@ export function SidebarLink({ active, children, title, to }) {
             backgroundColor: 'rgba(0, 0, 0, 0.2)',
           })}
           onFocus={handleFocus}
+          state={state}
           title={title}
           to={to}
         >

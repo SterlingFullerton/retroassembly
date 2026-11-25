@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import type { PlatformName } from '#@/constants/platform.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
+import { ShaderSwitcher } from '../playing/shader-switcher.tsx'
 import { SettingsTitle } from '../settings-title.tsx'
-import { ShaderSwitcher } from './shader-switcher.tsx'
 
 /** A console's shader: the one for all consoles until another is picked, which Reset undoes */
 export function PlatformShaderSettings({ platform }: Readonly<{ platform: PlatformName }>) {

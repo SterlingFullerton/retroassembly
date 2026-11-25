@@ -35,7 +35,9 @@ export function LayoutHeader() {
     [routes.libraryHistory]: t('nav.history'),
     [routes.libraryRoms]: t('common.games'),
   }
-  const pageName = pageNames[pathname.replace(/\/$/u, '')]
+  const pageName = pathname.startsWith(routes.librarySettings)
+    ? t('nav.settings')
+    : pageNames[pathname.replace(/\/$/u, '')]
 
   async function handleValueChange(value: string) {
     const link = consoleLinks.find(({ name }) => name === value)

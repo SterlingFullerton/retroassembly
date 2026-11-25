@@ -24,7 +24,7 @@ test('log out', async ({ page, pages: { library, login }, user }) => {
 test('update password', async ({ page, pages: { library, login }, user }) => {
   await login.login(user)
 
-  await library.gotoSettingsTab('general')
+  await library.gotoSettings('account')
   await page.getByLabel('current password').fill(user.password)
   await page.getByLabel('new password').first().fill('new_password')
   await page.getByLabel('repeat new password').first().fill('wrong_new_password')
@@ -43,7 +43,6 @@ test('update password', async ({ page, pages: { library, login }, user }) => {
   await page.getByRole('button', { name: 'update password' }).click()
   await expect(page.getByText('your password has been updated')).toBeAttached()
 
-  await library.closeSettings()
   await library.logout()
   await login.login({ ...user, password: 'new_password' })
   await expect(page).toHaveURL('/library')

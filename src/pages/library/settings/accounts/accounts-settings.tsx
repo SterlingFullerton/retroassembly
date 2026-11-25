@@ -6,13 +6,13 @@ import useSWR, { useSWRConfig } from 'swr'
 import { client, parseResponse } from '#@/api/client.ts'
 import { Tabs } from '#@/pages/components/tabs.tsx'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
-import { SettingsTitle } from '../settings-title.tsx'
 import { CreateUserDialog } from './create-user-dialog.tsx'
 import { DeleteUserDialog } from './delete-user-dialog.tsx'
 import { UserTabContent } from './user-tab-content.tsx'
 
 const roleNames = { admin: 'auth.admin', contributor: 'auth.contributor', player: 'auth.player' }
 
+/** Every account on the server, for an admin: their names, roles and passwords, adding one and deleting one */
 export function AccountsSettings() {
   const { t } = useTranslation()
   const { mutate } = useSWRConfig()
@@ -27,22 +27,13 @@ export function AccountsSettings() {
     parseResponse(client.users.$get()),
   )
 
-  // Everyone else has only their own account: its password, where they're signed in, and deleting it
+  // Everyone else has only their own account, under Account
   if (!isAdmin) {
-    return (
-      <div>
-        <SettingsTitle>{t('common.accounts')}</SettingsTitle>
-        <div>
-          <UserTabContent canDelete={false} canDeleteOwn user={currentUser} />
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
     <div>
-      <SettingsTitle>{t('common.accounts')}</SettingsTitle>
-
       {usersError ? (
         <Callout.Root className='mb-4' color='red'>
           <Callout.Icon>
@@ -98,6 +89,7 @@ export function AccountsSettings() {
                 canDelete={!user.isSuper}
                 canDeleteOwn={!user.isSuper}
                 onDelete={() => setDeleteDialogOpen(true)}
+                ownSettings={false}
                 user={user}
               />
             </Tabs.Content>

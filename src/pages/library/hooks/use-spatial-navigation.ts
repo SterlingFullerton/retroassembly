@@ -127,10 +127,10 @@ export function useSpatialNavigation() {
       return
     }
     const keyboardDirectionMap = {
-      [inputMapping.keyboard.input_player1_down]: 'down',
-      [inputMapping.keyboard.input_player1_left]: 'left',
-      [inputMapping.keyboard.input_player1_right]: 'right',
-      [inputMapping.keyboard.input_player1_up]: 'up',
+      [inputMapping.navigationKeys.$down]: 'down',
+      [inputMapping.navigationKeys.$left]: 'left',
+      [inputMapping.navigationKeys.$right]: 'right',
+      [inputMapping.navigationKeys.$up]: 'up',
 
       down: 'down',
       left: 'left',

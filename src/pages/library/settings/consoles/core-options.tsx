@@ -2,7 +2,6 @@ import { Callout, Select } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import type { CoreName } from '#@/constants/core.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
-import { SettingsTitle } from '../settings-title.tsx'
 
 export function CoreOptions({
   core,
@@ -29,11 +28,7 @@ export function CoreOptions({
   }
 
   return (
-    <div className='mt-4 flex flex-col'>
-      <SettingsTitle as='h4' className='mb-0 text-base font-normal'>
-        {t('common.options')}
-      </SettingsTitle>
-
+    <div className='flex flex-col'>
       <div className='mt-3 flex w-full flex-1 flex-col gap-2'>
         <Callout.Root size='1'>
           <Callout.Icon>

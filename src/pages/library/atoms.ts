@@ -53,16 +53,6 @@ export function usePristine() {
   return useAtom(pristineAtom)
 }
 
-const settingsDialogOpenAtom = atom(false)
-export function useSettingsDialogOpen() {
-  return useAtom(settingsDialogOpenAtom)
-}
-
-const settingsDialogTabNameAtom = atom('library')
-export function useSettingsDialogTabName() {
-  return useAtom(settingsDialogTabNameAtom)
-}
-
 const isGameOverlayPendingAtom = atom(false)
 export function useIsGameOverlayPendingAtom() {
   return useAtom(isGameOverlayPendingAtom)

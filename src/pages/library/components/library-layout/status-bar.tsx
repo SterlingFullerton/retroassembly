@@ -14,16 +14,12 @@ const downButtonIcon = <span className='icon-[mdi--gamepad-circle-down] text-whi
 export function StatusBar() {
   const { t } = useTranslation()
   const { connected } = useGamepads()
-  const { keyboard: keyboardMapping } = useInputMapping()
+  const { navigationKeys } = useInputMapping()
   const { preference } = usePreference()
 
   const confirmButtonStyle = useConfirmButtonStyle()
-  const keyboarMappingConfirm = { nintendo: keyboardMapping.input_player1_a, xbox: keyboardMapping.input_player1_b }[
-    confirmButtonStyle
-  ]
-  const keyboarMappingCancel = { nintendo: keyboardMapping.input_player1_b, xbox: keyboardMapping.input_player1_a }[
-    confirmButtonStyle
-  ]
+  const keyboarMappingConfirm = navigationKeys.$confirm
+  const keyboarMappingCancel = navigationKeys.$cancel
 
   return (
     <div
@@ -68,12 +64,7 @@ export function StatusBar() {
           </span>
           <span className='flex items-center gap-2'>
             <Kbd className='text-xs! text-(--accent-9)!' size='1'>
-              {[
-                keyboardMapping.input_player1_up,
-                keyboardMapping.input_player1_down,
-                keyboardMapping.input_player1_left,
-                keyboardMapping.input_player1_right,
-              ]
+              {[navigationKeys.$up, navigationKeys.$down, navigationKeys.$left, navigationKeys.$right]
                 .filter(Boolean)
                 .map((key) => ({ down: '↓', left: '←', right: '→', up: '↑' })[key] || capitalize(key))
                 .join(' ')}

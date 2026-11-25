@@ -1,8 +1,10 @@
 import { Button, Callout, Tooltip } from '@radix-ui/themes'
 import { Trans, useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { metadata } from '#@/constants/metadata.ts'
-import { useSettingsDialogOpen, useSettingsDialogTabName } from '#@/pages/library/atoms.ts'
 import { usePermissions } from '#@/pages/library/hooks/use-permissions.ts'
+import { usePlatform } from '#@/pages/library/hooks/use-platform.ts'
+import { getSettingsPath, useSettingsOrigin } from '#@/pages/library/settings/sections.ts'
 
 interface BioseMissingMessageProps {
   bioses: {
@@ -15,8 +17,8 @@ interface BioseMissingMessageProps {
 export function BioseMissingMessage({ bioses }: Readonly<BioseMissingMessageProps>) {
   const { t } = useTranslation()
   const { canManageBioses } = usePermissions()
-  const [, setSettingsDialogOpen] = useSettingsDialogOpen()
-  const [, setSettingsDialogTabName] = useSettingsDialogTabName()
+  const platform = usePlatform()
+  const { linkState } = useSettingsOrigin()
   const tooltipContent = t(
     'A BIOS file is a copy of the operating system used by the hardware that we are emulating. Some emulators need BIOS files in order to correctly emulate hardware and/or software as needed by the content. {{title}} does not share any copyrighted system files or game content. You must provide your own BIOS and content in accordance with your local laws as applicable.',
     { title: metadata.title },
@@ -29,11 +31,6 @@ export function BioseMissingMessage({ bioses }: Readonly<BioseMissingMessageProp
       </span>
     </Tooltip>
   )
-
-  function handleClickUpload() {
-    setSettingsDialogOpen(true)
-    setSettingsDialogTabName('emulating')
-  }
 
   return (
     <Callout.Root>
@@ -51,8 +48,11 @@ export function BioseMissingMessage({ bioses }: Readonly<BioseMissingMessageProp
         />{' '}
         {/* Only an admin adds BIOS files; anyone else is told who does */}
         {canManageBioses ? (
-          <Button className='-mt-1!' onClick={handleClickUpload} size='1' type='button'>
-            <span className='icon-[mdi--cog]' /> {t('upload.uploadEllipsis')}
+          // To the console's settings, where its BIOS files are
+          <Button asChild className='-mt-1!' size='1'>
+            <Link state={linkState} to={getSettingsPath('consoles', platform?.name)}>
+              <span className='icon-[mdi--cog]' /> {t('upload.uploadEllipsis')}
+            </Link>
           </Button>
         ) : (
           t('bios.managedByAdmin')

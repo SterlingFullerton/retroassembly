@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmButtonSettings } from './confirm-button-settings.tsx'
 import { GamepadInputs } from './gamepad-inputs.tsx'
-import { KeyboardInputs } from './keyboard-inputs.tsx'
+import { KeyboardShortcuts } from './keyboard-shortcuts.tsx'
 
 export function InputsSettings() {
   const { t } = useTranslation()
@@ -37,7 +37,7 @@ export function InputsSettings() {
         </SegmentedControl.Root>
 
         <div className={clsx('mt-2', { 'opacity-80': isPending })}>
-          {currentContent === 'keyboard' ? <KeyboardInputs /> : null}
+          {currentContent === 'keyboard' ? <KeyboardShortcuts /> : null}
           {currentContent === 'gamepad' ? <GamepadInputs /> : null}
         </div>
       </div>

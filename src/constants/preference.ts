@@ -27,6 +27,10 @@ export interface Preference {
   }
   input: {
     confirmButtonStyle: string
+    /** The player's own keys for a console, over the shared keyboard mapping: RetroArch's setting and its key */
+    /** The player's own gamepad buttons for a console, by gamepad, over that gamepad's mapping */
+    consoleButtons?: Partial<Record<PlatformName, Record<string, Record<string, string>>>>
+    consoleKeys?: Partial<Record<PlatformName, Record<string, string>>>
     gamepadMappings: Record<
       string,
       {
@@ -52,6 +56,13 @@ export interface Preference {
       }
     >
     keyboardMapping: {
+      // The library's own keys, once set (see src/input/navigation-keys.ts)
+      $cancel?: string
+      $confirm?: string
+      $down?: string
+      $left?: string
+      $right?: string
+      $up?: string
       $pause: string
       input_hold_fast_forward: string
       input_player1_a: string
@@ -101,6 +112,9 @@ export interface ResolvedPreference extends Preference {
   emulator: NonNullable<Preference['emulator']>
   input: {
     confirmButtonStyle: NonNullable<Preference['input']>['confirmButtonStyle']
+    /** Only there once a console has been given keys of its own */
+    consoleButtons?: NonNullable<Preference['input']>['consoleButtons']
+    consoleKeys?: NonNullable<Preference['input']>['consoleKeys']
     gamepadMappings: NonNullable<NonNullable<Preference['input']>['gamepadMappings']>
     keyboardMapping: NonNullable<NonNullable<Preference['input']>['keyboardMapping']>
   }

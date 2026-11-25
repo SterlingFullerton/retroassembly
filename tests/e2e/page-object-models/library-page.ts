@@ -9,12 +9,6 @@ export class LibraryPage {
     this.page = page
   }
 
-  async closeSettings() {
-    const { page } = this
-    await page.getByTitle('close').click()
-    await page.getByRole('dialog').waitFor({ state: 'detached' })
-  }
-
   /**
    * Starts the game on its page with Start or Continue, and waits until it's playing: the play is recorded once the
    * game has started, and only then does it take keys such as Escape for its menu
@@ -33,11 +27,9 @@ export class LibraryPage {
     await this.page.goto(this.romsURL, { waitUntil: 'load' })
   }
 
-  async gotoSettingsTab(tab: string) {
-    const { page } = this
-    await this.openMenu()
-    await page.getByText('setting').click()
-    await page.getByText(tab).first().click()
+  /** Opens one of the settings' sections, such as `account` */
+  async gotoSettings(section: string) {
+    await this.page.goto(`library/settings/${section}`, { waitUntil: 'load' })
   }
 
   async logout() {

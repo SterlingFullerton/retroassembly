@@ -9,6 +9,9 @@ export const routes = {
   libraryPlatform: '/library/platform/:platform',
   libraryPlatformRom: '/library/platform/:platform/rom/:fileName',
   libraryRoms: '/library/roms',
+  librarySettings: '/library/settings',
+  librarySettingsConsole: '/library/settings/consoles/:console',
+  librarySettingsSection: '/library/settings/:section',
   login: '/login',
   loginOidc: '/login/oidc',
   loginOidcCallback: '/login/oidc/callback',
@@ -26,6 +29,9 @@ export default [
     route('history', 'routes/library-history.tsx'),
     route('platform/:platform', 'routes/library-platform.tsx'),
     route('platform/:platform/rom/:fileName', 'routes/library-platform-rom.tsx'),
+    // The settings: on their own the first section, or on a phone the list of them. A console has a page of its own under
+    // the consoles' section
+    route('settings/:section?/:console?', 'routes/library-settings.tsx'),
   ]),
   route(routes.login, 'routes/login.tsx'),
   // Logging out and logging in with OIDC are answered by the server (server/internal/web)

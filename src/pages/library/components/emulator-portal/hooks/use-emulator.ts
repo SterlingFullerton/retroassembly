@@ -44,6 +44,7 @@ import {
   useLaunchButton,
   useSpatialNavigationPaused,
 } from '#@/pages/library/atoms.ts'
+import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useLibraryRefresh } from '#@/pages/library/hooks/use-library-refresh.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import type { Rom } from '#@/pages/library/types.ts'
@@ -166,6 +167,8 @@ export function useEmulatorSessionController({
   // save it came from, so a newer one from another device is fetched instead
   const knownGameSave = useRef<{ content?: Uint8Array; from?: string }>({})
   const { preference, setPreference } = usePreference()
+  // The gamepad in use, which may have buttons of its own for this console
+  const gamepadId = useGamepads().gamepad?.id
   // The wake lock that keeps the screen on while playing
   const noSleep = useRef<NoSleep | undefined>(undefined)
   // One exit at a time: a double-click on the exit button would otherwise start a second exit while the first runs
@@ -262,6 +265,8 @@ export function useEmulatorSessionController({
           console: resolveConsole(rom.platform, core),
           gamepad: emulatorGamepadMapping,
           keyboard: preference.input.keyboardMapping,
+          ownButtons: gamepadId ? preference.input.consoleButtons?.[rom.platform]?.[gamepadId] : undefined,
+          ownKeys: preference.input.consoleKeys?.[rom.platform],
           remapDirectory,
           touch: hasAnalogStickOnScreen(),
         }).retroarchConfig,
@@ -287,6 +292,7 @@ export function useEmulatorSessionController({
       core,
       preference,
       emulatorGamepadMapping,
+      gamepadId,
       shader,
       state?.fileId,
       rom.platform,

@@ -2,7 +2,6 @@ import { CheckboxCards } from '@radix-ui/themes'
 import { useTranslation } from 'react-i18next'
 import { platforms as allPlatforms } from '#@/constants/platform.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
-import { SettingsTitle } from '../settings-title.tsx'
 import { UpdateButton } from '../update-button.tsx'
 import { PlatformCheckboxItem } from './platform-checkbox-item.tsx'
 
@@ -14,7 +13,6 @@ export function PlatformSettings() {
 
   return (
     <div>
-      <SettingsTitle>{t('settings.enabledPlatforms')}</SettingsTitle>
       <div>
         {/* One column on a phone held upright, two when there's room, four on a computer */}
         <CheckboxCards.Root

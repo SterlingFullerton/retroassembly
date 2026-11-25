@@ -1,4 +1,6 @@
 import type { ResolvedConsole } from '../consoles/registry.ts'
+import { type ConsoleButtons, getOwnButtonSettings } from './console-buttons.ts'
+import { type ConsoleKeys, getOwnKeySettings } from './console-keys.ts'
 import { getKeyboardHints } from './hints.ts'
 import { getConsoleKeyboardConfig } from './keyboard.ts'
 import { stickAxisSettings, toRetroarchInputNames } from './retropad.ts'
@@ -41,6 +43,10 @@ interface InputConfigOptions {
   gamepad: Record<string, string>
   /** The keyboard mapping shared by every console */
   keyboard: Record<string, string>
+  /** The player's own buttons for this console on the gamepad in use */
+  ownButtons?: ConsoleButtons | null
+  /** The player's own keys for this console */
+  ownKeys?: ConsoleKeys | null
   /** Where the emulator looks for remap files, for the PlayStation's DualShock */
   remapDirectory: string
   /** The on-screen gamepad has analog sticks */
@@ -48,7 +54,15 @@ interface InputConfigOptions {
 }
 
 /** The RetroArch input settings a game starts with, and the pause menu's keyboard hints for it */
-export function buildInputConfig({ console, gamepad, keyboard, remapDirectory, touch }: InputConfigOptions) {
+export function buildInputConfig({
+  console,
+  gamepad,
+  keyboard,
+  ownButtons,
+  ownKeys,
+  remapDirectory,
+  touch,
+}: InputConfigOptions) {
   const { stickAxes, dualShockRemap } = console.launch
   const retroarchConfig = combineRules([
     {
@@ -77,6 +91,18 @@ export function buildInputConfig({ console, gamepad, keyboard, remapDirectory, t
       name: 'console keys',
       replaces: ['analog D-pad', 'keyboard', 'stick fix'],
       settings: getConsoleKeyboardConfig(console, keyboard),
+    },
+    {
+      // The keys the player gave this console's buttons in its settings
+      name: 'own console keys',
+      replaces: ['keyboard', 'stick fix', 'console keys'],
+      settings: getOwnKeySettings(console, keyboard, ownKeys),
+    },
+    {
+      // The gamepad buttons the player gave this console's buttons in its settings
+      name: 'own console buttons',
+      replaces: ['gamepad'],
+      settings: getOwnButtonSettings(gamepad, ownButtons),
     },
     {
       // On a touch screen the on-screen gamepad's sticks are the emulator's analog sticks. The PlayStation's are a
