@@ -73,6 +73,21 @@ export function applyVolume(newVolume: Volume) {
   } catch {}
 }
 
+/** The sound system the game plays through: its sample rate, whether it's running, and its delay where the browser says */
+export function getAudioInfo() {
+  const context = [...openAudioContexts].findLast((candidate) => candidate.state !== 'closed')
+  if (!context) {
+    return
+  }
+  const delays = [context.baseLatency, context.outputLatency].filter((delay) => Number.isFinite(delay) && delay > 0)
+  return {
+    /** In milliseconds: the delay the browser adds, and where it knows it, the device's own; nothing when it says neither */
+    latency: delays.length > 0 ? delays.reduce((sum, delay) => sum + delay, 0) * 1000 : undefined,
+    sampleRate: context.sampleRate,
+    state: context.state,
+  }
+}
+
 export async function closeAudioContexts() {
   const contexts = [...openAudioContexts]
   openAudioContexts.clear()
