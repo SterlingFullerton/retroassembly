@@ -1,4 +1,5 @@
 import { type SubmitEvent, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
@@ -42,6 +43,7 @@ function getController() {
 }
 
 export default function JoinPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const keyboard = useKeyboardMapping()
   const [stage, setStage] = useState<Stage>('choosing')
@@ -233,7 +235,7 @@ export default function JoinPage() {
 
       {joined ? null : (
         <div className='flex w-full max-w-md flex-col items-stretch gap-6 p-6' data-sn-section=''>
-          <h1 className='text-center text-2xl font-semibold'>Join a game</h1>
+          <h1 className='text-center text-2xl font-semibold'>{t('nav.joinGame')}</h1>
 
           {stage === 'ended' ? <p className='text-center'>The game ended.</p> : null}
           {stage === 'unreachable' ? (
