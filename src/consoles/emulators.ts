@@ -2,6 +2,13 @@ import type { EmulatorDefinition } from './types.ts'
 
 export const emulators = {
   a5200: { displayName: 'a5200', launch: { attachVirtualGamepad: true, stickAxes: 'both' }, source: 'bundled' },
+  // The current DeSmuME: more accurate than DeSmuME 2015, and slower
+  desmume: {
+    displayName: 'DeSmuME',
+    launch: { audioLatency: 160, heavy: true },
+    saveFileType: 'dsv',
+    source: 'bundled',
+  },
   desmume2015: {
     displayName: 'DeSmuME 2015',
     launch: { audioLatency: 160, heavy: true },

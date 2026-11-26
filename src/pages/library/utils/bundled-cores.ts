@@ -1,5 +1,6 @@
 import a5200 from '#@/assets/cores/a5200_libretro.zip?url'
 import desmume2015 from '#@/assets/cores/desmume2015_libretro.zip?url'
+import desmume from '#@/assets/cores/desmume_libretro.zip?url'
 import mupen64plusNext from '#@/assets/cores/mupen64plus_next_libretro.zip?url'
 import ppssppAssets from '#@/assets/cores/ppsspp_assets.zip?url'
 import ppsspp from '#@/assets/cores/ppsspp_libretro.zip?url'
@@ -10,6 +11,7 @@ import stella2014 from '#@/assets/cores/stella2014_libretro.zip?url'
 // browser can keep it for good and still pick up a new build of it at its new address
 export const bundledCoreUrls: Partial<Record<string, string>> = {
   a5200,
+  desmume,
   desmume2015,
   mupen64plus_next: mupen64plusNext,
   ppsspp,

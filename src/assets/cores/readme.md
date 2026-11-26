@@ -10,6 +10,7 @@ with Emscripten 3.1.74 and RetroArch 9b56a92, and shipped with the app. Each `<c
 | `prosystem`        | Atari 7800           | [libretro/prosystem-libretro](https://github.com/libretro/prosystem-libretro) 8a88014                                                                                                   |
 | `stella2014`       | Atari 2600           | [libretro/stella2014-libretro](https://github.com/libretro/stella2014-libretro) 4a7da82                                                                                                 |
 | `mupen64plus_next` | Nintendo 64          | [libretro/mupen64plus-libretro-nx](https://github.com/libretro/mupen64plus-libretro-nx) f275caf, with `mupen64plus_next_libretro.patch` and `mupen64plus_next_libretro.retroarch.patch` |
+| `desmume`          | Nintendo DS          | [libretro/desmume](https://github.com/libretro/desmume) 95b4d79, with `desmume_libretro.patch` and `desmume2015_libretro.retroarch.patch`                                               |
 | `desmume2015`      | Nintendo DS          | [libretro/desmume2015](https://github.com/libretro/desmume2015) 422b688, with its patches                                                                                               |
 | `ppsspp`           | PlayStation Portable | EmulatorJS's copy of PPSSPP fa917eb, with its patches; `ppsspp_assets.zip` holds its fonts and dialog graphics                                                                          |
 

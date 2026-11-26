@@ -210,6 +210,9 @@
     "emulator": {
       "autoSaveInterval": 0,
       "core": {
+        "desmume": {
+          "desmume_pointer_type": "touch"
+        },
         "desmume2015": {
           "desmume_pointer_type": "touch"
         },

@@ -99,6 +99,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -382,6 +385,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -669,6 +675,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -956,6 +965,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -1243,6 +1255,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -1531,6 +1546,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -1819,6 +1837,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -2108,6 +2129,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -2373,6 +2397,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -2674,6 +2701,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -2969,6 +2999,9 @@
         "emulator": {
           "autoSaveInterval": 0,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },
@@ -3253,6 +3286,9 @@
         "emulator": {
           "autoSaveInterval": 1.5,
           "core": {
+            "desmume": {
+              "desmume_pointer_type": "touch"
+            },
             "desmume2015": {
               "desmume_pointer_type": "touch"
             },

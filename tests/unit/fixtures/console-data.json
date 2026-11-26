@@ -5,6 +5,11 @@
       "displayName": "a5200",
       "url": "/cores/retroarch-1.22.2/a5200_libretro.zip"
     },
+    "desmume": {
+      "bundled": true,
+      "displayName": "DeSmuME",
+      "url": "/cores/retroarch-1.22.2/desmume_libretro.zip"
+    },
     "desmume2015": {
       "bundled": true,
       "displayName": "DeSmuME 2015",
@@ -695,7 +700,8 @@
     "nds": {
       "name": "nds",
       "cores": [
-        "desmume2015"
+        "desmume2015",
+        "desmume"
       ],
       "displayNameI18nKey": "platform.nds",
       "fileExtensions": [
