@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useGlobalLoaderData } from '#@/pages/hooks/use-global-loader-data.ts'
+import { routes } from '#@/pages/routes.ts'
 import { getSettingsPath, useSettingsOrigin } from '../../../settings/sections.ts'
 import { AboutDialog } from './about-dialog.tsx'
 import { LogoutDialog } from './logout-dialog.tsx'
@@ -15,7 +16,7 @@ const DeviceStorageDialog = lazy(async () => {
 })
 
 /**
- * Settings, theme, device storage, about and log out. `large` is a large icon: in the phone's red bar, like search beside
+ * Joining a game, settings, theme, device storage, about and log out. `large` is a large icon: in the phone's red bar, like search beside
  * it, and beside the logo in the sidebar
  */
 export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
@@ -36,6 +37,11 @@ export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
   // The settings are a page, which goes back to where it was opened from
   async function handleClickSettings() {
     await navigate(getSettingsPath(), { state: linkState })
+  }
+
+  // A guest's way in to a game someone is sharing: always here, where it's found on a phone as on a computer
+  async function handleClickJoin() {
+    await navigate(routes.libraryJoin)
   }
 
   return (
@@ -81,6 +87,13 @@ export function LayoutMenu({ large = false }: Readonly<{ large?: boolean }>) {
               <DropdownMenu.Separator />
             </>
           ) : null}
+          <DropdownMenu.Item onClick={handleClickJoin}>
+            <span className='icon-[mdi--account-multiple-plus]' />
+            {t('nav.joinGame')}
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Separator />
+
           <DropdownMenu.Item onClick={handleClickSettings}>
             <span className='icon-[mdi--cog]' />
             {t('nav.settings')}

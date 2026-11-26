@@ -17,7 +17,8 @@ export function PhoneNavBar() {
   const platform = usePlatform()
   const [query] = useSearchQuery()
   const [launched] = useEmulatorLaunched()
-  const [{ links: pageLinks }] = groups
+  // Joining a game is in the menu on a phone: the bar has room for five
+  const pageLinks = groups[0].links.filter(({ name }) => name !== 'join')
   const links = [...pageLinks.slice(0, 2), { ...consolesLink, text: t('nav.consoles') }, ...pageLinks.slice(2)]
 
   // Not while a game runs: Safari colours the strip at the bottom of the screen from a bar pinned there, even under the
