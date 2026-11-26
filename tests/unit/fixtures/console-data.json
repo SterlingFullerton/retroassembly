@@ -95,6 +95,11 @@
       "displayName": "Beetle Wonderswan",
       "url": "/cores/retroarch-1.22.2/mednafen_wswan_libretro.zip"
     },
+    "melonds": {
+      "bundled": true,
+      "displayName": "melonDS",
+      "url": "/cores/retroarch-1.22.2/melonds_libretro.zip"
+    },
     "mgba": {
       "bundled": false,
       "displayName": "mGBA",
@@ -701,7 +706,8 @@
       "name": "nds",
       "cores": [
         "desmume2015",
-        "desmume"
+        "desmume",
+        "melonds"
       ],
       "displayNameI18nKey": "platform.nds",
       "fileExtensions": [

@@ -181,7 +181,7 @@ export const nintendoConsoles = {
     ],
   },
   nds: {
-    cores: ['desmume2015', 'desmume'],
+    cores: ['desmume2015', 'desmume', 'melonds'],
     displayNameI18nKey: 'platform.nds',
     fileExtensions: ['.nds', '.zip'],
     info: {

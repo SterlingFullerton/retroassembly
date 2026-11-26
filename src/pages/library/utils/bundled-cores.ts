@@ -1,6 +1,7 @@
 import a5200 from '#@/assets/cores/a5200_libretro.zip?url'
 import desmume2015 from '#@/assets/cores/desmume2015_libretro.zip?url'
 import desmume from '#@/assets/cores/desmume_libretro.zip?url'
+import melonds from '#@/assets/cores/melonds_libretro.zip?url'
 import mupen64plusNext from '#@/assets/cores/mupen64plus_next_libretro.zip?url'
 import ppssppAssets from '#@/assets/cores/ppsspp_assets.zip?url'
 import ppsspp from '#@/assets/cores/ppsspp_libretro.zip?url'
@@ -13,6 +14,7 @@ export const bundledCoreUrls: Partial<Record<string, string>> = {
   a5200,
   desmume,
   desmume2015,
+  melonds,
   mupen64plus_next: mupen64plusNext,
   ppsspp,
   prosystem,

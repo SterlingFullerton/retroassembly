@@ -12,6 +12,7 @@ import { mednafenLynxOptions } from './mednafen-lynx.ts'
 import { mednafenNgpOptions } from './mednafen-ngp.ts'
 import { mednafenVbOptions } from './mednafen-vb.ts'
 import { mednafenWswanOptions } from './mednafen-wswan.ts'
+import { melondsOptions } from './melonds.ts'
 import { mgbaOptions } from './mgba.ts'
 import { mupen64plusNextOptions } from './mupen64plus-next.ts'
 import { nestopiaOptions } from './nestopia.ts'
@@ -38,6 +39,7 @@ export const coreOptionsMap = {
   mednafen_ngp: mednafenNgpOptions,
   mednafen_vb: mednafenVbOptions,
   mednafen_wswan: mednafenWswanOptions,
+  melonds: melondsOptions,
   mgba: mgbaOptions,
   mupen64plus_next: mupen64plusNextOptions,
   nestopia: nestopiaOptions,

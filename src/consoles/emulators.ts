@@ -35,6 +35,13 @@ export const emulators = {
   mednafen_pce_fast: { displayName: 'Beetle PC Engine Fast', source: 'retroarch' },
   mednafen_vb: { displayName: 'Beetle VB', launch: { attachVirtualGamepad: true }, source: 'retroarch' },
   mednafen_wswan: { displayName: 'Beetle Wonderswan', source: 'retroarch' },
+  // Built for this fork. It writes the game's save as a plain .sav, which the DeSmuMEs' .dsv is not
+  melonds: {
+    displayName: 'melonDS',
+    launch: { audioLatency: 160, heavy: true },
+    saveFileType: 'sav',
+    source: 'bundled',
+  },
   mgba: { displayName: 'mGBA', source: 'retroarch' },
   mupen64plus_next: {
     displayName: 'Mupen64Plus-Next',

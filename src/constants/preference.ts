@@ -150,6 +150,10 @@ export const defaultPreference: ResolvedPreference = {
       mame2003_plus: {
         'mame2003-plus_skip_disclaimer': 'enabled',
       },
+      melonds: {
+        // Follow the mouse or finger position, instead of moving the stylus by the mouse's movement
+        melonds_touch_mode: 'Touch',
+      },
       mgba: {
         mgba_gb_colors: 'DMG Green',
         mgba_skip_bios: 'ON',

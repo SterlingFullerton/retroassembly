@@ -12,6 +12,7 @@ with Emscripten 3.1.74 and RetroArch 9b56a92, and shipped with the app. Each `<c
 | `mupen64plus_next` | Nintendo 64          | [libretro/mupen64plus-libretro-nx](https://github.com/libretro/mupen64plus-libretro-nx) f275caf, with `mupen64plus_next_libretro.patch` and `mupen64plus_next_libretro.retroarch.patch` |
 | `desmume`          | Nintendo DS          | [libretro/desmume](https://github.com/libretro/desmume) 95b4d79, with `desmume_libretro.patch` and `desmume2015_libretro.retroarch.patch`                                               |
 | `desmume2015`      | Nintendo DS          | [libretro/desmume2015](https://github.com/libretro/desmume2015) 422b688, with its patches                                                                                               |
+| `melonds`          | Nintendo DS          | [libretro/melonDS](https://github.com/libretro/melonDS) 4081e83, with `melonds_libretro.patch` and `desmume2015_libretro.retroarch.patch`                                               |
 | `ppsspp`           | PlayStation Portable | EmulatorJS's copy of PPSSPP fa917eb, with its patches; `ppsspp_assets.zip` holds its fonts and dialog graphics                                                                          |
 
 The emulators for every other console are RetroArch's official ones, packed from libretro's build server by
