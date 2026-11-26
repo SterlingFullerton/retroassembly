@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/rand"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -38,7 +39,19 @@ var (
 type Invitation struct {
 	// The console's on-screen controls, by name, for a guest on a touch screen
 	Controls string `json:"controls"`
-	Offer    string `json:"offer"`
+	// The host's name, for a guest choosing among games
+	Host  string `json:"host"`
+	Offer string `json:"offer"`
+	Title string `json:"title"`
+	// Whether the game is shown to everyone signed in, to join without a code. Otherwise only its code finds it
+	Listed bool `json:"-"`
+}
+
+// Listing is a game shown to everyone signed in: what it is, whose, and the code that joins it
+type Listing struct {
+	Code     string `json:"code"`
+	Controls string `json:"controls"`
+	Host     string `json:"host"`
 	Title    string `json:"title"`
 }
 
@@ -92,7 +105,8 @@ func (i *Invitations) forget() {
 // Open leaves a host's invitation and returns its code. A host shares one game at a time: an earlier invitation of
 // theirs is withdrawn
 func (i *Invitations) Open(hostID string, invitation Invitation) (string, error) {
-	if len(invitation.Offer) > maxTextLength || len(invitation.Title) > maxTextLength || len(invitation.Controls) > maxTextLength {
+	if len(invitation.Offer) > maxTextLength || len(invitation.Title) > maxTextLength || len(invitation.Controls) > maxTextLength ||
+		len(invitation.Host) > maxTextLength {
 		return "", ErrTooLong
 	}
 	i.mu.Lock()
@@ -114,6 +128,34 @@ func (i *Invitations) Open(hostID string, invitation Invitation) (string, error)
 		Invitation: invitation, hostID: hostID, answered: make(chan struct{}), expires: i.now().Add(lifetime),
 	}
 	return code, nil
+}
+
+// List is the games anyone signed in may join, oldest first: those shown to everyone that no guest has joined yet
+func (i *Invitations) List() []Listing {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.forget()
+	type dated struct {
+		Listing
+		expires time.Time
+	}
+	found := []dated{}
+	for code, each := range i.waiting {
+		if each.Listed && each.answer == "" {
+			found = append(found, dated{Listing{Code: code, Controls: each.Controls, Host: each.Host, Title: each.Title}, each.expires})
+		}
+	}
+	sort.Slice(found, func(a, b int) bool {
+		if found[a].expires.Equal(found[b].expires) {
+			return found[a].Code < found[b].Code
+		}
+		return found[a].expires.Before(found[b].expires)
+	})
+	list := make([]Listing, len(found))
+	for index, each := range found {
+		list[index] = each.Listing
+	}
+	return list
 }
 
 // Find is the invitation left under a code

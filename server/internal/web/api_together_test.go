@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net"
 	"net/http"
 	"testing"
 )
@@ -45,6 +46,29 @@ func TestPlayingTogether(t *testing.T) {
 	}
 	// Collected, the invitation is gone
 	guest.expect(http.StatusNotFound, guest.get(path))
+
+	// A game is shown to everyone signed in, with its host's name, unless the host asks for a code
+	var listed []map[string]string
+	host.expectJSON(http.StatusOK, &opened, host.json(http.MethodPost, "/api/v1/play_together/invitations", invitation))
+	guest.expectJSON(http.StatusOK, &listed, guest.get("/api/v1/play_together/invitations"))
+	if len(listed) != 1 || listed[0]["code"] != opened.Code || listed[0]["host"] != "host" || listed[0]["title"] != "Balloon Fight" ||
+		listed[0]["offer"] != "" {
+		t.Fatalf("listed %+v", listed)
+	}
+	coded := map[string]any{"controls": "nes", "listed": false, "offer": "the offer", "title": "Balloon Fight"}
+	host.expectJSON(http.StatusOK, &opened, host.json(http.MethodPost, "/api/v1/play_together/invitations", coded))
+	guest.expectJSON(http.StatusOK, &listed, guest.get("/api/v1/play_together/invitations"))
+	if len(listed) != 0 {
+		t.Fatalf("listed when a code is asked for: %+v", listed)
+	}
+	guest.expect(http.StatusOK, guest.get("/api/v1/play_together/invitations/"+opened.Code))
+
+	// Each browser is told the address it reaches the server from
+	var own map[string]string
+	guest.expectJSON(http.StatusOK, &own, guest.get("/api/v1/play_together/address"))
+	if net.ParseIP(own["address"]) == nil {
+		t.Fatalf("address %+v", own)
+	}
 
 	// A host withdraws their own invitation; someone else's request to changes nothing
 	host.expectJSON(http.StatusOK, &opened, host.json(http.MethodPost, "/api/v1/play_together/invitations", invitation))

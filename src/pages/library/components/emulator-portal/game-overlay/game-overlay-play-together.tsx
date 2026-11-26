@@ -48,13 +48,18 @@ export function GameOverlayPlayTogether() {
   return (
     <section className='game-overlay-peek-dim flex flex-col gap-2' data-testid='play-together'>
       <h3 className='text-sm font-semibold tracking-wide text-white/70 uppercase'>Play together</h3>
-      {sharing.stage === 'inviting' ? (
+      {sharing.stage === 'inviting' && !sharing.listed ? (
         <div>
           <div className='text-sm text-white/70'>Code for the other player</div>
           <div className='font-mono text-3xl font-semibold tracking-[0.3em]' data-testid='play-together-code'>
             {sharing.code}
           </div>
-          <div className='text-sm text-white/70'>Waiting for them to join. Resume the game when they have.</div>
+        </div>
+      ) : null}
+      {sharing.stage === 'inviting' ? (
+        <div className='text-sm text-white/70' data-testid='play-together-waiting'>
+          {sharing.listed ? 'Waiting for a player to join from Join a game.' : 'Waiting for them to join.'} Resume the
+          game when they have.
         </div>
       ) : null}
       {sharing.stage === 'connected' ? <div className='text-sm'>A player has joined as player 2.</div> : null}

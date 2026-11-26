@@ -1,7 +1,9 @@
 package web
 
 import (
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"retroassembly/server/internal/library"
@@ -26,8 +28,12 @@ func (s *Server) openInvitation(w http.ResponseWriter, r *http.Request, scope li
 	offer, present := object["offer"]
 	title, titlePresent := object["title"]
 	controls, controlsPresent := object["controls"]
+	// Shown to everyone signed in unless the host asks for a code
+	listed, isBool := object["listed"].(bool)
 	invitation := together.Invitation{
 		Controls: check.String("controls", controls, controlsPresent, 0),
+		Host:     scope.User.Username,
+		Listed:   listed || !isBool,
 		Offer:    check.String("offer", offer, present, 1),
 		Title:    check.String("title", title, titlePresent, 0),
 	}
@@ -88,4 +94,30 @@ func (s *Server) invitationAnswer(w http.ResponseWriter, r *http.Request, scope 
 func (s *Server) closeInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	s.together.Close(r.PathValue("code"), scope.User.ID)
 	writeJSON(w, http.StatusOK, nil)
+}
+
+// The games anyone signed in may join without a code
+func (s *Server) listInvitations(w http.ResponseWriter, _ *http.Request, _ library.Scope) {
+	writeJSON(w, http.StatusOK, s.together.List())
+}
+
+// The address the request came from, as the server sees it. Two browsers that both reach the server can usually reach
+// each other at these addresses, which a browser won't tell its own page; each asks here for its own
+func (s *Server) ownAddress(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	address := r.Header.Get("X-Forwarded-For")
+	// A request passed along more than once lists each step; the first is where it began
+	if first, _, several := strings.Cut(address, ","); several {
+		address = first
+	}
+	address = strings.TrimSpace(address)
+	if address == "" {
+		address = strings.TrimSpace(r.Header.Get("X-Real-IP"))
+	}
+	if address == "" {
+		address = clientAddress(r)
+	}
+	if net.ParseIP(address) == nil {
+		address = ""
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"address": address})
 }

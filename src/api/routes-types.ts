@@ -81,14 +81,16 @@ export interface ApiRoutes {
     invitations: {
       ':code': {
         $delete: Endpoint<{ param: { code: string } }, null>
-        $get: Endpoint<{ param: { code: string } }, { controls: string; offer: string; title: string }>
+        $get: Endpoint<{ param: { code: string } }, { controls: string; host: string; offer: string; title: string }>
         answer: {
           $get: Endpoint<{ param: { code: string } }, { answer: string } | null>
           $post: Endpoint<{ json: { answer: string }; param: { code: string } }, true>
         }
       }
-      $post: Endpoint<{ json: { controls: string; offer: string; title: string } }, { code: string }>
+      $get: Endpoint<NoInput, { code: string; controls: string; host: string; title: string }[]>
+      $post: Endpoint<{ json: { controls: string; listed: boolean; offer: string; title: string } }, { code: string }>
     }
+    address: { $get: Endpoint<NoInput, { address: string }> }
   }
   preference: {
     $get: Endpoint<NoInput, Preference>

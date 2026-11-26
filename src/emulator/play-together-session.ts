@@ -1,6 +1,6 @@
 import type { Nostalgist } from 'nostalgist'
 import { createDeviceSwitch } from '#@/utils/client/device-switch.ts'
-import { invite } from './play-together-signal.ts'
+import { getOwnAddress, invite } from './play-together-signal.ts'
 import { hostGame } from './play-together.ts'
 
 // The game this device is sharing, if it is: one at a time, from the moment the host asks for a code until they stop
@@ -9,10 +9,16 @@ import { hostGame } from './play-together.ts'
 /** Playing together is an experiment, shown only on devices where it's switched on */
 export const playTogetherSwitch = createDeviceSwitch('retroassembly-play-together')
 
+/**
+ * Whether a guest must be told a code to join. Off, the game is shown to everyone signed in, which suits a household:
+ * a code is awkward to type with a controller. It's this device's own choice
+ */
+export const joinCodeSwitch = createDeviceSwitch('retroassembly-play-together-code')
+
 export type Sharing =
   | { stage: 'failed' | 'idle' | 'starting' }
-  /** Waiting for the guest to join by `code` */
-  | { code: string; stage: 'inviting' }
+  /** Waiting for a guest: one who's told `code`, or with the game listed, anyone signed in */
+  | { code: string; listed: boolean; stage: 'inviting' }
   | { stage: 'connected' }
 
 let sharing: Sharing = { stage: 'idle' }
@@ -69,6 +75,8 @@ export async function startSharing({ controls, emulator, title }: ShareOptions) 
     invitation?.withdraw()
   }
   try {
+    const listed = !joinCodeSwitch.isEnabled()
+    const reachableAt = await getOwnAddress()
     host = hostGame({
       canvas: emulator.getCanvas(),
       emulator,
@@ -82,14 +90,15 @@ export async function startSharing({ controls, emulator, title }: ShareOptions) 
           }
         }
       },
+      reachableAt,
     })
     const offer = await host.offer()
-    invitation = await invite({ controls, offer, title })
+    invitation = await invite({ controls, offer, title }, listed)
     if (stopped) {
       await invitation.withdraw()
       return
     }
-    set({ code: invitation.code, stage: 'inviting' })
+    set({ code: invitation.code, listed, stage: 'inviting' })
     await host.accept(await invitation.answer)
   } catch {
     if (!stopped) {

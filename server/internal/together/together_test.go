@@ -137,3 +137,43 @@ func TestInvitationsAreLimited(t *testing.T) {
 		t.Fatalf("too many: %v", err)
 	}
 }
+
+func TestGamesShownToEveryone(t *testing.T) {
+	invitations := New()
+	now := time.Now()
+	invitations.now = func() time.Time { return now }
+	if list := invitations.List(); len(list) != 0 {
+		t.Fatalf("nothing shared: %+v", list)
+	}
+
+	shown := Invitation{Controls: "nes", Host: "ann", Listed: true, Offer: "an offer", Title: "Balloon Fight"}
+	first, _ := invitations.Open("ann", shown)
+	now = now.Add(time.Second)
+	// One that asks for its code isn't shown
+	hidden, _ := invitations.Open("bob", Invitation{Host: "bob", Offer: "an offer", Title: "Contra"})
+	now = now.Add(time.Second)
+	later := shown
+	later.Host, later.Title = "cat", "Bubble Bobble"
+	second, _ := invitations.Open("cat", later)
+
+	list := invitations.List()
+	if len(list) != 2 || list[0] != (Listing{Code: first, Controls: "nes", Host: "ann", Title: "Balloon Fight"}) ||
+		list[1].Code != second || list[1].Title != "Bubble Bobble" {
+		t.Fatalf("list %+v", list)
+	}
+	// Its code still finds the hidden one
+	if found, err := invitations.Find(hidden); err != nil || found.Title != "Contra" {
+		t.Fatalf("hidden: %+v, %v", found, err)
+	}
+
+	// A game someone has joined is no longer offered
+	invitations.Answer(first, "an answer")
+	if list := invitations.List(); len(list) != 1 || list[0].Code != second {
+		t.Fatalf("after joining: %+v", list)
+	}
+	// Nor one no one came for
+	now = now.Add(lifetime + time.Second)
+	if list := invitations.List(); len(list) != 0 {
+		t.Fatalf("after their time: %+v", list)
+	}
+}

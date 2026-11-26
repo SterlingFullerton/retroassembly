@@ -70,8 +70,44 @@ const inputChannel = { id: 0, label: 'input', options: { maxRetransmits: 0, nego
 // is what's offered
 const gatheringTimeout = 3000
 
-/** The connection's description once the browser has listed the ways it can be reached, as text to hand to the other end */
-async function describe(connection: RTCPeerConnection) {
+const hostCandidate =
+  /^a=candidate:(?<foundation>\S+) (?<component>\d+) udp (?<priority>\d+) (?<address>\S+) (?<port>\d+) typ host(?<rest>.*)$/iu
+
+/**
+ * A connection's description with `address` added as a way to reach this browser. A browser lists the ways it can be
+ * reached, but hides its own addresses from the page behind made-up names that only work on the same local network.
+ * The server sees the address each browser reaches it from, over a VPN as much as at home, and two browsers that both
+ * reach the server can usually reach each other there. So each way the browser lists is offered again at that address
+ */
+export function withReachableAddress(sdp: string, address: string) {
+  if (!address) {
+    return sdp
+  }
+  const lines = sdp.split('\r\n')
+  const added = new Set<string>()
+  const result: string[] = []
+  for (const line of lines) {
+    result.push(line)
+    const candidate = hostCandidate.exec(line)?.groups
+    if (candidate && candidate.address !== address) {
+      const { component, foundation, port, priority, rest } = candidate
+      const key = `${component} ${port}`
+      const known = lines.some((other) => other.includes(` ${address} ${port} typ host`))
+      if (!known && !added.has(key)) {
+        added.add(key)
+        // A foundation of its own: it's a different way in, though it leads to the same place
+        result.push(`a=candidate:${foundation}9 ${component} udp ${priority} ${address} ${port} typ host${rest}`)
+      }
+    }
+  }
+  return result.join('\r\n')
+}
+
+/**
+ * The connection's description once the browser has listed the ways it can be reached, as text to hand to the other
+ * end, with `address` added to them when it's known
+ */
+async function describe(connection: RTCPeerConnection, address = '') {
   if (connection.iceGatheringState !== 'complete') {
     await new Promise<void>((resolve) => {
       const timer = setTimeout(done, gatheringTimeout)
@@ -88,7 +124,8 @@ async function describe(connection: RTCPeerConnection) {
       connection.addEventListener('icegatheringstatechange', check)
     })
   }
-  return JSON.stringify(connection.localDescription)
+  const description = connection.localDescription
+  return JSON.stringify(description && { sdp: withReachableAddress(description.sdp, address), type: description.type })
 }
 
 function parseDescription(text: string, type: 'answer' | 'offer'): RTCSessionDescriptionInit {
@@ -136,6 +173,8 @@ export interface HostOptions {
   iceServers?: RTCIceServer[]
   /** Told when the guest arrives and when they leave */
   onGuest?: (connected: boolean) => void
+  /** The address this browser reaches the server from, where the guest can probably reach it too */
+  reachableAt?: string
 }
 
 /**
@@ -143,7 +182,7 @@ export interface HostOptions {
  * player. `offer()` is the text for the guest, and `accept()` takes the text they give back. `close()` ends it and takes
  * the guest's controller away
  */
-export function hostGame({ canvas, emulator, iceServers = [], onGuest }: HostOptions) {
+export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachableAt }: HostOptions) {
   const connection = new RTCPeerConnection({ iceServers })
   const picture = canvas.captureStream(60)
   const sound = captureGameAudio()
@@ -199,7 +238,7 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest }: HostOpt
     connection,
     async offer() {
       await connection.setLocalDescription(await connection.createOffer())
-      return describe(connection)
+      return describe(connection, reachableAt)
     },
   }
 }
@@ -210,13 +249,15 @@ export interface GuestOptions {
   offer: string
   /** Given the game's picture and sound once they arrive, to show and play */
   onStream: (stream: MediaStream) => void
+  /** The address this browser reaches the server from, where the host can probably reach it too */
+  reachableAt?: string
 }
 
 /**
  * Joins a game a host shares. `answer` is the text for the host; once they've taken it, the game arrives through
  * `onStream`. `sendPad()` tells the host what this end's controller is doing. `close()` leaves
  */
-export async function joinGame({ iceServers = [], offer, onStream }: GuestOptions) {
+export async function joinGame({ iceServers = [], offer, onStream, reachableAt }: GuestOptions) {
   const connection = new RTCPeerConnection({ iceServers })
   connection.addEventListener('track', (event) => {
     const [stream] = event.streams
@@ -235,7 +276,7 @@ export async function joinGame({ iceServers = [], offer, onStream }: GuestOption
   await connection.setLocalDescription(await connection.createAnswer())
 
   return {
-    answer: await describe(connection),
+    answer: await describe(connection, reachableAt),
     close() {
       channel.close()
       connection.close()

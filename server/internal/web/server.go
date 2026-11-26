@@ -245,6 +245,8 @@ func (s *Server) Handler() (http.Handler, error) {
 		"POST /api/v1/game_saves/{id}/restore":                 s.signedIn(s.restoreGameSave),
 		"POST /api/v1/roms":                                    s.signedIn(s.createRom),
 		"POST /api/v1/play_together/invitations":               s.signedIn(s.openInvitation),
+		"GET /api/v1/play_together/invitations":                s.signedIn(s.listInvitations),
+		"GET /api/v1/play_together/address":                    s.signedIn(s.ownAddress),
 		"GET /api/v1/play_together/invitations/{code}":         s.signedIn(s.findInvitation),
 		"POST /api/v1/play_together/invitations/{code}/answer": s.signedIn(s.answerInvitation),
 		"GET /api/v1/play_together/invitations/{code}/answer":  s.signedIn(s.invitationAnswer),

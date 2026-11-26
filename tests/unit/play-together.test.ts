@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { decodePadState, encodePadState, padButtonCount, padStateSize } from '#@/emulator/play-together.ts'
+import {
+  decodePadState,
+  encodePadState,
+  padButtonCount,
+  padStateSize,
+  withReachableAddress,
+} from '#@/emulator/play-together.ts'
 
 function pad(pressed: number[] = [], axes = [0, 0, 0, 0]) {
   return {
@@ -74,5 +80,46 @@ await describe('a controller sent across the network', async () => {
     assert.equal(decodePadState(new Uint8Array(3), to), false)
     assert.equal(decodePadState(new Uint8Array(20), to), false)
     assert.ok(to.buttons[4].pressed)
+  })
+})
+
+await describe('a browser’s description, with the address the server sees it at', async () => {
+  const hidden =
+    'a=candidate:842163049 1 udp 2113937151 0d4b1c8e-7a2f-4e1b-9c5d-1f2e3a4b5c6d.local 54321 typ host generation 0'
+  const sdp = ['v=0', 'm=video 9 UDP/TLS/RTP/SAVPF 96', hidden, 'a=end-of-candidates', ''].join('\r\n')
+
+  await it('offers each way in again at that address, on the same port', () => {
+    const lines = withReachableAddress(sdp, '100.92.0.118').split('\r\n')
+    assert.deepEqual(lines, [
+      'v=0',
+      'm=video 9 UDP/TLS/RTP/SAVPF 96',
+      hidden,
+      'a=candidate:8421630499 1 udp 2113937151 100.92.0.118 54321 typ host generation 0',
+      'a=end-of-candidates',
+      '',
+    ])
+  })
+
+  await it('is left alone with no address, or when the address is already offered', () => {
+    assert.equal(withReachableAddress(sdp, ''), sdp)
+    const open = sdp.replace('0d4b1c8e-7a2f-4e1b-9c5d-1f2e3a4b5c6d.local', '100.92.0.118')
+    assert.equal(withReachableAddress(open, '100.92.0.118'), open)
+    const both = withReachableAddress(sdp, '100.92.0.118')
+    assert.equal(withReachableAddress(both, '100.92.0.118'), both)
+  })
+
+  await it('adds the address once for each port, and only for ways in over UDP', () => {
+    const second = 'a=candidate:1 1 udp 2113939711 fe80--1.local 60000 typ host generation 0'
+    const repeat = 'a=candidate:3 1 udp 2113937000 another-name.local 54321 typ host generation 0'
+    const tcp = 'a=candidate:2 1 tcp 1518280447 192.168.1.20 9 typ host tcptype active generation 0'
+    const relayed = 'a=candidate:4 1 udp 1677729535 203.0.113.9 61000 typ srflx raddr 0.0.0.0 rport 0 generation 0'
+    const several = ['v=0', hidden, second, repeat, tcp, relayed, ''].join('\r\n')
+    const added = withReachableAddress(several, '100.92.0.118')
+      .split('\r\n')
+      .filter((line) => line.includes(' 100.92.0.118 '))
+    assert.deepEqual(
+      added.map((line) => line.split(' ')[5]),
+      ['54321', '60000'],
+    )
   })
 })
