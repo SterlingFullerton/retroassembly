@@ -20,9 +20,9 @@ export function useSearchCountsFor(query: string) {
   return query ? data : undefined
 }
 
-/** A sidebar link's count while searching: undefined for Home and Join a game, and when not searching */
+/** A sidebar link's count while searching: undefined for Home, and when not searching */
 export function getLinkCount(counts: ReturnType<typeof useSearchCounts>, name: string) {
-  if (!counts || name === 'home' || name === 'join') {
+  if (!counts || name === 'home') {
     return
   }
   if (name === 'library') {

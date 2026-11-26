@@ -3,7 +3,6 @@ import { generatePath, useLocation } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
 import { routes } from '#@/pages/routes.ts'
 import { getPlatformIcon } from '#@/utils/client/library.ts'
-import { useOpenGames } from './use-open-games.ts'
 import { usePlatform } from './use-platform.ts'
 import { usePreference } from './use-preference.ts'
 
@@ -20,7 +19,6 @@ export function useNavigationLinks() {
   const platform = usePlatform()
   const location = useLocation()
   const { platforms } = preference.ui
-  const openGames = useOpenGames()
 
   const platformLinks = platforms.map((platform) => ({
     iconClass: '',
@@ -64,18 +62,6 @@ export function useNavigationLinks() {
           text: t('nav.history'),
           to: generatePath(routes.libraryHistory),
         },
-        // Only while someone is sharing a game to play together: the way in for whoever joins them
-        ...(openGames.length > 0
-          ? [
-              {
-                iconClass: 'icon-[mdi--account-multiple-plus]',
-                iconUrl: '',
-                name: 'join',
-                text: t('nav.joinGame'),
-                to: generatePath(routes.libraryJoin),
-              },
-            ]
-          : []),
       ],
       title: '',
     },
