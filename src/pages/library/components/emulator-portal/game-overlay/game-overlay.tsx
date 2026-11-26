@@ -8,6 +8,7 @@ import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { GameOverlayContent } from './game-overlay-content.tsx'
 import { GameOverlayController } from './game-overlay-controller.tsx'
 import { GameOverlayVirtualGamepad } from './game-overlay-virtual-gamepad.tsx'
+import { PerfReadout } from './perf-readout.tsx'
 
 export function GameOverlay() {
   const keyboardMapping = useKeyboardMapping()
@@ -54,6 +55,7 @@ export function GameOverlay() {
     <div className='pointer-events-none fixed inset-0 z-10 overflow-hidden text-white *:pointer-events-auto *:absolute *:inset-0'>
       <GameOverlayController />
       <GameOverlayVirtualGamepad />
+      <PerfReadout />
       <GameOverlayContent />
     </div>
   )

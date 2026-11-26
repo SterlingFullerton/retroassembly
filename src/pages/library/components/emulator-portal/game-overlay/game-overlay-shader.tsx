@@ -51,6 +51,11 @@ const writtenFiles = new WeakMap<object, Set<string>>()
 // in the page still say the one the game started with
 const shownLooks = new WeakMap<object, { id: string; inherited: boolean }>()
 
+/** The shader last picked in the pause menu for the game `emulator` runs, if one was: its id, or '' for off */
+export function getShownShader(emulator: object) {
+  return shownLooks.get(emulator)?.id
+}
+
 /** Puts a look's preset, and the shader files it names (in lib/, beside it), in the emulator's file system */
 async function writeLook(fs: any, written: Set<string>, look: Look) {
   async function writeFile(path: string) {
