@@ -1,4 +1,5 @@
 import { getAudioInfo } from './audio.ts'
+import { watchDraws } from './draw-watch.ts'
 import { createFrameLog, estimateRefreshRate, timeAnimationFrames } from './perf.ts'
 
 // The performance overlay's switch, and the watch it keeps on a running game. The switch is kept in this browser, so
@@ -40,59 +41,6 @@ export function subscribePerfOverlay(listener: () => void) {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
-  }
-}
-
-// What draws a picture on a 3D canvas. Every emulator ends a frame it shows with one of these, and makes none in a frame
-// it lets pass
-const drawCalls = ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']
-
-function getContextPrototypes() {
-  return [globalThis.WebGLRenderingContext, globalThis.WebGL2RenderingContext]
-    .filter((context) => typeof context === 'function')
-    .map((context) => context.prototype as unknown as Record<string, unknown>)
-}
-
-type DrawCall = (this: { canvas?: unknown }, ...args: unknown[]) => unknown
-
-/** Wraps one drawing function all 3D canvases of a kind share; the function returned puts it back */
-function watchDrawCall(prototype: Record<string, unknown>, name: string, onDraw: (canvas: unknown) => void) {
-  const original = prototype[name] as DrawCall
-  function watched(this: { canvas?: unknown }, ...args: unknown[]) {
-    onDraw(this.canvas)
-    return Reflect.apply(original, this, args)
-  }
-  prototype[name] = watched
-  return () => {
-    // Left in place if something else has wrapped it since
-    if (prototype[name] === watched) {
-      prototype[name] = original
-    }
-  }
-}
-
-/**
- * Has `onDraw` called whenever something is drawn on `canvas`, until the function it returns is called. The drawing
- * functions all 3D canvases share are wrapped meanwhile, which asks nothing of the canvas itself
- */
-function watchDraws(canvas: HTMLCanvasElement, onDraw: () => void) {
-  function handleDraw(drawnOn: unknown) {
-    if (drawnOn === canvas) {
-      onDraw()
-    }
-  }
-  const restores: (() => void)[] = []
-  for (const prototype of getContextPrototypes()) {
-    for (const name of drawCalls) {
-      if (typeof prototype[name] === 'function' && Object.hasOwn(prototype, name)) {
-        restores.push(watchDrawCall(prototype, name, handleDraw))
-      }
-    }
-  }
-  return () => {
-    for (const restore of restores) {
-      restore()
-    }
   }
 }
 

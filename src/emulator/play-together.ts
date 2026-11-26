@@ -1,5 +1,6 @@
 import type { Nostalgist } from 'nostalgist'
 import { attachPlayerGamepad, captureGameAudio, type EmulatorGamepad } from './adapter.ts'
+import { type PictureArea, watchGamePicture } from './game-picture.ts'
 
 // Playing a game together across a network, as if on one couch. One player's browser, the host's, runs the game and
 // sends its picture and sound to the other's, the guest's, which sends back what its controller is doing. The host
@@ -65,6 +66,22 @@ function createGuestGamepad(): EmulatorGamepad {
 // The channel the guest's controller travels on. Both ends open it under the same number, so it needs no arranging.
 // What's sent is the controller as it is now, so a message lost is made up for by the next and never sent again
 const inputChannel = { id: 0, label: 'input', options: { maxRetransmits: 0, negotiated: true, ordered: false } }
+
+// The channel the host tells the guest on where the game's picture is in what's sent. What's sent is the host's whole
+// canvas, which has black around the picture; the guest shows the picture alone. It moves rarely, and every message
+// must arrive, in order
+const pictureChannel = { id: 1, label: 'picture', options: { negotiated: true, ordered: true } }
+
+function isPictureArea(value: unknown): value is PictureArea {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    ['aspect', 'height', 'left', 'top', 'width'].every((side) => {
+      const number: unknown = Reflect.get(value, side)
+      return typeof number === 'number' && Number.isFinite(number) && number >= 0
+    })
+  )
+}
 
 // How long to wait for the browser to list the ways it can be reached. It usually takes a moment; what's found by then
 // is what's offered
@@ -148,7 +165,10 @@ function parseDescription(text: string, type: 'answer' | 'offer'): RTCSessionDes
 const tallestPicture = 720
 const pictureBitrate = 6_000_000
 
-/** Has the picture sent smoothly before sharply, and no larger than a guest needs */
+/**
+ * Has the picture sent smoothly before sharply, and no larger than a guest needs. `height` is the height of the game's
+ * picture in what's sent, in pixels: the black around it doesn't count towards how sharp it is
+ */
 async function tunePicture(sender: RTCRtpSender, height: number) {
   const parameters = sender.getParameters()
   if (parameters.encodings.length === 0) {
@@ -206,12 +226,37 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
     }
   })
 
+  // Where the picture is, told to the guest once they're there and whenever it moves
+  let area: PictureArea | undefined
+  const areaChannel = connection.createDataChannel(pictureChannel.label, {
+    ...pictureChannel.options,
+    id: pictureChannel.id,
+  })
+  function tellArea() {
+    if (area && areaChannel.readyState === 'open') {
+      areaChannel.send(JSON.stringify(area))
+    }
+  }
+  areaChannel.addEventListener('open', tellArea)
+  async function tune() {
+    // Sized by the picture alone, so a small picture on a large canvas is still sent sharp
+    const height = area ? area.height * canvas.height : canvas.height
+    await Promise.all(senders.map((sender) => tunePicture(sender, height)))
+  }
+  const stopWatchingPicture = watchGamePicture(canvas, async (found) => {
+    area = found
+    tellArea()
+    if (connection.connectionState === 'connected') {
+      await tune()
+    }
+  })
+
   async function handleState() {
     const connected = connection.connectionState === 'connected'
     if (connected && !detachGamepad) {
       detachGamepad = attachPlayerGamepad(emulator, gamepad)
       onGuest?.(true)
-      await Promise.all(senders.map((sender) => tunePicture(sender, canvas.height)))
+      await tune()
     } else if (!connected && detachGamepad) {
       detachGamepad()
       detachGamepad = undefined
@@ -228,7 +273,9 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
       connection.removeEventListener('connectionstatechange', handleState)
       detachGamepad?.()
       detachGamepad = undefined
+      stopWatchingPicture()
       channel.close()
+      areaChannel.close()
       connection.close()
       sound?.stop()
       for (const track of picture.getTracks()) {
@@ -247,6 +294,8 @@ export interface GuestOptions {
   iceServers?: RTCIceServer[]
   /** The host's offer */
   offer: string
+  /** Told where the game's picture is in what arrives, and again whenever it moves */
+  onPicture?: (area: PictureArea) => void
   /** Given the game's picture and sound once they arrive, to show and play */
   onStream: (stream: MediaStream) => void
   /** The address this browser reaches the server from, where the host can probably reach it too */
@@ -257,7 +306,7 @@ export interface GuestOptions {
  * Joins a game a host shares. `answer` is the text for the host; once they've taken it, the game arrives through
  * `onStream`. `sendPad()` tells the host what this end's controller is doing. `close()` leaves
  */
-export async function joinGame({ iceServers = [], offer, onStream, reachableAt }: GuestOptions) {
+export async function joinGame({ iceServers = [], offer, onPicture, onStream, reachableAt }: GuestOptions) {
   const connection = new RTCPeerConnection({ iceServers })
   connection.addEventListener('track', (event) => {
     const [stream] = event.streams
@@ -272,6 +321,23 @@ export async function joinGame({ iceServers = [], offer, onStream, reachableAt }
     }
   })
   const channel = connection.createDataChannel(inputChannel.label, { ...inputChannel.options, id: inputChannel.id })
+  const areaChannel = connection.createDataChannel(pictureChannel.label, {
+    ...pictureChannel.options,
+    id: pictureChannel.id,
+  })
+  areaChannel.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (typeof event.data !== 'string') {
+      return
+    }
+    try {
+      const area: unknown = JSON.parse(event.data)
+      if (isPictureArea(area)) {
+        onPicture?.(area)
+      }
+    } catch {
+      // Not an area: ignored
+    }
+  })
   await connection.setRemoteDescription(parseDescription(offer, 'offer'))
   await connection.setLocalDescription(await connection.createAnswer())
 
@@ -279,6 +345,7 @@ export async function joinGame({ iceServers = [], offer, onStream, reachableAt }
     answer: await describe(connection, reachableAt),
     close() {
       channel.close()
+      areaChannel.close()
       connection.close()
     },
     connection,

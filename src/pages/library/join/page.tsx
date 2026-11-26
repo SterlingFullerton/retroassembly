@@ -1,6 +1,8 @@
+import { clsx } from 'clsx'
 import { type SubmitEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
 import { encodePadState, joinGame } from '#@/emulator/play-together.ts'
@@ -51,6 +53,8 @@ export default function JoinPage() {
   const [code, setCode] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [found, setFound] = useState<Found>()
+  // Where the game's picture is in what the host sends, which is their whole screen
+  const [area, setArea] = useState<PictureArea>()
   const video = useRef<HTMLVideoElement>(null)
   // Everything this device is playing with: keys held, on-screen buttons held, and the on-screen sticks
   const keysHeld = useRef(new Set<RetroPadButton>())
@@ -125,6 +129,7 @@ export default function JoinPage() {
     async function connect(joining: Found) {
       session = await joinGame({
         offer: joining.invitation.offer,
+        onPicture: setArea,
         onStream(stream) {
           if (video.current) {
             video.current.srcObject = stream
@@ -175,6 +180,7 @@ export default function JoinPage() {
   }, [joined, found, onScreen])
 
   const playing = stage === 'playing'
+  const layout = getPictureLayout(area)
   useEffect(() => {
     if (!playing) {
       return
@@ -207,15 +213,28 @@ export default function JoinPage() {
 
   return (
     <div className='fixed inset-0 z-20 flex touch-none items-center justify-center overflow-auto bg-black text-white'>
-      {/* The game: its picture kept whole, and its sound */}
-      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a game's picture and sound, which has no words to caption */}
-      <video
-        autoPlay
-        className={playing ? 'size-full object-contain' : 'hidden'}
-        data-testid='guest-video'
-        playsInline
-        ref={video}
-      />
+      {/* The game's picture alone, as large as fits, and its sound. What arrives is the host's whole screen, with black
+          around the picture; until the host says where the picture is, all of it is shown. On an upright touch screen
+          the picture sits at the top, clear of the controls */}
+      <div
+        className={clsx('overflow-hidden', playing ? 'relative' : 'hidden', {
+          // Under the top bar's buttons, which are 44 points tall
+          'portrait:mt-safe-offset-11 portrait:self-start': touch,
+          'size-full': !layout,
+        })}
+        data-testid='guest-picture'
+        style={layout?.box}
+      >
+        {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a game's picture and sound, which has no words to caption */}
+        <video
+          autoPlay
+          className={layout ? 'absolute max-w-none object-fill' : 'size-full object-contain'}
+          data-testid='guest-video'
+          playsInline
+          ref={video}
+          style={layout?.video}
+        />
+      </div>
 
       {playing && touch && found ? (
         <TestSessionProvider emulator={standIn}>
