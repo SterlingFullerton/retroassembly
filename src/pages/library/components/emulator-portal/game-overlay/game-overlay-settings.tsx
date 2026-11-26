@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { GameOverlayButton } from './game-overlay-button.tsx'
+import { GameOverlayPlayTogether } from './game-overlay-play-together.tsx'
 import { GameOverlayShader } from './game-overlay-shader.tsx'
 import { GameOverlayVolume } from './game-overlay-volume.tsx'
 import { PerfDetails } from './perf-details.tsx'
@@ -94,6 +95,7 @@ export function GameOverlaySettings() {
           </div>
         </section>
         <GameOverlayShader />
+        <GameOverlayPlayTogether />
         <GameOverlayPerf />
       </div>
     </>

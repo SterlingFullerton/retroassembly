@@ -5,7 +5,7 @@ import { type SaveFiles, zipSaveFiles } from './save-folder.ts'
 // The only module that reaches into the emulator's internals: Nostalgist's private emulator, the Emscripten file system
 // and Module, and JSEvents, the emulator's own input handlers. Everything else goes through these functions
 
-export { applyVolume, closeAudioContexts, getVolume, type Volume } from './audio.ts'
+export { applyVolume, captureGameAudio, closeAudioContexts, getVolume, type Volume } from './audio.ts'
 
 // Nostalgist's emulator, with the private members used here
 interface InnerEmulator {
@@ -314,24 +314,36 @@ export interface EmulatorGamepad {
   timestamp: number
 }
 
-/**
- * Lets the emulator read `gamepad` as its first controller, unless a real controller is there. It's added to the
- * gamepads the emulator reads each frame, not to navigator.getGamepads(), so the rest of the page doesn't take it for a
- * real controller
- */
-export function attachGamepad(emulator: Nostalgist, gamepad: EmulatorGamepad) {
+interface AttachedGamepad {
+  gamepad: EmulatorGamepad
+  /** Stands aside for a real controller in its place: the on-screen controls, hidden once one is used */
+  yields: boolean
+}
+
+// The gamepads each emulator reads besides the real ones, by the place each takes among them
+const attachedGamepads = new WeakMap<object, Map<number, AttachedGamepad>>()
+
+/** The gamepads attached to `emulator`, which from the first one on are added to the ones it reads each frame */
+function getAttachedGamepads(emulator: Nostalgist) {
   const { JSEvents } = emulator.getEmscripten() as { JSEvents?: Record<string, unknown> }
   if (!JSEvents) {
     return
   }
-  function withGamepad(gamepads: (Gamepad | null)[] | null | undefined) {
+  const known = attachedGamepads.get(JSEvents)
+  if (known) {
+    return known
+  }
+  const attached = new Map<number, AttachedGamepad>()
+  attachedGamepads.set(JSEvents, attached)
+  function withAttached(gamepads: (Gamepad | null)[] | null | undefined) {
     const list: unknown[] = gamepads ? [...gamepads] : []
-    // A real controller in the first slot is the one being played with; the on-screen controls are hidden then
-    if (list[0]) {
-      return list
+    for (const [place, { gamepad, yields }] of attached) {
+      // A real controller in the on-screen controls' place is the one being played with
+      if (!(yields && list[place])) {
+        gamepad.timestamp = performance.now()
+        list[place] = gamepad
+      }
     }
-    gamepad.timestamp = performance.now()
-    list[0] = gamepad
     return list
   }
   // Each frame the emulator stores what navigator.getGamepads() returns here, then reads its gamepads from it
@@ -340,14 +352,66 @@ export function attachGamepad(emulator: Nostalgist, gamepad: EmulatorGamepad) {
     configurable: true,
     get: () => gamepads,
     set: (value) => {
-      gamepads = withGamepad(value)
+      gamepads = withAttached(value)
     },
   })
-  // The emulator only starts reading a gamepad once it's told one is connected. A real GamepadEvent can't carry an
-  // object that isn't a real gamepad, so a plain event with the same shape is sent; the emulator only reads its gamepad
-  const event = new Event('gamepadconnected')
+  return attached
+}
+
+// The emulator only starts reading a gamepad once it's told one is connected, and stops when told it's gone. A real
+// GamepadEvent can't carry an object that isn't a real gamepad, so a plain event with the same shape is sent; the
+// emulator only reads its gamepad
+function announceGamepad(type: 'gamepadconnected' | 'gamepaddisconnected', gamepad: EmulatorGamepad) {
+  const event = new Event(type)
   Object.defineProperty(event, 'gamepad', { value: gamepad })
   globalThis.dispatchEvent(event)
+}
+
+/**
+ * Lets the emulator read `gamepad` as its first controller, unless a real controller is there. It's added to the
+ * gamepads the emulator reads each frame, not to navigator.getGamepads(), so the rest of the page doesn't take it for a
+ * real controller
+ */
+export function attachGamepad(emulator: Nostalgist, gamepad: EmulatorGamepad) {
+  const attached = getAttachedGamepads(emulator)
+  if (!attached) {
+    return
+  }
+  gamepad.index = 0
+  attached.set(0, { gamepad, yields: true })
+  announceGamepad('gamepadconnected', gamepad)
+}
+
+// The emulator reads four controllers: the first is the player at this device, the rest can be someone else's
+const lastPlace = 3
+
+/**
+ * Lets the emulator read `gamepad` as another player's controller: the second, third or fourth, in the first of those
+ * places no controller has. The first is left to whoever plays at this device, keyboard or controller. Returns a
+ * function that takes it away again, or nothing when every place is taken
+ */
+export function attachPlayerGamepad(emulator: Nostalgist, gamepad: EmulatorGamepad) {
+  const attached = getAttachedGamepads(emulator)
+  if (!attached) {
+    return
+  }
+  const real = globalThis.navigator?.getGamepads?.() ?? []
+  let place = 1
+  while (place <= lastPlace && (attached.has(place) || real[place])) {
+    place += 1
+  }
+  if (place > lastPlace) {
+    return
+  }
+  gamepad.index = place
+  attached.set(place, { gamepad, yields: false })
+  announceGamepad('gamepadconnected', gamepad)
+  return () => {
+    if (attached.get(place)?.gamepad === gamepad) {
+      attached.delete(place)
+      announceGamepad('gamepaddisconnected', gamepad)
+    }
+  }
 }
 
 /**

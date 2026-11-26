@@ -7,6 +7,7 @@ import { Gamepad } from '#@/utils/client/gamepad.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 import { GameOverlayContent } from './game-overlay-content.tsx'
 import { GameOverlayController } from './game-overlay-controller.tsx'
+import { PlayTogetherLifetime } from './game-overlay-play-together.tsx'
 import { GameOverlayVirtualGamepad } from './game-overlay-virtual-gamepad.tsx'
 import { PerfReadout } from './perf-readout.tsx'
 
@@ -52,11 +53,14 @@ export function GameOverlay() {
   useEffect(() => Gamepad.onPress(handleGamepadPress), [])
 
   return (
-    <div className='pointer-events-none fixed inset-0 z-10 overflow-hidden text-white *:pointer-events-auto *:absolute *:inset-0'>
-      <GameOverlayController />
-      <GameOverlayVirtualGamepad />
-      <PerfReadout />
-      <GameOverlayContent />
-    </div>
+    <>
+      <PlayTogetherLifetime />
+      <div className='pointer-events-none fixed inset-0 z-10 overflow-hidden text-white *:pointer-events-auto *:absolute *:inset-0'>
+        <GameOverlayController />
+        <GameOverlayVirtualGamepad />
+        <PerfReadout />
+        <GameOverlayContent />
+      </div>
+    </>
   )
 }

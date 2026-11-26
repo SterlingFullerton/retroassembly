@@ -6,6 +6,7 @@
 // first, so the volume set in the pause menu works the same for every emulator.
 const openAudioContexts = new Set<AudioContext>()
 const outputs = new Map<AudioContext, GainNode>()
+const entries = new Map<AudioContext, GainNode>()
 
 // The volume, from 0 to 100, and whether it's muted. Kept in this browser, so each device has its own
 const volumeStorageKey = 'retroassembly-volume'
@@ -46,14 +47,18 @@ if (typeof AudioContext === 'function' && !Reflect.get(AudioContext, 'tracked'))
       const output = this.createGain()
       output.gain.value = getGain(volume)
       output.connect(speakers)
+      // The game's sound as the emulator makes it, before the volume: what's sent to someone playing along elsewhere
+      const entry = this.createGain()
+      entry.connect(output)
       // Sound systems that ask how many channels the speakers have still get the answer
-      Object.defineProperty(output, 'maxChannelCount', { get: () => speakers.maxChannelCount })
+      Object.defineProperty(entry, 'maxChannelCount', { get: () => speakers.maxChannelCount })
       outputs.set(this, output)
+      entries.set(this, entry)
     }
 
-    // What the emulator connects to as the speakers is the volume control in front of them
+    // What the emulator connects to as the speakers is the way in to the volume control in front of them
     override get destination() {
-      return (outputs.get(this) ?? super.destination) as unknown as AudioDestinationNode
+      return (entries.get(this) ?? super.destination) as unknown as AudioDestinationNode
     }
   }
   globalThis.AudioContext = TrackedAudioContext
@@ -88,10 +93,36 @@ export function getAudioInfo() {
   }
 }
 
+/**
+ * The game's sound as a stream that can be sent elsewhere, taken before the volume, so turning this device down or
+ * muting it doesn't quieten it for anyone else. Nothing when no game is making sound. `stop()` lets go of it
+ */
+export function captureGameAudio() {
+  const context = [...openAudioContexts].findLast((candidate) => candidate.state !== 'closed')
+  const entry = context && entries.get(context)
+  if (!context || !entry) {
+    return
+  }
+  const tap = context.createMediaStreamDestination()
+  entry.connect(tap)
+  return {
+    stop() {
+      try {
+        entry.disconnect(tap)
+      } catch {}
+      for (const track of tap.stream.getTracks()) {
+        track.stop()
+      }
+    },
+    stream: tap.stream,
+  }
+}
+
 export async function closeAudioContexts() {
   const contexts = [...openAudioContexts]
   openAudioContexts.clear()
   outputs.clear()
+  entries.clear()
   const closing = contexts.filter((context) => context.state !== 'closed').map((context) => context.close())
   await Promise.allSettled(closing)
 }

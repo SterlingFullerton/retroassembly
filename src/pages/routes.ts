@@ -6,6 +6,7 @@ export const routes = {
   libraryFavorites: '/library/favorites',
   libraryHistory: '/library/history',
   libraryHome: '/library',
+  libraryJoin: '/library/join',
   libraryPlatform: '/library/platform/:platform',
   libraryPlatformRom: '/library/platform/:platform/rom/:fileName',
   libraryRoms: '/library/roms',
@@ -27,6 +28,8 @@ export default [
     route('consoles', 'routes/library-consoles.tsx'),
     route('favorites', 'routes/library-favorites.tsx'),
     route('history', 'routes/library-history.tsx'),
+    // A guest's side of a game played together: an experiment, reached only by its address
+    route('join', 'routes/library-join.tsx'),
     route('platform/:platform', 'routes/library-platform.tsx'),
     route('platform/:platform/rom/:fileName', 'routes/library-platform-rom.tsx'),
     // The settings: on their own the first section, or on a phone the list of them. A console has a page of its own under

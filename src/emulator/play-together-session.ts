@@ -1,0 +1,101 @@
+import type { Nostalgist } from 'nostalgist'
+import { createDeviceSwitch } from '#@/utils/client/device-switch.ts'
+import { invite } from './play-together-signal.ts'
+import { hostGame } from './play-together.ts'
+
+// The game this device is sharing, if it is: one at a time, from the moment the host asks for a code until they stop
+// or leave the game. It outlives the pause menu that started it, so it's kept here and not in the menu
+
+/** Playing together is an experiment, shown only on devices where it's switched on */
+export const playTogetherSwitch = createDeviceSwitch('retroassembly-play-together')
+
+export type Sharing =
+  | { stage: 'failed' | 'idle' | 'starting' }
+  /** Waiting for the guest to join by `code` */
+  | { code: string; stage: 'inviting' }
+  | { stage: 'connected' }
+
+let sharing: Sharing = { stage: 'idle' }
+let stop: (() => void) | undefined
+const listeners = new Set<() => void>()
+
+function set(next: Sharing) {
+  sharing = next
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+export function getSharing() {
+  return sharing
+}
+
+/** Calls `listener` whenever what's being shared changes, until the function it returns is called */
+export function subscribeSharing(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/** Stops sharing: the guest loses the game, and their controller is taken away. Nothing happens when nothing's shared */
+export function stopSharing() {
+  stop?.()
+  stop = undefined
+  if (sharing.stage !== 'idle') {
+    set({ stage: 'idle' })
+  }
+}
+
+interface ShareOptions {
+  /** The console's on-screen controls, by name */
+  controls: string
+  emulator: Nostalgist
+  title: string
+}
+
+/** Shares the game `emulator` runs with one guest, who joins by the code this arrives at */
+export async function startSharing({ controls, emulator, title }: ShareOptions) {
+  stopSharing()
+  set({ stage: 'starting' })
+  let stopped = false
+  let host: ReturnType<typeof hostGame> | undefined
+  let invitation: Awaited<ReturnType<typeof invite>> | undefined
+  stop = () => {
+    stopped = true
+    host?.close()
+    // Taken back in the background: nothing waits on it, and withdraw() answers for its own failures
+    // oxlint-disable-next-line typescript/no-floating-promises -- stopping can't wait, and it can't fail
+    invitation?.withdraw()
+  }
+  try {
+    host = hostGame({
+      canvas: emulator.getCanvas(),
+      emulator,
+      onGuest(connected) {
+        if (!stopped) {
+          // A guest who leaves ends the sharing: the code they joined by is spent
+          if (connected) {
+            set({ stage: 'connected' })
+          } else {
+            stopSharing()
+          }
+        }
+      },
+    })
+    const offer = await host.offer()
+    invitation = await invite({ controls, offer, title })
+    if (stopped) {
+      await invitation.withdraw()
+      return
+    }
+    set({ code: invitation.code, stage: 'inviting' })
+    await host.accept(await invitation.answer)
+  } catch {
+    if (!stopped) {
+      stop()
+      stop = undefined
+      set({ stage: 'failed' })
+    }
+  }
+}

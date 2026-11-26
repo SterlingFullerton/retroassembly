@@ -77,6 +77,19 @@ export interface ApiRoutes {
     }
     login: { $get: Endpoint<{ query?: { error?: string; redirect_to?: string } }, LoginPageData> }
   }
+  play_together: {
+    invitations: {
+      ':code': {
+        $delete: Endpoint<{ param: { code: string } }, null>
+        $get: Endpoint<{ param: { code: string } }, { controls: string; offer: string; title: string }>
+        answer: {
+          $get: Endpoint<{ param: { code: string } }, { answer: string } | null>
+          $post: Endpoint<{ json: { answer: string }; param: { code: string } }, true>
+        }
+      }
+      $post: Endpoint<{ json: { controls: string; offer: string; title: string } }, { code: string }>
+    }
+  }
   preference: {
     $get: Endpoint<NoInput, Preference>
     $post: Endpoint<{ json: PreferenceSnippet }, Preference>

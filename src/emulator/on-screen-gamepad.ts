@@ -35,6 +35,15 @@ export function connectTestOnScreenGamepad() {
   return running
 }
 
+/**
+ * For a guest in a game played together: an on-screen gamepad with no emulator here, which the controls write to and
+ * the guest's page reads, to send to the host
+ */
+export function connectGuestOnScreenGamepad() {
+  running = createOnScreenGamepad()
+  return running
+}
+
 /** Lets go of a session's on-screen gamepad when it exits */
 export function disconnectOnScreenGamepad(gamepad: EmulatorGamepad | undefined) {
   if (gamepad && running === gamepad) {

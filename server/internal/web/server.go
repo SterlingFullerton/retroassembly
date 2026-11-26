@@ -23,6 +23,7 @@ import (
 	"retroassembly/server/internal/preference"
 	"retroassembly/server/internal/psp"
 	"retroassembly/server/internal/shared"
+	"retroassembly/server/internal/together"
 )
 
 type Server struct {
@@ -45,6 +46,8 @@ type Server struct {
 	preference    *preference.Settings
 	// Failed sign-ins and sign-ins under way, by address and username
 	signIns *signInLimit
+	// Invitations to games being played together, waiting for a guest
+	together *together.Invitations
 	// The consoles whose game pages are sent with cross-origin isolation headers
 	threadedConsoles map[string]bool
 }
@@ -81,7 +84,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
-		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts),
+		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts), together: together.New(),
 		threadedConsoles: threaded,
 	}, nil
 }
@@ -206,41 +209,46 @@ func (s *Server) Handler() (http.Handler, error) {
 
 	api := http.NewServeMux()
 	for pattern, handler := range map[string]http.HandlerFunc{
-		"POST /api/v1/auth/login":                             s.login,
-		"POST /api/v1/auth/register":                          s.register,
-		"PATCH /api/v1/auth/password":                         s.updatePassword,
-		"GET /api/v1/users/current":                           s.currentUser,
-		"POST /api/v1/favorites":                              s.signedIn(s.addFavorite),
-		"DELETE /api/v1/favorites/{romId}":                    s.signedIn(s.removeFavorite),
-		"POST /api/v1/launch_records":                         s.signedIn(s.addLaunchRecord),
-		"DELETE /api/v1/roms/{id}/launch_records":             s.signedIn(s.removeLaunchRecords),
-		"GET /api/v1/preference":                              s.signedIn(s.getPreference),
-		"POST /api/v1/preference":                             s.signedIn(s.updatePreference),
-		"POST /api/v1/preference/bioses":                      s.signedIn(s.addBIOS),
-		"DELETE /api/v1/preference/bioses":                    s.signedIn(s.deleteBIOS),
-		"GET /api/v1/states":                                  s.signedIn(s.listStates),
-		"POST /api/v1/states":                                 s.signedIn(s.createState),
-		"DELETE /api/v1/states/{id}":                          s.signedIn(s.deleteState),
-		"GET /api/v1/roms/{id}/states":                        s.signedIn(s.listRomStates),
-		"GET /api/v1/game_saves":                              s.signedIn(s.listGameSaves),
-		"PATCH /api/v1/roms/{id}":                             s.signedIn(s.updateRom),
-		"GET /api/v1/users":                                   s.signedIn(s.listAccounts),
-		"POST /api/v1/users":                                  s.signedIn(s.addAccount),
-		"PATCH /api/v1/users/{id}":                            s.signedIn(s.updateAccount),
-		"POST /api/v1/users/current/delete":                   s.signedIn(s.deleteOwnAccount),
-		"GET /api/v1/sessions":                                s.signedIn(s.listSessions),
-		"DELETE /api/v1/sessions/others":                      s.signedIn(s.endOtherSessions),
-		"DELETE /api/v1/users/{id}":                           s.signedIn(s.deleteAccount),
-		"PUT /api/v1/users/{id}/password":                     s.signedIn(s.resetPassword),
-		"DELETE /api/v1/roms/{id}":                            s.signedIn(s.deleteRom),
-		"DELETE /api/v1/roms":                                 s.signedIn(s.deleteRoms),
-		"POST /api/v1/roms/{id}/boxart":                       s.signedIn(s.addBoxart),
-		"DELETE /api/v1/roms/{id}/boxart":                     s.signedIn(s.removeBoxart),
-		"POST /api/v1/roms/{id}/thumbnail":                    s.signedIn(s.addThumbnail),
-		"DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId...}": s.signedIn(s.removeThumbnail),
-		"POST /api/v1/game_saves":                             s.signedIn(s.createGameSave),
-		"POST /api/v1/game_saves/{id}/restore":                s.signedIn(s.restoreGameSave),
-		"POST /api/v1/roms":                                   s.signedIn(s.createRom),
+		"POST /api/v1/auth/login":                              s.login,
+		"POST /api/v1/auth/register":                           s.register,
+		"PATCH /api/v1/auth/password":                          s.updatePassword,
+		"GET /api/v1/users/current":                            s.currentUser,
+		"POST /api/v1/favorites":                               s.signedIn(s.addFavorite),
+		"DELETE /api/v1/favorites/{romId}":                     s.signedIn(s.removeFavorite),
+		"POST /api/v1/launch_records":                          s.signedIn(s.addLaunchRecord),
+		"DELETE /api/v1/roms/{id}/launch_records":              s.signedIn(s.removeLaunchRecords),
+		"GET /api/v1/preference":                               s.signedIn(s.getPreference),
+		"POST /api/v1/preference":                              s.signedIn(s.updatePreference),
+		"POST /api/v1/preference/bioses":                       s.signedIn(s.addBIOS),
+		"DELETE /api/v1/preference/bioses":                     s.signedIn(s.deleteBIOS),
+		"GET /api/v1/states":                                   s.signedIn(s.listStates),
+		"POST /api/v1/states":                                  s.signedIn(s.createState),
+		"DELETE /api/v1/states/{id}":                           s.signedIn(s.deleteState),
+		"GET /api/v1/roms/{id}/states":                         s.signedIn(s.listRomStates),
+		"GET /api/v1/game_saves":                               s.signedIn(s.listGameSaves),
+		"PATCH /api/v1/roms/{id}":                              s.signedIn(s.updateRom),
+		"GET /api/v1/users":                                    s.signedIn(s.listAccounts),
+		"POST /api/v1/users":                                   s.signedIn(s.addAccount),
+		"PATCH /api/v1/users/{id}":                             s.signedIn(s.updateAccount),
+		"POST /api/v1/users/current/delete":                    s.signedIn(s.deleteOwnAccount),
+		"GET /api/v1/sessions":                                 s.signedIn(s.listSessions),
+		"DELETE /api/v1/sessions/others":                       s.signedIn(s.endOtherSessions),
+		"DELETE /api/v1/users/{id}":                            s.signedIn(s.deleteAccount),
+		"PUT /api/v1/users/{id}/password":                      s.signedIn(s.resetPassword),
+		"DELETE /api/v1/roms/{id}":                             s.signedIn(s.deleteRom),
+		"DELETE /api/v1/roms":                                  s.signedIn(s.deleteRoms),
+		"POST /api/v1/roms/{id}/boxart":                        s.signedIn(s.addBoxart),
+		"DELETE /api/v1/roms/{id}/boxart":                      s.signedIn(s.removeBoxart),
+		"POST /api/v1/roms/{id}/thumbnail":                     s.signedIn(s.addThumbnail),
+		"DELETE /api/v1/roms/{id}/thumbnail/{thumbnailId...}":  s.signedIn(s.removeThumbnail),
+		"POST /api/v1/game_saves":                              s.signedIn(s.createGameSave),
+		"POST /api/v1/game_saves/{id}/restore":                 s.signedIn(s.restoreGameSave),
+		"POST /api/v1/roms":                                    s.signedIn(s.createRom),
+		"POST /api/v1/play_together/invitations":               s.signedIn(s.openInvitation),
+		"GET /api/v1/play_together/invitations/{code}":         s.signedIn(s.findInvitation),
+		"POST /api/v1/play_together/invitations/{code}/answer": s.signedIn(s.answerInvitation),
+		"GET /api/v1/play_together/invitations/{code}/answer":  s.signedIn(s.invitationAnswer),
+		"DELETE /api/v1/play_together/invitations/{code}":      s.signedIn(s.closeInvitation),
 	} {
 		api.Handle(pattern, compress(handler))
 	}
