@@ -35,8 +35,7 @@ export function UploadProgress({ progress, total }: Readonly<{ progress?: Upload
         <span className='font-medium'>
           {t('upload.filesProgress', { done: progress?.doneCount ?? 0, total })}
           {progress ? (
-            <span className='font-normal text-(--gray-11)'>
-              {' · '}
+            <span className='ml-3 font-normal text-(--gray-11)'>
               {t('upload.bytesProgress', {
                 sent: formatBytes(progress.doneBytes, language),
                 total: formatBytes(progress.totalBytes, language),
@@ -45,11 +44,11 @@ export function UploadProgress({ progress, total }: Readonly<{ progress?: Upload
           ) : null}
         </span>
         {progress?.speed ? (
-          <span className='text-(--gray-11) tabular-nums'>
-            {t('upload.speed', { speed: formatBytes(progress.speed, language) })}
-            {secondsLeft === undefined
-              ? null
-              : ` · ${t('upload.timeLeft', { time: formatDuration(secondsLeft, language) })}`}
+          <span className='flex gap-x-3 text-(--gray-11) tabular-nums'>
+            <span>{t('upload.speed', { speed: formatBytes(progress.speed, language) })}</span>
+            {secondsLeft === undefined ? null : (
+              <span>{t('upload.timeLeft', { time: formatDuration(secondsLeft, language) })}</span>
+            )}
           </span>
         ) : null}
       </div>

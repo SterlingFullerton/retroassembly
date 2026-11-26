@@ -283,9 +283,9 @@ export function GameOverlayShader() {
                   />
                 )}
               </span>
-              <span className='truncate text-sm text-white/75'>
-                {index + 1}
-                {inherited ? ` · ${t('settings.shaderSameAsAll')}` : ''}
+              <span className='flex min-w-0 gap-2 text-sm text-white/75'>
+                <span>{index + 1}</span>
+                {inherited ? <span className='truncate'>{t('settings.shaderSameAsAll')}</span> : null}
               </span>
             </span>
           </button>

@@ -118,10 +118,13 @@ export function UserTabContent({
   return (
     <Flex className={showOwn ? '' : 'py-4'} direction='column' gap='4'>
       {user.createdAt ? (
-        <Text className='opacity-70' size='2'>
-          {t('common.created')}: {ago(user.createdAt)}
-          {' · '}
-          {t('auth.lastActive')}: {user.lastActivityAt ? ago(user.lastActivityAt) : t('common.never')}
+        <Text className='flex flex-wrap gap-x-4 opacity-70' size='2'>
+          <span>
+            {t('common.created')}: {ago(user.createdAt)}
+          </span>
+          <span>
+            {t('auth.lastActive')}: {user.lastActivityAt ? ago(user.lastActivityAt) : t('common.never')}
+          </span>
         </Text>
       ) : null}
 

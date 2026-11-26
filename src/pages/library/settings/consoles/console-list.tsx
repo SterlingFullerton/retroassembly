@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { platformMap } from '#@/constants/platform.ts'
@@ -16,11 +17,14 @@ export function ConsoleList() {
     .map((name) => ({ name, text: t(platformMap[name].displayNameI18nKey) }))
     .toSorted((a, b) => a.text.localeCompare(b.text, i18n.language))
 
+  const listFormat = new Intl.ListFormat(i18n.language, { style: 'short', type: 'unit' })
+
   return (
     <div className='flex flex-col divide-y divide-(--gray-a4)' data-sn-section=''>
       {consoles.map(({ name, text }) => {
         const { biosMissing, differences } = getConsoleSummary(preference, name)
-        const summary = differences.map(({ key, text }) => (key ? t(key) : text)).join(' · ')
+        // A list in the language's own way: commas in English, its own marks elsewhere
+        const summary = listFormat.format(differences.map(({ key, text }) => (key ? t(key) : (text ?? ''))))
         return (
           <Link
             className='flex min-h-14 items-center gap-3 rounded py-2'
@@ -38,8 +42,9 @@ export function ConsoleList() {
             <span className='min-w-0 flex-1'>
               <span className='block truncate'>{text}</span>
               <span className='block truncate text-xs text-(--gray-11)'>
-                {biosMissing ? <span className='text-(--red-11)'>{t('settings.biosMissing')}</span> : null}
-                {biosMissing && summary ? ' · ' : null}
+                {biosMissing ? (
+                  <span className={clsx('text-(--red-11)', { 'mr-3': summary })}>{t('settings.biosMissing')}</span>
+                ) : null}
                 {summary || (biosMissing ? null : t('settings.defaultSettings'))}
               </span>
             </span>

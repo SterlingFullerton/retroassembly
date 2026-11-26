@@ -166,9 +166,9 @@ export function ShaderSwitcher({
                   type='button'
                 >
                   <span className='w-full truncate font-medium'>{name}</span>
-                  <span className='w-full truncate text-xs text-(--gray-11)'>
-                    {index + 1}
-                    {inherited ? ` · ${t('settings.shaderSameAsAll')}` : ''}
+                  <span className='flex w-full min-w-0 gap-2 text-xs text-(--gray-11)'>
+                    <span>{index + 1}</span>
+                    {inherited ? <span className='truncate'>{t('settings.shaderSameAsAll')}</span> : null}
                   </span>
                 </button>
                 <button
