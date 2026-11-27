@@ -14,7 +14,7 @@ import { PerfReadout } from './perf-readout.tsx'
 export function GameOverlay() {
   const keyboardMapping = useKeyboardMapping()
   const gamepadMapping = useGamepadMapping()
-  const { toggle } = useGameOverlay()
+  const { toggle, visible } = useGameOverlay()
   useFollowTouchControls()
 
   const handleKeydown = useEffectEvent(async (event: KeyboardEvent) => {
@@ -55,7 +55,12 @@ export function GameOverlay() {
   return (
     <>
       <PlayTogetherLifetime />
-      <div className='pointer-events-none fixed inset-0 z-10 overflow-hidden text-white *:pointer-events-auto *:absolute *:inset-0'>
+      {/* While the pause menu is open, the on-screen controls and the performance overlay are put away, so nothing shows
+          through it; the overlay's numbers are in its settings */}
+      <div
+        className='game-overlay-layer pointer-events-none fixed inset-0 z-10 overflow-hidden text-white *:pointer-events-auto *:absolute *:inset-0'
+        data-paused={visible ? '' : undefined}
+      >
         <GameOverlayController />
         <GameOverlayVirtualGamepad />
         <PerfReadout />

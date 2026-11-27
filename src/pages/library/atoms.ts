@@ -1,5 +1,6 @@
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { type CSSProperties, useMemo } from 'react'
+import type { PauseMenuPage } from './components/pause-menu/pause-menu.tsx'
 
 const focusIndicatorStyleAtom = atom<CSSProperties>({})
 export function useFocusIndicatorStyle() {
@@ -7,8 +8,8 @@ export function useFocusIndicatorStyle() {
 }
 
 export const showGameOverlayContentAtom = atom(false)
-// Which page of the pause menu is open: the menu itself, or its saves
-const gameOverlayPageAtom = atom<'main' | 'saves' | 'settings'>('main')
+// Which page of the pause menu is open: the menu itself, or one a step away
+const gameOverlayPageAtom = atom<PauseMenuPage>('main')
 export function useGameOverlayPage() {
   return useAtom(gameOverlayPageAtom)
 }

@@ -1,4 +1,3 @@
-import { ScrollArea } from '@radix-ui/themes'
 import { groupBy } from 'es-toolkit'
 import { useTranslation } from 'react-i18next'
 import { useGameStates } from '../hooks/use-game-states.ts'
@@ -12,43 +11,43 @@ export function GameStates() {
 
   return (
     <>
-      <h3 className='flex shrink-0 items-center gap-2 px-2 text-2xl font-semibold text-white'>
-        <span className='icon-[mdi--database] size-7' />
+      <h3 className='flex shrink-0 items-center gap-2 text-sm font-semibold tracking-wide text-white/70 uppercase'>
+        <span className='icon-[mdi--database] size-4' />
         {t('emulator.savedStates')}
       </h3>
-      <ScrollArea className='shrink-0 overflow-visible! lg:h-40! lg:overflow-hidden!' size='2'>
+      <div className='shrink-0'>
         {manual && manual.length > 0 ? (
-          <div className='flex flex-col flex-nowrap items-center gap-8 pb-4 lg:flex-row'>
+          <div className='grid grid-cols-2 gap-3'>
             {manual.map((state) => (
               <GameState key={state.id} state={state} />
             ))}
           </div>
         ) : (
-          <div className='flex items-center justify-center gap-2 py-10 text-lg text-neutral-400'>
+          <div className='flex items-center justify-center gap-2 py-6 text-sm text-neutral-400'>
             <span className='icon-[mdi--database-outline] text-2xl' />
             {t('empty.noSavedStates')}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
-      <h3 className='mt-2 flex shrink-0 items-center gap-2 px-2 text-2xl font-semibold text-white'>
-        <span className='icon-[mdi--timer] size-7' />
+      <h3 className='mt-2 flex shrink-0 items-center gap-2 text-sm font-semibold tracking-wide text-white/70 uppercase'>
+        <span className='icon-[mdi--timer] size-4' />
         {t('emulator.autoSavedStates')}
       </h3>
-      <ScrollArea className='shrink-0 overflow-visible! lg:h-40! lg:overflow-hidden!' size='2'>
+      <div className='shrink-0'>
         {auto && auto.length > 0 ? (
-          <div className='flex flex-col flex-nowrap items-center gap-8 pb-4 lg:flex-row'>
+          <div className='grid grid-cols-2 gap-3'>
             {auto.map((state) => (
               <GameState key={state.id} state={state} />
             ))}
           </div>
         ) : (
-          <div className='flex items-center justify-center gap-2 py-10 text-lg text-neutral-400'>
+          <div className='flex items-center justify-center gap-2 py-6 text-sm text-neutral-400'>
             <span className='icon-[mdi--timer-outline] text-2xl' />
             {t('empty.noAutoSavedStates')}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </>
   )
 }

@@ -68,10 +68,25 @@ export function getVolume() {
   return volume
 }
 
+const volumeListeners = new Set<(gain: number) => void>()
+
+/** Follows the volume as a gain from 0 to 1, starting with the one now, for sound played without the emulator, such as
+ * a game streamed from the server. Returns how to stop following it */
+export function followVolume(listener: (gain: number) => void) {
+  volumeListeners.add(listener)
+  listener(getGain(volume))
+  return () => {
+    volumeListeners.delete(listener)
+  }
+}
+
 export function applyVolume(newVolume: Volume) {
   volume = { level: Math.min(100, Math.max(0, Math.round(newVolume.level))), muted: newVolume.muted }
   for (const [context, output] of outputs) {
     output.gain.setTargetAtTime(getGain(volume), context.currentTime, 0.02)
+  }
+  for (const listener of volumeListeners) {
+    listener(getGain(volume))
   }
   try {
     globalThis.localStorage?.setItem(volumeStorageKey, JSON.stringify(volume))

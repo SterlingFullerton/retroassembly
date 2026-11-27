@@ -292,8 +292,25 @@ body:fullscreen:not(.overflow-hidden) {
 .game-overlay[data-peek] :has(> .game-overlay-shader) > :not(.game-overlay-shader) {
   opacity: 0.12;
 }
+/* The pause menu's panel goes clear too, and all of it but the shader fades back */
+.game-overlay[data-peek] :is(.pause-menu, .pause-panel) {
+  background: transparent;
+  backdrop-filter: none;
+  border-color: transparent;
+}
+.game-overlay[data-peek] .pause-menu > :not(.pause-panel),
+.game-overlay[data-peek] .pause-panel > :not(.pause-page-body) {
+  opacity: 0.12;
+}
 .game-overlay > *,
 .game-overlay :is(.game-overlay-title, .game-overlay-buttons, .game-overlay-peek-dim),
-.game-overlay :has(> .game-overlay-shader) > * {
+.game-overlay :has(> .game-overlay-shader) > *,
+.game-overlay .pause-menu > *,
+.game-overlay .pause-panel > * {
   transition: opacity 0.3s;
+}
+
+/* The pause menu open: only the menu shows over the game */
+.game-overlay-layer[data-paused] > :not(.game-overlay) {
+  visibility: hidden;
 }

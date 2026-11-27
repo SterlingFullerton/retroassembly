@@ -7,7 +7,7 @@ import { usePlayTogetherSwitch, useSharing } from '#@/pages/library/hooks/use-pl
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 
-// Playing together, from the host's side: in the pause menu's settings, a button that shares the running game and
+// Playing together, from the host's side: in the pause menu's Play together page, a button that shares the running game and
 // shows the code a guest joins by. An experiment, shown only where its switch is on, with its words in English
 
 const button =
@@ -49,7 +49,6 @@ export function GameOverlayPlayTogether() {
   const idle = sharing.stage === 'idle' || sharing.stage === 'failed'
   return (
     <section className='game-overlay-peek-dim flex flex-col gap-2' data-testid='play-together'>
-      <h3 className='text-sm font-semibold tracking-wide text-white/70 uppercase'>Play together</h3>
       {sharing.stage === 'inviting' && !sharing.listed ? (
         <div>
           <div className='text-sm text-white/70'>Code for the other player</div>

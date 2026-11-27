@@ -3,6 +3,7 @@ import { type PointerEvent as ReactPointerEvent, type SubmitEvent, useEffect, us
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
+import { followVolume } from '#@/emulator/audio.ts'
 import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
 import { isNASCode, stopNASGame } from '#@/emulator/nas-games.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
@@ -26,8 +27,10 @@ import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { getKeyNameFromCode } from '#@/pages/library/utils/keyboard.ts'
+import { cancel } from '#@/pages/library/utils/spatial-navigation.ts'
 import { routes } from '#@/pages/routes.ts'
-import { NASMenu } from './nas-menu.tsx'
+import { getRomGoodcodes } from '#@/utils/client/library.ts'
+import { ServerPauseMenu } from './server-pause-menu.tsx'
 
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
 // device's keys, controller or on-screen controls playing as the next player. An experiment, with its words in English
@@ -74,7 +77,7 @@ function findConsole(platform: string, core: string) {
 /** A game on the NAS's numbers, as a section of the performance overlay */
 function NASSection({ numbers }: Readonly<{ numbers: NASNumbers }>) {
   return (
-    <Section title='Game, on the NAS'>
+    <Section title='Game, on the server'>
       <Row label='frame rate'>{numbers.paused ? 'paused' : `${numbers.fps} fps`}</Row>
       <Row label='run, avg'>{numbers.runAvg.toFixed(1)} ms</Row>
       <Row label='run, max'>{numbers.runMax.toFixed(1)} ms</Row>
@@ -269,6 +272,17 @@ export default function JoinPage() {
   const playing = stage === 'playing'
   const layout = getPictureLayout(area)
 
+  // The game's sound plays as loud as the volume in the pause menu's settings, the same one games on this device use
+  useEffect(
+    () =>
+      followVolume((gain) => {
+        if (video.current) {
+          video.current.volume = gain
+        }
+      }),
+    [],
+  )
+
   // The game's console, where the host said: its keys are the ones the player plays it with in the browser, and its
   // controller is drawn with them in a NAS game's menu. Otherwise the shared keys play the standard buttons
   const platform = found?.invitation.platform
@@ -332,10 +346,15 @@ export default function JoinPage() {
     const abortController = new AbortController()
     function handleKey(event: KeyboardEvent) {
       const keyName = getKeyNameFromCode(event.code)
-      // The pause key opens and closes a game on the NAS's pause menu
+      // The pause key opens a game on the server's pause menu, and goes back in it: from a page to the menu, and from
+      // the menu to the game
       if (onNAS && event.type === 'keydown' && keyName === keyboard.$pause) {
         event.preventDefault()
-        setMenuOpen((open) => !open)
+        if (menuOpen) {
+          cancel()
+        } else {
+          setMenuOpen(true)
+        }
         return
       }
       // With the menu open, the keys move in it, and play nothing
@@ -382,6 +401,7 @@ export default function JoinPage() {
     setMenuOpen(false)
   }
 
+  // Ending the game goes back to where it was started from, its page, as exiting a game on this device does
   async function endGame() {
     try {
       await stopNASGame(joinedCode)
@@ -390,6 +410,7 @@ export default function JoinPage() {
     }
     setMenuOpen(false)
     setStage('ended')
+    await (globalThis.history.length > 1 ? navigate(-1) : navigate(routes.libraryHome))
   }
 
   async function leave() {
@@ -430,7 +451,7 @@ export default function JoinPage() {
         />
       </div>
 
-      {playing && touch && found ? (
+      {playing && touch && found && !menuOpen ? (
         <TestSessionProvider emulator={standIn}>
           <div className='pointer-events-none absolute inset-0 *:pointer-events-auto'>
             <ConsoleControls kind={found.invitation.controls} />
@@ -440,7 +461,7 @@ export default function JoinPage() {
 
       {/* The performance overlay's stream numbers, and a game on the NAS's own, where this device has it switched on.
           They take no touches */}
-      {playing && perfOverlay && (stream || nasNumbers) ? (
+      {playing && perfOverlay && (stream || nasNumbers) && !menuOpen ? (
         <div className='pointer-events-none absolute inset-0'>
           <div className={readoutBox} data-testid='guest-stream'>
             {nasNumbers ? <NASSection numbers={nasNumbers} /> : null}
@@ -457,15 +478,16 @@ export default function JoinPage() {
       ) : null}
 
       {playing && onNAS && menuOpen && found ? (
-        <NASMenu
+        <ServerPauseMenu
           code={joinedCode}
+          onClose={() => setMenuOpen(false)}
           onEnd={endGame}
           onLeave={leave}
           onRestart={restart}
-          onResume={() => setMenuOpen(false)}
           pad={padKeys}
+          players={nasNumbers?.players}
           startedHere={startedHere}
-          title={found.invitation.title}
+          title={getRomGoodcodes({ fileName: found.invitation.title, platform: found.invitation.platform }).rom}
         />
       ) : null}
 
@@ -541,7 +563,7 @@ export default function JoinPage() {
         </div>
       )}
 
-      {playing && onNAS ? (
+      {playing && onNAS && !menuOpen ? (
         <button
           aria-label='Pause'
           className='top-safe-offset-2 right-safe-offset-14 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
@@ -554,15 +576,17 @@ export default function JoinPage() {
         </button>
       ) : null}
 
-      <button
-        aria-label='Leave'
-        className='top-safe-offset-2 right-safe-offset-2 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
-        data-sn-enabled
-        onClick={leave}
-        type='button'
-      >
-        <span className='icon-[mdi--close] size-6' />
-      </button>
+      {menuOpen ? null : (
+        <button
+          aria-label='Leave'
+          className='top-safe-offset-2 right-safe-offset-2 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
+          data-sn-enabled
+          onClick={leave}
+          type='button'
+        >
+          <span className='icon-[mdi--close] size-6' />
+        </button>
+      )}
     </div>
   )
 }
