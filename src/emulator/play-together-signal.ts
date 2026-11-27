@@ -8,10 +8,13 @@ import { client, parseResponse } from '#@/api/client.ts'
 export interface Invitation {
   /** The console's on-screen controls, by name, for a guest on a touch screen */
   controls: string
+  /** The emulator the game is played with, and its console: the guest's keys are the ones they'd play it with */
+  core?: string
   /** The host's name */
   host?: string
   /** The host's offer */
   offer: string
+  platform?: string
   /** The game's name */
   title: string
 }

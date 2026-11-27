@@ -28,10 +28,16 @@ func (s *Server) openInvitation(w http.ResponseWriter, r *http.Request, scope li
 	offer, present := object["offer"]
 	title, titlePresent := object["title"]
 	controls, controlsPresent := object["controls"]
+	core, corePresent := object["core"]
+	platform, platformPresent := object["platform"]
 	// Shown to everyone signed in unless the host asks for a code
 	listed, isBool := object["listed"].(bool)
+	coreName, _ := check.OptionalString("core", core, corePresent, 0, 64)
+	platformName, _ := check.OptionalString("platform", platform, platformPresent, 0, 64)
 	invitation := together.Invitation{
 		Controls: check.String("controls", controls, controlsPresent, 0),
+		Core:     coreName,
+		Platform: platformName,
 		Host:     scope.User.Username,
 		Listed:   listed || !isBool,
 		Offer:    check.String("offer", offer, present, 1),

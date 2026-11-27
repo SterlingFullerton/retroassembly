@@ -97,7 +97,9 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 		return
 	}
 	s.nasPlaces.Store(nasPlaceKey(code, scope), player)
-	writeJSON(w, http.StatusOK, together.Invitation{Controls: game.Controls, Host: "NAS", Offer: offer, Title: game.Title})
+	writeJSON(w, http.StatusOK, together.Invitation{
+		Controls: game.Controls, Core: game.Core, Host: "NAS", Offer: offer, Platform: game.Platform, Title: game.Title,
+	})
 }
 
 func (s *Server) answerNASInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope, code, id, answer string) {

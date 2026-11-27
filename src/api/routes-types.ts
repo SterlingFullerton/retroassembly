@@ -100,14 +100,20 @@ export interface ApiRoutes {
     invitations: {
       ':code': {
         $delete: Endpoint<{ param: { code: string } }, null>
-        $get: Endpoint<{ param: { code: string } }, { controls: string; host: string; offer: string; title: string }>
+        $get: Endpoint<
+          { param: { code: string } },
+          { controls: string; core?: string; host: string; offer: string; platform?: string; title: string }
+        >
         answer: {
           $get: Endpoint<{ param: { code: string } }, { answer: string } | null>
           $post: Endpoint<{ json: { answer: string }; param: { code: string } }, true>
         }
       }
       $get: Endpoint<NoInput, { code: string; controls: string; host: string; title: string }[]>
-      $post: Endpoint<{ json: { controls: string; listed: boolean; offer: string; title: string } }, { code: string }>
+      $post: Endpoint<
+        { json: { controls: string; core?: string; listed: boolean; offer: string; platform?: string; title: string } },
+        { code: string }
+      >
     }
     address: { $get: Endpoint<NoInput, { address: string }> }
   }

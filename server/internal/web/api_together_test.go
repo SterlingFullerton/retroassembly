@@ -15,7 +15,9 @@ func TestPlayingTogether(t *testing.T) {
 	var opened struct {
 		Code string `json:"code"`
 	}
-	invitation := map[string]string{"controls": "nes", "offer": "the offer", "title": "Balloon Fight"}
+	invitation := map[string]string{
+		"controls": "nes", "core": "fceumm", "offer": "the offer", "platform": "nes", "title": "Balloon Fight",
+	}
 	host.expectJSON(http.StatusOK, &opened, host.json(http.MethodPost, "/api/v1/play_together/invitations", invitation))
 	if len(opened.Code) != 6 {
 		t.Fatalf("code %q", opened.Code)
@@ -27,7 +29,8 @@ func TestPlayingTogether(t *testing.T) {
 
 	var found map[string]string
 	guest.expectJSON(http.StatusOK, &found, guest.get(path))
-	if found["offer"] != "the offer" || found["title"] != "Balloon Fight" || found["controls"] != "nes" {
+	if found["offer"] != "the offer" || found["title"] != "Balloon Fight" || found["controls"] != "nes" ||
+		found["platform"] != "nes" || found["core"] != "fceumm" {
 		t.Fatalf("found %+v", found)
 	}
 	guest.expect(http.StatusNotFound, guest.get("/api/v1/play_together/invitations/NOSUCH"))

@@ -39,6 +39,9 @@ var (
 type Invitation struct {
 	// The console's on-screen controls, by name, for a guest on a touch screen
 	Controls string `json:"controls"`
+	// The console and the emulator the game is played with, for the guest's keys to be the ones they'd play it with
+	Core     string `json:"core,omitempty"`
+	Platform string `json:"platform,omitempty"`
 	// The host's name, for a guest choosing among games
 	Host  string `json:"host"`
 	Offer string `json:"offer"`

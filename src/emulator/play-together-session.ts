@@ -63,12 +63,15 @@ export function stopSharing() {
 interface ShareOptions {
   /** The console's on-screen controls, by name */
   controls: string
+  /** The emulator, and its console, for the guest's keys */
+  core: string
   emulator: Nostalgist
+  platform: string
   title: string
 }
 
 /** Shares the game `emulator` runs with one guest, who joins by the code this arrives at */
-export async function startSharing({ controls, emulator, title }: ShareOptions) {
+export async function startSharing({ controls, core, emulator, platform, title }: ShareOptions) {
   stopSharing()
   set({ stage: 'starting' })
   let stopped = false
@@ -101,7 +104,7 @@ export async function startSharing({ controls, emulator, title }: ShareOptions) 
     })
     ;({ connection } = host)
     const offer = await host.offer()
-    invitation = await invite({ controls, offer, title }, listed)
+    invitation = await invite({ controls, core, offer, platform, title }, listed)
     if (stopped) {
       await invitation.withdraw()
       return

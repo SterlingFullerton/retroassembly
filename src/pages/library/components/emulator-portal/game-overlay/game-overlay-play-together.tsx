@@ -38,7 +38,9 @@ export function GameOverlayPlayTogether() {
     if (emulator && rom) {
       await startSharing({
         controls: resolveConsole(rom.platform, core).controls,
+        core,
         emulator,
+        platform: rom.platform,
         title: getRomGoodcodes(rom).rom,
       })
     }

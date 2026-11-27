@@ -1,14 +1,18 @@
 import { clsx } from 'clsx'
-import { type SubmitEvent, useEffect, useRef, useState } from 'react'
+import { type SubmitEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
+import { resolveConsole } from '#@/consoles/registry.ts'
 import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
 import { isNASCode, stopNASGame } from '#@/emulator/nas-games.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
 import { encodePadState, joinGame, type NASCommand, type NASNumbers } from '#@/emulator/play-together.ts'
-import { getKeyButtons, mergePads } from '#@/input/guest-pad.ts'
+import { getConsoleKeys } from '#@/input/console-keys.ts'
+import { getConsoleKeyInputs, getKeyButtons, type KeyInputs, mergePads, stickAxes } from '#@/input/guest-pad.ts'
+import { getPadKeys } from '#@/input/pad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
+import { useSpatialNavigationPaused } from '#@/pages/library/atoms.ts'
 import { TestSessionProvider } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { ConsoleControls } from '#@/pages/library/components/emulator-portal/game-overlay/console-controls.tsx'
 import {
@@ -19,6 +23,7 @@ import {
 } from '#@/pages/library/components/emulator-portal/game-overlay/perf-readout.tsx'
 import { useKeyboardMapping } from '#@/pages/library/hooks/use-keyboard-mapping.ts'
 import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
+import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { getKeyNameFromCode } from '#@/pages/library/utils/keyboard.ts'
 import { routes } from '#@/pages/routes.ts'
@@ -57,6 +62,15 @@ function getController() {
   return [...(navigator.getGamepads?.() ?? [])].find((gamepad) => gamepad?.connected)
 }
 
+/** A console by name, with its emulator; nothing for one this app doesn't know */
+function findConsole(platform: string, core: string) {
+  try {
+    return resolveConsole(platform, core)
+  } catch {
+    return undefined
+  }
+}
+
 /** A game on the NAS's numbers, as a section of the performance overlay */
 function NASSection({ numbers }: Readonly<{ numbers: NASNumbers }>) {
   return (
@@ -79,6 +93,7 @@ export default function JoinPage() {
   const startedHere = searchParams.get('started') === '1'
   const onNAS = isNASCode(joinedCode)
   const [menuOpen, setMenuOpen] = useState(false)
+  const { preference } = usePreference()
   const [nasNumbers, setNASNumbers] = useState<NASNumbers>()
   const sendCommand = useRef<(command: NASCommand) => void>(undefined)
   const keyboard = useKeyboardMapping()
@@ -96,6 +111,9 @@ export default function JoinPage() {
   const video = useRef<HTMLVideoElement>(null)
   // Everything this device is playing with: keys held, on-screen buttons held, and the on-screen sticks
   const keysHeld = useRef(new Set<RetroPadButton>())
+  // Keys held that push a stick, such as the N64's arrows
+  const stickKeysHeld = useRef(new Set<string>())
+  const keyInputsSent = useRef<KeyInputs>({ buttons: new Map(), sticks: new Map() })
   const touchHeld = useRef(new Set<RetroPadButton>())
   // eslint-disable-next-line react/hook-use-state -- made once, and never changed
   const [onScreen] = useState(connectGuestOnScreenGamepad)
@@ -219,7 +237,8 @@ export default function JoinPage() {
       let lastSent = ''
       let lastSentAt = 0
       timer = setInterval(() => {
-        const pad = mergePads([...keysHeld.current, ...touchHeld.current], [getController(), onScreen])
+        const keyStick = { axes: stickAxes(stickKeysHeld.current, keyInputsSent.current.sticks) }
+        const pad = mergePads([...keysHeld.current, ...touchHeld.current], [keyStick, getController(), onScreen])
         const state = encodePadState(pad).join(',')
         const now = performance.now()
         if (state !== lastSent || now - lastSentAt >= resendEvery) {
@@ -246,27 +265,72 @@ export default function JoinPage() {
 
   const playing = stage === 'playing'
   const layout = getPictureLayout(area)
+
+  // The game's console, where the host said: its keys are the ones the player plays it with in the browser, and its
+  // controller is drawn with them in a NAS game's menu. Otherwise the shared keys play the standard buttons
+  const platform = found?.invitation.platform
+  const core = found?.invitation.core
+  const gameConsole = useMemo(() => (platform && core ? findConsole(platform, core) : undefined), [platform, core])
+  const ownKeys = platform
+    ? preference.input.consoleKeys?.[platform as keyof typeof preference.input.consoleKeys]
+    : undefined
+  const keyInputs = useMemo<KeyInputs>(
+    () =>
+      gameConsole
+        ? getConsoleKeyInputs(getConsoleKeys(gameConsole, keyboard, ownKeys))
+        : { buttons: getKeyButtons(keyboard), sticks: new Map() },
+    [gameConsole, keyboard, ownKeys],
+  )
+  // For the loop that sends the controller, which outlives a render
+  useEffect(() => {
+    keyInputsSent.current = keyInputs
+  }, [keyInputs])
+  const padKeys = gameConsole ? getPadKeys(gameConsole, keyboard, { own: ownKeys }) : undefined
+
+  // While the game is played, the arrows and Enter are the game's, not the page's: the highlight moving between the
+  // page's buttons stands still, as it does in a game played in the browser. A NAS game's open menu has them back
+  const [, setNavigationPaused] = useSpatialNavigationPaused()
+  useEffect(() => {
+    setNavigationPaused(playing && !menuOpen)
+    return () => setNavigationPaused(false)
+  }, [playing, menuOpen, setNavigationPaused])
+
   useEffect(() => {
     if (!playing) {
       return
     }
-    const keys = getKeyButtons(keyboard)
+    const { buttons, sticks } = keyInputs
     const held = keysHeld.current
+    const stickHeld = stickKeysHeld.current
     const abortController = new AbortController()
     function handleKey(event: KeyboardEvent) {
+      const keyName = getKeyNameFromCode(event.code)
       // The pause key opens and closes a game on the NAS's pause menu
-      if (onNAS && event.type === 'keydown' && getKeyNameFromCode(event.code) === keyboard.$pause) {
+      if (onNAS && event.type === 'keydown' && keyName === keyboard.$pause) {
         event.preventDefault()
         setMenuOpen((open) => !open)
         return
       }
-      const button = keys.get(getKeyNameFromCode(event.code))
+      // With the menu open, the keys move in it, and play nothing
+      if (menuOpen) {
+        return
+      }
+      const button = buttons.get(keyName)
+      const stick = sticks.has(keyName)
+      const down = event.type === 'keydown'
       if (button) {
         event.preventDefault()
-        if (event.type === 'keydown') {
+        if (down) {
           held.add(button)
         } else {
           held.delete(button)
+        }
+      } else if (stick) {
+        event.preventDefault()
+        if (down) {
+          stickHeld.add(keyName)
+        } else {
+          stickHeld.delete(keyName)
         }
       }
     }
@@ -275,8 +339,9 @@ export default function JoinPage() {
     return () => {
       abortController.abort()
       held.clear()
+      stickHeld.clear()
     }
-  }, [playing, keyboard, onNAS])
+  }, [playing, keyboard, keyInputs, onNAS, menuOpen])
 
   // The menu pauses the game while it's open, for everyone in it
   useEffect(() => {
@@ -362,6 +427,7 @@ export default function JoinPage() {
           onLeave={leave}
           onRestart={restart}
           onResume={() => setMenuOpen(false)}
+          pad={padKeys}
           startedHere={startedHere}
           title={found.invitation.title}
         />

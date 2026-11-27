@@ -123,7 +123,7 @@ func TestGamesOnTheNAS(t *testing.T) {
 	guest.expect(http.StatusGone, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "early"}))
 	var found map[string]string
 	guest.expectJSON(http.StatusOK, &found, guest.get(path))
-	if found["offer"] != "the NAS's offer" || found["host"] != "NAS" {
+	if found["offer"] != "the NAS's offer" || found["host"] != "NAS" || found["core"] != "fceumm" {
 		t.Fatalf("found %+v", found)
 	}
 	guest.expect(http.StatusOK, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "the answer"}))

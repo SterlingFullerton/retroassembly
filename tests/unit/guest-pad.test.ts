@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { resolveConsole } from '#@/consoles/registry.ts'
 import { defaultPreference } from '#@/constants/preference.ts'
-import { getKeyButtons, mergePads, standardButton } from '#@/input/guest-pad.ts'
+import { getConsoleKeys } from '#@/input/console-keys.ts'
+import { getConsoleKeyInputs, getKeyButtons, mergePads, standardButton, stickAxes } from '#@/input/guest-pad.ts'
 import { retroPadButtons } from '#@/input/retropad.ts'
 
 function heldIn(pad: { buttons: { pressed: boolean }[] }) {
@@ -53,5 +55,37 @@ await describe('a guest’s controller', async () => {
   await it('leaves a stick at rest when nothing pushes it past a tenth', () => {
     assert.deepEqual(mergePads([], [source([], [0.09, -0.09, 0, 0])]).axes, [0, 0, 0, 0])
     assert.deepEqual(mergePads([], [undefined, {}]).axes, [0, 0, 0, 0])
+  })
+})
+
+await describe('a guest’s keys for the console of the game they join', async () => {
+  const keyboard = defaultPreference.input.keyboardMapping
+
+  await it('move the N64’s stick with the arrows, as in the browser', () => {
+    const { buttons, sticks } = getConsoleKeyInputs(getConsoleKeys(resolveConsole('n64', 'mupen64plus_next'), keyboard))
+    assert.deepEqual(sticks.get('left'), [0, -1])
+    assert.deepEqual(sticks.get('right'), [0, 1])
+    assert.deepEqual(sticks.get('up'), [1, -1])
+    assert.deepEqual(sticks.get('down'), [1, 1])
+    // The arrows push the stick, not the D-pad
+    assert.equal(buttons.get('up'), undefined)
+    assert.equal(buttons.get('enter'), 'start')
+  })
+
+  await it('play the D-pad with the arrows where the console has no stick', () => {
+    const { buttons, sticks } = getConsoleKeyInputs(getConsoleKeys(resolveConsole('nes', 'fceumm'), keyboard))
+    assert.equal(buttons.get('up'), 'up')
+    assert.equal(sticks.get('up'), undefined)
+  })
+
+  await it('push the stick as far as the keys held say, and no further', () => {
+    const sticks = new Map<string, [number, number]>([
+      ['left', [0, -1]],
+      ['right', [0, 1]],
+      ['up', [1, -1]],
+    ])
+    assert.deepEqual(stickAxes(['left', 'up'], sticks), [-1, -1, 0, 0])
+    assert.deepEqual(stickAxes(['left', 'right'], sticks), [0, 0, 0, 0])
+    assert.deepEqual(mergePads([], [{ axes: stickAxes(['right'], sticks) }]).axes, [1, 0, 0, 0])
   })
 })

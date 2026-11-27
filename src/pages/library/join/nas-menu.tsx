@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getNASStatePicture, listNASStates, loadNASState, type NASState, saveNASState } from '#@/emulator/nas-games.ts'
+import type { PadKeys } from '#@/input/pad.ts'
+import { PadView } from '#@/pages/library/components/emulator-portal/game-overlay/keyboard-pad.tsx'
+import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 
 // The pause menu of a game on the NAS, which pauses it for everyone in it while it's open. Its save states are the
 // NAS's own, kept for whoever started the game: the NAS's emulators are other builds than the browser's, and their
@@ -26,6 +29,7 @@ export function NASMenu({
   onLeave,
   onRestart,
   onResume,
+  pad,
   startedHere,
   title,
 }: Readonly<{
@@ -34,6 +38,8 @@ export function NASMenu({
   onLeave: () => void
   onRestart: () => void
   onResume: () => void
+  /** The console's controller with the keys that play it, drawn below the menu on a computer */
+  pad?: PadKeys
   startedHere: boolean
   title: string
 }>) {
@@ -41,6 +47,8 @@ export function NASMenu({
   const [saving, setSaving] = useState<Saving>('idle')
   const [states, setStates] = useState<NASState[]>()
   const [loadFailed, setLoadFailed] = useState(false)
+  // With a controller, the keys aren't what's played with
+  const { connected } = useGamepads()
 
   // "Saved" for a moment, then the button is itself again
   useEffect(() => {
@@ -90,63 +98,70 @@ export function NASMenu({
       data-testid='nas-menu'
     >
       {view === 'main' ? (
-        <div className='flex w-full max-w-xs flex-col items-stretch gap-3 p-6'>
-          <p className='mb-2 text-center text-lg font-semibold'>{title}</p>
-          <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onResume} type='button'>
-            <span className='icon-[mdi--play] size-6 shrink-0' />
-            Resume
-          </button>
-          <button
-            className={pill}
-            data-sn-enabled
-            data-sn-focus-style={focusStyle}
-            data-testid='nas-save'
-            disabled={saving === 'saving'}
-            onClick={save}
-            type='button'
-          >
-            <span
-              className={
-                saving === 'saving'
-                  ? 'icon-[svg-spinners--180-ring] size-6 shrink-0'
-                  : 'icon-[mdi--content-save] size-6 shrink-0'
-              }
-            />
-            {{ failed: 'Couldn’t save', idle: 'Save', saved: 'Saved', saving: 'Saving' }[saving]}
-          </button>
-          <button
-            className={pill}
-            data-sn-enabled
-            data-sn-focus-style={focusStyle}
-            data-testid='nas-load'
-            onClick={showStates}
-            type='button'
-          >
-            <span className='icon-[mdi--history] size-6 shrink-0' />
-            Load
-          </button>
-          <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onRestart} type='button'>
-            <span className='icon-[mdi--restart] size-6 shrink-0' />
-            Restart
-          </button>
-          {startedHere ? (
+        <div className='flex max-h-full w-full flex-col items-center gap-8 overflow-auto p-6'>
+          <div className='flex w-full max-w-xs flex-col items-stretch gap-3'>
+            <p className='mb-2 text-center text-lg font-semibold'>{title}</p>
+            <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onResume} type='button'>
+              <span className='icon-[mdi--play] size-6 shrink-0' />
+              Resume
+            </button>
             <button
               className={pill}
               data-sn-enabled
               data-sn-focus-style={focusStyle}
-              data-testid='nas-end'
-              onClick={onEnd}
+              data-testid='nas-save'
+              disabled={saving === 'saving'}
+              onClick={save}
               type='button'
             >
-              <span className='icon-[mdi--stop] size-6 shrink-0' />
-              End game
+              <span
+                className={
+                  saving === 'saving'
+                    ? 'icon-[svg-spinners--180-ring] size-6 shrink-0'
+                    : 'icon-[mdi--content-save] size-6 shrink-0'
+                }
+              />
+              {{ failed: 'Couldn’t save', idle: 'Save', saved: 'Saved', saving: 'Saving' }[saving]}
             </button>
-          ) : (
-            <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onLeave} type='button'>
-              <span className='icon-[mdi--exit-to-app] size-6 shrink-0' />
-              Leave
+            <button
+              className={pill}
+              data-sn-enabled
+              data-sn-focus-style={focusStyle}
+              data-testid='nas-load'
+              onClick={showStates}
+              type='button'
+            >
+              <span className='icon-[mdi--history] size-6 shrink-0' />
+              Load
             </button>
-          )}
+            <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onRestart} type='button'>
+              <span className='icon-[mdi--restart] size-6 shrink-0' />
+              Restart
+            </button>
+            {startedHere ? (
+              <button
+                className={pill}
+                data-sn-enabled
+                data-sn-focus-style={focusStyle}
+                data-testid='nas-end'
+                onClick={onEnd}
+                type='button'
+              >
+                <span className='icon-[mdi--stop] size-6 shrink-0' />
+                End game
+              </button>
+            ) : (
+              <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={onLeave} type='button'>
+                <span className='icon-[mdi--exit-to-app] size-6 shrink-0' />
+                Leave
+              </button>
+            )}
+          </div>
+          {pad && !connected ? (
+            <div className='hidden w-full lg:block'>
+              <PadView pad={pad} />
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className='flex max-h-full w-full max-w-2xl flex-col gap-4 overflow-auto p-6' data-testid='nas-states'>

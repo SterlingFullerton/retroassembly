@@ -47,6 +47,56 @@ export function getKeyButtons(keyboard: Record<string, string>) {
   return keys
 }
 
+// The stick inputs, as RetroArch names them, and the axis and way each pushes: up and left are the negative ends
+const stickInputs: Record<string, [axis: number, value: number]> = {
+  l_x_minus: [0, -1],
+  l_x_plus: [0, 1],
+  l_y_minus: [1, -1],
+  l_y_plus: [1, 1],
+  r_x_minus: [2, -1],
+  r_x_plus: [2, 1],
+  r_y_minus: [3, -1],
+  r_y_plus: [3, 1],
+}
+
+/** What each key plays, from a console's keys as RetroArch settings: a button, or a stick pushed one way */
+export interface KeyInputs {
+  buttons: Map<string, RetroPadButton>
+  sticks: Map<string, [axis: number, value: number]>
+}
+
+/**
+ * The keys of a console's game, as the player plays it in the browser: their keyboard settings, the console's own
+ * layout (the N64's arrows move its stick) and the keys they've chosen for that console
+ */
+export function getConsoleKeyInputs(settings: Record<string, string>): KeyInputs {
+  const inputs: KeyInputs = { buttons: new Map(), sticks: new Map() }
+  for (const [setting, key] of Object.entries(settings)) {
+    if (!key || !setting.startsWith(keySettingPrefix)) {
+      continue
+    }
+    const name = setting.slice(keySettingPrefix.length)
+    if (name in stickInputs) {
+      inputs.sticks.set(key, stickInputs[name])
+    } else if (name in standardButton) {
+      inputs.buttons.set(key, name as RetroPadButton)
+    }
+  }
+  return inputs
+}
+
+/** The sticks as the keys held push them */
+export function stickAxes(held: Iterable<string>, sticks: KeyInputs['sticks']) {
+  const axes = [0, 0, 0, 0]
+  for (const key of held) {
+    const push = sticks.get(key)
+    if (push) {
+      axes[push[0]] += push[1]
+    }
+  }
+  return axes.map((value) => Math.max(-1, Math.min(1, value)))
+}
+
 export interface PadSource {
   axes?: readonly number[]
   buttons?: readonly { pressed: boolean }[]
