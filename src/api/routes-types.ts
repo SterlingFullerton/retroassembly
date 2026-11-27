@@ -33,6 +33,13 @@ import type {
 interface Id {
   param: { id: string }
 }
+/** A save state of a game on the NAS: kept there, for whoever started the game */
+interface NASState {
+  created: string
+  id: string
+  size: number
+}
+
 /** A list's sort, order, page and search, as the page has them in its address */
 interface ListQuery {
   query?: { direction?: string; favorite?: string; page?: string; q?: string; sort?: string }
@@ -78,7 +85,14 @@ export interface ApiRoutes {
     login: { $get: Endpoint<{ query?: { error?: string; redirect_to?: string } }, LoginPageData> }
   }
   nas_games: {
-    ':code': { $delete: Endpoint<{ param: { code: string } }, null> }
+    ':code': {
+      $delete: Endpoint<{ param: { code: string } }, null>
+      states: {
+        ':state': { load: { $post: Endpoint<{ param: { code: string; state: string } }, true> } }
+        $get: Endpoint<{ param: { code: string } }, NASState[]>
+        $post: Endpoint<{ param: { code: string } }, NASState>
+      }
+    }
     cores: { $get: Endpoint<NoInput, string[]> }
     $post: Endpoint<{ json: { controls: string; core: string; rom: string } }, { code: string }>
   }

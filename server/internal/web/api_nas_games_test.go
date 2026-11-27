@@ -61,6 +61,16 @@ func (f *fakeNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		f.answers = append(f.answers, body["answer"])
 		w.WriteHeader(http.StatusNoContent)
+	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/states":
+		_ = json.NewEncoder(w).Encode([]map[string]any{{"id": "20261127-172500123", "size": 5}})
+	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/states":
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "20261127-172600456", "size": 5})
+	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/states/20261127-172500123/load":
+		f.answers = append(f.answers, "loaded 20261127-172500123")
+		w.WriteHeader(http.StatusNoContent)
+	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/states/20261127-172500123/picture":
+		w.Header().Set("Content-Type", "image/jpeg")
+		_, _ = w.Write([]byte("a picture"))
 	case r.Method == http.MethodDelete && r.URL.Path == "/games/abcde":
 		f.games = nil
 		w.WriteHeader(http.StatusNoContent)
@@ -121,6 +131,27 @@ func TestGamesOnTheNAS(t *testing.T) {
 		t.Fatalf("the NAS was given %+v", nas.answers)
 	}
 	guest.expect(http.StatusNotFound, guest.get("/api/v1/play_together/invitations/0zzzzz"))
+
+	// Its save states: listed, saved, loaded and pictured by anyone in it
+	var states []map[string]any
+	guest.expectJSON(http.StatusOK, &states, guest.get("/api/v1/nas_games/0ABCDE/states"))
+	if len(states) != 1 || states[0]["id"] != "20261127-172500123" {
+		t.Fatalf("states %+v", states)
+	}
+	var saved map[string]any
+	guest.expectJSON(http.StatusOK, &saved, guest.json(http.MethodPost, "/api/v1/nas_games/0ABCDE/states", nil))
+	if saved["id"] != "20261127-172600456" {
+		t.Fatalf("saved %+v", saved)
+	}
+	guest.expect(http.StatusOK, guest.json(http.MethodPost, "/api/v1/nas_games/0ABCDE/states/20261127-172500123/load", nil))
+	if nas.answers[len(nas.answers)-1] != "loaded 20261127-172500123" {
+		t.Fatalf("the NAS was asked %+v", nas.answers)
+	}
+	if picture := guest.expect(http.StatusOK, guest.get("/api/v1/nas_games/0ABCDE/states/20261127-172500123/picture")); string(picture) != "a picture" {
+		t.Fatalf("picture %q", picture)
+	}
+	guest.expect(http.StatusNotFound, guest.json(http.MethodPost, "/api/v1/nas_games/0ABCDE/states/..%2Fsave/load", nil))
+	guest.expect(http.StatusNotFound, guest.get("/api/v1/nas_games/NOTNAS/states"))
 
 	// Stopped by whoever started it, or an admin; not by anyone else
 	guest.expect(http.StatusForbidden, guest.send(http.MethodDelete, "/api/v1/nas_games/0ABCDE", "", nil))

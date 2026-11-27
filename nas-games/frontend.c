@@ -37,6 +37,9 @@ static struct {
   void (*set_controller_port_device)(unsigned, unsigned);
   void (*run)(void);
   void (*reset)(void);
+  size_t (*serialize_size)(void);
+  bool (*serialize)(void *, size_t);
+  bool (*unserialize)(const void *, size_t);
   bool (*load_game)(const struct retro_game_info *);
   void (*unload_game)(void);
   void *(*get_memory_data)(unsigned);
@@ -438,7 +441,7 @@ int fe_load(const char *core_path, const char *game_path, const char *system_pat
   }
   LOAD(init) LOAD(deinit) LOAD(set_environment) LOAD(set_video_refresh) LOAD(set_audio_sample)
   LOAD(set_audio_sample_batch) LOAD(set_input_poll) LOAD(set_input_state) LOAD(get_system_info)
-  LOAD(get_system_av_info) LOAD(set_controller_port_device) LOAD(run) LOAD(reset) LOAD(load_game) LOAD(unload_game)
+  LOAD(get_system_av_info) LOAD(set_controller_port_device) LOAD(run) LOAD(reset) LOAD(serialize_size) LOAD(serialize) LOAD(unserialize) LOAD(load_game) LOAD(unload_game)
   LOAD(get_memory_data) LOAD(get_memory_size)
 
   core.set_environment(environment);
@@ -487,6 +490,11 @@ double fe_sample_rate(void) { return av.timing.sample_rate; }
 
 void fe_run(void) { core.run(); }
 void fe_reset(void) { core.reset(); }
+
+// The game as it is now, to be put back later: a save state
+size_t fe_state_size(void) { return core.serialize_size(); }
+int fe_save_state(void *out, size_t size) { return core.serialize(out, size); }
+int fe_load_state(const void *state, size_t size) { return core.unserialize(state, size); }
 
 // The game's own save (cartridge battery, memory card), to keep and restore
 int fe_save_size(void) { return (int)core.get_memory_size(RETRO_MEMORY_SAVE_RAM); }

@@ -186,6 +186,8 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 	next := time.Now()
 	lastSave := time.Now()
 	var saved []byte
+	// The latest frame, for a save state's picture
+	var last picture
 	for {
 		for port := range pads {
 			p := &pads[port]
@@ -197,6 +199,8 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 		if restarting.Swap(false) {
 			C.fe_reset()
 		}
+		// Save states asked for, saved or loaded between frames, paused or not
+		handleStateRequests(&last)
 		if paused.Load() {
 			// Paused: the game stands still, and nothing new is sent. The picture players see stays as it was
 			next = next.Add(period)
@@ -226,6 +230,7 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 		if size > 0 {
 			copied := make([]byte, size)
 			copy(copied, buffer[:size])
+			last = picture{copied, int(width), int(height)}
 			select {
 			case pictures <- picture{copied, int(width), int(height)}:
 			default:
@@ -462,6 +467,10 @@ func startNetwork() {
 	http.HandleFunc("POST /players", handleNewPlayer)
 	http.HandleFunc("POST /players/{player}/answer", handlePlayerAnswer)
 	http.HandleFunc("GET /status", handleStatus)
+	http.HandleFunc("GET /states", handleListStates)
+	http.HandleFunc("POST /states", handleSaveState)
+	http.HandleFunc("GET /states/{id}/picture", handleStatePicture)
+	http.HandleFunc("POST /states/{id}/load", handleLoadState)
 	log.Printf("listening on %s, media on udp %s, reachable at %v", httpAddress, mediaPort, addresses)
 	go func() { check(http.ListenAndServe(httpAddress, nil)) }()
 }

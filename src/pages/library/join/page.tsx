@@ -22,6 +22,7 @@ import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
 import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { getKeyNameFromCode } from '#@/pages/library/utils/keyboard.ts'
 import { routes } from '#@/pages/routes.ts'
+import { NASMenu } from './nas-menu.tsx'
 
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
 // device's keys, controller or on-screen controls playing as the next player. An experiment, with its words in English
@@ -355,47 +356,15 @@ export default function JoinPage() {
       ) : null}
 
       {playing && onNAS && menuOpen && found ? (
-        <div
-          className='absolute inset-0 flex items-center justify-center bg-black/70'
-          data-sn-section=''
-          data-testid='nas-menu'
-        >
-          <div className='flex w-full max-w-xs flex-col items-stretch gap-3 p-6'>
-            <p className='mb-2 text-center text-lg font-semibold'>{found.invitation.title}</p>
-            <button
-              className={pill}
-              data-sn-enabled
-              data-sn-focus-style={focusStyle}
-              onClick={() => setMenuOpen(false)}
-              type='button'
-            >
-              <span className='icon-[mdi--play] size-6 shrink-0' />
-              Resume
-            </button>
-            <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={restart} type='button'>
-              <span className='icon-[mdi--restart] size-6 shrink-0' />
-              Restart
-            </button>
-            {startedHere ? (
-              <button
-                className={pill}
-                data-sn-enabled
-                data-sn-focus-style={focusStyle}
-                data-testid='nas-end'
-                onClick={endGame}
-                type='button'
-              >
-                <span className='icon-[mdi--stop] size-6 shrink-0' />
-                End game
-              </button>
-            ) : (
-              <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={leave} type='button'>
-                <span className='icon-[mdi--exit-to-app] size-6 shrink-0' />
-                Leave
-              </button>
-            )}
-          </div>
-        </div>
+        <NASMenu
+          code={joinedCode}
+          onEnd={endGame}
+          onLeave={leave}
+          onRestart={restart}
+          onResume={() => setMenuOpen(false)}
+          startedHere={startedHere}
+          title={found.invitation.title}
+        />
       ) : null}
 
       {stage === 'connecting' && found ? (

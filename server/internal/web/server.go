@@ -270,6 +270,10 @@ func (s *Server) Handler() (http.Handler, error) {
 		"DELETE /api/v1/play_together/invitations/{code}":      s.signedIn(s.closeInvitation),
 		"POST /api/v1/nas_games":                               s.signedIn(s.startNASGame),
 		"GET /api/v1/nas_games/cores":                          s.signedIn(s.nasCores),
+		"GET /api/v1/nas_games/{code}/states":                  s.signedIn(s.nasStates),
+		"POST /api/v1/nas_games/{code}/states":                 s.signedIn(s.saveNASState),
+		"POST /api/v1/nas_games/{code}/states/{state}/load":    s.signedIn(s.loadNASState),
+		"GET /api/v1/nas_games/{code}/states/{state}/picture":  s.signedIn(s.nasStatePicture),
 		"DELETE /api/v1/nas_games/{code}":                      s.signedIn(s.stopNASGame),
 	} {
 		api.Handle(pattern, compress(handler))

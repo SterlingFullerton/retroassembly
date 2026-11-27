@@ -11,6 +11,10 @@ double fe_aspect(void);
 double fe_sample_rate(void);
 void fe_run(void);
 void fe_reset(void);
+#include <stddef.h>
+size_t fe_state_size(void);
+int fe_save_state(void *out, size_t size);
+int fe_load_state(const void *state, size_t size);
 void fe_set_pad(int port, uint16_t pressed, int16_t lx, int16_t ly, int16_t rx, int16_t ry);
 int fe_take_frame(uint8_t *out, int capacity, int *width, int *height);
 int fe_take_sound(int16_t *out, int capacity_frames);

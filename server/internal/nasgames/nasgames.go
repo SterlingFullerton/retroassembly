@@ -151,6 +151,54 @@ func (c *Client) Save(ctx context.Context, id string) (content []byte, sha1 stri
 	return content, response.Header.Get("X-Save-Sha1"), err
 }
 
+// State is a save state of a game on the NAS
+type State struct {
+	Created time.Time `json:"created"`
+	ID      string    `json:"id"`
+	Size    int64     `json:"size"`
+}
+
+// States is a game's save states, newest first
+func (c *Client) States(ctx context.Context, id string) ([]State, error) {
+	var states []State
+	err := c.call(ctx, http.MethodGet, "/games/"+url.PathEscape(id)+"/states", nil, &states)
+	return states, err
+}
+
+// SaveState saves the game as it is now
+func (c *Client) SaveState(ctx context.Context, id string) (State, error) {
+	var state State
+	err := c.call(ctx, http.MethodPost, "/games/"+url.PathEscape(id)+"/states", nil, &state)
+	return state, err
+}
+
+// LoadState puts the game back as it was in a state
+func (c *Client) LoadState(ctx context.Context, id, state string) error {
+	return c.call(ctx, http.MethodPost, "/games/"+url.PathEscape(id)+"/states/"+url.PathEscape(state)+"/load", nil, nil)
+}
+
+// StatePicture is a state's picture, as a JPEG
+func (c *Client) StatePicture(ctx context.Context, id, state string) ([]byte, error) {
+	if c == nil {
+		return nil, ErrOff
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		c.base+"/games/"+url.PathEscape(id)+"/states/"+url.PathEscape(state)+"/picture", nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", "Bearer "+c.key)
+	response, err := c.http.Do(request)
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, failure.New(http.StatusNotFound, "No picture")
+	}
+	return io.ReadAll(io.LimitReader(response.Body, 8<<20))
+}
+
 // Collected tells the NAS the game's save with this checksum has been kept
 func (c *Client) Collected(ctx context.Context, id, sha1 string) error {
 	return c.call(ctx, http.MethodPost, "/games/"+url.PathEscape(id)+"/save/collected", map[string]string{"sha1": sha1}, nil)

@@ -32,6 +32,10 @@ import (
 //	                                     -> the game
 //	GET    /games                        -> the games running; with ?all=1, those ended in the last hour too
 //	GET    /games/{id}/save              -> the game's own save, if it has one not yet collected
+//	GET    /games/{id}/states            -> its save states, kept for the player who started it, newest first
+//	POST   /games/{id}/states            -> a new one
+//	GET    /games/{id}/states/{state}/picture
+//	POST   /games/{id}/states/{state}/load
 //	POST   /games/{id}/save/collected    {sha1}
 //	GET    /cores                        -> the emulators it has, by name
 //	DELETE /games/{id}
@@ -107,6 +111,17 @@ func serve() {
 	})
 	mux.HandleFunc("POST /games/{id}/players/{player}/answer", func(w http.ResponseWriter, r *http.Request) {
 		forward(w, r, "/players/"+r.PathValue("player")+"/answer")
+	})
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		mux.HandleFunc(method+" /games/{id}/states", func(w http.ResponseWriter, r *http.Request) {
+			forward(w, r, "/states")
+		})
+	}
+	mux.HandleFunc("GET /games/{id}/states/{state}/picture", func(w http.ResponseWriter, r *http.Request) {
+		forward(w, r, "/states/"+r.PathValue("state")+"/picture")
+	})
+	mux.HandleFunc("POST /games/{id}/states/{state}/load", func(w http.ResponseWriter, r *http.Request) {
+		forward(w, r, "/states/"+r.PathValue("state")+"/load")
 	})
 	keyed := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		given, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -225,7 +240,8 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	command := exec.Command(self)
 	command.Env = append(os.Environ(),
 		"GAME="+gamePath, "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
-		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+saveDir)
+		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+saveDir,
+		"STATES_DIR="+filepath.Join(saveDir, "states", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))))
 	prefix := fmt.Sprintf("[%s] ", game.ID)
 	command.Stdout = &prefixed{prefix: prefix, out: os.Stdout}
 	command.Stderr = &prefixed{prefix: prefix, out: os.Stderr}
@@ -386,9 +402,10 @@ func forward(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	// Saving a state waits for the frame loop, then for the emulator
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
 	defer cancel()
-	request, _ := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+game.address+path, bytes.NewReader(body))
+	request, _ := http.NewRequestWithContext(ctx, r.Method, "http://"+game.address+path, bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -396,7 +413,11 @@ func forward(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 	defer response.Body.Close()
-	w.Header().Set("Content-Type", response.Header.Get("Content-Type"))
+	for _, header := range []string{"Content-Type", "Cache-Control"} {
+		if value := response.Header.Get(header); value != "" {
+			w.Header().Set(header, value)
+		}
+	}
 	w.WriteHeader(response.StatusCode)
 	_, _ = io.Copy(w, response.Body)
 }

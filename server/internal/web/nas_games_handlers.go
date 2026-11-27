@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -254,4 +255,81 @@ func (s *Server) collectNASSavesOnce(ctx context.Context) {
 		}
 		_ = s.nasGames.Collected(ctx, game.ID, sha1)
 	}
+}
+
+// A save state's id on the NAS: the date, time and millisecond it was saved
+var nasStateID = regexp.MustCompile(`^[0-9]{8}-[0-9]{9}$`)
+
+// The NAS game a request is about, from its code: any signed-in player may save and load its states, as anyone in
+// the game may pause it. The states are kept for whoever started it
+func (s *Server) nasGameFromCode(w http.ResponseWriter, r *http.Request) (string, bool) {
+	id, isNAS := nasGameID(r.PathValue("code"))
+	if !isNAS {
+		writeError(w, errNASGameNotFound)
+		return "", false
+	}
+	return id, true
+}
+
+func (s *Server) nasStates(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	id, ok := s.nasGameFromCode(w, r)
+	if !ok {
+		return
+	}
+	states, err := s.nasGames.States(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, states)
+}
+
+func (s *Server) saveNASState(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	id, ok := s.nasGameFromCode(w, r)
+	if !ok {
+		return
+	}
+	state, err := s.nasGames.SaveState(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, state)
+}
+
+func (s *Server) loadNASState(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	id, ok := s.nasGameFromCode(w, r)
+	state := r.PathValue("state")
+	if !ok {
+		return
+	}
+	if !nasStateID.MatchString(state) {
+		writeError(w, failure.New(http.StatusNotFound, "No such state"))
+		return
+	}
+	if err := s.nasGames.LoadState(r.Context(), id, state); err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, true)
+}
+
+func (s *Server) nasStatePicture(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	id, ok := s.nasGameFromCode(w, r)
+	state := r.PathValue("state")
+	if !ok {
+		return
+	}
+	if !nasStateID.MatchString(state) {
+		writeError(w, failure.New(http.StatusNotFound, "No such state"))
+		return
+	}
+	picture, err := s.nasGames.StatePicture(r.Context(), id, state)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "private, max-age=86400")
+	_, _ = w.Write(picture)
 }

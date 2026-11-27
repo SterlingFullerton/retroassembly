@@ -35,3 +35,26 @@ export async function stopNASGame(code: string) {
 export function isNASCode(code: string) {
   return code.trim().startsWith('0')
 }
+
+/** A save state of a game on the NAS */
+export type NASState = Awaited<ReturnType<typeof listNASStates>>[number]
+
+/** A game on the NAS's save states, newest first */
+export function listNASStates(code: string) {
+  return parseResponse(client.nas_games[':code'].states.$get({ param: { code } }))
+}
+
+/** Saves the game on the NAS as it is now */
+export function saveNASState(code: string) {
+  return parseResponse(client.nas_games[':code'].states.$post({ param: { code } }))
+}
+
+/** Puts the game on the NAS back as it was in a state, for everyone in it */
+export async function loadNASState(code: string, state: string) {
+  await parseResponse(client.nas_games[':code'].states[':state'].load.$post({ param: { code, state } }))
+}
+
+/** Where a state's picture is */
+export function getNASStatePicture(code: string, state: string) {
+  return `/api/v1/nas_games/${encodeURIComponent(code)}/states/${encodeURIComponent(state)}/picture`
+}
