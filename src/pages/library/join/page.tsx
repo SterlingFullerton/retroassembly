@@ -138,7 +138,8 @@ export default function JoinPage() {
         offer: joining.invitation.offer,
         onPicture: setArea,
         onStream(stream) {
-          if (video.current) {
+          // Given again as the sound joins the picture; setting it again would start the video over
+          if (video.current && video.current.srcObject !== stream) {
             video.current.srcObject = stream
           }
         },

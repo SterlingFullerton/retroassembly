@@ -1,6 +1,7 @@
 import type { Nostalgist } from 'nostalgist'
 import { attachPlayerGamepad, captureGameAudio, type EmulatorGamepad } from './adapter.ts'
 import { type PictureArea, watchGamePicture } from './game-picture.ts'
+import { copyGamePicture } from './picture-copy.ts'
 
 // Playing a game together across a network, as if on one couch. One player's browser, the host's, runs the game and
 // sends its picture and sound to the other's, the guest's, which sends back what its controller is doing. The host
@@ -67,9 +68,9 @@ function createGuestGamepad(): EmulatorGamepad {
 // What's sent is the controller as it is now, so a message lost is made up for by the next and never sent again
 const inputChannel = { id: 0, label: 'input', options: { maxRetransmits: 0, negotiated: true, ordered: false } }
 
-// The channel the host tells the guest on where the game's picture is in what's sent. What's sent is the host's whole
-// canvas, which has black around the picture; the guest shows the picture alone. It moves rarely, and every message
-// must arrive, in order
+// The channel the host tells the guest on where the game's picture is in what's sent, and its shape. What's sent is
+// usually the picture alone; where it's the host's whole canvas, with black around the picture, the guest shows the
+// picture alone. It changes rarely, and every message must arrive, in order
 const pictureChannel = { id: 1, label: 'picture', options: { negotiated: true, ordered: true } }
 
 function isPictureArea(value: unknown): value is PictureArea {
@@ -164,6 +165,56 @@ function parseDescription(text: string, type: 'answer' | 'offer'): RTCSessionDes
 // host's time and the network's for nothing a guest would see
 const tallestPicture = 720
 const pictureBitrate = 6_000_000
+// What the picture is sent at from the start, in kilobits a second. Left to itself a browser starts low and works up,
+// which showed a guest a blurred picture for its first 15 seconds. The guest is on the same network, or a VPN, where
+// this is little; if it's too much the browser comes down from it within a second or two
+const startingBitrate = 3000
+
+const pictureFormats = /^(?:av1|h264|vp8|vp9)$/iu
+
+/**
+ * A description with each video format in it marked to be sent at `kilobits` a second from the start. Only Chrome and
+ * the browsers built on it read the mark, and others pass over it. It goes on the guest's answer before the host takes
+ * it, as the host is the one sending
+ */
+export function withStartingBitrate(sdp: string, kilobits: number) {
+  const lines = sdp.split('\r\n')
+  const formats = new Set<string>()
+  const described = new Set<string>()
+  let video = false
+  for (const line of lines) {
+    if (line.startsWith('m=')) {
+      video = line.startsWith('m=video')
+    }
+    const format = /^a=rtpmap:(?<type>\d+) (?<name>[^/]+)\//u.exec(line)?.groups
+    if (video && format && pictureFormats.test(format.name)) {
+      formats.add(format.type)
+    }
+    const parameters = /^a=fmtp:(?<type>\d+) /u.exec(line)?.groups
+    if (video && parameters) {
+      described.add(parameters.type)
+    }
+  }
+  const mark = `x-google-start-bitrate=${kilobits}`
+  const result: string[] = []
+  video = false
+  for (const line of lines) {
+    if (line.startsWith('m=')) {
+      video = line.startsWith('m=video')
+    }
+    const parameters = /^a=fmtp:(?<type>\d+) /u.exec(line)?.groups
+    if (video && parameters && formats.has(parameters.type) && !line.includes('x-google-start-bitrate')) {
+      result.push(`${line};${mark}`)
+      continue
+    }
+    result.push(line)
+    const format = /^a=rtpmap:(?<type>\d+) /u.exec(line)?.groups
+    if (video && format && formats.has(format.type) && !described.has(format.type)) {
+      result.push(`a=fmtp:${format.type} ${mark}`)
+    }
+  }
+  return result.join('\r\n')
+}
 
 /**
  * Has the picture sent smoothly before sharply, and no larger than a guest needs. `height` is the height of the game's
@@ -204,16 +255,23 @@ export interface HostOptions {
  */
 export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachableAt }: HostOptions) {
   const connection = new RTCPeerConnection({ iceServers })
-  const picture = canvas.captureStream(60)
+  // The picture alone, copied off the canvas. Should the emulator draw where that can't be seen, the whole canvas is
+  // sent instead, with where the picture is in it
+  const copy = copyGamePicture(canvas, tallestPicture)
+  let whole: MediaStream | undefined
   const sound = captureGameAudio()
   const senders: RTCRtpSender[] = []
-  for (const track of picture.getVideoTracks()) {
+  for (const track of copy.stream.getVideoTracks()) {
     // A game is all movement: frames are kept coming even when that costs sharpness
     track.contentHint = 'motion'
-    senders.push(connection.addTrack(track, picture))
+    senders.push(connection.addTrack(track, copy.stream))
   }
+  // The sound travels apart from the picture. Sent together, the guest's browser holds each frame back to keep it in
+  // step with the sound, which it buffers for 100 ms or so: the picture arrived in 10 and was shown 100 ms late. Out of
+  // step by a few hundredths of a second is felt far less than late
+  const soundStream = new MediaStream()
   for (const track of sound?.stream.getAudioTracks() ?? []) {
-    connection.addTrack(track, picture)
+    connection.addTrack(track, soundStream)
   }
 
   const gamepad = createGuestGamepad()
@@ -234,28 +292,68 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
   })
   function tellArea() {
     if (area && areaChannel.readyState === 'open') {
-      areaChannel.send(JSON.stringify(area))
+      // The copy is the picture and nothing else; the whole canvas has it somewhere inside
+      const told = whole ? area : { aspect: area.aspect, height: 1, left: 0, top: 0, width: 1 }
+      areaChannel.send(JSON.stringify(told))
     }
   }
   areaChannel.addEventListener('open', tellArea)
   async function tune() {
-    // Sized by the picture alone, so a small picture on a large canvas is still sent sharp
-    const height = area ? area.height * canvas.height : canvas.height
+    // The copy is already no taller than it needs to be. The whole canvas is sized by the picture in it, so a small
+    // picture on a large canvas is still sent sharp
+    const height = whole && area ? area.height * canvas.height : 0
     await Promise.all(senders.map((sender) => tunePicture(sender, height)))
   }
   const stopWatchingPicture = watchGamePicture(canvas, async (found) => {
     area = found
+    copy.setArea(found)
     tellArea()
     if (connection.connectionState === 'connected') {
       await tune()
     }
   })
 
+  // How long the game has to run, once the guest is there, drawing nothing the copy can see before the whole canvas is
+  // sent. Time paused doesn't count: a paused game draws nothing
+  const copyWithin = 2000
+  const checkEvery = 250
+  let runningFor = 0
+  let checkCopy: ReturnType<typeof setInterval> | undefined
+  async function checkCopying() {
+    if (whole || copy.copies > 0) {
+      clearInterval(checkCopy)
+      return
+    }
+    if (emulator.getStatus() === 'running') {
+      runningFor += checkEvery
+    }
+    if (runningFor >= copyWithin) {
+      clearInterval(checkCopy)
+      await sendWholeCanvas()
+    }
+  }
+  async function sendWholeCanvas() {
+    if (whole || connection.connectionState !== 'connected') {
+      return
+    }
+    whole = canvas.captureStream(60)
+    const [track] = whole.getVideoTracks()
+    if (track) {
+      track.contentHint = 'motion'
+      await Promise.all(senders.map((sender) => sender.replaceTrack(track)))
+    }
+    copy.stop()
+    tellArea()
+    await tune()
+  }
+
   async function handleState() {
     const connected = connection.connectionState === 'connected'
     if (connected && !detachGamepad) {
       detachGamepad = attachPlayerGamepad(emulator, gamepad)
       onGuest?.(true)
+      clearInterval(checkCopy)
+      checkCopy = setInterval(checkCopying, checkEvery)
       await tune()
     } else if (!connected && detachGamepad) {
       detachGamepad()
@@ -267,10 +365,12 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
 
   return {
     async accept(answer: string) {
-      await connection.setRemoteDescription(parseDescription(answer, 'answer'))
+      const { sdp, type } = parseDescription(answer, 'answer')
+      await connection.setRemoteDescription({ sdp: withStartingBitrate(sdp ?? '', startingBitrate), type })
     },
     close() {
       connection.removeEventListener('connectionstatechange', handleState)
+      clearInterval(checkCopy)
       detachGamepad?.()
       detachGamepad = undefined
       stopWatchingPicture()
@@ -278,7 +378,8 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
       areaChannel.close()
       connection.close()
       sound?.stop()
-      for (const track of picture.getTracks()) {
+      copy.stop()
+      for (const track of whole?.getTracks() ?? []) {
         track.stop()
       }
     },
@@ -308,17 +409,19 @@ export interface GuestOptions {
  */
 export async function joinGame({ iceServers = [], offer, onPicture, onStream, reachableAt }: GuestOptions) {
   const connection = new RTCPeerConnection({ iceServers })
+  // The picture and the sound arrive apart, so neither waits for the other, and are played together here
+  const game = new MediaStream()
   connection.addEventListener('track', (event) => {
-    const [stream] = event.streams
     // Shown the moment it arrives, not held back to smooth it out: late is worse than uneven in a game
     for (const receiver of connection.getReceivers()) {
       if ('jitterBufferTarget' in receiver) {
         receiver.jitterBufferTarget = 0
       }
     }
-    if (stream) {
-      onStream(stream)
+    if (!game.getTracks().includes(event.track)) {
+      game.addTrack(event.track)
     }
+    onStream(game)
   })
   const channel = connection.createDataChannel(inputChannel.label, { ...inputChannel.options, id: inputChannel.id })
   const areaChannel = connection.createDataChannel(pictureChannel.label, {
