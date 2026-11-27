@@ -520,6 +520,7 @@
   "storage.empty": "Nenhum jogo em cache",
   "storage.remove": "Remover",
   "storage.clearAll": "Limpar tudo",
+  "storage.manage": "Gerenciar",
   "storage.onDevice": "No dispositivo",
   "storage.unknownGame": "Jogo desconhecido",
   "common.numberOfGames": "Número de jogos",

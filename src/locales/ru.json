@@ -532,6 +532,7 @@
   "storage.empty": "Нет кэшированных игр",
   "storage.remove": "Удалить",
   "storage.clearAll": "Очистить всё",
+  "storage.manage": "Управление",
   "storage.onDevice": "На устройстве",
   "storage.unknownGame": "Неизвестная игра",
   "common.numberOfGames": "Количество игр",

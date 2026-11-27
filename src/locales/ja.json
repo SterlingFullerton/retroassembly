@@ -514,6 +514,7 @@
   "storage.empty": "キャッシュされたゲームはありません",
   "storage.remove": "削除",
   "storage.clearAll": "すべて消去",
+  "storage.manage": "管理",
   "storage.onDevice": "このデバイスに保存済み",
   "storage.unknownGame": "不明なゲーム",
   "common.numberOfGames": "ゲーム数",
