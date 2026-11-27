@@ -105,6 +105,9 @@ func TestGamesOnTheNAS(t *testing.T) {
 		t.Fatalf("started %+v", started)
 	}
 	game := nas.games[0]
+	if game["fileName"] != "Balloon Fight (U) [!].nes" {
+		t.Fatalf("the NAS wasn't told the game's own name: %+v", game)
+	}
 	if file, _ := game["file"].(string); strings.HasPrefix(file, "roms/") || !strings.HasSuffix(file, ".nes") ||
 		game["core"] != "fceumm" || game["controls"] != "nes" || game["startedBy"] != owner.id {
 		t.Fatalf("asked the NAS for %+v", game)

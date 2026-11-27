@@ -159,12 +159,13 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	if check.Failed(w) {
 		return
 	}
-	var fileID, platform, title string
+	var fileID, fileName, platform, title string
+	var discGroup sql.NullString
 	err := scope.Database.QueryRowContext(r.Context(),
-		`SELECT file_id, platform, COALESCE(NULLIF(game_title, ''), NULLIF(game_name, ''), file_name)
-		FROM roms WHERE user_id = ? AND status = ? AND id = ? LIMIT 1`,
+		`SELECT file_id, file_name, platform, COALESCE(NULLIF(game_title, ''), NULLIF(game_name, ''), file_name),
+		disc_group FROM roms WHERE user_id = ? AND status = ? AND id = ? LIMIT 1`,
 		scope.LibraryOwnerID, db.StatusNormal, romID,
-	).Scan(&fileID, &platform, &title)
+	).Scan(&fileID, &fileName, &platform, &title, &discGroup)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, failure.New(http.StatusNotFound, "ROM not found"))
 		return
@@ -184,9 +185,29 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	if latest, err := library.LatestGameSave(r.Context(), scope, core, romID); err == nil && latest != nil {
 		save, _ = scope.Storage.Read(latest.FileID)
 	}
+	bioses, err := s.nasBioses(r, scope, platform)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	// A game on several discs is started from a list of them all, as in the browser
+	var discs []nasgames.Disc
+	if discGroup.Valid && discGroup.String != "" {
+		found, err := library.Discs(r.Context(), scope, platform, discGroup.String)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		for _, disc := range found {
+			if rest, ok := strings.CutPrefix(disc.FileID, "roms/"); ok {
+				discs = append(discs, nasgames.Disc{File: rest, FileName: disc.FileName})
+			}
+		}
+	}
 	game, err := s.nasGames.Start(r.Context(), nasgames.Start{
-		Controls: controls, Core: core, File: file, LibraryOwner: scope.LibraryOwnerID, Platform: platform,
-		Rom: romID, Save: save, StartedBy: scope.User.ID, Title: title,
+		Bioses: bioses, Controls: controls, Core: core, Discs: discs, File: file, FileName: fileName,
+		LibraryOwner: scope.LibraryOwnerID, Platform: platform, Rom: romID, Save: save, StartedBy: scope.User.ID,
+		Title: title,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -334,4 +355,32 @@ func (s *Server) nasStatePicture(w http.ResponseWriter, r *http.Request, _ libra
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Cache-Control", "private, max-age=86400")
 	_, _ = w.Write(picture)
+}
+
+// nasBioses is the player's BIOS files for a console, as their settings list them, for the NAS's emulator to start
+// with as the browser's would
+func (s *Server) nasBioses(r *http.Request, scope library.Scope, platform string) ([]nasgames.File, error) {
+	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID)
+	if err != nil {
+		return nil, err
+	}
+	emulator, _ := resolved["emulator"].(preference.Object)
+	platforms, _ := emulator["platform"].(preference.Object)
+	settings, _ := platforms[platform].(preference.Object)
+	listed, _ := settings["bioses"].([]any)
+	var files []nasgames.File
+	for _, item := range listed {
+		bios, _ := item.(preference.Object)
+		id, _ := bios["fileId"].(string)
+		name, _ := bios["fileName"].(string)
+		if id == "" || name == "" {
+			continue
+		}
+		content, err := scope.Storage.Read(id)
+		if err != nil {
+			continue
+		}
+		files = append(files, nasgames.File{Content: content, Name: name})
+	}
+	return files, nil
 }

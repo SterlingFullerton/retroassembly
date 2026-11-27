@@ -135,7 +135,8 @@ func main() {
 	fps := float64(C.fe_fps())
 	rate := float64(C.fe_sample_rate())
 	aspect = float64(C.fe_aspect())
-	savePath := filepath.Join(saveDir, strings.TrimSuffix(filepath.Base(game), filepath.Ext(game))+".srm")
+	// Named after the library's copy of the game, the same whichever name the game is started under
+	savePath := filepath.Join(saveDir, envOr("SAVE_NAME", strings.TrimSuffix(filepath.Base(game), filepath.Ext(game)))+".srm")
 	restoreSave(savePath)
 
 	// Asked to end: the game's own save is kept, then it ends

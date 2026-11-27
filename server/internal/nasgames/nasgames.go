@@ -41,9 +41,15 @@ type Game struct {
 // Start is what the service needs to run a game: the emulator, and the game's file, relative to the games folder it
 // shares with the app
 type Start struct {
-	Controls     string `json:"controls"`
-	Core         string `json:"core"`
-	File         string `json:"file"`
+	// The player's BIOS files for the console
+	Bioses   []File `json:"bioses,omitempty"`
+	Controls string `json:"controls"`
+	Core     string `json:"core"`
+	// Every disc of a game on several, in order, by its file in the games folder and its own name
+	Discs []Disc `json:"discs,omitempty"`
+	File  string `json:"file"`
+	// The game's own file name
+	FileName     string `json:"fileName"`
 	LibraryOwner string `json:"libraryOwner"`
 	Platform     string `json:"platform"`
 	Rom          string `json:"rom"`
@@ -51,6 +57,18 @@ type Start struct {
 	Save      []byte `json:"save,omitempty"`
 	StartedBy string `json:"startedBy"`
 	Title     string `json:"title"`
+}
+
+// File is a file by its name, with its content
+type File struct {
+	Content []byte `json:"content"`
+	Name    string `json:"name"`
+}
+
+// Disc is one disc of a game on several
+type Disc struct {
+	File     string `json:"file"`
+	FileName string `json:"fileName"`
 }
 
 // Client is the service at URL. A nil Client is one that isn't set up, and refuses everything

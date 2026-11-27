@@ -157,12 +157,18 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		Options      map[string]string `json:"options"`
 		Platform     string            `json:"platform"`
 		Rom          string            `json:"rom"`
+		// The player's BIOS files for the console, put in the emulator's system folder as the browser does
+		Bioses []namedFile `json:"bioses"`
+		// The other discs of a game on several, in order, this one among them: played from a list of them all
+		Discs []discFile `json:"discs"`
+		// The game's own file name, which some emulators read its region or set from: arcade ones above all
+		FileName string `json:"fileName"`
 		// The player's latest save of the game, which it starts with: as bytes, so base64 in JSON
 		Save      []byte `json:"save"`
 		StartedBy string `json:"startedBy"`
 		Title     string `json:"title"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 16<<20)).Decode(&request); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 128<<20)).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -180,6 +186,20 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	gamePath := filepath.Join(romsDir, filepath.Clean("/"+request.File))
 	if info, err := os.Stat(gamePath); err != nil || info.IsDir() {
 		http.Error(w, errBadFile.Error(), http.StatusNotFound)
+		return
+	}
+	// The game as the emulator sees it: under its own name, with its BIOS files, in a folder of the game's own
+	workDir := filepath.Join(os.TempDir(), "nas-game-"+newID())
+	launchPath, systemDir, err := prepareGame(workDir, gamePath, romsDir, request.FileName, request.Bioses, request.Discs)
+	// Removed when the game ends; and here, if it never starts
+	running := false
+	defer func() {
+		if !running {
+			_ = os.RemoveAll(workDir)
+		}
+	}()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// Each player's saves in a folder of their own: the game's own save, which is the app's latest when it starts, and
@@ -239,7 +259,8 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	self, _ := os.Executable()
 	command := exec.Command(self)
 	command.Env = append(os.Environ(),
-		"GAME="+gamePath, "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
+		"GAME="+launchPath, "SYSTEM_DIR="+systemDir,
+		"SAVE_NAME="+strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath)), "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
 		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+saveDir,
 		"STATES_DIR="+filepath.Join(saveDir, "states", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))))
 	prefix := fmt.Sprintf("[%s] ", game.ID)
@@ -252,10 +273,12 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	service.games[game.ID] = game
+	running = true
 	service.Unlock()
 	go func() {
 		_ = command.Wait()
 		close(game.done)
+		_ = os.RemoveAll(workDir)
 		service.Lock()
 		game.Ended, game.endedAt, game.Players = true, time.Now(), 0
 		service.Unlock()
@@ -498,4 +521,81 @@ func envInt(name string, fallback int) int {
 		return value
 	}
 	return fallback
+}
+
+type namedFile struct {
+	Content []byte `json:"content"`
+	Name    string `json:"name"`
+}
+
+type discFile struct {
+	File     string `json:"file"`
+	FileName string `json:"fileName"`
+}
+
+// A file name as given, if it's only a name: no folders, nothing hidden
+func plainName(name string) (string, bool) {
+	base := filepath.Base(name)
+	return base, base == name && base != "." && base != ".." && !strings.HasPrefix(base, ".") && base != ""
+}
+
+// prepareGame lays out a game for its emulator in workDir, as the browser does in its own: the game's file under its
+// own name (a link to the library's copy), every disc and a list of them for a game on several, and the player's BIOS
+// files in a system folder of the game's own, with the emulators' support files. The BIOS files also sit beside the
+// game, where arcade emulators look for theirs. It answers with the file to start and the system folder
+func prepareGame(workDir, gamePath, romsDir, fileName string, bioses []namedFile, discs []discFile) (string, string, error) {
+	gameDir := filepath.Join(workDir, "game")
+	systemDir := filepath.Join(workDir, "system")
+	for _, dir := range []string{gameDir, systemDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return "", "", err
+		}
+	}
+	// The emulators' own support files, such as PPSSPP's
+	shared, _ := os.ReadDir(envOr("SYSTEM_SOURCE", "/system"))
+	for _, entry := range shared {
+		_ = os.Symlink(filepath.Join(envOr("SYSTEM_SOURCE", "/system"), entry.Name()), filepath.Join(systemDir, entry.Name()))
+	}
+	for _, bios := range bioses {
+		name, ok := plainName(bios.Name)
+		if !ok {
+			continue
+		}
+		for _, dir := range []string{systemDir, gameDir} {
+			_ = os.Remove(filepath.Join(dir, name))
+			if err := os.WriteFile(filepath.Join(dir, name), bios.Content, 0o644); err != nil {
+				return "", "", err
+			}
+		}
+	}
+
+	name, ok := plainName(fileName)
+	if !ok {
+		name = filepath.Base(gamePath)
+	}
+	launch := filepath.Join(gameDir, name)
+	if err := os.Symlink(gamePath, launch); err != nil {
+		return "", "", err
+	}
+	if len(discs) > 1 {
+		var list strings.Builder
+		for _, disc := range discs {
+			discName, ok := plainName(disc.FileName)
+			discPath := filepath.Join(romsDir, filepath.Clean("/"+disc.File))
+			if _, err := os.Stat(discPath); !ok || err != nil {
+				return "", "", errors.New("a disc of the game is missing")
+			}
+			if discName != name {
+				if err := os.Symlink(discPath, filepath.Join(gameDir, discName)); err != nil {
+					return "", "", err
+				}
+			}
+			list.WriteString(discName + "\n")
+		}
+		launch = filepath.Join(gameDir, strings.TrimSuffix(name, filepath.Ext(name))+".m3u")
+		if err := os.WriteFile(launch, []byte(list.String()), 0o644); err != nil {
+			return "", "", err
+		}
+	}
+	return launch, systemDir, nil
 }
