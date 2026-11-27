@@ -18,11 +18,14 @@ export const padStateSize = 3 + padAxisCount
 type PadState = Pick<EmulatorGamepad, 'axes' | 'buttons'>
 
 /** A controller's buttons and sticks as a few bytes, small enough to send every time they change */
-export function encodePadState(pad: {
-  axes: readonly number[]
-  buttons: readonly { pressed: boolean }[]
-}): Uint8Array<ArrayBuffer> {
-  const bytes = new Uint8Array(padStateSize)
+export function encodePadState(
+  pad: {
+    axes: readonly number[]
+    buttons: readonly { pressed: boolean }[]
+  },
+  stylus?: Stylus,
+): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(stylus ? padStateSize + stylusSize : padStateSize)
   for (let index = 0; index < padButtonCount; index += 1) {
     if (pad.buttons[index]?.pressed) {
       bytes[Math.floor(index / 8)] += 2 ** (index % 8)
@@ -33,7 +36,30 @@ export function encodePadState(pad: {
     // A signed byte: -127 to 127, with 0 the stick at rest
     bytes[3 + index] = (Math.round(value * 127) + 256) % 256
   }
+  if (stylus) {
+    // Where it is across the picture, 0 to 65535 each way, low byte first, then whether it's down
+    const x = acrossPicture(stylus.x)
+    const y = acrossPicture(stylus.y)
+    bytes.set([x % 256, Math.floor(x / 256), y % 256, Math.floor(y / 256), stylus.down ? 1 : 0], padStateSize)
+  }
   return bytes
+}
+
+/**
+ * A stylus or pointer on the game's picture, for a DS's touch screen: where, each way a share of the picture from its
+ * top left, and whether it's down. Only a game on the NAS takes it, after the controller
+ */
+export interface Stylus {
+  down: boolean
+  x: number
+  y: number
+}
+
+const stylusSize = 5
+
+/** A share of the picture, 0 to 1, as two bytes' worth */
+function acrossPicture(share: number) {
+  return Math.round(Math.max(0, Math.min(1, share)) * 65_535)
 }
 
 /** Sets `pad` to what `bytes` say. Bytes of the wrong length are someone else's, and are ignored */
@@ -527,9 +553,9 @@ export async function joinGame({
       }
     },
     /** Sends the controller as it is now; dropped silently until the host is reached */
-    sendPad(pad: Parameters<typeof encodePadState>[0]) {
+    sendPad(pad: Parameters<typeof encodePadState>[0], stylus?: Stylus) {
       if (channel.readyState === 'open') {
-        channel.send(encodePadState(pad))
+        channel.send(encodePadState(pad, stylus))
       }
     },
   }

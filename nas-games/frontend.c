@@ -269,6 +269,15 @@ int fe_take_sound(int16_t *out, int capacity_frames) {
 
 static uint16_t buttons[4];
 static int16_t axes[4][4];
+// The stylus or mouse on the picture, for a DS's touch screen: across the whole picture, -0x7fff to 0x7fff each way
+static int16_t pointer_x, pointer_y;
+static int pointer_pressed;
+
+void fe_set_pointer(int16_t x, int16_t y, int pressed) {
+  pointer_x = x;
+  pointer_y = y;
+  pointer_pressed = pressed;
+}
 
 void fe_set_pad(int port, uint16_t pressed, int16_t lx, int16_t ly, int16_t rx, int16_t ry) {
   if (port < 0 || port > 3) return;
@@ -287,6 +296,15 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
     case RETRO_DEVICE_JOYPAD:
       if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return (int16_t)buttons[port];
       return id < 16 ? (buttons[port] >> id) & 1 : 0;
+    case RETRO_DEVICE_POINTER:
+      if (port != 0 || index != 0) return 0;
+      switch (id) {
+        case RETRO_DEVICE_ID_POINTER_X: return pointer_x;
+        case RETRO_DEVICE_ID_POINTER_Y: return pointer_y;
+        case RETRO_DEVICE_ID_POINTER_PRESSED: return pointer_pressed;
+        case RETRO_DEVICE_ID_POINTER_COUNT: return pointer_pressed ? 1 : 0;
+      }
+      return 0;
     case RETRO_DEVICE_ANALOG:
       if (index < 2 && id < 2) return axes[port][index * 2 + id];
       if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON && id < 16) return ((buttons[port] >> id) & 1) ? 0x7fff : 0;

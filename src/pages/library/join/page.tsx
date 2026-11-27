@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type SubmitEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, type SubmitEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
@@ -7,7 +7,7 @@ import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
 import { isNASCode, stopNASGame } from '#@/emulator/nas-games.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
-import { encodePadState, joinGame, type NASCommand, type NASNumbers } from '#@/emulator/play-together.ts'
+import { encodePadState, joinGame, type NASCommand, type NASNumbers, type Stylus } from '#@/emulator/play-together.ts'
 import { getConsoleKeys } from '#@/input/console-keys.ts'
 import { getConsoleKeyInputs, getKeyButtons, type KeyInputs, mergePads, stickAxes } from '#@/input/guest-pad.ts'
 import { getPadKeys } from '#@/input/pad.ts'
@@ -114,6 +114,9 @@ export default function JoinPage() {
   // Keys held that push a stick, such as the N64's arrows
   const stickKeysHeld = useRef(new Set<string>())
   const keyInputsSent = useRef<KeyInputs>({ buttons: new Map(), sticks: new Map() })
+  // The stylus on a DS game on the NAS: a finger or the mouse on the picture, whose bottom half is the touch screen.
+  // Undefined while there's no touch screen to send it to
+  const stylus = useRef<Stylus | undefined>(undefined)
   const touchHeld = useRef(new Set<RetroPadButton>())
   // eslint-disable-next-line react/hook-use-state -- made once, and never changed
   const [onScreen] = useState(connectGuestOnScreenGamepad)
@@ -239,12 +242,12 @@ export default function JoinPage() {
       timer = setInterval(() => {
         const keyStick = { axes: stickAxes(stickKeysHeld.current, keyInputsSent.current.sticks) }
         const pad = mergePads([...keysHeld.current, ...touchHeld.current], [keyStick, getController(), onScreen])
-        const state = encodePadState(pad).join(',')
+        const state = encodePadState(pad, stylus.current).join(',')
         const now = performance.now()
         if (state !== lastSent || now - lastSentAt >= resendEvery) {
           lastSent = state
           lastSentAt = now
-          session?.sendPad(pad)
+          session?.sendPad(pad, stylus.current)
         }
       }, sendEvery)
     }
@@ -286,6 +289,30 @@ export default function JoinPage() {
     keyInputsSent.current = keyInputs
   }, [keyInputs])
   const padKeys = gameConsole ? getPadKeys(gameConsole, keyboard, { own: ownKeys }) : undefined
+
+  // A DS game on the NAS takes the stylus; a person's device, sharing a game, doesn't
+  const takesStylus = onNAS && platform === 'nds'
+  useEffect(() => {
+    stylus.current = takesStylus ? { down: false, x: 0.5, y: 0.75 } : undefined
+  }, [takesStylus])
+
+  function moveStylus(event: ReactPointerEvent<HTMLDivElement>, down?: boolean) {
+    if (!stylus.current || menuOpen) {
+      return
+    }
+    const box = event.currentTarget.getBoundingClientRect()
+    const isDown = down ?? stylus.current.down
+    // Only where it touches, or drags, counts: a mouse moving over the picture with no button down is no stylus
+    if (down === undefined && !isDown) {
+      return
+    }
+    event.preventDefault()
+    stylus.current = {
+      down: isDown,
+      x: (event.clientX - box.left) / box.width,
+      y: (event.clientY - box.top) / box.height,
+    }
+  }
 
   // While the game is played, the arrows and Enter are the game's, not the page's: the highlight moving between the
   // page's buttons stands still, as it does in a game played in the browser. A NAS game's open menu has them back
@@ -381,6 +408,15 @@ export default function JoinPage() {
           'size-full': !layout,
         })}
         data-testid='guest-picture'
+        onPointerCancel={(event) => moveStylus(event, false)}
+        onPointerDown={(event) => {
+          if (stylus.current) {
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }
+          moveStylus(event, true)
+        }}
+        onPointerMove={(event) => moveStylus(event)}
+        onPointerUp={(event) => moveStylus(event, false)}
         style={layout?.box}
       >
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a game's picture and sound, which has no words to caption */}

@@ -33,6 +33,7 @@ type Game struct {
 	Platform     string    `json:"platform"`
 	Players      int       `json:"players"`
 	Rom          string    `json:"rom"`
+	SaveType     string    `json:"saveType,omitempty"`
 	Started      time.Time `json:"started"`
 	StartedBy    string    `json:"startedBy"`
 	Title        string    `json:"title"`
@@ -51,10 +52,14 @@ type Start struct {
 	// The game's own file name
 	FileName     string `json:"fileName"`
 	LibraryOwner string `json:"libraryOwner"`
-	Platform     string `json:"platform"`
-	Rom          string `json:"rom"`
+	// The player's settings for the emulator, as the browser gives it them
+	Options  map[string]string `json:"options,omitempty"`
+	Platform string            `json:"platform"`
+	Rom      string            `json:"rom"`
 	// The player's latest save of the game, which it starts with
-	Save      []byte `json:"save,omitempty"`
+	Save []byte `json:"save,omitempty"`
+	// The kind of file the emulator keeps its save in, where it keeps it itself: a DS's .dsv or .sav
+	SaveType  string `json:"saveType,omitempty"`
 	StartedBy string `json:"startedBy"`
 	Title     string `json:"title"`
 }

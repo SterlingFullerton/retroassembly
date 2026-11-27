@@ -46,7 +46,9 @@ var page []byte
 
 const (
 	padStateSize = 7
-	kilobits     = 6000
+	// The controller, then where the stylus is on the picture and whether it's down: x and y, 0 to 65535 across it
+	padWithPointerSize = 12
+	kilobits           = 6000
 )
 
 func init() {
@@ -71,6 +73,9 @@ type pad struct {
 	mu      sync.Mutex
 	buttons uint16
 	axes    [4]int16
+	// The stylus, for a DS's touch screen, as libretro takes it: -0x7fff to 0x7fff across the picture
+	pointerX, pointerY int16
+	pointerDown        bool
 }
 
 // Standard gamepad buttons, in the order the browser numbers them, as RetroPad ids
@@ -78,7 +83,7 @@ var retroPadID = [16]uint{0, 8, 1, 9, 10, 11, 12, 13, 2, 3, 14, 15, 4, 5, 6, 7}
 
 // set takes a controller as play together sends it: three bytes of buttons, a bit each, then a signed byte per axis
 func (p *pad) set(state []byte) {
-	if len(state) != padStateSize {
+	if len(state) != padStateSize && len(state) != padWithPointerSize {
 		return
 	}
 	var pressed uint16
@@ -92,6 +97,14 @@ func (p *pad) set(state []byte) {
 	p.buttons = pressed
 	for axis := range 4 {
 		p.axes[axis] = int16(math.Round(float64(int8(state[3+axis])) / 127 * 32767))
+	}
+	if len(state) == padWithPointerSize {
+		across := func(value uint16) int16 { return int16(math.Round(float64(value)/65535*0xfffe - 0x7fff)) }
+		p.pointerX = across(uint16(state[7]) | uint16(state[8])<<8)
+		p.pointerY = across(uint16(state[9]) | uint16(state[10])<<8)
+		p.pointerDown = state[11] != 0
+	} else {
+		p.pointerDown = false
 	}
 }
 
@@ -190,9 +203,19 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 	// The latest frame, for a save state's picture
 	var last picture
 	for {
+		// The stylus is the first player's who has it down, or else where the first player left it
+		stylusSet := false
 		for port := range pads {
 			p := &pads[port]
 			p.mu.Lock()
+			if !stylusSet && (p.pointerDown || port == 0) {
+				down := 0
+				if p.pointerDown {
+					down = 1
+				}
+				C.fe_set_pointer(C.int16_t(p.pointerX), C.int16_t(p.pointerY), C.int(down))
+				stylusSet = p.pointerDown
+			}
 			C.fe_set_pad(C.int(port), C.uint16_t(p.buttons), C.int16_t(p.axes[0]), C.int16_t(p.axes[1]),
 				C.int16_t(p.axes[2]), C.int16_t(p.axes[3]))
 			p.mu.Unlock()

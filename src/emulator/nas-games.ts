@@ -21,7 +21,7 @@ export function getNASCores() {
 }
 
 /** Runs a game from the library on the NAS, and is the code that joins it */
-export async function startNASGame(start: { controls: string; core: string; rom: string }) {
+export async function startNASGame(start: { controls: string; core: string; rom: string; saveFileType?: string }) {
   const { code } = await parseResponse(client.nas_games.$post({ json: start }))
   return code
 }

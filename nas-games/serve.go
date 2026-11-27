@@ -49,13 +49,16 @@ type runningGame struct {
 	Ended bool   `json:"ended"`
 	ID    string `json:"id"`
 	// Whose library the game is in, and its id there, for its save to be kept with the player's others
-	LibraryOwner string    `json:"libraryOwner"`
-	Platform     string    `json:"platform"`
-	Players      int       `json:"players"`
-	Rom          string    `json:"rom"`
-	Started      time.Time `json:"started"`
-	StartedBy    string    `json:"startedBy"`
-	Title        string    `json:"title"`
+	LibraryOwner string `json:"libraryOwner"`
+	Platform     string `json:"platform"`
+	Players      int    `json:"players"`
+	Rom          string `json:"rom"`
+	// The kind of file the emulator keeps its own save in, such as a DS's .dsv, or nothing for one whose save the
+	// frontend keeps
+	SaveType  string    `json:"saveType,omitempty"`
+	Started   time.Time `json:"started"`
+	StartedBy string    `json:"startedBy"`
+	Title     string    `json:"title"`
 
 	address string
 	command *exec.Cmd
@@ -75,12 +78,13 @@ var service = struct {
 }{games: map[string]*runningGame{}}
 
 var (
-	errFull     = errors.New("the NAS is running as many games as it may")
-	errNoCore   = errors.New("that emulator isn't on the NAS")
-	errNoGame   = errors.New("no such game")
-	errBadFile  = errors.New("no such game file")
-	validCore   = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
-	validPlayer = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+	errFull       = errors.New("the NAS is running as many games as it may")
+	errNoCore     = errors.New("that emulator isn't on the NAS")
+	errNoGame     = errors.New("no such game")
+	errBadFile    = errors.New("no such game file")
+	validCore     = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
+	validPlayer   = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+	validSaveType = regexp.MustCompile(`^[a-z0-9]{1,8}$`)
 	// How long an ended game's last save waits to be collected
 	keepEnded   = time.Hour
 	idAlphabet  = "abcdefghjkmnpqrstuvwxyz23456789"
@@ -164,7 +168,9 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		// The game's own file name, which some emulators read its region or set from: arcade ones above all
 		FileName string `json:"fileName"`
 		// The player's latest save of the game, which it starts with: as bytes, so base64 in JSON
-		Save      []byte `json:"save"`
+		Save []byte `json:"save"`
+		// The kind of file the emulator keeps its own save in, beside the game's name: a DS's .dsv or .sav
+		SaveType  string `json:"saveType"`
 		StartedBy string `json:"startedBy"`
 		Title     string `json:"title"`
 	}
@@ -210,6 +216,12 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	}
 	saveDir := filepath.Join(envOr("SAVE_DIR", "/config/saves"), request.StartedBy)
 	savePath := filepath.Join(saveDir, strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))+".srm")
+	// An emulator that keeps its save itself does so in the save folder, under the name it was started with
+	saveType := ""
+	if validSaveType.MatchString(request.SaveType) && request.SaveType != "srm" && request.SaveType != "zip" {
+		saveType = request.SaveType
+		savePath = filepath.Join(saveDir, strings.TrimSuffix(filepath.Base(launchPath), filepath.Ext(launchPath))+"."+saveType)
+	}
 	if err := os.MkdirAll(saveDir, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -252,7 +264,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	}
 	game := &runningGame{
 		Controls: request.Controls, Core: request.Core, ID: newID(), LibraryOwner: request.LibraryOwner,
-		Platform: request.Platform, Rom: request.Rom, Started: time.Now(), StartedBy: request.StartedBy,
+		Platform: request.Platform, Rom: request.Rom, SaveType: saveType, Started: time.Now(), StartedBy: request.StartedBy,
 		Title: request.Title, collected: collected, savePath: savePath,
 		address: fmt.Sprintf("127.0.0.1:%d", port+1000), done: make(chan struct{}), idleSince: time.Now(), port: port,
 	}

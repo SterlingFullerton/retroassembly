@@ -14,4 +14,7 @@ Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDL
 (47900; one port each game, the next ones after), `ICE_INTERFACES` (the network interfaces players reach the NAS on,
 with the container on the host's network), `ROMS_DIR` (/roms), `SAVE_DIR` (/config/saves).
 
-Emulators: the cores in `/cores` (N64 and PSP for now); a console's emulator is found by the name the app gives it.
+Emulators: every one the app uses, in `/cores`, from libretro's build server, but melonDS, which is built here from
+the same source and patch as the browser's (`patches/melonds.patch`, a copy of `src/assets/cores/melonds_libretro.patch`).
+A console's emulator is found by the name the app gives it. A DS's touch screen is the stylus a player sends with their
+controller.

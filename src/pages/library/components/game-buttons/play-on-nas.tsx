@@ -43,8 +43,10 @@ export function PlayOnNAS({ rom }: Readonly<{ rom: { id: string; platform: strin
     setStarting(true)
     setFailure(undefined)
     try {
-      const controls = resolveConsole(rom.platform, core).controls ?? ''
-      const code = await startNASGame({ controls, core, rom: rom.id })
+      const resolved = resolveConsole(rom.platform, core)
+      const controls = resolved.controls ?? ''
+      // An emulator that keeps its own save, such as the DS's, keeps it in a file of its own kind
+      const code = await startNASGame({ controls, core, rom: rom.id, saveFileType: resolved.saveFileType })
       // Whoever starts it joins first, and is its first player
       await navigate(`${routes.libraryJoin}?code=${encodeURIComponent(code)}&started=1`)
     } catch (error) {

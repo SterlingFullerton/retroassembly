@@ -105,6 +105,10 @@ func TestGamesOnTheNAS(t *testing.T) {
 		t.Fatalf("started %+v", started)
 	}
 	game := nas.games[0]
+	// With the player's settings for the emulator, as in the browser
+	if options, _ := game["options"].(map[string]any); options["fceumm_turbo_enable"] != "Both" {
+		t.Fatalf("the NAS wasn't given the emulator's settings: %+v", game["options"])
+	}
 	if game["fileName"] != "Balloon Fight (U) [!].nes" {
 		t.Fatalf("the NAS wasn't told the game's own name: %+v", game)
 	}

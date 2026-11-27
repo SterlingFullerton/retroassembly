@@ -153,9 +153,11 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	romValue, romPresent := object["rom"]
 	coreValue, corePresent := object["core"]
 	controlsValue, controlsPresent := object["controls"]
+	saveTypeValue, saveTypePresent := object["saveFileType"]
 	romID := check.String("rom", romValue, romPresent, 1)
 	core := check.String("core", coreValue, corePresent, 1)
 	controls := check.String("controls", controlsValue, controlsPresent, 0)
+	saveType, _ := check.OptionalString("saveFileType", saveTypeValue, saveTypePresent, 0, 8)
 	if check.Failed(w) {
 		return
 	}
@@ -185,7 +187,7 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	if latest, err := library.LatestGameSave(r.Context(), scope, core, romID); err == nil && latest != nil {
 		save, _ = scope.Storage.Read(latest.FileID)
 	}
-	bioses, err := s.nasBioses(r, scope, platform)
+	bioses, options, err := s.nasSettings(r, scope, platform, core)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -206,7 +208,8 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	}
 	game, err := s.nasGames.Start(r.Context(), nasgames.Start{
 		Bioses: bioses, Controls: controls, Core: core, Discs: discs, File: file, FileName: fileName,
-		LibraryOwner: scope.LibraryOwnerID, Platform: platform, Rom: romID, Save: save, StartedBy: scope.User.ID,
+		LibraryOwner: scope.LibraryOwnerID, Options: options, Platform: platform, Rom: romID, Save: save,
+		SaveType: saveType, StartedBy: scope.User.ID,
 		Title: title,
 	})
 	if err != nil {
@@ -270,9 +273,11 @@ func (s *Server) collectNASSavesOnce(ctx context.Context) {
 			Database: s.database, LibraryOwnerID: game.LibraryOwner, MaxAutoStates: s.config.MaxAutoStatesPerRom,
 			Messages: s.languages.T, Storage: files.Storage{Path: s.config.FilePath}, User: &auth.User{ID: game.StartedBy},
 		}
-		if _, err := library.CreateGameSave(ctx, scope, library.NewGameSave{
-			Content: bytes.NewReader(content), Core: game.Core, Rom: game.Rom,
-		}); err != nil {
+		save := library.NewGameSave{Content: bytes.NewReader(content), Core: game.Core, Rom: game.Rom}
+		if game.SaveType != "" {
+			save.FileType = &game.SaveType
+		}
+		if _, err := library.CreateGameSave(ctx, scope, save); err != nil {
 			log.Printf("nas games: keeping the save of %s (%s): %v", game.ID, game.Title, err)
 			continue
 		}
@@ -357,14 +362,22 @@ func (s *Server) nasStatePicture(w http.ResponseWriter, r *http.Request, _ libra
 	_, _ = w.Write(picture)
 }
 
-// nasBioses is the player's BIOS files for a console, as their settings list them, for the NAS's emulator to start
-// with as the browser's would
-func (s *Server) nasBioses(r *http.Request, scope library.Scope, platform string) ([]nasgames.File, error) {
+// nasSettings is what the NAS's emulator starts with, as the browser's would: the player's BIOS files for the console,
+// as their settings list them, and their settings for the emulator, such as the DS's stylus following the pointer
+func (s *Server) nasSettings(r *http.Request, scope library.Scope, platform, core string) ([]nasgames.File, map[string]string, error) {
 	resolved, err := s.preference.Get(r.Context(), s.database, scope.User.ID, scope.LibraryOwnerID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	emulator, _ := resolved["emulator"].(preference.Object)
+	cores, _ := emulator["core"].(preference.Object)
+	coreSettings, _ := cores[core].(preference.Object)
+	options := map[string]string{}
+	for key, value := range coreSettings {
+		if text, ok := value.(string); ok {
+			options[key] = text
+		}
+	}
 	platforms, _ := emulator["platform"].(preference.Object)
 	settings, _ := platforms[platform].(preference.Object)
 	listed, _ := settings["bioses"].([]any)
@@ -382,5 +395,5 @@ func (s *Server) nasBioses(r *http.Request, scope library.Scope, platform string
 		}
 		files = append(files, nasgames.File{Content: content, Name: name})
 	}
-	return files, nil
+	return files, options, nil
 }
