@@ -22,6 +22,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"nasgames/host/savezip"
 )
 
 // The game service: what the app asks to run a game on the NAS, list the games running, and bring a player into one.
@@ -68,8 +70,9 @@ type runningGame struct {
 	endedAt   time.Time
 	idleSince time.Time
 	port      int
-	// Where the game keeps its own save
-	savePath string
+	// Where the game keeps its own save: a file, or a folder of them, zipped to be collected
+	saveFolder string
+	savePath   string
 }
 
 var service = struct {
@@ -222,12 +225,36 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		saveType = request.SaveType
 		savePath = filepath.Join(saveDir, strings.TrimSuffix(filepath.Base(launchPath), filepath.Ext(launchPath))+"."+saveType)
 	}
-	if err := os.MkdirAll(saveDir, 0o755); err != nil {
+	// A PSP keeps its saves as a folder on its memory stick, kept by the app as a zip of it. Each game has a memory
+	// stick of its own, as in the browser, so its zip has its saves alone
+	gameSaveDir, saveFolder := saveDir, ""
+	if request.SaveType == "zip" {
+		saveType = "zip"
+		gameSaveDir = filepath.Join(saveDir, "memory-sticks", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath)))
+		saveFolder = filepath.Join(gameSaveDir, "PSP", "SAVEDATA")
+	}
+	if err := os.MkdirAll(gameSaveDir, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	collected := ""
-	if len(request.Save) > 0 {
+	if saveFolder != "" {
+		// The app's latest is put in place of whatever the folder had
+		var files []savezip.File
+		if len(request.Save) > 0 {
+			unzipped, err := savezip.Unzip(request.Save, "SAVEDATA")
+			if err != nil {
+				http.Error(w, "the game's save couldn't be read: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			files = unzipped
+			collected = checksum(savezip.Zip(files))
+		}
+		if err := savezip.Write(saveFolder, files); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if len(request.Save) > 0 {
 		if err := os.WriteFile(savePath, request.Save, 0o644); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -265,7 +292,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	game := &runningGame{
 		Controls: request.Controls, Core: request.Core, ID: newID(), LibraryOwner: request.LibraryOwner,
 		Platform: request.Platform, Rom: request.Rom, SaveType: saveType, Started: time.Now(), StartedBy: request.StartedBy,
-		Title: request.Title, collected: collected, savePath: savePath,
+		Title: request.Title, collected: collected, saveFolder: saveFolder, savePath: savePath,
 		address: fmt.Sprintf("127.0.0.1:%d", port+1000), done: make(chan struct{}), idleSince: time.Now(), port: port,
 	}
 	self, _ := os.Executable()
@@ -273,7 +300,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	command.Env = append(os.Environ(),
 		"GAME="+launchPath, "SYSTEM_DIR="+systemDir,
 		"SAVE_NAME="+strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath)), "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
-		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+saveDir,
+		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+gameSaveDir,
 		"STATES_DIR="+filepath.Join(saveDir, "states", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))))
 	prefix := fmt.Sprintf("[%s] ", game.ID)
 	command.Stdout = &prefixed{prefix: prefix, out: os.Stdout}
@@ -356,9 +383,9 @@ func findGame(id string) *runningGame {
 func gameSave(w http.ResponseWriter, r *http.Request) {
 	service.Lock()
 	game := service.games[r.PathValue("id")]
-	var path, collected string
+	var path, folder, collected string
 	if game != nil {
-		path, collected = game.savePath, game.collected
+		path, folder, collected = game.savePath, game.saveFolder, game.collected
 	}
 	service.Unlock()
 	if game == nil {
@@ -366,6 +393,14 @@ func gameSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	content, err := os.ReadFile(path)
+	if folder != "" {
+		// The folder's files zipped as the browser does, so the same saves are the same bytes. None is no save
+		files, readErr := savezip.Read(folder)
+		content, err = nil, readErr
+		if readErr == nil && len(files) > 0 {
+			content = savezip.Zip(files)
+		}
+	}
 	if err != nil || len(content) == 0 || checksum(content) == collected {
 		// Nothing new: an ended game has nothing left to give, and is forgotten
 		service.Lock()
