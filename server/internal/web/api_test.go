@@ -26,6 +26,7 @@ type apiSetup struct {
 	app      *httptest.Server
 	config   config.Config
 	database *sql.DB
+	server   *Server
 }
 
 func newAPI(t *testing.T) *apiSetup {
@@ -63,7 +64,7 @@ func newAPI(t *testing.T) *apiSetup {
 	}
 	app := httptest.NewServer(handler)
 	t.Cleanup(app.Close)
-	return &apiSetup{app: app, config: c, database: database}
+	return &apiSetup{app: app, config: c, database: database, server: server}
 }
 
 // apiUser is a browser signed in as one account

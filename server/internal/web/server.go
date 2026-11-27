@@ -90,7 +90,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 	for _, console := range data.MultiDiscConsoles {
 		multiDisc[console] = true
 	}
-	return &Server{
+	server := &Server{
 		authMode: authMode, cdn: cache,
 		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
 		gameInfo:  gameInfo,
@@ -99,7 +99,11 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
 		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts), together: together.New(),
 		threadedConsoles: threaded,
-	}, nil
+	}
+	if server.nasGames != nil {
+		go server.collectNASSaves()
+	}
+	return server, nil
 }
 
 // What a request carries once it's known who sent it

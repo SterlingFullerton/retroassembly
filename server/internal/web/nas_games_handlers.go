@@ -1,9 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/db"
 	"retroassembly/server/internal/failure"
+	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/library"
 	"retroassembly/server/internal/nasgames"
 	"retroassembly/server/internal/preference"
@@ -173,8 +176,14 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, failure.New(http.StatusBadRequest, "That game's file isn't in the games folder"))
 		return
 	}
+	// It starts with the player's latest save of the game with this emulator, made here or on the NAS
+	var save []byte
+	if latest, err := library.LatestGameSave(r.Context(), scope, core, romID); err == nil && latest != nil {
+		save, _ = scope.Storage.Read(latest.FileID)
+	}
 	game, err := s.nasGames.Start(r.Context(), nasgames.Start{
-		Controls: controls, Core: core, File: file, Platform: platform, StartedBy: scope.User.ID, Title: title,
+		Controls: controls, Core: core, File: file, LibraryOwner: scope.LibraryOwnerID, Platform: platform,
+		Rom: romID, Save: save, StartedBy: scope.User.ID, Title: title,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -204,4 +213,45 @@ func (s *Server) stopNASGame(w http.ResponseWriter, r *http.Request, scope libra
 		return
 	}
 	writeJSON(w, http.StatusOK, nil)
+}
+
+// How often the games on the NAS are asked for their own saves. A game keeps its save every 10 seconds when it
+// changes, and as it ends
+const nasSaveEvery = 20 * time.Second
+
+// collectNASSaves keeps, every little while, the saves of games on the NAS that changed, with the player who started
+// each, as a version of their save of the game: the same as one made playing in their browser
+func (s *Server) collectNASSaves() {
+	for range time.Tick(nasSaveEvery) {
+		ctx, cancel := context.WithTimeout(context.Background(), nasSaveEvery)
+		s.collectNASSavesOnce(ctx)
+		cancel()
+	}
+}
+
+func (s *Server) collectNASSavesOnce(ctx context.Context) {
+	games, err := s.nasGames.ListAll(ctx)
+	if err != nil {
+		return
+	}
+	for _, game := range games {
+		if game.StartedBy == "" || game.Rom == "" || game.LibraryOwner == "" {
+			continue
+		}
+		content, sha1, err := s.nasGames.Save(ctx, game.ID)
+		if err != nil || content == nil {
+			continue
+		}
+		scope := library.Scope{
+			Database: s.database, LibraryOwnerID: game.LibraryOwner, MaxAutoStates: s.config.MaxAutoStatesPerRom,
+			Messages: s.languages.T, Storage: files.Storage{Path: s.config.FilePath}, User: &auth.User{ID: game.StartedBy},
+		}
+		if _, err := library.CreateGameSave(ctx, scope, library.NewGameSave{
+			Content: bytes.NewReader(content), Core: game.Core, Rom: game.Rom,
+		}); err != nil {
+			log.Printf("nas games: keeping the save of %s (%s): %v", game.ID, game.Title, err)
+			continue
+		}
+		_ = s.nasGames.Collected(ctx, game.ID, sha1)
+	}
 }

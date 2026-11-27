@@ -1,6 +1,8 @@
 package web
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,9 @@ type fakeNAS struct {
 	games   []map[string]any
 	answers []string
 	key     string
+	// The game's own save as the NAS has it, and the checksums the app said it kept
+	save      []byte
+	collected []string
 }
 
 func (f *fakeNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +41,19 @@ func (f *fakeNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode([]string{"fceumm", "mupen64plus_next"})
 	case r.Method == http.MethodGet && r.URL.Path == "/games":
 		_ = json.NewEncoder(w).Encode(f.games)
+	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/save":
+		if f.save == nil {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		w.Header().Set("X-Save-Sha1", "sum-of-"+string(f.save))
+		_, _ = w.Write(f.save)
+	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/save/collected":
+		var body map[string]string
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		f.collected = append(f.collected, body["sha1"])
+		f.save = nil
+		w.WriteHeader(http.StatusNoContent)
 	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/players":
 		_ = json.NewEncoder(w).Encode(map[string]any{"offer": "the NAS's offer", "player": 2})
 	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/players/2/answer":
@@ -128,5 +146,54 @@ func TestGamesOnTheNASWhenNotSetUp(t *testing.T) {
 	owner.expectJSON(http.StatusOK, &cores, owner.get("/api/v1/nas_games/cores"))
 	if len(cores) != 0 {
 		t.Fatalf("cores %+v", cores)
+	}
+}
+
+func TestSavesOfGamesOnTheNAS(t *testing.T) {
+	nas := &fakeNAS{key: strings.Repeat("k", 32)}
+	service := httptest.NewServer(nas)
+	defer service.Close()
+	t.Setenv("NAS_GAMES_URL", service.URL)
+	t.Setenv("NAS_GAMES_KEY", nas.key)
+	api := newAPI(t)
+	player := api.register(t, "player")
+	game := player.addGame("Quest (USA).nes")
+	saves := func() []gameSave {
+		var list []gameSave
+		player.expectJSON(http.StatusOK, &list, player.get("/api/v1/game_saves?core=fceumm&rom="+game.ID))
+		return list
+	}
+
+	// The game starts on the NAS with the player's latest save, made in the browser
+	player.expect(http.StatusOK, player.multipart(http.MethodPost, "/api/v1/game_saves",
+		map[string]string{"core": "fceumm", "rom": game.ID},
+		map[string]uploadFile{"file": {content: []byte("made in the browser"), name: "blob"}}))
+	player.expect(http.StatusOK, player.json(http.MethodPost, "/api/v1/nas_games",
+		map[string]string{"controls": "nes", "core": "fceumm", "rom": game.ID}))
+	started := nas.games[0]
+	if save, _ := started["save"].(string); save == "" || started["rom"] != game.ID || started["libraryOwner"] == "" {
+		t.Fatalf("started with %+v", started)
+	}
+	decoded, _ := base64.StdEncoding.DecodeString(started["save"].(string))
+	if string(decoded) != "made in the browser" {
+		t.Fatalf("started with the save %q", decoded)
+	}
+
+	// A save the game made on the NAS becomes the player's latest, and the NAS is told it was kept
+	nas.mu.Lock()
+	nas.save = []byte("made on the NAS")
+	nas.mu.Unlock()
+	api.server.collectNASSavesOnce(context.Background())
+	list := saves()
+	if len(list) != 2 || list[0].Size != len("made on the NAS") {
+		t.Fatalf("saves after collecting %+v", list)
+	}
+	if len(nas.collected) != 1 || nas.collected[0] != "sum-of-made on the NAS" {
+		t.Fatalf("collected %+v", nas.collected)
+	}
+	// Nothing new: nothing kept
+	api.server.collectNASSavesOnce(context.Background())
+	if len(saves()) != 2 {
+		t.Fatalf("saves after nothing new %+v", saves())
 	}
 }

@@ -22,25 +22,33 @@ var (
 	ErrUnavailable = failure.New(http.StatusBadGateway, "The NAS didn't answer")
 )
 
-// Game is a game running on the NAS
+// Game is a game running on the NAS, or one that ended in the last hour
 type Game struct {
-	Controls  string    `json:"controls"`
-	Core      string    `json:"core"`
-	ID        string    `json:"id"`
-	Platform  string    `json:"platform"`
-	Players   int       `json:"players"`
-	Started   time.Time `json:"started"`
-	StartedBy string    `json:"startedBy"`
-	Title     string    `json:"title"`
+	Controls string `json:"controls"`
+	Core     string `json:"core"`
+	Ended    bool   `json:"ended"`
+	ID       string `json:"id"`
+	// Whose library the game is in, and its id there
+	LibraryOwner string    `json:"libraryOwner"`
+	Platform     string    `json:"platform"`
+	Players      int       `json:"players"`
+	Rom          string    `json:"rom"`
+	Started      time.Time `json:"started"`
+	StartedBy    string    `json:"startedBy"`
+	Title        string    `json:"title"`
 }
 
 // Start is what the service needs to run a game: the emulator, and the game's file, relative to the games folder it
 // shares with the app
 type Start struct {
-	Controls  string `json:"controls"`
-	Core      string `json:"core"`
-	File      string `json:"file"`
-	Platform  string `json:"platform"`
+	Controls     string `json:"controls"`
+	Core         string `json:"core"`
+	File         string `json:"file"`
+	LibraryOwner string `json:"libraryOwner"`
+	Platform     string `json:"platform"`
+	Rom          string `json:"rom"`
+	// The player's latest save of the game, which it starts with
+	Save      []byte `json:"save,omitempty"`
 	StartedBy string `json:"startedBy"`
 	Title     string `json:"title"`
 }
@@ -109,6 +117,43 @@ func (c *Client) List(ctx context.Context) ([]Game, error) {
 	var games []Game
 	err := c.call(ctx, http.MethodGet, "/games", nil, &games)
 	return games, err
+}
+
+// ListAll is the games running, and those that ended in the last hour and whose last save hasn't been collected
+func (c *Client) ListAll(ctx context.Context) ([]Game, error) {
+	var games []Game
+	err := c.call(ctx, http.MethodGet, "/games?all=1", nil, &games)
+	return games, err
+}
+
+// Save is a game's own save, when it has one that hasn't been collected, and its checksum
+func (c *Client) Save(ctx context.Context, id string) (content []byte, sha1 string, err error) {
+	if c == nil {
+		return nil, "", ErrOff
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+"/games/"+url.PathEscape(id)+"/save", nil)
+	if err != nil {
+		return nil, "", err
+	}
+	request.Header.Set("Authorization", "Bearer "+c.key)
+	response, err := c.http.Do(request)
+	if err != nil {
+		return nil, "", ErrUnavailable
+	}
+	defer response.Body.Close()
+	if response.StatusCode == http.StatusNoContent {
+		return nil, "", nil
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, "", failure.New(http.StatusBadGateway, "The NAS didn't give the game's save")
+	}
+	content, err = io.ReadAll(io.LimitReader(response.Body, 64<<20))
+	return content, response.Header.Get("X-Save-Sha1"), err
+}
+
+// Collected tells the NAS the game's save with this checksum has been kept
+func (c *Client) Collected(ctx context.Context, id, sha1 string) error {
+	return c.call(ctx, http.MethodPost, "/games/"+url.PathEscape(id)+"/save/collected", map[string]string{"sha1": sha1}, nil)
 }
 
 // Cores is the emulators the NAS has, by the names the app gives them
