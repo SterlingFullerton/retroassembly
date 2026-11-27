@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>NAS game test</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        background: #000;
+        color: #ddd;
+        font:
+          13px ui-monospace,
+          Menlo,
+          monospace;
+        touch-action: none;
+        user-select: none;
+      }
+      video {
+        display: block;
+        width: 100vw;
+        max-height: 70vh;
+        object-fit: contain;
+        background: #000;
+      }
+      #bar {
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        flex-wrap: wrap;
+      }
+      button {
+        font: inherit;
+        padding: 8px 12px;
+        background: #222;
+        color: #ddd;
+        border: 1px solid #444;
+        border-radius: 4px;
+      }
+      #stats {
+        position: fixed;
+        top: 4px;
+        left: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 6px 8px;
+        border-radius: 4px;
+        white-space: pre;
+        pointer-events: none;
+      }
+      #pad {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 16px;
+      }
+      .cross {
+        display: grid;
+        grid-template-columns: repeat(3, 56px);
+        grid-template-rows: repeat(3, 56px);
+      }
+      .cross div,
+      .face div {
+        background: #333;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .face {
+        display: grid;
+        grid-template-columns: repeat(2, 64px);
+        gap: 10px;
+      }
+      .face div {
+        height: 56px;
+        border-radius: 28px;
+        background: #6a1b1b;
+      }
+      .down {
+        filter: brightness(1.8);
+      }
+    </style>
+  </head>
+  <body>
+    <video id="video" autoplay playsinline muted></video>
+    <div id="stats">connecting…</div>
+    <div id="bar">
+      <button id="connect">Connect</button>
+      <button id="sound">Sound on</button>
+      <button id="measure">Measure delay</button>
+      <span id="result"></span>
+    </div>
+    <div id="pad">
+      <div class="cross">
+        <span></span>
+        <div data-b="12">▲</div>
+        <span></span>
+        <div data-b="14">◀</div>
+        <span></span>
+        <div data-b="15">▶</div>
+        <span></span>
+        <div data-b="13">▼</div>
+        <span></span>
+      </div>
+      <div class="face">
+        <div data-b="6">Z</div>
+        <div data-b="9">Start</div>
+        <div data-b="2">B</div>
+        <div data-b="0">A</div>
+      </div>
+    </div>
+    <script>
+      // Standard gamepad numbering: 0 bottom, 1 right, 2 left, 3 top, 4 LB, 5 RB, 6 LT, 7 RT, 8 select, 9 start,
+      // 10 LS, 11 RS, 12-15 up down left right
+      const video = document.getElementById('video')
+      const statsBox = document.getElementById('stats')
+      const touched = new Set()
+      const keys = new Set()
+      const keyButtons = {
+        KeyX: 0,
+        KeyZ: 2,
+        KeyC: 1,
+        KeyS: 3,
+        KeyA: 6,
+        KeyQ: 4,
+        KeyW: 5,
+        Enter: 9,
+        ShiftRight: 8,
+        ArrowUp: 12,
+        ArrowDown: 13,
+        ArrowLeft: 14,
+        ArrowRight: 15,
+      }
+      let channel
+      let connection
+      let forced = new Set()
+      let last = ''
+
+      function padState() {
+        const pressed = new Set([...touched, ...forced, ...[...keys].map((k) => keyButtons[k])])
+        const axes = [0, 0, 0, 0]
+        const pad = navigator.getGamepads?.().find(Boolean)
+        if (pad) {
+          pad.buttons.forEach((b, i) => b.pressed && pressed.add(i))
+          pad.axes.slice(0, 4).forEach((v, i) => (axes[i] = Math.abs(v) > 0.15 ? v : 0))
+        }
+        // The cross also moves the left stick, for games that only read the stick
+        if (pressed.has(14)) axes[0] = -1
+        if (pressed.has(15)) axes[0] = 1
+        if (pressed.has(12)) axes[1] = -1
+        if (pressed.has(13)) axes[1] = 1
+        const bytes = new Uint8Array(7)
+        for (const i of pressed) if (i < 17) bytes[Math.floor(i / 8)] |= 1 << (i % 8)
+        axes.forEach((v, i) => (bytes[3 + i] = (Math.round(Math.max(-1, Math.min(1, v)) * 127) + 256) % 256))
+        return bytes
+      }
+
+      function sendPad() {
+        if (channel?.readyState !== 'open') return
+        const bytes = padState()
+        const key = bytes.join()
+        if (key !== last) {
+          last = key
+          channel.send(bytes)
+        }
+      }
+      setInterval(sendPad, 4)
+      addEventListener('keydown', (e) => {
+        if (e.code in keyButtons) {
+          keys.add(e.code)
+          e.preventDefault()
+          sendPad()
+        }
+      })
+      addEventListener('keyup', (e) => {
+        keys.delete(e.code)
+        sendPad()
+      })
+      for (const el of document.querySelectorAll('[data-b]')) {
+        const b = Number(el.dataset.b)
+        const down = (e) => {
+          e.preventDefault()
+          touched.add(b)
+          el.classList.add('down')
+          sendPad()
+        }
+        const up = (e) => {
+          e.preventDefault()
+          touched.delete(b)
+          el.classList.remove('down')
+          sendPad()
+        }
+        el.addEventListener('pointerdown', down)
+        el.addEventListener('pointerup', up)
+        el.addEventListener('pointercancel', up)
+        el.addEventListener('pointerleave', up)
+      }
+
+      async function connect() {
+        connection?.close()
+        connection = new RTCPeerConnection()
+        connection.addTransceiver('video', { direction: 'recvonly' })
+        connection.addTransceiver('audio', { direction: 'recvonly' })
+        channel = connection.createDataChannel('input', { ordered: false, maxRetransmits: 0 })
+        const stream = new MediaStream()
+        connection.ontrack = (event) => {
+          for (const r of connection.getReceivers()) if ('jitterBufferTarget' in r) r.jitterBufferTarget = 0
+          stream.addTrack(event.track)
+          if (video.srcObject !== stream) video.srcObject = stream
+        }
+        await connection.setLocalDescription(await connection.createOffer())
+        await new Promise((resolve) => {
+          if (connection.iceGatheringState === 'complete') return resolve()
+          connection.onicegatheringstatechange = () => connection.iceGatheringState === 'complete' && resolve()
+          setTimeout(resolve, 2000)
+        })
+        const response = await fetch('/offer', { method: 'POST', body: JSON.stringify(connection.localDescription) })
+        const answer = await response.json()
+        window.player = answer.player
+        await connection.setRemoteDescription({ type: 'answer', sdp: answer.sdp })
+      }
+      document.getElementById('connect').onclick = connect
+      document.getElementById('sound').onclick = () => {
+        video.muted = false
+        video.play()
+      }
+
+      // The stream's numbers, once a second
+      let previous = {}
+      window.latest = {}
+      setInterval(async () => {
+        if (!connection) return
+        const report = await connection.getStats()
+        const now = {}
+        let route = ''
+        let rtt = 0
+        report.forEach((s) => {
+          if (s.type === 'inbound-rtp' && s.kind === 'video') Object.assign(now, s)
+          if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') {
+            rtt = s.currentRoundTripTime * 1000
+            route = report.get(s.remoteCandidateId)?.address ?? ''
+          }
+        })
+        const p = previous
+        const d = (k) => (now[k] ?? 0) - (p[k] ?? 0)
+        const frames = d('framesDecoded')
+        const emitted = d('jitterBufferEmittedCount')
+        const s = {
+          player: window.player,
+          decoder:
+            (report.get(now.codecId)?.mimeType ?? '').replace('video/', '') + ' ' + (now.decoderImplementation ?? ''),
+          size: `${now.frameWidth} x ${now.frameHeight}`,
+          fps: now.framesPerSecond ?? 0,
+          decodeMs: frames ? (d('totalDecodeTime') / frames) * 1000 : 0,
+          waitMs: emitted ? (d('jitterBufferDelay') / emitted) * 1000 : 0,
+          mbps: (d('bytesReceived') * 8) / 1e6,
+          rttMs: rtt,
+          lost: now.packetsLost ?? 0,
+          dropped: now.framesDropped ?? 0,
+          freezes: now.freezeCount ?? 0,
+          route,
+        }
+        window.latest = s
+        previous = now
+        statsBox.textContent =
+          `player ${s.player}\ndecoder ${s.decoder}\nreceived ${s.size}\nframe rate ${s.fps} fps\n` +
+          `decode ${s.decodeMs.toFixed(1)} ms\nwait before showing ${s.waitMs.toFixed(1)} ms\n` +
+          `data rate ${s.mbps.toFixed(1)} Mbps\nround trip ${s.rttMs.toFixed(1)} ms\nlost ${s.lost}  dropped ${s.dropped}  freezes ${s.freezes}\nroute ${s.route}`
+      }, 1000)
+
+      // Button to picture: nudge the stick and time the first frame that changes clearly
+      const probe = document.createElement('canvas')
+      probe.width = 128
+      probe.height = 96
+      const probeContext = probe.getContext('2d', { willReadFrequently: true })
+      let lastPixels
+      const recent = []
+      let waiting
+      // How many of the probe's pixels changed clearly from the frame before
+      function changedPixels(pixels) {
+        let count = 0
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (
+            Math.abs(pixels[i] - lastPixels[i]) +
+              Math.abs(pixels[i + 1] - lastPixels[i + 1]) +
+              Math.abs(pixels[i + 2] - lastPixels[i + 2]) >
+            60
+          )
+            count++
+        }
+        return count
+      }
+      function onFrame(now, meta) {
+        probeContext.drawImage(video, 0, 0, probe.width, probe.height)
+        const pixels = probeContext.getImageData(0, 0, probe.width, probe.height).data
+        if (lastPixels) {
+          const changed = changedPixels(pixels)
+          if (waiting && changed > Math.max(3, waiting.baseline * 3)) {
+            waiting.resolve(meta.expectedDisplayTime ?? now)
+            waiting = undefined
+          } else if (!waiting) {
+            recent.push(changed)
+            if (recent.length > 30) recent.shift()
+          }
+        }
+        lastPixels = pixels
+        video.requestVideoFrameCallback(onFrame)
+      }
+      video.requestVideoFrameCallback(onFrame)
+
+      // Holds `button` for 150 ms and times the first frame that changes clearly, against the frames just before
+      async function pressAndTime(button) {
+        const baseline = Math.max(...recent.slice(-20), 0)
+        const changed = new Promise((resolve) => (waiting = { baseline, resolve }))
+        const started = performance.now()
+        forced = new Set([button])
+        sendPad()
+        setTimeout(() => {
+          forced = new Set()
+          sendPad()
+        }, 150)
+        const shown = await Promise.race([changed, new Promise((r) => setTimeout(() => r(0), 1500))])
+        waiting = undefined
+        return shown ? shown - started : NaN
+      }
+      window.measure = async (buttons = [15, 14, 15, 14, 15, 14, 15, 14]) => {
+        const out = document.getElementById('result')
+        const times = []
+        for (const button of buttons) {
+          await new Promise((r) => setTimeout(r, 1000))
+          times.push(await pressAndTime(button))
+          out.textContent = times.map((t) => Math.round(t)).join(' ')
+        }
+        window.measured = times
+        const sorted = times.filter((t) => !isNaN(t)).sort((a, b) => a - b)
+        out.textContent += `  median ${Math.round(sorted[Math.floor(sorted.length / 2)])} ms`
+        return times
+      }
+      document.getElementById('measure').onclick = () => window.measure()
+      connect()
+    </script>
+  </body>
+</html>
