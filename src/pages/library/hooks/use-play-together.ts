@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import {
   getSharing,
+  getSharingConnection,
   joinCodeSwitch,
   playTogetherSwitch,
   type Sharing,
@@ -32,4 +33,10 @@ export function useJoinCodeSwitch() {
 /** What this device is sharing, if anything */
 export function useSharing() {
   return useSyncExternalStore(subscribeSharing, getSharing, getSharingOnServer)
+}
+
+/** The connection to the guest of a game this device is sharing, once they've joined */
+export function useSharingConnection() {
+  const sharing = useSharing()
+  return sharing.stage === 'connected' ? getSharingConnection() : undefined
 }

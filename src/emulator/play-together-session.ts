@@ -23,6 +23,7 @@ export type Sharing =
 
 let sharing: Sharing = { stage: 'idle' }
 let stop: (() => void) | undefined
+let connection: RTCPeerConnection | undefined
 const listeners = new Set<() => void>()
 
 function set(next: Sharing) {
@@ -34,6 +35,11 @@ function set(next: Sharing) {
 
 export function getSharing() {
   return sharing
+}
+
+/** The connection to the guest, while one has joined: for reading how the picture is travelling */
+export function getSharingConnection() {
+  return sharing.stage === 'connected' ? connection : undefined
 }
 
 /** Calls `listener` whenever what's being shared changes, until the function it returns is called */
@@ -48,6 +54,7 @@ export function subscribeSharing(listener: () => void) {
 export function stopSharing() {
   stop?.()
   stop = undefined
+  connection = undefined
   if (sharing.stage !== 'idle') {
     set({ stage: 'idle' })
   }
@@ -92,6 +99,7 @@ export async function startSharing({ controls, emulator, title }: ShareOptions) 
       },
       reachableAt,
     })
+    ;({ connection } = host)
     const offer = await host.offer()
     invitation = await invite({ controls, offer, title }, listed)
     if (stopped) {

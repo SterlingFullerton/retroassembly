@@ -10,7 +10,10 @@ import { getKeyButtons, mergePads } from '#@/input/guest-pad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { TestSessionProvider } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { ConsoleControls } from '#@/pages/library/components/emulator-portal/game-overlay/console-controls.tsx'
+import { readoutBox, StreamSection } from '#@/pages/library/components/emulator-portal/game-overlay/perf-readout.tsx'
 import { useKeyboardMapping } from '#@/pages/library/hooks/use-keyboard-mapping.ts'
+import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
+import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { getKeyNameFromCode } from '#@/pages/library/utils/keyboard.ts'
 import { routes } from '#@/pages/routes.ts'
 
@@ -55,6 +58,10 @@ export default function JoinPage() {
   const [found, setFound] = useState<Found>()
   // Where the game's picture is in what the host sends, which is their whole screen
   const [area, setArea] = useState<PictureArea>()
+  // The connection to the host once it's made: what the performance overlay reads the stream from
+  const [connection, setConnection] = useState<RTCPeerConnection>()
+  const [perfOverlay] = usePerfOverlay()
+  const stream = useStreamStats(perfOverlay ? connection : undefined, 'guest')
   const video = useRef<HTMLVideoElement>(null)
   // Everything this device is playing with: keys held, on-screen buttons held, and the on-screen sticks
   const keysHeld = useRef(new Set<RetroPadButton>())
@@ -148,6 +155,7 @@ export default function JoinPage() {
         }
         if (connection.connectionState === 'connected') {
           reached = true
+          setConnection(connection)
           setStage('playing')
         } else if (connection.connectionState === 'failed' || connection.connectionState === 'closed') {
           setStage(reached ? 'ended' : 'unreachable')
@@ -176,6 +184,7 @@ export default function JoinPage() {
       clearTimeout(giveUp)
       clearInterval(timer)
       session?.close()
+      setConnection(undefined)
     }
   }, [joined, found, onScreen])
 
@@ -242,6 +251,15 @@ export default function JoinPage() {
             <ConsoleControls kind={found.invitation.controls} />
           </div>
         </TestSessionProvider>
+      ) : null}
+
+      {/* The performance overlay's stream numbers, where this device has it switched on. They take no touches */}
+      {playing && stream ? (
+        <div className='pointer-events-none absolute inset-0'>
+          <div className={readoutBox} data-testid='guest-stream'>
+            <StreamSection stats={stream} />
+          </div>
+        </div>
       ) : null}
 
       {stage === 'connecting' && found ? (

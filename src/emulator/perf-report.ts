@@ -1,5 +1,6 @@
 import type { SystemReading } from './perf-monitor.ts'
 import type { FrameSummary, Spread } from './perf.ts'
+import { getStreamRows, type StreamStats } from './stream-stats.ts'
 
 // What the performance overlay says, as text: the rows the pause menu shows, section by section, and the report its
 // Copy report button puts on the clipboard. It's a technical readout for looking into a slow game, in the terms such
@@ -79,6 +80,8 @@ export interface PerfDetails {
   seconds: number
   /** The shader's name, or nothing when it's off */
   shader: string
+  /** How the picture is travelling to a guest, while the game is shared with one */
+  stream?: StreamStats
   summary: FrameSummary
   system: SystemReading
   /** Whether the emulator runs on several threads */
@@ -176,6 +179,7 @@ export function getPerfSections(details: PerfDetails): PerfSection[] {
   return [
     { rows: frames, title: 'Frames' },
     { rows: video, title: 'Video and audio' },
+    { rows: details.stream ? getStreamRows(details.stream) : [], title: 'Stream, to guest' },
     { rows: memory, title: 'Memory' },
     { rows: setup, title: 'Setup' },
   ].filter((section) => section.rows.length > 0)

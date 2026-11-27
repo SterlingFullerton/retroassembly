@@ -3,9 +3,12 @@ import { type ReactNode, useEffect, useEffectEvent, useState } from 'react'
 import { getFrameWatch, readSystem, type SystemReading, watchFrames } from '#@/emulator/perf-monitor.ts'
 import { formatFps, formatMegabytes, formatMilliseconds, formatPercent } from '#@/emulator/perf-report.ts'
 import { type FrameBar, frameBars, frameBudget, type FrameSummary, summarizeFrames } from '#@/emulator/perf.ts'
+import { getStreamRows, type StreamStats } from '#@/emulator/stream-stats.ts'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
+import { useSharingConnection } from '#@/pages/library/hooks/use-play-together.ts'
+import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { useGameOverlay } from '../hooks/use-game-overlay.ts'
 
 // The performance overlay's readout: how the game is running on this device, in a corner of the screen while it's
@@ -46,7 +49,7 @@ function Value({ children, level }: Readonly<{ children: ReactNode; level?: Leve
   return <span style={level ? { color: colors[level] } : undefined}>{children}</span>
 }
 
-function Section({ children, title }: Readonly<{ children: ReactNode; title: string }>) {
+export function Section({ children, title }: Readonly<{ children: ReactNode; title: string }>) {
   return (
     <div className='border-white/20 not-first:mt-1.5 not-first:border-t not-first:pt-1.5'>
       <div className='font-medium text-[#6fb7ff]'>{title}</div>
@@ -55,7 +58,7 @@ function Section({ children, title }: Readonly<{ children: ReactNode; title: str
   )
 }
 
-function Row({ children, label }: Readonly<{ children: ReactNode; label: string }>) {
+export function Row({ children, label }: Readonly<{ children: ReactNode; label: string }>) {
   return (
     <div className='flex justify-between gap-3'>
       <span className='text-[#aab4bf]'>{label}</span>
@@ -147,12 +150,36 @@ function Timing({ summary }: Readonly<{ summary: FrameSummary }>) {
   )
 }
 
+/** The classes of the readout's box, wherever it's shown */
+export const readoutBox = clsx(
+  'left-safe-offset-2 top-safe-offset-12 absolute w-52 rounded-md bg-black/80 px-2.5 py-2 font-mono text-[11px] leading-normal text-neutral-100',
+  '[@media(pointer:fine)]:top-safe-offset-2',
+)
+
+/** How the picture of a game played together is travelling, as a section of the readout: nothing until it's known */
+export function StreamSection({ stats }: Readonly<{ stats: StreamStats | undefined }>) {
+  const rows = stats ? getStreamRows(stats) : []
+  if (rows.length === 0) {
+    return null
+  }
+  return (
+    <Section title={stats?.role === 'host' ? 'Stream, to guest' : 'Stream, from host'}>
+      {rows.map(([label, value]) => (
+        <Row key={label} label={label.toLowerCase()}>
+          <Value level={label === 'Limited by' && value !== 'none' ? 'warn' : undefined}>{value}</Value>
+        </Row>
+      ))}
+    </Section>
+  )
+}
+
 export function PerfReadout() {
   const [enabled] = usePerfOverlay()
   const [launched] = useEmulatorLaunched()
   const { emulator } = useSession()
   const { visible: paused } = useGameOverlay()
   const [reading, setReading] = useState<Reading>()
+  const stream = useStreamStats(useSharingConnection(), 'host')
   // The log stays as the game left it while the pause menu is open, where its numbers are read
   const applyPaused = useEffectEvent(() => getFrameWatch()?.setPaused(paused))
 
@@ -190,13 +217,7 @@ export function PerfReadout() {
   const { audio, browserMemory, emulatorMemory, refreshRate } = system
   return (
     <div className='pointer-events-none!'>
-      <div
-        className={clsx(
-          'left-safe-offset-2 top-safe-offset-12 absolute w-52 rounded-md bg-black/80 px-2.5 py-2 font-mono text-[11px] leading-normal text-neutral-100',
-          '[@media(pointer:fine)]:top-safe-offset-2',
-        )}
-        data-testid='perf-readout'
-      >
+      <div className={readoutBox} data-testid='perf-readout'>
         <Section title='Timing, ms'>
           <Timing summary={summary} />
           <Graph bars={bars} />
@@ -233,6 +254,8 @@ export function PerfReadout() {
           {emulatorMemory ? <Row label='emulator mem'>{formatMegabytes(emulatorMemory)}</Row> : null}
           {browserMemory ? <Row label='browser mem'>{formatMegabytes(browserMemory.used)}</Row> : null}
         </Section>
+
+        <StreamSection stats={stream} />
       </div>
     </div>
   )

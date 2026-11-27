@@ -15,8 +15,10 @@ import {
 } from '#@/emulator/perf-report.ts'
 import { summarizeFrames } from '#@/emulator/perf.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
+import { useSharingConnection } from '#@/pages/library/hooks/use-play-together.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
+import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { getShownShader } from './game-overlay-shader.tsx'
 
@@ -59,6 +61,7 @@ export function PerfDetails() {
   const { preference } = usePreference()
   const rom = useRom()
   const [copied, setCopied] = useState(false)
+  const stream = useStreamStats(useSharingConnection(), 'host')
   // The shader can change on this very page, so what's shown is read again every second
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -95,6 +98,7 @@ export function PerfDetails() {
     runAhead: launchProfile.runAhead,
     seconds,
     shader: shaderId ? (orderedShaders.find(({ id }) => id === shaderId)?.name ?? shaderId) : '',
+    stream,
     summary,
     system: readSystem(watch, emulator),
     threads: launchProfile.threads,
