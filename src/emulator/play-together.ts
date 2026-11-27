@@ -84,6 +84,32 @@ function isPictureArea(value: unknown): value is PictureArea {
   )
 }
 
+// The channel a game on the NAS takes its players' pause menus on, and sends them its numbers on, once a second. A
+// person's game has no such channel, so a guest only opens it for a game on the NAS
+const commandChannel = { id: 2, label: 'commands', options: { negotiated: true, ordered: true } }
+
+/** What a game on the NAS asks of its players' pause menus */
+export type NASCommand = 'pause' | 'restart' | 'resume'
+
+/** A game on the NAS's numbers, for the performance overlay: over the last second, times in milliseconds */
+export interface NASNumbers {
+  encodeAvg: number
+  fps: number
+  paused: boolean
+  players: number
+  runAvg: number
+  runMax: number
+}
+
+function isNASNumbers(value: unknown): value is NASNumbers {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'fps') === 'number' &&
+    typeof Reflect.get(value, 'paused') === 'boolean'
+  )
+}
+
 // How long to wait for the browser to list the ways it can be reached. It usually takes a moment; what's found by then
 // is what's offered
 const gatheringTimeout = 3000
@@ -392,9 +418,18 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
 }
 
 export interface GuestOptions {
+  /** Whether the host is a game on the NAS, which takes pause menu requests and sends its numbers */
+  commands?: boolean
   iceServers?: RTCIceServer[]
   /** The host's offer */
   offer: string
+  /**
+   * Told the moment the host ends the game, as its channels close. A host that simply goes away is noticed by the
+   * connection failing instead, which takes a while longer
+   */
+  onEnd?: () => void
+  /** Told a game on the NAS's numbers, once a second */
+  onNumbers?: (numbers: NASNumbers) => void
   /** Told where the game's picture is in what arrives, and again whenever it moves */
   onPicture?: (area: PictureArea) => void
   /** Given the game's picture and sound once they arrive, to show and play */
@@ -407,7 +442,16 @@ export interface GuestOptions {
  * Joins a game a host shares. `answer` is the text for the host; once they've taken it, the game arrives through
  * `onStream`. `sendPad()` tells the host what this end's controller is doing. `close()` leaves
  */
-export async function joinGame({ iceServers = [], offer, onPicture, onStream, reachableAt }: GuestOptions) {
+export async function joinGame({
+  commands = false,
+  iceServers = [],
+  offer,
+  onEnd,
+  onNumbers,
+  onPicture,
+  onStream,
+  reachableAt,
+}: GuestOptions) {
   const connection = new RTCPeerConnection({ iceServers })
   // The picture and the sound arrive apart, so neither waits for the other, and are played together here
   const game = new MediaStream()
@@ -428,6 +472,28 @@ export async function joinGame({ iceServers = [], offer, onPicture, onStream, re
     ...pictureChannel.options,
     id: pictureChannel.id,
   })
+  const commandsChannel = commands
+    ? connection.createDataChannel(commandChannel.label, { ...commandChannel.options, id: commandChannel.id })
+    : undefined
+  commandsChannel?.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (typeof event.data !== 'string') {
+      return
+    }
+    try {
+      const numbers: unknown = JSON.parse(event.data)
+      if (isNASNumbers(numbers)) {
+        onNumbers?.(numbers)
+      }
+    } catch {
+      // Not the game's numbers: ignored
+    }
+  })
+  let leaving = false
+  areaChannel.addEventListener('close', () => {
+    if (!leaving) {
+      onEnd?.()
+    }
+  })
   areaChannel.addEventListener('message', (event: MessageEvent<unknown>) => {
     if (typeof event.data !== 'string') {
       return
@@ -447,11 +513,19 @@ export async function joinGame({ iceServers = [], offer, onPicture, onStream, re
   return {
     answer: await describe(connection, reachableAt),
     close() {
+      leaving = true
       channel.close()
       areaChannel.close()
+      commandsChannel?.close()
       connection.close()
     },
     connection,
+    /** Asks a game on the NAS to pause, resume or restart; nothing for a person's game */
+    sendCommand(command: NASCommand) {
+      if (commandsChannel?.readyState === 'open') {
+        commandsChannel.send(JSON.stringify({ do: command }))
+      }
+    },
     /** Sends the controller as it is now; dropped silently until the host is reached */
     sendPad(pad: Parameters<typeof encodePadState>[0]) {
       if (channel.readyState === 'open') {

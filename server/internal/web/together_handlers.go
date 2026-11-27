@@ -48,7 +48,11 @@ func (s *Server) openInvitation(w http.ResponseWriter, r *http.Request, scope li
 	writeJSON(w, http.StatusOK, map[string]string{"code": code})
 }
 
-func (s *Server) findInvitation(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+func (s *Server) findInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope) {
+	if id, isNAS := nasGameID(r.PathValue("code")); isNAS {
+		s.findNASInvitation(w, r, scope, r.PathValue("code"), id)
+		return
+	}
 	invitation, err := s.together.Find(r.PathValue("code"))
 	if err != nil {
 		writeError(w, err)
@@ -57,7 +61,7 @@ func (s *Server) findInvitation(w http.ResponseWriter, r *http.Request, _ librar
 	writeJSON(w, http.StatusOK, invitation)
 }
 
-func (s *Server) answerInvitation(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+func (s *Server) answerInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	body, ok := readJSON(w, r)
 	if !ok {
 		return
@@ -67,6 +71,10 @@ func (s *Server) answerInvitation(w http.ResponseWriter, r *http.Request, _ libr
 	value, present := object["answer"]
 	answer := check.String("answer", value, present, 1)
 	if check.Failed(w) {
+		return
+	}
+	if id, isNAS := nasGameID(r.PathValue("code")); isNAS {
+		s.answerNASInvitation(w, r, scope, r.PathValue("code"), id, answer)
 		return
 	}
 	if err := s.together.Answer(r.PathValue("code"), answer); err != nil {
@@ -96,9 +104,9 @@ func (s *Server) closeInvitation(w http.ResponseWriter, r *http.Request, scope l
 	writeJSON(w, http.StatusOK, nil)
 }
 
-// The games anyone signed in may join without a code
-func (s *Server) listInvitations(w http.ResponseWriter, _ *http.Request, _ library.Scope) {
-	writeJSON(w, http.StatusOK, s.together.List())
+// The games anyone signed in may join without a code: those people are sharing, then those running on the NAS
+func (s *Server) listInvitations(w http.ResponseWriter, r *http.Request, _ library.Scope) {
+	writeJSON(w, http.StatusOK, append(s.together.List(), s.nasListings(r.Context())...))
 }
 
 // The address the request came from, as the server sees it. Two browsers that both reach the server can usually reach

@@ -1,16 +1,22 @@
 import { clsx } from 'clsx'
 import { type SubmitEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
+import { isNASCode, stopNASGame } from '#@/emulator/nas-games.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
-import { encodePadState, joinGame } from '#@/emulator/play-together.ts'
+import { encodePadState, joinGame, type NASCommand, type NASNumbers } from '#@/emulator/play-together.ts'
 import { getKeyButtons, mergePads } from '#@/input/guest-pad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { TestSessionProvider } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { ConsoleControls } from '#@/pages/library/components/emulator-portal/game-overlay/console-controls.tsx'
-import { readoutBox, StreamSection } from '#@/pages/library/components/emulator-portal/game-overlay/perf-readout.tsx'
+import {
+  readoutBox,
+  Row,
+  Section,
+  StreamSection,
+} from '#@/pages/library/components/emulator-portal/game-overlay/perf-readout.tsx'
 import { useKeyboardMapping } from '#@/pages/library/hooks/use-keyboard-mapping.ts'
 import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
 import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
@@ -20,6 +26,9 @@ import { routes } from '#@/pages/routes.ts'
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
 // device's keys, controller or on-screen controls playing as the next player. An experiment, with its words in English
 // until it's decided whether to keep it.
+//
+// A game on the NAS is played here too, by everyone in it: whoever starts it from its page arrives with its code, and
+// joins first. Such a game has a pause menu, which pauses it for everyone in it
 //
 // The games being shared are listed, to join with one press: a code is awkward to type with a controller. A host who
 // asked for a code is joined by typing it instead
@@ -47,9 +56,30 @@ function getController() {
   return [...(navigator.getGamepads?.() ?? [])].find((gamepad) => gamepad?.connected)
 }
 
+/** A game on the NAS's numbers, as a section of the performance overlay */
+function NASSection({ numbers }: Readonly<{ numbers: NASNumbers }>) {
+  return (
+    <Section title='Game, on the NAS'>
+      <Row label='frame rate'>{numbers.paused ? 'paused' : `${numbers.fps} fps`}</Row>
+      <Row label='run, avg'>{numbers.runAvg.toFixed(1)} ms</Row>
+      <Row label='run, max'>{numbers.runMax.toFixed(1)} ms</Row>
+      <Row label='encode, avg'>{numbers.encodeAvg.toFixed(1)} ms</Row>
+      <Row label='players'>{numbers.players}</Row>
+    </Section>
+  )
+}
+
 export default function JoinPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // The code of the game joined, and whether this player started it, which only a game on the NAS can be
+  const [joinedCode, setJoinedCode] = useState('')
+  const startedHere = searchParams.get('started') === '1'
+  const onNAS = isNASCode(joinedCode)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [nasNumbers, setNASNumbers] = useState<NASNumbers>()
+  const sendCommand = useRef<(command: NASCommand) => void>(undefined)
   const keyboard = useKeyboardMapping()
   const [stage, setStage] = useState<Stage>('choosing')
   const [games, setGames] = useState<OpenGame[]>()
@@ -107,11 +137,24 @@ export default function JoinPage() {
     setNotFound(false)
     try {
       setFound(await findInvitation(joinCode))
+      setJoinedCode(joinCode.replaceAll(/\s/gu, '').toUpperCase())
       setStage('connecting')
     } catch {
       setNotFound(true)
     }
   }
+
+  // Arriving with a game's code, from starting it on the NAS, joins it straight away. The press that started it lets
+  // its sound play here
+  const arrivedWith = useRef(searchParams.get('code'))
+  useEffect(() => {
+    const arrived = arrivedWith.current
+    if (arrived) {
+      arrivedWith.current = null
+      // oxlint-disable-next-line typescript/no-floating-promises -- join() answers for its own failures
+      join(arrived)
+    }
+  })
 
   async function handleCode(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -135,7 +178,14 @@ export default function JoinPage() {
 
     async function connect(joining: Found) {
       session = await joinGame({
+        commands: onNAS,
         offer: joining.invitation.offer,
+        onEnd() {
+          if (reached && !closed) {
+            setStage('ended')
+          }
+        },
+        onNumbers: setNASNumbers,
         onPicture: setArea,
         onStream(stream) {
           // Given again as the sound joins the picture; setting it again would start the video over
@@ -149,6 +199,7 @@ export default function JoinPage() {
         session.close()
         return
       }
+      sendCommand.current = session.sendCommand
       const { connection } = session
       connection.addEventListener('connectionstatechange', () => {
         if (closed) {
@@ -185,9 +236,12 @@ export default function JoinPage() {
       clearTimeout(giveUp)
       clearInterval(timer)
       session?.close()
+      sendCommand.current = undefined
       setConnection(undefined)
+      setNASNumbers(undefined)
+      setMenuOpen(false)
     }
-  }, [joined, found, onScreen])
+  }, [joined, found, onScreen, onNAS])
 
   const playing = stage === 'playing'
   const layout = getPictureLayout(area)
@@ -199,6 +253,12 @@ export default function JoinPage() {
     const held = keysHeld.current
     const abortController = new AbortController()
     function handleKey(event: KeyboardEvent) {
+      // The pause key opens and closes a game on the NAS's pause menu
+      if (onNAS && event.type === 'keydown' && getKeyNameFromCode(event.code) === keyboard.$pause) {
+        event.preventDefault()
+        setMenuOpen((open) => !open)
+        return
+      }
       const button = keys.get(getKeyNameFromCode(event.code))
       if (button) {
         event.preventDefault()
@@ -215,7 +275,29 @@ export default function JoinPage() {
       abortController.abort()
       held.clear()
     }
-  }, [playing, keyboard])
+  }, [playing, keyboard, onNAS])
+
+  // The menu pauses the game while it's open, for everyone in it
+  useEffect(() => {
+    if (playing && onNAS) {
+      sendCommand.current?.(menuOpen ? 'pause' : 'resume')
+    }
+  }, [menuOpen, playing, onNAS])
+
+  function restart() {
+    sendCommand.current?.('restart')
+    setMenuOpen(false)
+  }
+
+  async function endGame() {
+    try {
+      await stopNASGame(joinedCode)
+    } catch {
+      // Already over
+    }
+    setMenuOpen(false)
+    setStage('ended')
+  }
 
   async function leave() {
     await navigate(routes.libraryHome)
@@ -254,11 +336,64 @@ export default function JoinPage() {
         </TestSessionProvider>
       ) : null}
 
-      {/* The performance overlay's stream numbers, where this device has it switched on. They take no touches */}
-      {playing && stream ? (
+      {/* The performance overlay's stream numbers, and a game on the NAS's own, where this device has it switched on.
+          They take no touches */}
+      {playing && perfOverlay && (stream || nasNumbers) ? (
         <div className='pointer-events-none absolute inset-0'>
           <div className={readoutBox} data-testid='guest-stream'>
+            {nasNumbers ? <NASSection numbers={nasNumbers} /> : null}
             <StreamSection stats={stream} />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Someone else paused a game on the NAS */}
+      {playing && onNAS && nasNumbers?.paused && !menuOpen ? (
+        <div className='pointer-events-none absolute inset-x-0 top-1/3 flex justify-center'>
+          <span className='rounded-full bg-black/70 px-4 py-1.5 text-lg font-semibold'>Paused</span>
+        </div>
+      ) : null}
+
+      {playing && onNAS && menuOpen && found ? (
+        <div
+          className='absolute inset-0 flex items-center justify-center bg-black/70'
+          data-sn-section=''
+          data-testid='nas-menu'
+        >
+          <div className='flex w-full max-w-xs flex-col items-stretch gap-3 p-6'>
+            <p className='mb-2 text-center text-lg font-semibold'>{found.invitation.title}</p>
+            <button
+              className={pill}
+              data-sn-enabled
+              data-sn-focus-style={focusStyle}
+              onClick={() => setMenuOpen(false)}
+              type='button'
+            >
+              <span className='icon-[mdi--play] size-6 shrink-0' />
+              Resume
+            </button>
+            <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={restart} type='button'>
+              <span className='icon-[mdi--restart] size-6 shrink-0' />
+              Restart
+            </button>
+            {startedHere ? (
+              <button
+                className={pill}
+                data-sn-enabled
+                data-sn-focus-style={focusStyle}
+                data-testid='nas-end'
+                onClick={endGame}
+                type='button'
+              >
+                <span className='icon-[mdi--stop] size-6 shrink-0' />
+                End game
+              </button>
+            ) : (
+              <button className={pill} data-sn-enabled data-sn-focus-style={focusStyle} onClick={leave} type='button'>
+                <span className='icon-[mdi--exit-to-app] size-6 shrink-0' />
+                Leave
+              </button>
+            )}
           </div>
         </div>
       ) : null}
@@ -334,6 +469,19 @@ export default function JoinPage() {
           </form>
         </div>
       )}
+
+      {playing && onNAS ? (
+        <button
+          aria-label='Pause'
+          className='top-safe-offset-2 right-safe-offset-14 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
+          data-sn-enabled
+          data-testid='nas-pause'
+          onClick={() => setMenuOpen(true)}
+          type='button'
+        >
+          <span className='icon-[mdi--pause] size-6' />
+        </button>
+      ) : null}
 
       <button
         aria-label='Leave'

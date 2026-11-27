@@ -77,6 +77,11 @@ export interface ApiRoutes {
     }
     login: { $get: Endpoint<{ query?: { error?: string; redirect_to?: string } }, LoginPageData> }
   }
+  nas_games: {
+    ':code': { $delete: Endpoint<{ param: { code: string } }, null> }
+    cores: { $get: Endpoint<NoInput, string[]> }
+    $post: Endpoint<{ json: { controls: string; core: string; rom: string } }, { code: string }>
+  }
   play_together: {
     invitations: {
       ':code': {

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/klauspost/compress/gzhttp"
@@ -20,6 +21,7 @@ import (
 	"retroassembly/server/internal/config"
 	"retroassembly/server/internal/gameinfo"
 	"retroassembly/server/internal/i18n"
+	"retroassembly/server/internal/nasgames"
 	"retroassembly/server/internal/preference"
 	"retroassembly/server/internal/psp"
 	"retroassembly/server/internal/shared"
@@ -46,6 +48,16 @@ type Server struct {
 	preference    *preference.Settings
 	// Failed sign-ins and sign-ins under way, by address and username
 	signIns *signInLimit
+	// The game service on the NAS, or nil when it isn't set up
+	nasGames *nasgames.Client
+	// Players' places in NAS games, kept for their answer (see nasPlaceKey)
+	nasPlaces sync.Map
+	// The emulators the NAS has, as last asked
+	nasCoresCache struct {
+		sync.Mutex
+		at    time.Time
+		cores []string
+	}
 	// Invitations to games being played together, waiting for a guest
 	together *together.Invitations
 	// The consoles whose game pages are sent with cross-origin isolation headers
@@ -83,6 +95,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
 		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
+		nasGames:      nasgames.New(c.NASGames.URL, c.NASGames.Key),
 		oidc:          oidcProvider{client: oidcClient(c.OIDC.ExtraCertificates)},
 		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts), together: together.New(),
 		threadedConsoles: threaded,
@@ -251,6 +264,9 @@ func (s *Server) Handler() (http.Handler, error) {
 		"POST /api/v1/play_together/invitations/{code}/answer": s.signedIn(s.answerInvitation),
 		"GET /api/v1/play_together/invitations/{code}/answer":  s.signedIn(s.invitationAnswer),
 		"DELETE /api/v1/play_together/invitations/{code}":      s.signedIn(s.closeInvitation),
+		"POST /api/v1/nas_games":                               s.signedIn(s.startNASGame),
+		"GET /api/v1/nas_games/cores":                          s.signedIn(s.nasCores),
+		"DELETE /api/v1/nas_games/{code}":                      s.signedIn(s.stopNASGame),
 	} {
 		api.Handle(pattern, compress(handler))
 	}

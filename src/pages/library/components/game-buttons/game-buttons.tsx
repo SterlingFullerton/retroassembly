@@ -23,6 +23,7 @@ import { EmulatorPortal } from '../emulator-portal/emulator-portal.tsx'
 import { EmulatorSessionProvider } from '../emulator-portal/emulator-session-provider.tsx'
 import { BioseMissingMessage } from './biose-missing-message.tsx'
 import { OnDeviceLine } from './on-device-line.tsx'
+import { PlayOnNAS } from './play-on-nas.tsx'
 
 const isAppleMobile = /iphone|ipad|ipod/iu.test(navigator.userAgent)
 const isChromeLike = /chrome/iu.test(navigator.userAgent)
@@ -362,6 +363,7 @@ function GameButtonsContent({
   return (
     <>
       {buttons}
+      {saves ? <PlayOnNAS rom={rom} /> : null}
       {savesShown}
     </>
   )

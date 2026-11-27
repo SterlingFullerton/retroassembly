@@ -26,6 +26,12 @@ type Directories struct {
 	Storage     string
 }
 
+// NASGames is where the game service on the NAS is, and the key it expects
+type NASGames struct {
+	Key string
+	URL string
+}
+
 // DirectorySettings are the settings that give a kind of file a folder of its own
 var DirectorySettings = map[string]string{
 	"ARTWORK_DIR": "artwork",
@@ -137,6 +143,9 @@ type Config struct {
 	// The SQL migrations Drizzle writes, src/databases/migrations
 	MigrationsDirectory string
 	OIDC                OIDC
+	// The game service on the NAS, which runs games for players whose own device can't: its address (NAS_GAMES_URL)
+	// and the key it expects (NAS_GAMES_KEY). Games on the NAS are off while either is unset
+	NASGames NASGames
 	// Whether anyone can create an account from the login page, not only the first (OPEN_SIGNUP)
 	OpenSignup bool
 	Port       int
@@ -254,6 +263,7 @@ func Load() Config {
 			SessionMaxAge:        sessionMaxAge(env("OIDC_SESSION_MAX_AGE", "28800000")),
 		},
 		FrameAncestors: setOr("FRAME_ANCESTORS", "'self'"),
+		NASGames:       NASGames{Key: Get("NAS_GAMES_KEY"), URL: strings.TrimSuffix(Get("NAS_GAMES_URL"), "/")},
 		OpenSignup:     Get("OPEN_SIGNUP") == "true",
 		Port:           port,
 		SignInAttempts: signInAttempts(Get("SIGN_IN_ATTEMPTS")),
