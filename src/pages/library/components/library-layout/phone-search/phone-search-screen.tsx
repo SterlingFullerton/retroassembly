@@ -144,7 +144,7 @@ export function PhoneSearchScreen() {
 
   return (
     <div className='fixed inset-0 z-10 flex flex-col bg-(--color-background) lg:hidden'>
-      <div className='px-safe-offset-2 flex items-center gap-2 bg-(--accent-9) py-2'>
+      <div className='px-safe-offset-2 pt-safe-offset-2 flex items-center gap-2 bg-(--accent-9) pb-2'>
         <button
           aria-label={t('common.back')}
           className='grid size-9 shrink-0 place-items-center text-white'
