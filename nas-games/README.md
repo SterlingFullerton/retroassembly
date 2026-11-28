@@ -14,7 +14,14 @@ Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDL
 (47900; one port each game, the next ones after), `ICE_INTERFACES` (the network interfaces players reach the NAS on,
 with the container on the host's network), `ROMS_DIR` (/roms), `SAVE_DIR` (/config/saves).
 
-Emulators: every one the app uses, in `/cores`, from libretro's build server, but melonDS, which is built here from
-the same source and patch as the browser's (`patches/melonds.patch`, a copy of `src/assets/cores/melonds_libretro.patch`).
+Emulators: every one the app uses, in `/cores`, from libretro's build server, but two built here:
+
+- melonDS, from the same source and patch as the browser's (`patches/melonds.patch`, a copy of
+  `src/assets/cores/melonds_libretro.patch`).
+- melonDS DS, for a DS game on two consoles linked as by local wireless, from its 1.4.0 source with
+  `patches/melondsds.patch`: its wireless packets handled as melonDS's own multiplayer on one machine does, a console
+  that has stopped not waited for, and its buttons as melonDS's (the microphone on L3, making noise, and the lid on L2,
+  closed while held).
+
 A console's emulator is found by the name the app gives it. A DS's touch screen is the stylus a player sends with their
 controller.
