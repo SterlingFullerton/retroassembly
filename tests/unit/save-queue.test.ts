@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { createSaveQueue, newId, type QueuedSave, type SaveStore } from '#@/emulator/save-queue.ts'
+import { createSaveQueue, newId, type QueuedSave, SaveUploadError, type SaveStore } from '#@/emulator/save-queue.ts'
 
 // The browser's queue of saves, with memory standing in for IndexedDB and a recorder for the server
 function memoryStore() {
@@ -117,6 +117,47 @@ await describe('save queue', async () => {
       server.uploaded.map(({ id }) => id),
       ['a', 'b'],
     )
+    assert.equal(saves.size, 0)
+  })
+
+  await it('uploads a save only into the account it was made in', async () => {
+    const { saves, store } = memoryStore()
+    const server = recorder({ failing: true })
+    const queue = createSaveQueue(store, server.upload)
+    queue.setUser('player-a')
+    await assert.rejects(queue.save(input('rom-1', 'auto')))
+    // Another account signs in on the same browser: the first one's save stays, and its own doesn't replace it
+    queue.setUser('player-b')
+    await assert.rejects(queue.save(input('rom-1', 'auto')))
+    assert.equal(saves.size, 2)
+
+    server.failing = false
+    assert.equal(await queue.flush(), 1)
+    assert.equal(server.uploaded[0].user, 'player-b')
+    queue.setUser('player-a')
+    assert.equal(await queue.flush(), 1)
+    assert.equal(server.uploaded[1].user, 'player-a')
+    assert.equal(saves.size, 0)
+  })
+
+  await it('uploads a save from before saves had an account into whoever signs in', async () => {
+    const { saves, store } = memoryStore()
+    await store.put({ ...input('rom-1', 'manual'), id: 'a', savedAt: Date.now() })
+    const queue = createSaveQueue(store, recorder().upload)
+    queue.setUser('player-a')
+    assert.equal(await queue.flush(), 1)
+    assert.equal(saves.size, 0)
+  })
+
+  await it('lets go of a save for a game the server no longer has', async () => {
+    const { saves, store } = memoryStore()
+    let status = 503
+    const queue = createSaveQueue(store, () => Promise.reject(new SaveUploadError(status)))
+    await assert.rejects(queue.save(input('rom-1', 'manual')))
+    assert.equal(await queue.flush(), 0)
+    assert.equal(saves.size, 1)
+    status = 404
+    assert.equal(await queue.flush(), 0)
     assert.equal(saves.size, 0)
   })
 

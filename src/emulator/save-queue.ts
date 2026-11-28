@@ -15,6 +15,8 @@ export interface QueuedStateSave {
   state: Blob
   thumbnail: Blob
   type: 'auto' | 'manual'
+  /** The account it was made in: uploaded only while that account is signed in */
+  user?: string
 }
 
 /** The game's own save, as the game wrote it: a memory card or a cartridge's battery save */
@@ -27,12 +29,17 @@ export interface QueuedGameSave {
   rom: string
   savedAt: number
   type: 'game'
+  user?: string
 }
 
 export type QueuedSave = QueuedGameSave | QueuedStateSave
 
-// What's given to save(): a save without the id and time the queue gives it
-type SaveInput = QueuedSave extends infer T ? (T extends QueuedSave ? Omit<T, 'id' | 'savedAt'> : never) : never
+// What's given to save(): a save without the id, time and account the queue gives it
+type SaveInput = QueuedSave extends infer T
+  ? T extends QueuedSave
+    ? Omit<T, 'id' | 'savedAt' | 'user'>
+    : never
+  : never
 
 /** Where queued saves are kept: IndexedDB in the browser, memory in tests */
 export interface SaveStore {
@@ -142,11 +149,26 @@ async function postSave(save: QueuedSave) {
   return await client.states.$post({ form })
 }
 
+/** An upload the server answered with a failure, by its status */
+export class SaveUploadError extends Error {
+  status: number
+  constructor(status: number) {
+    super(`Failed to upload the save: ${status}`)
+    this.name = 'SaveUploadError'
+    this.status = status
+  }
+}
+
 export async function uploadSaveToServer(save: QueuedSave) {
   const response = await postSave(save)
   if (!response.ok) {
-    throw new Error(`Failed to upload the save: ${response.status}`)
+    throw new SaveUploadError(response.status)
   }
+}
+
+// A save for a game the server no longer has: it would be refused every time
+function isForDeletedGame(error: unknown) {
+  return error instanceof SaveUploadError && error.status === 404
 }
 
 export function createSaveQueue(
@@ -167,13 +189,36 @@ export function createSaveQueue(
     } catch {}
   }
 
+  // The account signed in. A save is kept under it, so one left waiting when its player signed out is never uploaded
+  // into another account signed in on the same browser later
+  let user: string | undefined
+  function setUser(id: string | undefined) {
+    user = id
+  }
+  // Saves from before saves were kept under an account belong to whoever signs in
+  function isMine(save: QueuedSave) {
+    return save.user === undefined || save.user === user
+  }
+
+  async function uploadOrDrop(queued: QueuedSave) {
+    try {
+      await upload(queued)
+    } catch (error) {
+      if (isForDeletedGame(error)) {
+        await remove(queued)
+      }
+      throw error
+    }
+    await remove(queued)
+  }
+
   /**
    * Queues a save and uploads it. Only the newest auto save of a game, and the newest of its own saves, are worth
    * keeping, so older ones waiting to upload are dropped; manual saves are all kept. If the upload fails, the save stays
    * queued and the error is thrown.
    */
   async function save(input: SaveInput) {
-    const queued = { ...input, id: newId(), savedAt: Date.now() }
+    const queued: QueuedSave = { ...input, id: newId(), savedAt: Date.now(), user }
     // Kept first, before anything else, so a tab closed right after a save on hide still has it
     try {
       await store.put(queued)
@@ -182,18 +227,21 @@ export function createSaveQueue(
       try {
         const waiting = await store.getAll()
         const older = waiting.filter(
-          ({ core, id, rom, type }) =>
-            type === queued.type && rom === queued.rom && (type === 'auto' || core === queued.core) && id !== queued.id,
+          (waiting) =>
+            waiting.type === queued.type &&
+            waiting.rom === queued.rom &&
+            (waiting.type === 'auto' || waiting.core === queued.core) &&
+            waiting.id !== queued.id &&
+            waiting.user === queued.user,
         )
         await Promise.all(older.map((old) => remove(old)))
       } catch {}
     }
-    await upload(queued)
-    await remove(queued)
+    await uploadOrDrop(queued)
     return queued
   }
 
-  /** Uploads every save still waiting, oldest first. Returns how many it uploaded */
+  /** Uploads every save of the signed-in account still waiting, oldest first. Returns how many it uploaded */
   async function flush() {
     let waiting: QueuedSave[]
     try {
@@ -202,17 +250,16 @@ export function createSaveQueue(
       return 0
     }
     let uploaded = 0
-    for (const queued of waiting.toSorted((a, b) => a.savedAt - b.savedAt)) {
+    for (const queued of waiting.filter((queued) => isMine(queued)).toSorted((a, b) => a.savedAt - b.savedAt)) {
       try {
-        await upload(queued)
-        await remove(queued)
+        await uploadOrDrop(queued)
         uploaded += 1
       } catch {}
     }
     return uploaded
   }
 
-  return { flush, save }
+  return { flush, save, setUser }
 }
 
 export const saveQueue = createSaveQueue()
