@@ -59,9 +59,12 @@ async function extractCoreWithCache(core: string) {
   }
   const promise = extractCore(core)
   extractCache.set(core, promise)
-  const result = await promise
-  extractCache.delete(core)
-  return result
+  // Shared only while it downloads: a download that failed is tried again by the next game that asks
+  try {
+    return await promise
+  } finally {
+    extractCache.delete(core)
+  }
 }
 
 const style: Partial<CSSStyleDeclaration> = {
