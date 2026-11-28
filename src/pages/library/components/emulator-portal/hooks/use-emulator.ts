@@ -102,7 +102,7 @@ function isBlank(content: Uint8Array) {
 }
 
 function isSame(a: Uint8Array, b: Uint8Array | undefined) {
-  return b !== undefined && a.length === b.length && a.every((byte, index) => byte === b[index])
+  return a === b || (b !== undefined && a.length === b.length && a.every((byte, index) => byte === b[index]))
 }
 
 // A core's system files, downloaded and unpacked once per page

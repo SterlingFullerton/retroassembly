@@ -101,7 +101,14 @@ const systemDirectory = '/home/web_user/retroarch/userdata/system'
 
 type EmscriptenFS = ReturnType<Nostalgist['getEmscriptenFS']>
 
-function listFiles(fs: EmscriptenFS, directory: string, prefix = ''): SaveFiles {
+// A file in a save folder: where it is, under the folder and in the emulator's file system, and what says it changed
+interface SaveFileEntry {
+  changed: string
+  full: string
+  path: string
+}
+
+function listFiles(fs: EmscriptenFS, directory: string, prefix = ''): SaveFileEntry[] {
   let names: string[]
   try {
     names = fs.readdir(directory) as string[]
@@ -111,11 +118,11 @@ function listFiles(fs: EmscriptenFS, directory: string, prefix = ''): SaveFiles 
   return names
     .filter((name) => name !== '.' && name !== '..')
     .flatMap((name) => {
-      const path = `${directory}/${name}`
-      const { mode } = fs.stat(path)
+      const full = `${directory}/${name}`
+      const { mode, mtime, size } = fs.stat(full)
       return fs.isDir(mode)
-        ? listFiles(fs, path, `${prefix}${name}/`)
-        : [[`${prefix}${name}`, new Uint8Array(fs.readFile(path) as Uint8Array)] as SaveFiles[number]]
+        ? listFiles(fs, full, `${prefix}${name}/`)
+        : [{ changed: `${size} ${new Date(mtime).getTime()}`, full, path: `${prefix}${name}` }]
     })
 }
 
@@ -133,9 +140,25 @@ function writeFiles(fs: EmscriptenFS, directory: string, files: SaveFiles) {
  * Nothing is returned when the game has saved nothing yet
  */
 export function readGameSaveFolder(emulator: Nostalgist, folder: string) {
-  const files = listFiles(emulator.getEmscriptenFS(), `${savesDirectory}/${folder}`)
-  return files.length > 0 ? zipSaveFiles(files) : undefined
+  const fs = emulator.getEmscriptenFS()
+  const entries = listFiles(fs, `${savesDirectory}/${folder}`)
+  if (entries.length === 0) {
+    return
+  }
+  // Read every 30 seconds while the game runs, and the saves rarely change: the files are only read, zipped and
+  // checksummed again when one's size or time has, which would otherwise hold up the game's frames each time
+  const signature = entries.map(({ changed, path }) => `${path} ${changed}`).join('\n')
+  const last = lastSaveFolders.get(emulator)
+  if (last?.signature === signature) {
+    return last.zip
+  }
+  const zip = zipSaveFiles(entries.map(({ full, path }) => [path, new Uint8Array(fs.readFile(full) as Uint8Array)]))
+  lastSaveFolders.set(emulator, { signature, zip })
+  return zip
 }
+
+// Each game's save folder as last read: its files' sizes and times, and the zip they made
+const lastSaveFolders = new WeakMap<Nostalgist, { signature: string; zip: ReturnType<typeof zipSaveFiles> }>()
 
 /** Puts the game's own saves back in their folder before the game boots */
 export function restoreGameSaveFolder(emulator: Nostalgist, folder: string, files: SaveFiles) {
