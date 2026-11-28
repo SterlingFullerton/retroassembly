@@ -145,6 +145,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// Accounts deleted before deletion forgot who they were, or whose deletion stopped part way
+	if err := server.FinishAccountDeletions(context.Background()); err != nil {
+		log.Printf("Deleted accounts weren't finished: %v", err)
+	}
 	handler, err := server.Handler()
 	if err != nil {
 		return err

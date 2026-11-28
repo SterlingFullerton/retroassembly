@@ -348,16 +348,30 @@ func UpdateAccount(ctx context.Context, database *sql.DB, admin *User, id string
 	return &updated, transaction.Commit()
 }
 
-// endAccount marks an account deleted and ends its sessions; what it kept is removed by whoever called
-func endAccount(ctx context.Context, database *sql.DB, id string) error {
-	now := db.Millis(time.Now())
+// RemoveData removes, in the transaction that deletes an account, the rows the account kept elsewhere
+type RemoveData func(transaction *sql.Tx) error
+
+// endAccount deletes an account: it's marked deleted, its sessions end, and what said who it was is forgotten. Its
+// row stays, as the deleted account's place: with no name, password, address or browser, but enough of the name to
+// keep a new account from looking like it. removeData removes what the account kept, in the same transaction, so an
+// account is never left deleted with its data still there
+func endAccount(ctx context.Context, database *sql.DB, id string, removeData RemoveData) error {
 	transaction, err := database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer transaction.Rollback()
-	if _, err := transaction.ExecContext(ctx, `UPDATE users SET status = ?, updated_at = ? WHERE id = ?`,
-		db.StatusDeleted, now, id); err != nil {
+	var username string
+	if err := transaction.QueryRowContext(ctx, `SELECT username FROM users WHERE id = ?`, id).Scan(&username); err != nil {
+		return err
+	}
+	if !strings.HasPrefix(username, deletedUsernamePrefix) {
+		username = deletedUsername(username)
+	}
+	if _, err := transaction.ExecContext(ctx, `
+		UPDATE users SET password_hash = NULL, registration_ip = NULL, registration_user_agent = NULL, status = ?,
+			updated_at = ?, username = ?
+		WHERE id = ?`, db.StatusDeleted, db.Millis(time.Now()), username, id); err != nil {
 		return err
 	}
 	if _, err := transaction.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = ?`, id); err != nil {
@@ -367,12 +381,45 @@ func endAccount(ctx context.Context, database *sql.DB, id string) error {
 	if _, err := transaction.ExecContext(ctx, `DELETE FROM oidc_identities WHERE user_id = ?`, id); err != nil {
 		return err
 	}
+	if err := removeData(transaction); err != nil {
+		return err
+	}
 	return transaction.Commit()
 }
 
-// DeleteAccount deletes another account and ends its sessions. Only for admins, not for themselves (see
-// DeleteOwnAccount), and never the owner
-func DeleteAccount(ctx context.Context, database *sql.DB, admin *User, id string) error {
+// DeletedAccountsToFinish is the deleted accounts that still have something to forget or remove: those deleted before
+// deletion forgot who they were, and any whose removal stopped part way
+func DeletedAccountsToFinish(ctx context.Context, database *sql.DB) ([]string, error) {
+	rows, err := database.QueryContext(ctx, `
+		SELECT id FROM users WHERE status != ? AND (username NOT LIKE ? OR password_hash IS NOT NULL
+			OR registration_ip IS NOT NULL OR registration_user_agent IS NOT NULL
+			OR id IN (SELECT user_id FROM states) OR id IN (SELECT user_id FROM game_saves)
+			OR id IN (SELECT user_id FROM favorites) OR id IN (SELECT user_id FROM launch_records)
+			OR id IN (SELECT user_id FROM user_preferences) OR id IN (SELECT user_id FROM sessions))`,
+		db.StatusNormal, deletedUsernamePrefix+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// FinishDeletedAccount deletes an account that's already marked deleted all over again: see DeletedAccountsToFinish
+func FinishDeletedAccount(ctx context.Context, database *sql.DB, id string, removeData RemoveData) error {
+	return endAccount(ctx, database, id, removeData)
+}
+
+// DeleteAccount deletes another account and ends its sessions (see endAccount). Only for admins, not for themselves
+// (see DeleteOwnAccount), and never the owner
+func DeleteAccount(ctx context.Context, database *sql.DB, admin *User, id string, removeData RemoveData) error {
 	ownerID, err := assertIsAdmin(ctx, database, admin)
 	if err != nil {
 		return err
@@ -391,12 +438,12 @@ func DeleteAccount(ctx context.Context, database *sql.DB, admin *User, id string
 	if err != nil {
 		return err
 	}
-	return endAccount(ctx, database, id)
+	return endAccount(ctx, database, id, removeData)
 }
 
 // DeleteOwnAccount deletes the signed-in user's account, once their password is checked where there are passwords.
 // Not for the owner, whose library others may share
-func DeleteOwnAccount(ctx context.Context, database *sql.DB, user *User, password, authMode string) error {
+func DeleteOwnAccount(ctx context.Context, database *sql.DB, user *User, password, authMode string, removeData RemoveData) error {
 	ownerID, err := AdminID(ctx, database)
 	if err != nil {
 		return err
@@ -419,7 +466,7 @@ func DeleteOwnAccount(ctx context.Context, database *sql.DB, user *User, passwor
 			return failure.New(http.StatusUnauthorized, "Invalid current password")
 		}
 	}
-	return endAccount(ctx, database, user.ID)
+	return endAccount(ctx, database, user.ID, removeData)
 }
 
 // SessionInfo is one of the user's sessions as they see it: a device they're signed in on

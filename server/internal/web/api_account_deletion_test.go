@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"testing"
@@ -62,11 +63,7 @@ func TestDeletingAnAccountDeletesNoFilesItNamesInItsSettings(t *testing.T) {
 	admin.expect(http.StatusOK, admin.get("/api/v1/roms/"+game.ID+"/content"))
 
 	// Only a BIOS file's own id, as it's stored, is ever removed
-	request, err := http.NewRequest(http.MethodGet, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	api.server.removeUnusedBioses(request, []string{"bioses/../" + game.FileID, "bioses/nes/../../" + game.FileID, "roms/../" + game.FileID})
+	api.server.removeUnusedBioses(context.Background(), []string{"bioses/../" + game.FileID, "bioses/nes/../../" + game.FileID, "roms/../" + game.FileID})
 	if !onDisk(game.FileID) {
 		t.Fatal("removing unused BIOS files deleted a game")
 	}
