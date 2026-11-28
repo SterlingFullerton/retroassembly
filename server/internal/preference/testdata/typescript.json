@@ -326,7 +326,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -615,7 +615,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -908,7 +908,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -1201,7 +1201,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -1494,7 +1494,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -1788,7 +1788,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -2082,7 +2082,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -2377,7 +2377,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -2648,7 +2648,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -2960,7 +2960,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -3253,7 +3253,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },
@@ -3546,7 +3546,7 @@
             "psx": {
               "bioses": [],
               "core": "pcsx_rearmed",
-              "rewindEnabled": true,
+              "rewindEnabled": false,
               "shader": "inherit"
             }
           },

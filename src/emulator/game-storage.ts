@@ -35,6 +35,18 @@ export interface StoredGameAbout {
 // Told whenever the index changes, here or in another tab
 const changes = new EventTarget()
 
+/**
+ * Whether this browser can keep games in its storage: on the device's disk, so a game downloads once rather than every
+ * time it's played. Any page can: read whole from there for an emulator that loads its game into memory
+ */
+export function canKeepGames() {
+  return (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.storage?.getDirectory === 'function' &&
+    typeof Worker === 'function'
+  )
+}
+
 /** Whether this browser can keep games in storage and read them as they play: on pages isolated for threads */
 export function canStoreGames() {
   return (
@@ -271,6 +283,44 @@ export async function storeGame(
   writeIndex({ ...readIndex(), [name]: { ...stored, ...about, lastPlayed: Date.now() } })
   await attemptAsync(() => makeRoom(name))
   return stored.size
+}
+
+// The games being made sure of, so two asking at once (reaching for Start, then pressing it) download one copy
+const keeping = new Map<string, Promise<void>>()
+
+/**
+ * Makes sure the game at `url` is stored, and is the version the NAS has: downloaded into storage if it isn't, once
+ * however often it's asked for meanwhile
+ */
+export async function keepGame(
+  name: string,
+  url: string,
+  options: { about?: StoredGameAbout; onProgress?: (loaded: number, total: number | undefined) => void } = {},
+) {
+  let kept = keeping.get(name)
+  if (!kept) {
+    kept = (async () => {
+      try {
+        if (!(await hasStoredGame(name, url))) {
+          await storeGame(name, url, options)
+        }
+      } finally {
+        keeping.delete(name)
+      }
+    })()
+    keeping.set(name, kept)
+  }
+  await kept
+}
+
+/** A stored game whole, for an emulator that loads its game into memory; marked as just played */
+export async function readStoredGame(name: string, about?: StoredGameAbout) {
+  const directory = await getDirectory()
+  const handle = await directory.getFileHandle(name)
+  const file = await handle.getFile()
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  markPlayed(name, about)
+  return bytes
 }
 
 /** Reads a stored game as the emulator asks, blocking until each read is answered, which takes well under a millisecond */

@@ -169,8 +169,9 @@ export const defaultPreference: ResolvedPreference = {
     platform: mapValues(platformMap, ({ cores: [core] }, name) => ({
       bioses: [],
       core,
-      // Rewinding saves the N64's, DS's and PSP's large states every few frames, which slows weaker devices down
-      rewindEnabled: name !== 'n64' && name !== 'nds' && name !== 'psp',
+      // Rewinding saves the console's whole state every few frames: for the PlayStation, N64, DS and PSP, whose states
+      // are large, that nearly doubles the work of each frame (Crash Bandicoot: 3.2 ms a frame without, 5.7 with)
+      rewindEnabled: !['n64', 'nds', 'psp', 'psx'].includes(name),
       shader: 'inherit',
     })),
     shader: '',

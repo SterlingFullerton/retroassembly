@@ -24,13 +24,14 @@ import {
   switchDisc,
 } from '#@/emulator/adapter.ts'
 import {
+  canKeepGames,
   canStoreGames,
   type GameReader,
   getStoredName,
-  hasStoredGame,
+  keepGame,
   markPlayed,
   openGameReader,
-  storeGame,
+  readStoredGame,
 } from '#@/emulator/game-storage.ts'
 import { keepLastFrame } from '#@/emulator/keep-last-frame.ts'
 import { connectOnScreenGamepad, disconnectOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
@@ -228,6 +229,43 @@ export function useEmulatorSessionController({
     },
     [report],
   )
+  // A game's file, kept in the browser's storage where it can be, so it downloads once rather than every time it's
+  // played: a disc image is hundreds of megabytes. Reaching for Start only makes sure it's kept (see warmUp); the
+  // emulator reads it whole from there when it's got ready. Where it can't be kept, it's downloaded into memory
+  const { platform } = rom
+  const keepGameFile = useCallback(
+    async (fileId: string, fileName: string) => {
+      if (!canKeepGames()) {
+        return
+      }
+      const name = getStoredName(fileId)
+      const [error] = await attemptAsync(() =>
+        keepGame(name, getFileUrl(fileId), {
+          about: { fileName, platform },
+          onProgress: (loaded, total) => report('game', { kind: 'game', loaded, total }),
+        }),
+      )
+      if (error) {
+        console.warn("Couldn't keep the game in the browser's storage, so it's loaded into memory", error)
+        return
+      }
+      return name
+    },
+    [platform, report],
+  )
+  const downloadGame = useCallback(
+    (fileId: string, fileName: string) => async () => {
+      const name = await keepGameFile(fileId, fileName)
+      if (name) {
+        const [, bytes] = await attemptAsync(() => readStoredGame(name, { fileName, platform }))
+        if (bytes) {
+          return bytes
+        }
+      }
+      return await download('game', 'game', getFileUrl(fileId))()
+    },
+    [download, keepGameFile, platform],
+  )
   const { core } = preference.emulator.platform[rom.platform] || {}
   // How this emulator is started and run, from the console registry
   const {
@@ -256,7 +294,7 @@ export function useEmulatorSessionController({
         },
         // Only the first disc downloads at the start, so only its progress is shown
         ...files.map(([fileId, fileName], index) => ({
-          fileContent: index === 0 ? download('game', 'game', getFileUrl(fileId)) : getFileUrl(fileId),
+          fileContent: index === 0 ? downloadGame(fileId, fileName) : getFileUrl(fileId),
           fileName,
         })),
       ]
@@ -264,8 +302,8 @@ export function useEmulatorSessionController({
     // A game read from storage as it plays is put in place at launch; until then the emulator holds a placeholder
     return launchProfile.threads
       ? { fileContent: new Uint8Array(1), fileName: romFileName }
-      : { fileContent: download('game', 'game', romUrl), fileName: romFileName }
-  }, [discFiles, discGroup, download, launchProfile.threads, multiDisc, romFileName, romUrl])
+      : { fileContent: downloadGame(rom.fileId, romFileName), fileName: romFileName }
+  }, [discFiles, discGroup, downloadGame, launchProfile.threads, multiDisc, rom.fileId, romFileName])
   const { bioses } = preference.emulator.platform[rom.platform]
   const bios = useMemo(
     () =>
@@ -454,12 +492,10 @@ export function useEmulatorSessionController({
     if (canStoreGames()) {
       const name = getStoredName(rom.fileId)
       try {
-        if (!(await hasStoredGame(name, romUrl))) {
-          await storeGame(name, romUrl, {
-            about: { fileName: rom.fileName, platform: rom.platform },
-            onProgress: reportGameProgress,
-          })
-        }
+        await keepGame(name, romUrl, {
+          about: { fileName: rom.fileName, platform: rom.platform },
+          onProgress: reportGameProgress,
+        })
         return { name }
       } catch (error) {
         console.warn("Couldn't keep the game in the browser's storage, so it's loaded into memory", error)
@@ -480,9 +516,15 @@ export function useEmulatorSessionController({
       return
     }
     if (!data) {
+      // A game this device keeps is only made sure of: got ready whole, it would be read into memory, and read again
+      // each time the pointer passed Start after the game's snapshots changed, as they do on exit
+      const kept = !launchProfile.threads && canKeepGames()
+      const [firstDisc] = discs
       await Promise.all([
         attemptAsync(async () => await getEmulatorFiles()),
-        attemptAsync(prepareOnce),
+        kept
+          ? attemptAsync(() => keepGameFile(firstDisc?.fileId ?? rom.fileId, firstDisc?.fileName ?? rom.fileName ?? ''))
+          : attemptAsync(prepareOnce),
         launchProfile.threads ? attemptAsync(getGameFile) : undefined,
       ])
     }
