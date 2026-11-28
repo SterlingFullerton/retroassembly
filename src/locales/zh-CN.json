@@ -324,6 +324,7 @@
   "pauseMenu.onThisDevice": "在此设备上",
   "pauseMenu.onTheServer": "在服务器上",
   "pauseMenu.players_other": "{{count}} 名玩家",
+  "pauseMenu.whereWithPlayers": "{{where}}，{{players}}",
   "pauseMenu.paused": "已暂停",
   "pauseMenu.load": "读取",
   "pauseMenu.controls": "操作",

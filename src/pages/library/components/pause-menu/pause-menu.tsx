@@ -301,7 +301,9 @@ export function PauseMenu({
                       where === 'server' ? 'icon-[mdi--server]' : 'icon-[mdi--monitor-cellphone]',
                     )}
                   />
-                  {playersText ? `${whereText}, ${playersText}` : whereText}
+                  {playersText
+                    ? t('pauseMenu.whereWithPlayers', { players: playersText, where: whereText })
+                    : whereText}
                 </div>
               </div>
             </div>

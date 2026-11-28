@@ -330,6 +330,7 @@
   "pauseMenu.onTheServer": "No servidor",
   "pauseMenu.players_one": "{{count}} jogador",
   "pauseMenu.players_other": "{{count}} jogadores",
+  "pauseMenu.whereWithPlayers": "{{where}}, {{players}}",
   "pauseMenu.paused": "Pausado",
   "pauseMenu.load": "Carregar",
   "pauseMenu.controls": "Controles",

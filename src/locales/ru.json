@@ -350,6 +350,7 @@
   "pauseMenu.players_few": "{{count}} игрока",
   "pauseMenu.players_many": "{{count}} игроков",
   "pauseMenu.players_other": "{{count}} игрока",
+  "pauseMenu.whereWithPlayers": "{{where}}, {{players}}",
   "pauseMenu.paused": "Пауза",
   "pauseMenu.load": "Загрузить",
   "pauseMenu.controls": "Управление",

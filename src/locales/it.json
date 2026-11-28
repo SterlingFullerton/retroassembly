@@ -330,6 +330,7 @@
   "pauseMenu.onTheServer": "Sul server",
   "pauseMenu.players_one": "{{count}} giocatore",
   "pauseMenu.players_other": "{{count}} giocatori",
+  "pauseMenu.whereWithPlayers": "{{where}}, {{players}}",
   "pauseMenu.paused": "In pausa",
   "pauseMenu.load": "Carica",
   "pauseMenu.controls": "Comandi",

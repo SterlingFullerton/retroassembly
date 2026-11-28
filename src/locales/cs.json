@@ -346,6 +346,7 @@
   "pauseMenu.players_few": "{{count}} hráči",
   "pauseMenu.players_many": "{{count}} hráčů",
   "pauseMenu.players_other": "{{count}} hráčů",
+  "pauseMenu.whereWithPlayers": "{{where}}, {{players}}",
   "pauseMenu.paused": "Pozastaveno",
   "pauseMenu.load": "Načíst",
   "pauseMenu.controls": "Ovládání",
