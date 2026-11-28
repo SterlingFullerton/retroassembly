@@ -58,7 +58,7 @@ func (s *Server) findInvitation(w http.ResponseWriter, r *http.Request, scope li
 		s.findNASInvitation(w, r, scope, r.PathValue("code"), id)
 		return
 	}
-	invitation, err := s.together.Find(r.PathValue("code"))
+	invitation, err := s.together.Find(r.PathValue("code"), guestOf(scope))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -82,17 +82,22 @@ func (s *Server) answerInvitation(w http.ResponseWriter, r *http.Request, scope 
 		s.answerNASInvitation(w, r, scope, r.PathValue("code"), id, answer)
 		return
 	}
-	if err := s.together.Answer(r.PathValue("code"), answer); err != nil {
+	if err := s.together.Answer(r.PathValue("code"), guestOf(scope), answer); err != nil {
 		writeError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, true)
 }
 
-// The host asks for the guest's answer and is kept waiting for it: answered as soon as it arrives, or with null after
-// a while, to ask again
+// guestOf is the signed-in user as the guest of a game
+func guestOf(scope library.Scope) together.Guest {
+	return together.Guest{ID: scope.User.ID, Name: scope.User.Username}
+}
+
+// The host asks for the guest's answer and is kept waiting for it: answered as soon as it arrives, with the guest's
+// username, or with null after a while, to ask again
 func (s *Server) invitationAnswer(w http.ResponseWriter, r *http.Request, scope library.Scope) {
-	answer, err := s.together.WaitForAnswer(r.Context(), r.PathValue("code"), scope.User.ID, answerWait)
+	answer, guest, err := s.together.WaitForAnswer(r.Context(), r.PathValue("code"), scope.User.ID, answerWait)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -101,7 +106,7 @@ func (s *Server) invitationAnswer(w http.ResponseWriter, r *http.Request, scope 
 		writeJSON(w, http.StatusOK, nil)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"answer": answer})
+	writeJSON(w, http.StatusOK, map[string]string{"answer": answer, "guest": guest.Name})
 }
 
 func (s *Server) closeInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope) {
