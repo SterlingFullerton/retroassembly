@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 	"unicode/utf16"
 
 	"retroassembly/server/internal/config"
@@ -434,14 +435,15 @@ func (s *Server) romPageData(w http.ResponseWriter, r *http.Request, scope libra
 	}
 	data := obj("discs", discs)
 	// The game's own save, put back before it boots
+	var gameSave *library.GameSave
 	if core != "" {
-		save, err := library.LatestGameSave(r.Context(), scope, core, romID)
+		gameSave, err = library.LatestGameSave(r.Context(), scope, core, romID)
 		if err != nil {
 			writeError(w, err)
 			return
 		}
-		if save != nil {
-			data = append(data, library.Field{Key: "gameSave", Value: save})
+		if gameSave != nil {
+			data = append(data, library.Field{Key: "gameSave", Value: gameSave})
 		}
 	}
 	// Which of its pictures the server has, including libretro's box art matched by title
@@ -455,8 +457,29 @@ func (s *Server) romPageData(w http.ResponseWriter, r *http.Request, scope libra
 	if len(states) > 0 {
 		data = append(data, library.Field{Key: "state", Value: states[0]})
 	}
+	if len(states) > 0 && saveIsNewer(gameSave, states[0]) {
+		data = append(data, library.Field{Key: "startFromSave", Value: true})
+	}
 	writeJSON(w, http.StatusOK, append(data, library.Field{Key: "states", Value: states},
 		library.Field{Key: "title", Value: library.RomTitle(rom)}))
+}
+
+// A save a browser uploads on leaving a game is made with its snapshot, and can be stored a moment after it. Only one
+// newer by more than this is progress the snapshot doesn't have
+const browserSaveMargin = time.Minute
+
+// saveIsNewer is whether a game's own save holds progress its newest snapshot doesn't: one made on the server, or put
+// back from an older version, after the snapshot, or one from a browser well after it. Continuing from the snapshot
+// would then put the game back to before the save, so the game's page starts from the save instead
+func saveIsNewer(save *library.GameSave, state *library.State) bool {
+	if save == nil || state == nil {
+		return false
+	}
+	saved, snapshot := time.Time(save.CreatedAt), time.Time(state.CreatedAt)
+	if save.ClientID != nil {
+		return saved.After(snapshot.Add(browserSaveMargin))
+	}
+	return saved.After(snapshot)
 }
 
 // GET /api/v1/pages/library/home: the game to continue, and Home's rows
