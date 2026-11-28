@@ -14,6 +14,7 @@ interface ButtonGroup {
   buttons: {
     iconClass?: string
     iconNode?: ReactNode
+    label?: string
     name: keyof ResolvedPreference['input']['gamepadMappings'][string]
     options?: readonly string[]
     shortcutPart?: 'key' | 'prefix'
@@ -30,19 +31,19 @@ export function GamepadInputs() {
   const buttonGroups: ButtonGroup[] = [
     {
       buttons: [
-        { iconClass: 'icon-[mdi--gamepad-up]', name: 'input_player1_up_btn' },
-        { iconClass: 'icon-[mdi--gamepad-down]', name: 'input_player1_down_btn' },
-        { iconClass: 'icon-[mdi--gamepad-left]', name: 'input_player1_left_btn' },
-        { iconClass: 'icon-[mdi--gamepad-right]', name: 'input_player1_right_btn' },
+        { iconClass: 'icon-[mdi--gamepad-up]', label: t('input.up'), name: 'input_player1_up_btn' },
+        { iconClass: 'icon-[mdi--gamepad-down]', label: t('input.down'), name: 'input_player1_down_btn' },
+        { iconClass: 'icon-[mdi--gamepad-left]', label: t('input.left'), name: 'input_player1_left_btn' },
+        { iconClass: 'icon-[mdi--gamepad-right]', label: t('input.right'), name: 'input_player1_right_btn' },
       ],
       type: 'dpad',
     },
     {
       buttons: [
-        { iconClass: 'icon-[mdi--gamepad-circle-left]', name: 'input_player1_y_btn' },
-        { iconClass: 'icon-[mdi--gamepad-circle-up]', name: 'input_player1_x_btn' },
-        { iconClass: 'icon-[mdi--gamepad-circle-down]', name: 'input_player1_b_btn' },
-        { iconClass: 'icon-[mdi--gamepad-circle-right]', name: 'input_player1_a_btn' },
+        { iconClass: 'icon-[mdi--gamepad-circle-left]', label: t('input.buttonY'), name: 'input_player1_y_btn' },
+        { iconClass: 'icon-[mdi--gamepad-circle-up]', label: t('input.buttonX'), name: 'input_player1_x_btn' },
+        { iconClass: 'icon-[mdi--gamepad-circle-down]', label: t('input.buttonB'), name: 'input_player1_b_btn' },
+        { iconClass: 'icon-[mdi--gamepad-circle-right]', label: t('input.buttonA'), name: 'input_player1_a_btn' },
       ],
       type: 'actions',
     },
