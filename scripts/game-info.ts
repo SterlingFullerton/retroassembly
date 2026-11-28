@@ -88,7 +88,7 @@ const libretroColumns = [
 
 async function addLibretro(db: DatabaseSync, directory: string) {
   const add = insert(db, 'libretro_games', libretroColumns)
-  let count = 0
+  const counts = new Map([...libretroPlatformNames].map((platform) => [platform, 0]))
   for (const platform of [...libretroPlatformNames].toSorted()) {
     const file = path.join(directory, `${platform}.rdb`)
     const libretrodb = await Libretrodb.from(file, { indexHashes: false })
@@ -128,10 +128,20 @@ async function addLibretro(db: DatabaseSync, directory: string) {
           ].map((column) => [column, text(row[column])]),
         ),
       })
-      count += 1
+      counts.set(platform, (counts.get(platform) ?? 0) + 1)
     }
   }
-  return count
+  return counts
+}
+
+// A console with no games at all means its source changed (a renamed console, or a cut-short download), and a
+// database built from it would quietly give that console's games no info, so the build stops instead
+function checkEveryPlatform(source: string, counts: Map<string, number>) {
+  const missing = [...counts].filter(([, count]) => count === 0).map(([platform]) => platform)
+  if (missing.length > 0) {
+    throw new Error(`${source} has no games for ${missing.join(', ')}`)
+  }
+  return counts.values().reduce((total, count) => total + count, 0)
 }
 
 const launchboxColumns = [
@@ -186,9 +196,9 @@ function addLaunchbox(db: DatabaseSync, file: string) {
   ])
   const addCover = insert(db, 'launchbox_covers', ['databaseId', 'fileName'])
   const gameIds = new Set<string>()
+  const counts = new Map([...launchboxPlatformNames].map((platform) => [platform, 0]))
   const alternates: Record<string, string>[] = []
   const covers = new Map<string, Record<string, string>>()
-  let games = 0
 
   const { promise, reject, resolve } = Promise.withResolvers<undefined>()
   const tags: string[] = []
@@ -222,7 +232,7 @@ function addLaunchbox(db: DatabaseSync, file: string) {
           maxPlayers: integer(record.maxPlayers),
           releaseDate: timestamp(record.releaseDate),
         })
-        games += 1
+        counts.set(record.platform, (counts.get(record.platform) ?? 0) + 1)
       } else if (tag === 'GameAlternateName') {
         alternates.push(record)
       } else if (tag === 'GameImage' && coverTypes.includes(record.type) && record.databaseId && record.fileName) {
@@ -255,7 +265,7 @@ function addLaunchbox(db: DatabaseSync, file: string) {
         coverCount += 1
       }
     }
-    return { alternates: kept, covers: coverCount, games }
+    return { alternates: kept, counts, covers: coverCount }
   })
 }
 
@@ -281,8 +291,9 @@ async function build(rdbZip: string, metadataZip: string, output: string) {
     db.exec('PRAGMA journal_mode = OFF; PRAGMA synchronous = OFF;')
     db.exec(gameInfoTables)
     db.exec('BEGIN')
-    const libretro = await addLibretro(db, rdbs)
+    const libretro = checkEveryPlatform("libretro's database", await addLibretro(db, rdbs))
     const launchbox = await addLaunchbox(db, path.join(work, 'launchbox', 'Metadata.xml'))
+    const launchboxGames = checkEveryPlatform("LaunchBox's database", launchbox.counts)
     db.exec('COMMIT')
     db.exec(gameInfoIndexes)
     db.exec('VACUUM')
@@ -290,7 +301,7 @@ async function build(rdbZip: string, metadataZip: string, output: string) {
     await fs.rename(partial, output)
     const { size } = await fs.stat(output)
     console.info(
-      `Game info: ${libretro} libretro entries, ${launchbox.games} LaunchBox games, ${launchbox.alternates} other names and ${launchbox.covers} covers; ${(size / 1024 / 1024).toFixed(1)} MB at ${output}`,
+      `Game info: ${libretro} libretro entries, ${launchboxGames} LaunchBox games, ${launchbox.alternates} other names and ${launchbox.covers} covers; ${(size / 1024 / 1024).toFixed(1)} MB at ${output}`,
     )
   } finally {
     await fs.rm(work, { force: true, recursive: true })
