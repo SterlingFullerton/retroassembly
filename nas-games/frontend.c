@@ -14,11 +14,14 @@
 #include <libyuv.h>
 #include <opus/opus.h>
 #include <speex/speex_resampler.h>
+#include <poll.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
+#include <time.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <x264.h>
@@ -346,6 +349,12 @@ static struct {
   int started;
   // Numbers for testing, logged every few seconds
   long sent, received, failed, frames;
+  // Running in step: the frame this console is on, the last the other said it's on, when it last said so (ms), and
+  // how long this console has waited for it
+  uint32_t frame, peer_frame;
+  double peer_heard;
+  double waited;
+  long step_timeouts;
 } linked = {.socket = -1};
 
 static bool environment(unsigned command, void *data) {
@@ -479,6 +488,26 @@ static bool environment(unsigned command, void *data) {
 // a local socket. LINK_SELF and LINK_PEER are the two sockets' paths, and LINK_ID is 0 for the console that hosts and 1
 // for the other. Two consoles on one machine answer each other in well under a millisecond, which the DS needs
 
+// Each message over the link starts with its kind: a packet of the core's, or the frame a console is starting
+enum { LINK_PACKET = 0, LINK_FRAME = 1 };
+
+static double now_ms(void) {
+  struct timespec time;
+  clock_gettime(CLOCK_MONOTONIC, &time);
+  return time.tv_sec * 1000.0 + time.tv_nsec / 1e6;
+}
+
+static void link_message(uint8_t kind, const void *buf, size_t len) {
+  struct iovec parts[2] = {{.iov_base = &kind, .iov_len = 1}, {.iov_base = (void *)buf, .iov_len = len}};
+  struct msghdr message = {
+      .msg_name = &linked.peer, .msg_namelen = sizeof linked.peer, .msg_iov = parts, .msg_iovlen = len ? 2 : 1};
+  if (sendmsg(linked.socket, &message, MSG_DONTWAIT) < 0) {
+    linked.failed++;
+  } else if (kind == LINK_PACKET) {
+    linked.sent++;
+  }
+}
+
 static void RETRO_CALLCONV link_send(int flags, const void *buf, size_t len, uint16_t client_id) {
   (void)flags;
   (void)client_id;
@@ -486,15 +515,12 @@ static void RETRO_CALLCONV link_send(int flags, const void *buf, size_t len, uin
   if (!buf || !len || linked.socket < 0) {
     return;
   }
-  if (sendto(linked.socket, buf, len, MSG_DONTWAIT, (struct sockaddr *)&linked.peer, sizeof linked.peer) < 0) {
-    linked.failed++;
-  } else {
-    linked.sent++;
-  }
+  link_message(LINK_PACKET, buf, len);
 }
 
+// Reads what has arrived: the core's packets go to the core, and a frame mark says where the other console is
 static void RETRO_CALLCONV link_poll_receive(void) {
-  static uint8_t packet[65536];
+  static uint8_t packet[65536 + 1];
   if (linked.socket < 0) {
     return;
   }
@@ -503,9 +529,43 @@ static void RETRO_CALLCONV link_poll_receive(void) {
     if (got <= 0) {
       return;
     }
-    linked.received++;
-    linked.callback.receive(packet, (size_t)got, linked.id == 0 ? 1 : 0);
+    if (packet[0] == LINK_PACKET && got > 1) {
+      linked.received++;
+      linked.callback.receive(packet + 1, (size_t)got - 1, linked.id == 0 ? 1 : 0);
+    } else if (packet[0] == LINK_FRAME && got >= 5) {
+      memcpy(&linked.peer_frame, packet + 1, 4);
+      linked.peer_heard = now_ms();
+    }
   }
+}
+
+// Runs the two consoles in step: before each frame, this console says which frame it's starting and waits until the
+// other has started it too, so both emulate the same frame at the same moment and answer each other's packets as the
+// DS expects. Whichever is behind jumps to the other's frame, so they fall in step however they started. A console
+// whose partner hasn't been heard from for half a second runs on alone rather than freeze
+#define STEP_WAIT_MS 50
+#define PARTNER_GONE_MS 500
+
+static void link_step(void) {
+  link_poll_receive();
+  int partner = linked.peer_heard > 0 && now_ms() - linked.peer_heard < PARTNER_GONE_MS;
+  linked.frame = partner && linked.peer_frame > linked.frame + 1 ? linked.peer_frame : linked.frame + 1;
+  link_message(LINK_FRAME, &linked.frame, 4);
+  if (!partner) {
+    return;
+  }
+  double start = now_ms(), deadline = start + STEP_WAIT_MS;
+  while ((int32_t)(linked.peer_frame - linked.frame) < 0) {
+    double left = deadline - now_ms();
+    if (left <= 0) {
+      linked.step_timeouts++;
+      break;
+    }
+    struct pollfd ready = {.fd = linked.socket, .events = POLLIN};
+    poll(&ready, 1, (int)left + 1);
+    link_poll_receive();
+  }
+  linked.waited += now_ms() - start;
 }
 
 // Starts the link if this console has one and its core can use it: 1 if started
@@ -630,10 +690,11 @@ double fe_sample_rate(void) { return av.timing.sample_rate; }
 void fe_run(void) {
   if (linked.started) {
     if (++linked.frames % 300 == 0) {
-      fprintf(stderr, "[host] link: sent %ld, received %ld, failed %ld, timeouts %ld\n", linked.sent, linked.received,
-              linked.failed, link_timeouts);
+      fprintf(stderr, "[host] link: sent %ld, received %ld, failed %ld, timeouts %ld, step waits %.1f ms a frame, %ld too long\n",
+              linked.sent, linked.received, linked.failed, link_timeouts, linked.waited / 300, linked.step_timeouts);
+      linked.waited = 0;
     }
-    link_poll_receive();
+    link_step();
     if (linked.callback.poll) {
       linked.callback.poll();
     }
