@@ -28,15 +28,15 @@ func isSecure(r *http.Request) bool {
 	return r.TLS != nil
 }
 
-func setSessionCookie(w http.ResponseWriter, r *http.Request, session *auth.Session) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Expires:  time.Time(session.ExpiresAt),
+		Expires:  expires,
 		HttpOnly: true,
 		Name:     "token",
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 		Secure:   isSecure(r),
-		Value:    session.Token,
+		Value:    token,
 	})
 }
 
@@ -66,7 +66,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.endReplacedSession(r, session)
-	setSessionCookie(w, r, session)
+	setSessionCookie(w, r, session.Token, time.Time(session.ExpiresAt))
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
 }
 
@@ -118,7 +118,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.endReplacedSession(r, session)
-	setSessionCookie(w, r, session)
+	setSessionCookie(w, r, session.Token, time.Time(session.ExpiresAt))
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
 }
 

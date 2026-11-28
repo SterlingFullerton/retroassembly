@@ -174,7 +174,16 @@ func TestSessionLifetime(t *testing.T) {
 		started, now+day/2, now-day, token); err != nil {
 		t.Fatal(err)
 	}
-	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
+	request, err := http.NewRequest(http.MethodGet, api.app.URL+"/api/v1/preference", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.AddCookie(&http.Cookie{Name: "token", Value: token})
+	answer, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	answer.Body.Close()
 	var expiresAt int64
 	if err := api.database.QueryRow(`SELECT expires_at FROM sessions WHERE token = ?`, token).Scan(&expiresAt); err != nil {
 		t.Fatal(err)
@@ -182,6 +191,14 @@ func TestSessionLifetime(t *testing.T) {
 	if expiresAt != started+90*day {
 		t.Fatalf("renewed to %d days after it started", (expiresAt-started)/day)
 	}
+	// The browser's cookie lasts as long
+	cookies := answer.Cookies()
+	if len(cookies) != 1 || cookies[0].Value != token || !cookies[0].HttpOnly ||
+		cookies[0].Expires.Unix() != time.UnixMilli(expiresAt).Unix() {
+		t.Fatalf("cookies %+v", cookies)
+	}
+	// Not renewed again on the next request
+	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
 
 	if _, err := api.database.Exec(`UPDATE sessions SET expires_at = ? WHERE token = ?`, now-1, token); err != nil {
 		t.Fatal(err)

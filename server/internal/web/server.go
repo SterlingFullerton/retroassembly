@@ -126,10 +126,16 @@ func stateOf(r *http.Request) *state {
 func (s *Server) globals(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		current := &state{language: s.languages.Detect(r.Header.Get("Accept-Language")), token: auth.Token(r)}
-		user, err := auth.CurrentUser(r.Context(), s.database, current.token, s.authMode)
+		user, renewedUntil, err := auth.CurrentUser(r.Context(), s.database, current.token, s.authMode)
 		if err != nil {
 			writeError(w, err)
 			return
+		}
+		// A session given more time keeps its cookie as long, or the browser would drop it 30 days after signing in
+		if !renewedUntil.IsZero() {
+			if cookie, err := r.Cookie("token"); err == nil && cookie.Value == current.token {
+				setSessionCookie(w, r, current.token, renewedUntil)
+			}
 		}
 		if user != nil {
 			current.user = user
