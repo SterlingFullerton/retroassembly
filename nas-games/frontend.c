@@ -320,8 +320,14 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
 // ---- What the core asks of the frontend ----
 
+// Counted for the link's numbers: how often the core gave up waiting for the other console
+static long link_timeouts;
+
 static void core_log(enum retro_log_level level, const char *format, ...) {
-  if (level < RETRO_LOG_INFO) return;
+  if (level < RETRO_LOG_INFO) {
+    if (strstr(format, "Timeout")) link_timeouts++;
+    return;
+  }
   va_list args;
   va_start(args, format);
   fprintf(stderr, "[core] ");
@@ -338,6 +344,8 @@ static struct {
   uint16_t id;
   struct sockaddr_un peer;
   int started;
+  // Numbers for testing, logged every few seconds
+  long sent, received, failed, frames;
 } linked = {.socket = -1};
 
 static bool environment(unsigned command, void *data) {
@@ -478,7 +486,11 @@ static void RETRO_CALLCONV link_send(int flags, const void *buf, size_t len, uin
   if (!buf || !len || linked.socket < 0) {
     return;
   }
-  sendto(linked.socket, buf, len, MSG_DONTWAIT, (struct sockaddr *)&linked.peer, sizeof linked.peer);
+  if (sendto(linked.socket, buf, len, MSG_DONTWAIT, (struct sockaddr *)&linked.peer, sizeof linked.peer) < 0) {
+    linked.failed++;
+  } else {
+    linked.sent++;
+  }
 }
 
 static void RETRO_CALLCONV link_poll_receive(void) {
@@ -491,6 +503,7 @@ static void RETRO_CALLCONV link_poll_receive(void) {
     if (got <= 0) {
       return;
     }
+    linked.received++;
     linked.callback.receive(packet, (size_t)got, linked.id == 0 ? 1 : 0);
   }
 }
@@ -616,6 +629,10 @@ double fe_sample_rate(void) { return av.timing.sample_rate; }
 
 void fe_run(void) {
   if (linked.started) {
+    if (++linked.frames % 300 == 0) {
+      fprintf(stderr, "[host] link: sent %ld, received %ld, failed %ld, timeouts %ld\n", linked.sent, linked.received,
+              linked.failed, link_timeouts);
+    }
     link_poll_receive();
     if (linked.callback.poll) {
       linked.callback.poll();
