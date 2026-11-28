@@ -23,8 +23,8 @@ RUN git clone https://github.com/libretro/melonDS.git /melonds && cd /melonds \
     && make platform=unix HAVE_OPENGL=0 HAVE_WIFI=0 -j"$(nproc)"
 
 # melonDS DS, the build of melonDS that links two consoles as by local wireless: built from its 1.4.0 source with a patch
-# (patches/melondsds.patch) that gives its wireless packets melonDS's own LAN play timing, letting stale ones go, so
-# two linked consoles don't keep waiting on each other
+# (patches/melondsds.patch) that handles its wireless packets as melonDS's own multiplayer on one machine does, replies
+# kept apart from other packets and waits timed by the clock, so two linked consoles don't keep waiting on each other
 FROM debian:trixie AS melondsds
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git pkg-config \
       libgl-dev libegl-dev python3 \
