@@ -12,7 +12,7 @@ index bb52319..f59f309 100644
  
          void WriteNdsSave(std::span<const std::byte> savedata, uint32_t writeoffset, uint32_t writelen) noexcept;
 diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
-index b56f23a..ef6091e 100644
+index b56f23a..4e85cfd 100644
 --- a/src/libretro/libretro.cpp
 +++ b/src/libretro/libretro.cpp
 @@ -1,3 +1,5 @@
@@ -51,7 +51,7 @@ index b56f23a..ef6091e 100644
      return DeconstructPacket(data, timestamp, o_p);
  }
  
-@@ -394,12 +417,16 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
+@@ -394,20 +417,30 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
      u16 ret = 0;
      int loops = 0;
      while((ret & aidmask) != aidmask) {
@@ -69,6 +69,22 @@ index b56f23a..ef6091e 100644
              continue;
          }
          if(p.PacketType() != MelonDsDs::Packet::Type::Reply) {
+             continue;
+         }
+-        ret |= 1<<p.Aid();
+-        memcpy(&packets[(p.Aid()-1)*1024], p.Data(), std::min(p.Length(), (uint64_t)1024));
++        // A client with nothing to say still answers, with an empty reply and no AID (Wifi.cpp sends it). As melonDS's
++        // own multiplayer on one machine does (LocalMP), any fresh reply means the client has answered: with two
++        // consoles at most there's no other to wait for, so a missing AID ends the wait rather than running it out
++        if (p.Aid() != 0 && p.Length() > 0) {
++            ret |= 1<<p.Aid();
++            memcpy(&packets[(p.Aid()-1)*1024], p.Data(), std::min(p.Length(), (uint64_t)1024));
++        }
+         loops++;
++        return ret;
+     }
+     return ret;
+ }
 diff --git a/src/libretro/net/mp.cpp b/src/libretro/net/mp.cpp
 index caa185d..d9779e2 100644
 --- a/src/libretro/net/mp.cpp
