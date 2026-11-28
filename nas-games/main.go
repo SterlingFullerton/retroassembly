@@ -518,6 +518,25 @@ func takeSlot() int {
 	return -1
 }
 
+// moveSlotDown gives a player who has just connected a lower player number, if one is free: someone rejoining a game,
+// whose old connection was still closing when they asked for a place, is player 1 again rather than player 2, whose
+// controller a game for one doesn't read. Whether it moved
+func moveSlotDown(slot *atomic.Int32) bool {
+	slots.Lock()
+	defer slots.Unlock()
+	from := int(slot.Load())
+	for index := range from {
+		if !slots.taken[index] {
+			slots.taken[index] = true
+			slots.taken[from] = false
+			pads[from].clear()
+			slot.Store(int32(index))
+			return true
+		}
+	}
+	return false
+}
+
 func freeSlot(index int) {
 	slots.Lock()
 	defer slots.Unlock()

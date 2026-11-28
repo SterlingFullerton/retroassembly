@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { getNASCores, startNASGame } from '#@/emulator/nas-games.ts'
@@ -12,6 +13,7 @@ import { routes } from '#@/pages/routes.ts'
  */
 export function useServerStart(rom: { id: string; platform: string }, enabled = true) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { preference } = usePreference()
   const { core } = preference.emulator.platform[rom.platform as keyof typeof preference.emulator.platform]
   const [available, setAvailable] = useState(false)
@@ -47,10 +49,28 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
       // Whoever starts it joins first, and is its first player
       await navigate(`${routes.libraryJoin}?code=${encodeURIComponent(code)}&started=1`)
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
+      setFailure(describeFailure(error, t('nasGames.full')))
       setStarting(false)
     }
   }
 
   return { available, failure, start, starting }
+}
+
+/** What went wrong starting a game on the server, in words: a server already running all the games it may is said plainly */
+function describeFailure(error: unknown, full: string) {
+  const { detail, message, statusCode } = (error ?? {}) as {
+    detail?: { data?: unknown }
+    message?: unknown
+    statusCode?: number
+  }
+  if (statusCode === 503) {
+    return full
+  }
+  const data = detail?.data as { message?: unknown } | string | undefined
+  const said = typeof data === 'string' ? data : data?.message
+  if (typeof said === 'string' && said) {
+    return said
+  }
+  return typeof message === 'string' ? message : ''
 }

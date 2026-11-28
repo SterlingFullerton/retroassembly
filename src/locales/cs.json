@@ -320,6 +320,7 @@
   "library.playSomeGamesFrom": "Hrajte některé hry ze své",
   "library.playSomeGamesFromLibrary": "Hrajte některé hry ze své <1></1>",
   "nasGames.failed": "Na serveru se to nepodařilo spustit.",
+  "nasGames.full": "Server už spouští tolik her, kolik může. Zkuste to znovu za pár minut.",
   "nasGames.playOnNAS": "Hrát na serveru",
   "nasGames.starting": "Spouštění na serveru",
   "nasGames.startOnServer": "Spustit na serveru",

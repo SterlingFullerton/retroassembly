@@ -310,6 +310,7 @@
   "library.playSomeGamesFrom": "Jouez à quelques jeux de votre",
   "library.playSomeGamesFromLibrary": "Jouez à quelques jeux de votre <1></1>",
   "nasGames.failed": "Impossible de le démarrer sur le serveur.",
+  "nasGames.full": "Le serveur exécute déjà autant de jeux qu’il le peut. Réessayez dans quelques minutes.",
   "nasGames.playOnNAS": "Jouer sur le serveur",
   "nasGames.starting": "Démarrage sur le serveur",
   "nasGames.startOnServer": "Démarrer sur le serveur",

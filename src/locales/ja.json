@@ -305,6 +305,7 @@
   "library.playSomeGamesFrom": "あなたの",
   "library.playSomeGamesFromLibrary": "あなたの<1></1>からいくつかのゲームをプレイしてください",
   "nasGames.failed": "サーバーで起動できませんでした。",
+  "nasGames.full": "サーバーで実行できるゲームの数が上限に達しています。数分後にもう一度お試しください。",
   "nasGames.playOnNAS": "サーバーでプレイ",
   "nasGames.starting": "サーバーで起動中",
   "nasGames.startOnServer": "サーバーで開始",

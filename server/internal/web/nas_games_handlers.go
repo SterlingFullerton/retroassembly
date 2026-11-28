@@ -161,6 +161,17 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	if check.Failed(w) {
 		return
 	}
+	// A game of this ROM that this player started and is still running is joined again rather than started twice: a
+	// second press, or one after a connection that didn't come up, lands in the same game
+	if games, err := s.nasGames.List(r.Context()); err == nil {
+		for _, game := range games {
+			if !game.Ended && game.StartedBy == scope.User.ID && game.LibraryOwner == scope.LibraryOwnerID &&
+				game.Rom == romID && game.Core == core {
+				writeJSON(w, http.StatusOK, map[string]string{"code": nasCode(game.ID)})
+				return
+			}
+		}
+	}
 	var fileID, fileName, platform, title string
 	var discGroup sql.NullString
 	err := scope.Database.QueryRowContext(r.Context(),

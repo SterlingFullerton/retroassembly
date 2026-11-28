@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pion/rtcp"
@@ -53,8 +54,12 @@ func handleNewPlayer(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "four players already", http.StatusConflict)
 		return
 	}
+	// The player's number can move down once they're connected (see moveSlotDown); `player` stays the place their
+	// answer is kept under
+	var slot atomic.Int32
+	slot.Store(int32(player))
 	var once sync.Once
-	leave := func() { once.Do(func() { freeSlot(player) }) }
+	leave := func() { once.Do(func() { freeSlot(int(slot.Load())) }) }
 	connection, err := api.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		leave()
@@ -76,7 +81,7 @@ func handleNewPlayer(w http.ResponseWriter, _ *http.Request) {
 	none := uint16(0)
 	input, err := connection.CreateDataChannel("input", negotiated(0, false, &none))
 	check(err)
-	input.OnMessage(func(message webrtc.DataChannelMessage) { pads[player].set(message.Data) })
+	input.OnMessage(func(message webrtc.DataChannelMessage) { pads[slot.Load()].set(message.Data) })
 	// Where the picture is in what's sent, and its shape: the whole of it, as the game draws it
 	picture, err := connection.CreateDataChannel("picture", negotiated(1, true, nil))
 	check(err)
@@ -90,10 +95,13 @@ func handleNewPlayer(w http.ResponseWriter, _ *http.Request) {
 	})
 
 	connection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		log.Printf("player %d: %s", player+1, state)
+		log.Printf("player %d: %s", slot.Load()+1, state)
 		switch state {
 		case webrtc.PeerConnectionStateConnected:
 			wantKey.Store(true)
+			if moved := moveSlotDown(&slot); moved {
+				log.Printf("player %d: now player %d", player+1, slot.Load()+1)
+			}
 		case webrtc.PeerConnectionStateDisconnected, webrtc.PeerConnectionStateFailed, webrtc.PeerConnectionStateClosed:
 			connections.Delete(connection)
 			_ = connection.Close()

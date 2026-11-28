@@ -305,6 +305,7 @@
   "library.playSomeGamesFrom": "从您的",
   "library.playSomeGamesFromLibrary": "从您的<1></1>中玩一些游戏",
   "nasGames.failed": "无法在服务器上启动。",
+  "nasGames.full": "服务器运行的游戏已达上限。请几分钟后再试。",
   "nasGames.playOnNAS": "在服务器上玩",
   "nasGames.starting": "正在服务器上启动",
   "nasGames.startOnServer": "在服务器上开始",

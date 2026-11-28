@@ -70,6 +70,8 @@ type runningGame struct {
 	endedAt   time.Time
 	idleSince time.Time
 	port      int
+	// Being saved and stopped for having nobody in it
+	stopping bool
 	// Where the game keeps its own save: a file, or a folder of them, zipped to be collected
 	saveFolder string
 	savePath   string
@@ -93,7 +95,7 @@ var (
 	idAlphabet  = "abcdefghjkmnpqrstuvwxyz23456789"
 	firstPort   = 47900
 	gameSlots   = 3
-	idleFor     = 5 * time.Minute
+	idleFor     = time.Minute
 	readyWithin = 30 * time.Second
 )
 
@@ -104,7 +106,7 @@ func serve() {
 	}
 	firstPort = envInt("FIRST_MEDIA_PORT", firstPort)
 	gameSlots = envInt("MAX_GAMES", gameSlots)
-	idleFor = time.Duration(envInt("IDLE_MINUTES", 5)) * time.Minute
+	idleFor = time.Duration(envInt("IDLE_MINUTES", 1)) * time.Minute
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /games", startGame)
@@ -454,6 +456,23 @@ func stopGameRequest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// saveBeforeStopping keeps a save state of a game left with nobody in it, for whoever started it, as its pause menu's
+// Save does: it's in Load when they start the game on the server again. The game's own save is kept as it ends
+func saveBeforeStopping(game *runningGame) {
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	request, _ := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+game.address+"/states", nil)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		log.Printf("game %s (%s): couldn't save before stopping: %v", game.ID, game.Title, err)
+		return
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		log.Printf("game %s (%s): couldn't save before stopping: %s", game.ID, game.Title, response.Status)
+	}
+}
+
 // stopGame asks a game to end, and ends it if it doesn't within a few seconds
 func stopGame(game *runningGame) {
 	_ = game.command.Process.Signal(syscall.SIGTERM)
@@ -534,10 +553,18 @@ func watchGames() {
 				game.idleSince = time.Now()
 			}
 			idle := time.Since(game.idleSince)
+			stop := idle > idleFor && !game.stopping
+			if stop {
+				game.stopping = true
+			}
 			service.Unlock()
-			if idle > idleFor {
-				log.Printf("game %s (%s): nobody in it for %v, stopping", game.ID, game.Title, idle.Round(time.Second))
-				go stopGame(game)
+			if stop {
+				log.Printf("game %s (%s): nobody in it for %v, saving and stopping", game.ID, game.Title,
+					idle.Round(time.Second))
+				go func() {
+					saveBeforeStopping(game)
+					stopGame(game)
+				}()
 			}
 		}
 	}

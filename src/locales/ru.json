@@ -320,6 +320,7 @@
   "library.playSomeGamesFrom": "Поиграйте в некоторые игры из вашей",
   "library.playSomeGamesFromLibrary": "Поиграйте в некоторые игры из вашей <1></1>",
   "nasGames.failed": "Не удалось запустить на сервере.",
+  "nasGames.full": "На сервере уже запущено максимальное число игр. Попробуйте через несколько минут.",
   "nasGames.playOnNAS": "Играть на сервере",
   "nasGames.starting": "Запуск на сервере",
   "nasGames.startOnServer": "Запустить на сервере",

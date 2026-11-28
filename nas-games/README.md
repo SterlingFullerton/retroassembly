@@ -5,12 +5,12 @@ over WebRTC, as play together does. Players join from the app's join page. The a
 `server/internal/nasgames` and `server/internal/web/nas_games_handlers.go`.
 
 - `serve.go`: the service the app calls (`host serve`). It starts each game as this same program run again, with a UDP
-  port of its own, and stops a game nobody has been in for a while. Every request needs the key in `SERVICE_KEY`.
+  port of its own, and stops a game nobody has been in for a while, after saving a state of it. Every request needs the key in `SERVICE_KEY`.
 - `main.go`, `frontend.c`: one game. A small libretro frontend runs the emulator with an OpenGL context on the GPU and
   no screen; each frame is encoded (H.264) and sent at once, and the sound (Opus) on a steady 10 ms clock.
 - `players.go`, `commands.go`: players joining, their controllers, and their pause menus.
 
-Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDLE_MINUTES` (5), `FIRST_MEDIA_PORT`
+Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDLE_MINUTES` (1), `FIRST_MEDIA_PORT`
 (47900; one port each game, the next ones after), `ICE_INTERFACES` (the network interfaces players reach the NAS on,
 with the container on the host's network), `ROMS_DIR` (/roms), `SAVE_DIR` (/config/saves).
 
