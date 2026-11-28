@@ -29,6 +29,8 @@ interface ConsoleControlsProps {
   /** Whether the ColecoVision's or Atari 5200's keypad is open, and what closes it */
   keypadOpen?: boolean
   onKeypadClose?: () => void
+  /** Given the top of the controls where a game is kept above them in portrait: the DS's, Lynx's and WonderSwan's */
+  top?: RefObject<HTMLDivElement | null>
 }
 
 function ignore() {
@@ -39,8 +41,14 @@ function ignore() {
  * One console's on-screen controls, by name, wherever a session is: a game being played, or a stand-in for one. Nothing
  * for a name no console has
  */
-export function ConsoleControls({ keypadOpen = false, kind, onKeypadClose = ignore }: Readonly<ConsoleControlsProps>) {
-  const top: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null)
+export function ConsoleControls({
+  keypadOpen = false,
+  kind,
+  onKeypadClose = ignore,
+  top: given,
+}: Readonly<ConsoleControlsProps>) {
+  const own: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null)
+  const top = given ?? own
   const keypad = { keypadOpen, onKeypadClose }
   const all: Record<string, ReactNode> = {
     arcade: <ArcadeControls visible />,

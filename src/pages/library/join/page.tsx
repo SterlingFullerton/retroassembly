@@ -270,7 +270,27 @@ export default function JoinPage() {
   }, [joined, found, onScreen, onNAS])
 
   const playing = stage === 'playing'
-  const layout = getPictureLayout(area)
+  // The top of the controls that a game is kept above in portrait, as it is on this device: the DS's, Lynx's and
+  // WonderSwan's. The picture then takes the space above them, from the top of the screen
+  const controlsTop = useRef<HTMLDivElement>(null)
+  const [room, setRoom] = useState<number>()
+  const showControls = playing && touch && Boolean(found) && !menuOpen
+  useEffect(() => {
+    if (!showControls) {
+      return
+    }
+    function measure() {
+      const rect = controlsTop.current?.getBoundingClientRect()
+      const portrait = globalThis.matchMedia('(orientation: portrait)').matches
+      setRoom(rect && rect.top > 0 && portrait ? Math.floor(rect.top) : undefined)
+    }
+    measure()
+    const abortController = new AbortController()
+    globalThis.addEventListener('resize', measure, { signal: abortController.signal })
+    globalThis.visualViewport?.addEventListener('resize', measure, { signal: abortController.signal })
+    return () => abortController.abort()
+  }, [showControls])
+  const layout = getPictureLayout(area, room)
 
   // The game's sound plays as loud as the volume in the pause menu's settings, the same one games on this device use
   useEffect(
@@ -424,8 +444,9 @@ export default function JoinPage() {
           the picture sits at the top, clear of the controls */}
       <div
         className={clsx('overflow-hidden', playing ? 'relative' : 'hidden', {
-          // Under the top bar's buttons, which are 44 points tall
-          'portrait:mt-safe-offset-11 portrait:self-start': touch,
+          // Under the top bar's buttons, which are 44 points tall, unless it's kept above the controls
+          'portrait:mt-safe-offset-11': touch && room === undefined,
+          'portrait:self-start': touch,
           'size-full': !layout,
         })}
         data-testid='guest-picture'
@@ -438,7 +459,7 @@ export default function JoinPage() {
         }}
         onPointerMove={(event) => moveStylus(event)}
         onPointerUp={(event) => moveStylus(event, false)}
-        style={layout?.box}
+        style={layout?.box ?? (room === undefined ? undefined : { height: room })}
       >
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a game's picture and sound, which has no words to caption */}
         <video
@@ -451,10 +472,10 @@ export default function JoinPage() {
         />
       </div>
 
-      {playing && touch && found && !menuOpen ? (
+      {showControls && found ? (
         <TestSessionProvider emulator={standIn}>
           <div className='pointer-events-none absolute inset-0 *:pointer-events-auto'>
-            <ConsoleControls kind={found.invitation.controls} />
+            <ConsoleControls kind={found.invitation.controls} top={controlsTop} />
           </div>
         </TestSessionProvider>
       ) : null}

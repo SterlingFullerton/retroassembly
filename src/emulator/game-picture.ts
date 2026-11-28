@@ -84,16 +84,20 @@ export function watchGamePicture(canvas: HTMLCanvasElement, onChange: (area: Pic
   return watchDraws(canvas, look)
 }
 
-/** How a video of the whole canvas is laid out to show only the picture: the styles of a box, and of the video in it */
-export function getPictureLayout(area: PictureArea | undefined) {
+/**
+ * How a video of the whole canvas is laid out to show only the picture: the styles of a box, and of the video in it.
+ * `room` is the height the picture may take, in pixels, where it's less than the screen's
+ */
+export function getPictureLayout(area: PictureArea | undefined, room?: number) {
   if (!area) {
     return
   }
+  const height = room === undefined ? '100dvh' : `${room}px`
   return {
     // A box the picture's shape, as large as fits the screen
     box: {
       aspectRatio: String(area.aspect),
-      width: `min(100vw, calc(100dvh * ${area.aspect}))`,
+      width: `min(100vw, calc(${height} * ${area.aspect}))`,
     },
     // The video is made large enough that the picture fills the box, and moved so the picture's corner is the box's
     video: {
