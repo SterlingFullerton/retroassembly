@@ -1,9 +1,7 @@
 import { clsx } from 'clsx'
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { resolveConsole } from '#@/consoles/registry.ts'
-import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -20,6 +18,7 @@ import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DPad } from './dpad.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
+import { GenericControls } from './generic-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { GwControls } from './gw-controls.tsx'
 import { LynxControls } from './lynx-controls.tsx'
@@ -252,14 +251,6 @@ export function DSControls({
 // phones under 375 points wide so the longest bar still fits
 const barIcon = 'size-11 rounded max-[374px]:portrait:w-9'
 
-// X, Y, A and B around a diamond, by their grid cells
-const faceButtons: [RetroPadButton & ('a' | 'b' | 'x' | 'y'), string][] = [
-  ['x', 'col-start-2 row-start-1'],
-  ['y', 'col-start-1 row-start-2'],
-  ['a', 'col-start-3 row-start-2'],
-  ['b', 'col-start-2 row-start-3'],
-]
-
 export function GameOverlayVirtualGamepad() {
   const { connected } = useGamepads()
   const [gamepadVisible, setGamepadVisible] = useState(!connected)
@@ -277,7 +268,6 @@ export function GameOverlayVirtualGamepad() {
   const rom = useRom()
   const { preference } = usePreference()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
-  const { t } = useTranslation()
   const { core } = useSession()
   // Which controls this game gets, and whether Select inserts a coin, are set per console and emulator in the console
   // registry (src/consoles)
@@ -387,60 +377,7 @@ export function GameOverlayVirtualGamepad() {
         <Atari5200Controls keypadOpen={keypadOpen} onKeypadClose={closeKeypad} visible={gamepadVisible} />
       ) : null}
       {controls === 'wonderswan' ? <WonderSwanControls top={wonderSwanControlsTop} visible={gamepadVisible} /> : null}
-      {controls === 'generic' ? (
-        <>
-          <TopBarButtons visible={gamepadVisible}>
-            <TopBarButton buttonName='select' className={clsx({ uppercase: isArcade })}>
-              {isArcade ? t('emulator.coin') : 'SELECT'}
-            </TopBarButton>
-            <TopBarButton buttonName='start'>START</TopBarButton>
-          </TopBarButtons>
-          <div
-            className={twMerge(
-              'bottom-safe left-safe absolute flex flex-col gap-2 p-2',
-              clsx({ hidden: !gamepadVisible }),
-            )}
-          >
-            <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='l' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
-                L1
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='l2' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
-                L2
-              </VirtualGamepadButton>
-            </div>
-            <DPad className='tablet:size-50 size-42' />
-          </div>
-
-          <div
-            className={twMerge(
-              'bottom-safe right-safe absolute flex flex-col gap-2 p-2',
-              clsx({ hidden: !gamepadVisible }),
-            )}
-          >
-            <div className='flex w-full gap-2'>
-              <VirtualGamepadButton buttonName='r2' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
-                R2
-              </VirtualGamepadButton>
-              <VirtualGamepadButton buttonName='r' className='h-11 flex-1 rounded px-2 ring ring-white/20'>
-                R1
-              </VirtualGamepadButton>
-            </div>
-            <div className='tablet:text-lg tablet:*:size-16.5 grid grid-cols-3 grid-rows-3 *:size-14 *:rounded-full'>
-              {faceButtons.map(([button, position]) => (
-                <VirtualGamepadButton
-                  buttonName={button}
-                  className={twMerge(position, 'ring ring-white/20')}
-                  group='face'
-                  key={button}
-                >
-                  {button.toUpperCase()}
-                </VirtualGamepadButton>
-              ))}
-            </div>
-          </div>
-        </>
-      ) : null}
+      {controls === 'generic' ? <GenericControls coin={isArcade} visible={gamepadVisible} /> : null}
     </div>
   )
 }
