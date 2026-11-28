@@ -57,12 +57,19 @@ func (f *fakeLinkedNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		w.Header().Set("X-Save-Sha1", "sum-of-"+string(save))
+		w.Header().Set("X-Save-Sha1", sha1Hex(save))
 		_, _ = w.Write(save)
 	case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/save"):
 		id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/games/"), "/save")
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
+		// As the service does: a console given its player's save already is turned away
+		for _, game := range f.games {
+			if game["id"] == id && game["keepFor"] != nil {
+				http.Error(w, "given a save already", http.StatusConflict)
+				return
+			}
+		}
 		f.given[id] = append(f.given[id], body)
 		for _, game := range f.games {
 			if game["id"] == id {
@@ -131,10 +138,10 @@ func TestLinkedDSGamesOnTheNAS(t *testing.T) {
 		t.Fatalf("pressed again: %+v, %d starts", codes, len(nas.starts))
 	}
 
-	// Join a game lists the friend's console only
+	// Join a game lists neither console: the friend joins theirs with its code
 	var listed []map[string]string
 	friend.expectJSON(http.StatusOK, &listed, friend.get("/api/v1/play_together/invitations"))
-	if len(listed) != 1 || listed[0]["code"] != "0BBBBB" || listed[0]["host"] != "owner" {
+	if len(listed) != 0 {
 		t.Fatalf("listed %+v", listed)
 	}
 	// The starter's console tells them the friend's code; both say they're linked

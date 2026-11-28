@@ -21,6 +21,8 @@ export interface Invitation {
   linked?: boolean
   /** For the starter's console of a linked pair, the code that joins the friend's */
   friendCode?: string
+  /** For a game on the server, the place in it kept for this browser, which its answer is for */
+  place?: string
 }
 
 /**
@@ -86,7 +88,10 @@ export async function findInvitation(code: string) {
   const invitation: Invitation = await parseResponse(client.play_together.invitations[':code'].$get({ param }))
   return {
     async answer(text: string) {
-      await parseResponse(client.play_together.invitations[':code'].answer.$post({ json: { answer: text }, param }))
+      const { place } = invitation
+      await parseResponse(
+        client.play_together.invitations[':code'].answer.$post({ json: { answer: text, place }, param }),
+      )
     },
     invitation,
   }

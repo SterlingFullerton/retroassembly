@@ -88,9 +88,10 @@ func (s *Server) updateAccount(w http.ResponseWriter, r *http.Request, scope lib
 	writeJSON(w, http.StatusOK, user)
 }
 
-// removeAccountData removes what a deleted account kept: its saves, favorites, history, own games and settings, and
-// the BIOS files no one else has
+// removeAccountData removes what a deleted account kept: its games on the NAS, its saves, favorites, history, own games
+// and settings, and the BIOS files no one else has
 func (s *Server) removeAccountData(r *http.Request, scope library.Scope, userID string) error {
+	s.stopNASGamesOf(r.Context(), userID)
 	if err := library.RemoveAccountData(r.Context(), s.database, scope.Storage, userID); err != nil {
 		return err
 	}

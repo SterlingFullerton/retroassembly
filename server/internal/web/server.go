@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/klauspost/compress/gzhttp"
@@ -50,14 +49,8 @@ type Server struct {
 	signIns *signInLimit
 	// The game service on the NAS, or nil when it isn't set up
 	nasGames *nasgames.Client
-	// Players' places in NAS games, kept for their answer (see nasPlaceKey)
-	nasPlaces sync.Map
-	// The emulators the NAS has, as last asked
-	nasCoresCache struct {
-		sync.Mutex
-		at    time.Time
-		cores []string
-	}
+	// What the app keeps of the games on the NAS between requests
+	nas nasState
 	// Invitations to games being played together, waiting for a guest
 	together *together.Invitations
 	// The consoles whose game pages are sent with cross-origin isolation headers
@@ -100,6 +93,7 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		platformNames: data.PlatformNames, preference: settings, signIns: newSignInLimit(c.SignInAttempts), together: together.New(),
 		threadedConsoles: threaded,
 	}
+	server.nas.coreOptions = data.CoreOptions
 	if server.nasGames != nil {
 		go server.collectNASSaves()
 	}
