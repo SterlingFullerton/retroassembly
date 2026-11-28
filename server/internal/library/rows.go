@@ -224,6 +224,10 @@ func value(raw any, kind columnKind) any {
 	if text, ok := raw.([]byte); ok {
 		raw = string(text)
 	}
+	// JSON has no infinity or NaN, which a REAL column may hold: they're written as none rather than failing the answer
+	if number, ok := raw.(float64); ok && (math.IsInf(number, 0) || math.IsNaN(number)) {
+		return nil
+	}
 	switch kind {
 	case timestamp:
 		switch millis := raw.(type) {

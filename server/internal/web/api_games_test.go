@@ -37,6 +37,23 @@ func TestEditGame(t *testing.T) {
 		t.Fatalf("players: %v", *edited.GamePlayers)
 	}
 	player.expect(http.StatusNotFound, player.form(http.MethodPatch, "/api/v1/roms/missing", url.Values{"gameName": {"x"}}))
+
+	// Players are a whole number from 1 to 16
+	for _, players := range []string{"Infinity", "-Infinity", "17", "-1", "1.5"} {
+		player.expect(http.StatusBadRequest, player.form(http.MethodPatch, "/api/v1/roms/"+added.ID,
+			url.Values{"gamePlayers": {players}}))
+	}
+	// A number JSON can't write, stored before they were checked, is answered as none
+	if _, err := api.database.Exec(`UPDATE roms SET game_players = 1e999 WHERE id = ?`, added.ID); err != nil {
+		t.Fatal(err)
+	}
+	var found struct {
+		Roms []game `json:"roms"`
+	}
+	player.expectJSON(http.StatusOK, &found, player.get("/api/v1/roms/search?query=Quest"))
+	if len(found.Roms) != 1 || found.Roms[0].GamePlayers != nil {
+		t.Fatalf("found %+v", found.Roms)
+	}
 }
 
 func TestGameImages(t *testing.T) {
