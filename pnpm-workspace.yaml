@@ -1,5 +1,12 @@
-dangerouslyAllowAllBuilds: true
-minimumReleaseAge: 0
+# Only these packages may run their install scripts; any other package that wants to is skipped, with a warning
+allowBuilds:
+  esbuild: true
+# A version must have been published for a day before it's installed, so a hijacked release is usually pulled first
+minimumReleaseAge: 1440
+# @react-router/dev's optional Cloudflare support, which the app doesn't use, is never installed: it would bring a
+# pre-release Cloudflare runtime and sharp with it
+overrides:
+  wrangler: '-'
 patchedDependencies:
   'goodcodes-parser@2.5.0': 'patches/goodcodes-parser.patch'
   nostalgist@0.23.0: patches/nostalgist@0.23.0.patch

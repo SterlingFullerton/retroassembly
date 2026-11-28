@@ -11,5 +11,16 @@ inputs
 node_modules
 **/node_modules
 
+# Built or downloaded here, never shipped from a checkout: the image packs its own emulators and game info database
+public/cores
+game-info
+
+# Claude Code's worktrees and settings, and what the browser tests leave behind
+.claude
+.vite-hooks
+test-results
+playwright-report
+tests/e2e/fixtures/files
+
 Dockerfile
 .dockerignore

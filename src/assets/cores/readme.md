@@ -4,6 +4,10 @@ RetroArch's official browser build has no emulator for these consoles, so they'r
 with Emscripten 3.1.74 and RetroArch 9b56a92, and shipped with the app. Each `<core>_libretro.zip` holds the
 `.js` and `.wasm` the build produces; patches, where a core needs them, sit beside it.
 
+Each zip's fingerprint is in `SHA256SUMS`, which a unit test checks, so a rebuilt zip goes in with its new line. The
+game service (`nas-games`) builds melonDS for the server from the same commit with a copy of `melonds_libretro.patch`
+(`nas-games/patches/melonds.patch`); the same test checks that the two patches and commits match.
+
 | Emulator           | Console              | Source                                                                                                                                                                                  |
 | ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `a5200`            | Atari 5200           | [libretro/a5200](https://github.com/libretro/a5200) 40c6f2f                                                                                                                             |
