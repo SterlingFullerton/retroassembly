@@ -415,10 +415,19 @@ export default function JoinPage() {
     }
   }, [playing, keyboard, keyInputs, onNAS, menuOpen])
 
-  // The menu pauses the game while it's open, for everyone in it
+  // The menu pauses the game while it's open, for everyone in it. Only a player who paused it resumes it: one who has
+  // just joined a game paused by someone else's menu leaves it paused
+  const pausedHere = useRef(false)
   useEffect(() => {
-    if (playing && onNAS) {
-      sendCommand.current?.(menuOpen ? 'pause' : 'resume')
+    if (!playing || !onNAS) {
+      return
+    }
+    if (menuOpen) {
+      pausedHere.current = true
+      sendCommand.current?.('pause')
+    } else if (pausedHere.current) {
+      pausedHere.current = false
+      sendCommand.current?.('resume')
     }
   }, [menuOpen, playing, onNAS])
 
