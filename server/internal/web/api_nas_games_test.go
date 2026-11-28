@@ -119,10 +119,11 @@ func TestGamesOnTheNAS(t *testing.T) {
 	owner.expect(http.StatusNotFound, owner.json(http.MethodPost, "/api/v1/nas_games",
 		map[string]string{"controls": "nes", "core": "fceumm", "rom": "nosuchrom"}))
 
-	// Listed with the games people share, and joined the same way: the NAS makes the offer, and gets the answer
+	// Listed with the games people share, under the name of whoever started it, and joined the same way: the NAS makes
+	// the offer, and gets the answer
 	var listed []map[string]string
 	guest.expectJSON(http.StatusOK, &listed, guest.get("/api/v1/play_together/invitations"))
-	if len(listed) != 1 || listed[0]["code"] != "0ABCDE" || listed[0]["host"] != "NAS" || listed[0]["controls"] != "nes" {
+	if len(listed) != 1 || listed[0]["code"] != "0ABCDE" || listed[0]["host"] != "owner" || listed[0]["controls"] != "nes" {
 		t.Fatalf("listed %+v", listed)
 	}
 	path := "/api/v1/play_together/invitations/0abcde"
@@ -130,7 +131,7 @@ func TestGamesOnTheNAS(t *testing.T) {
 	guest.expect(http.StatusGone, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "early"}))
 	var found map[string]string
 	guest.expectJSON(http.StatusOK, &found, guest.get(path))
-	if found["offer"] != "the NAS's offer" || found["host"] != "NAS" || found["core"] != "fceumm" {
+	if found["offer"] != "the NAS's offer" || found["host"] != "owner" || found["core"] != "fceumm" {
 		t.Fatalf("found %+v", found)
 	}
 	guest.expect(http.StatusOK, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "the answer"}))

@@ -516,7 +516,9 @@ export default function JoinPage() {
         <div className='flex flex-col items-center gap-3 p-6 text-center' data-testid='guest-connecting'>
           <span className='icon-[mdi--loading] size-8 animate-spin' />
           <p className='text-lg font-semibold'>{found.invitation.title}</p>
-          <p className='text-white/70'>Connecting to {found.invitation.host || 'the other player'}.</p>
+          <p className='text-white/70'>
+            {onNAS ? 'Connecting to the server.' : `Connecting to ${found.invitation.host || 'the other player'}.`}
+          </p>
         </div>
       ) : null}
 

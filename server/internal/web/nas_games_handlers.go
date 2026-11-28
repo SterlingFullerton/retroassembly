@@ -77,10 +77,22 @@ func (s *Server) nasListings(ctx context.Context) []together.Listing {
 	listings := make([]together.Listing, 0, len(games))
 	for _, game := range games {
 		listings = append(listings, together.Listing{
-			Code: nasCode(game.ID), Controls: game.Controls, Host: "NAS", Title: game.Title,
+			Code: nasCode(game.ID), Controls: game.Controls, Host: s.nasStarter(ctx, game), Title: game.Title,
 		})
 	}
 	return listings
+}
+
+// nasStarter is who a game on the NAS is shown as hosted by: the username of the player who started it, so that
+// games of the same title are told apart. "Server" for one whose player can't be found
+func (s *Server) nasStarter(ctx context.Context, game nasgames.Game) string {
+	var username string
+	err := s.database.QueryRowContext(ctx, `SELECT username FROM users WHERE id = ? AND status = ? LIMIT 1`,
+		game.StartedBy, db.StatusNormal).Scan(&username)
+	if err != nil || username == "" {
+		return "Server"
+	}
+	return username
 }
 
 // findNASInvitation keeps a place in the game for the player asking, and gives them its offer, as a person's
@@ -98,7 +110,7 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 	}
 	s.nasPlaces.Store(nasPlaceKey(code, scope), player)
 	writeJSON(w, http.StatusOK, together.Invitation{
-		Controls: game.Controls, Core: game.Core, Host: "NAS", Offer: offer, Platform: game.Platform, Title: game.Title,
+		Controls: game.Controls, Core: game.Core, Host: s.nasStarter(r.Context(), game), Offer: offer, Platform: game.Platform, Title: game.Title,
 	})
 }
 
