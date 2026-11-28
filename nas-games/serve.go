@@ -48,6 +48,11 @@ import (
 //	DELETE /users/{user}                 -> the player's games stopped, and all the service keeps for them removed
 //	POST   /games/{id}/players           -> {player, offer}
 //	POST   /games/{id}/players/{n}/answer {answer}
+//	GET    /version                      -> {api: 1, capabilities: ["linked"]}
+//
+// The app and the service come from the same commit: the app checks /version for api 1, and a service that answers
+// 404 there is an older one. "linked" is linked pairs, and POST /games/{id}/save. A save, given or collected, is at
+// most maxSave bytes, as the app's own limit
 //
 // With "linked": true, POST /games starts two consoles linked as by a DS's local wireless and answers with both, the
 // starter's first: each a game of its own with its console (1 or 2) and the other's id (linkedWith). The pair pauses,
@@ -132,6 +137,7 @@ var (
 	errGiven          = errors.New("the console has been given its player's save")
 	errEnding         = errors.New("the game is ending")
 	errShuttingDown   = errors.New("the game service is stopping")
+	errSaveTooBig     = errors.New("the save is bigger than any game's")
 	// Saving or loading a state of one console of a linked pair
 	errLinkedStates = errors.New("a linked game has no save states")
 	errBadFile      = errors.New("no such game file")
@@ -157,6 +163,14 @@ var (
 	// This program, which each game is run as
 	self string
 )
+
+// The most a game's save may be, given or collected: as the app's limit, and as a PSP's zip of saves may unpack to
+const maxSave = savezip.MaxSize
+
+// What the app checks it's talking to: the service's API, and what it can do beyond the first
+const apiVersion = 1
+
+var capabilities = []string{"linked"}
 
 func serve() {
 	key := os.Getenv("SERVICE_KEY")
@@ -200,6 +214,9 @@ func serve() {
 	mux.HandleFunc("POST /games/{id}/save/collected", saveCollected)
 	mux.HandleFunc("POST /games/{id}/save", giveGameSave)
 	mux.HandleFunc("DELETE /users/{user}", forgetUser)
+	mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSONTo(w, http.StatusOK, map[string]any{"api": apiVersion, "capabilities": capabilities})
+	})
 	mux.HandleFunc("POST /games/{id}/players", func(w http.ResponseWriter, r *http.Request) {
 		// Someone is joining: the game isn't idle, whatever the last look found
 		service.Lock()
@@ -442,6 +459,9 @@ func startConsole(request startRequest, id string, link *consoleLink, port int) 
 	if !validPlayer.MatchString(request.StartedBy) {
 		return nil, http.StatusBadRequest, errors.New("no such player")
 	}
+	if len(request.Save) > maxSave {
+		return nil, http.StatusRequestEntityTooLarge, errSaveTooBig
+	}
 	// The game as the emulator sees it: under its own name, with its BIOS files, in a folder of the game's own
 	workDir := filepath.Join(os.TempDir(), "nas-game-"+newID())
 	launchPath, systemDir, err := prepareGame(workDir, gamePath, romsDir, request.FileName, request.Bioses, request.Discs)
@@ -477,7 +497,7 @@ func startConsole(request startRequest, id string, link *consoleLink, port int) 
 	// A save of the player's game on the server that the app hasn't collected yet, from a game that ended moments
 	// ago, is newer than the app's latest: the game starts from it, and it's still collected from the game that made it
 	start := request.Save
-	if waiting := waitingSave(game); waiting != nil {
+	if waiting := waitingSave(game); waiting != nil && len(waiting.content) <= maxSave {
 		log.Printf("game %s (%s): starting from the save game %s left, not yet collected", id, request.Title, waiting.from)
 		start = waiting.content
 	}
@@ -804,6 +824,10 @@ func giveGameSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "whose save it is", http.StatusBadRequest)
 		return
 	}
+	if len(body.Save) > maxSave {
+		http.Error(w, errSaveTooBig.Error(), http.StatusRequestEntityTooLarge)
+		return
+	}
 	service.Lock()
 	game := service.games[r.PathValue("id")]
 	var refused error
@@ -960,6 +984,12 @@ func gameSave(w http.ResponseWriter, r *http.Request) {
 		// Nothing new: an ended game has nothing left to give, and is forgotten
 		forgetEnded(game, content)
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	// Past what the app takes: not given, and the game is kept, its save on the server
+	if len(content) > maxSave {
+		log.Printf("game %s (%s): its save is %d bytes, more than the app takes", game.ID, game.Title, len(content))
+		http.Error(w, errSaveTooBig.Error(), http.StatusRequestEntityTooLarge)
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")

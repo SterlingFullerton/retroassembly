@@ -481,3 +481,21 @@ func TestPruneStates(t *testing.T) {
 		}
 	}
 }
+
+func TestSaveSizeLimit(t *testing.T) {
+	saves := resetService(t)
+	root := filepath.Join(saves, "player", "games", "big")
+	_ = os.MkdirAll(root, 0o755)
+	game := &runningGame{ID: "big", Ended: true, savePath: filepath.Join(root, "Game.srm"), saveRoot: root}
+	service.games[game.ID] = game
+	_ = os.WriteFile(game.savePath, make([]byte, maxSave+1), 0o644)
+	if code := ask(t, http.MethodGet, "/games/big/save", nil).Code; code != http.StatusRequestEntityTooLarge || service.games["big"] == nil {
+		t.Fatalf("answered %d for a save past the limit, kept %v", code, service.games["big"] != nil)
+	}
+	friend := &runningGame{ID: "friend", Console: 2, saveRoot: t.TempDir()}
+	service.games[friend.ID] = friend
+	body := map[string]any{"keepFor": keepFor{LibraryOwner: "o", Rom: "r", User: "u"}, "save": make([]byte, maxSave+1)}
+	if code := ask(t, http.MethodPost, "/games/friend/save", body).Code; code != http.StatusRequestEntityTooLarge || friend.KeepFor != nil {
+		t.Fatalf("given a save past the limit: %d", code)
+	}
+}
