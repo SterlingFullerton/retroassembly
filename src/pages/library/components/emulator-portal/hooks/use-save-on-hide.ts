@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { attemptAsync } from 'es-toolkit'
+import { useEffect, useRef } from 'react'
 import { saveQueue } from '#@/emulator/save-queue.ts'
 import { captureState } from '#@/emulator/saves.ts'
-import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
+import { useEmulatorLaunched, useShowGameOverlayContent } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useGameStates } from './use-game-states.ts'
@@ -18,6 +19,12 @@ export function useSaveOnHide() {
   const rom = useRom()
   const [launched] = useEmulatorLaunched()
   const { reloadAutoStates } = useGameStates()
+  // The pause menu, opened since: the game then stays paused behind it
+  const [menuShown] = useShowGameOverlayContent()
+  const menuShownRef = useRef(menuShown)
+  useEffect(() => {
+    menuShownRef.current = menuShown
+  }, [menuShown])
 
   useEffect(() => {
     if (!launched || !emulator || !core || !rom) {
@@ -25,7 +32,7 @@ export function useSaveOnHide() {
     }
 
     let pausedOnHide = false
-    let saving: Promise<void> | undefined
+    let capturing: Promise<SavedState> | undefined
 
     // A save that fails to upload stays in the browser and is uploaded the next time the library opens
     async function persistQuietly(capturing: Promise<SavedState>) {
@@ -50,15 +57,17 @@ export function useSaveOnHide() {
         emulator.pause()
         pausedOnHide = true
         // Started at once: the part that can finish before the page is gone runs before this returns
-        saving = persistQuietly(
-          captureState(emulator, { canvasThumbnail: launchProfile.canvasThumbnail, immediate: true }),
-        )
+        capturing = captureState(emulator, { canvasThumbnail: launchProfile.canvasThumbnail, immediate: true })
+        // Uploaded in the background: the game needn't wait for the network once it's shown again
+        // oxlint-disable-next-line typescript/no-floating-promises -- it answers for its own failures
+        persistQuietly(capturing)
         return
       }
       if (pausedOnHide) {
         pausedOnHide = false
-        await saving
-        if (emulator.getStatus() === 'paused') {
+        // The game resumes once its state is taken, usually long before the page is shown again
+        await attemptAsync(async () => await capturing)
+        if (emulator.getStatus() === 'paused' && !menuShownRef.current) {
           emulator.resume()
         }
       }

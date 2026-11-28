@@ -294,8 +294,11 @@ export interface HostOptions {
   emulator: Nostalgist
   /** Services that tell a browser how it can be reached from outside its own network, where they're needed */
   iceServers?: RTCIceServer[]
-  /** Told when the guest arrives and when they leave */
-  onGuest?: (connected: boolean) => void
+  /**
+   * Told when the guest arrives, with the player they play as (counting from 1; none when every controller's place is
+   * taken), and when they leave or can't be reached at all
+   */
+  onGuest?: (connected: boolean, player?: number) => void
   /** The address this browser reaches the server from, where the guest can probably reach it too */
   reachableAt?: string
 }
@@ -328,6 +331,9 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
 
   const gamepad = createGuestGamepad()
   let detachGamepad: (() => void) | undefined
+  // Whether the guest has arrived, and whether they've gone again: each is told once
+  let joined = false
+  let ended = false
   const channel = connection.createDataChannel(inputChannel.label, { ...inputChannel.options, id: inputChannel.id })
   channel.binaryType = 'arraybuffer'
   channel.addEventListener('message', (event: MessageEvent<unknown>) => {
@@ -350,6 +356,12 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
     }
   }
   areaChannel.addEventListener('open', tellArea)
+  // A guest who leaves closes the channels at once; one whose network fails is noticed by the connection failing
+  areaChannel.addEventListener('close', () => {
+    if (joined) {
+      endGuest()
+    }
+  })
   async function tune() {
     // The copy is already no taller than it needs to be. The whole canvas is sized by the picture in it, so a small
     // picture on a large canvas is still sent sharp
@@ -399,18 +411,31 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
     await tune()
   }
 
+  function endGuest() {
+    if (ended) {
+      return
+    }
+    ended = true
+    detachGamepad?.()
+    detachGamepad = undefined
+    onGuest?.(false)
+  }
   async function handleState() {
-    const connected = connection.connectionState === 'connected'
-    if (connected && !detachGamepad) {
+    const state = connection.connectionState
+    if (state === 'connected' && !joined) {
+      joined = true
       detachGamepad = attachPlayerGamepad(emulator, gamepad)
-      onGuest?.(true)
+      onGuest?.(true, detachGamepad ? gamepad.index + 1 : undefined)
       clearInterval(checkCopy)
       checkCopy = setInterval(checkCopying, checkEvery)
       await tune()
-    } else if (!connected && detachGamepad) {
-      detachGamepad()
-      detachGamepad = undefined
-      onGuest?.(false)
+    } else if (state === 'disconnected') {
+      // A guest whose network changes is out of reach for a moment and usually back within seconds, so the game goes
+      // on. Their buttons are let go meanwhile, rather than held down until they're back
+      decodePadState(new Uint8Array(padStateSize), gamepad)
+    } else if (state === 'failed' || state === 'closed') {
+      // Gone for good, or never reached: a guest whose network can't reach this one gets as far as answering
+      endGuest()
     }
   }
   connection.addEventListener('connectionstatechange', handleState)
@@ -421,6 +446,7 @@ export function hostGame({ canvas, emulator, iceServers = [], onGuest, reachable
       await connection.setRemoteDescription({ sdp: withStartingBitrate(sdp ?? '', startingBitrate), type })
     },
     close() {
+      ended = true
       connection.removeEventListener('connectionstatechange', handleState)
       clearInterval(checkCopy)
       detachGamepad?.()

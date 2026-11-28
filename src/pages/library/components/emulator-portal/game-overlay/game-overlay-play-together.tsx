@@ -65,7 +65,13 @@ export function GameOverlayPlayTogether() {
             : t('playTogether.waitingCode')}
         </div>
       ) : null}
-      {sharing.stage === 'connected' ? <div className='text-sm'>{t('playTogether.connected')}</div> : null}
+      {sharing.stage === 'connected' ? (
+        <div className='text-sm'>
+          {sharing.guest
+            ? t('playTogether.connectedNamed', { guest: sharing.guest, player: sharing.player })
+            : t('playTogether.connected', { player: sharing.player })}
+        </div>
+      ) : null}
       {sharing.stage === 'starting' ? <div className='text-sm text-white/70'>{t('playTogether.starting')}</div> : null}
       {sharing.stage === 'failed' ? <div className='text-sm text-[#ffc46b]'>{t('playTogether.failed')}</div> : null}
       <div className='flex'>

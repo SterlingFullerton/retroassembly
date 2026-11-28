@@ -2526,7 +2526,7 @@
         "n64": {
           "bioses": [],
           "core": "mupen64plus_next",
-          "rewindEnabled": true,
+          "rewindEnabled": false,
           "shader": "inherit"
         },
         "nds": {

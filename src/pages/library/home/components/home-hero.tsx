@@ -136,7 +136,7 @@ export function HomeHero() {
             </div>
             {/* Download the game only when it's launched, so opening the library stays quick */}
             <div className='sm:max-w-sm'>
-              <GameButtons compact lazy />
+              <GameButtons compact />
             </div>
           </div>
 

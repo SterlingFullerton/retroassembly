@@ -16,15 +16,35 @@ function getContextPrototypes() {
 
 type DrawCall = (this: DrawingContext, ...args: unknown[]) => unknown
 
-/** Wraps one drawing function all 3D canvases of a kind share; the function returned puts it back */
-function watchDrawCall(prototype: Record<string, unknown>, name: string, onDraw: (context: DrawingContext) => void) {
+// Everything watching, each told of every draw. The drawing functions are wrapped once, however many watch, and put
+// back when the last stops: watchers that stop in any order leave nothing behind
+const watchers = new Set<(context: DrawingContext) => void>()
+const wrapped: { name: string; original: DrawCall; prototype: Record<string, unknown>; watched: DrawCall }[] = []
+
+function wrapDrawCall(prototype: Record<string, unknown>, name: string) {
   const original = prototype[name] as DrawCall
   function watched(this: DrawingContext, ...args: unknown[]) {
-    onDraw(this)
+    for (const watcher of watchers) {
+      watcher(this)
+    }
     return Reflect.apply(original, this, args)
   }
   prototype[name] = watched
-  return () => {
+  wrapped.push({ name, original, prototype, watched })
+}
+
+function wrapDrawCalls() {
+  for (const prototype of getContextPrototypes()) {
+    for (const name of drawCalls) {
+      if (typeof prototype[name] === 'function' && Object.hasOwn(prototype, name)) {
+        wrapDrawCall(prototype, name)
+      }
+    }
+  }
+}
+
+function unwrapDrawCalls() {
+  for (const { name, original, prototype, watched } of wrapped.splice(0)) {
     // Left in place if something else has wrapped it since
     if (prototype[name] === watched) {
       prototype[name] = original
@@ -42,17 +62,13 @@ export function watchDraws(canvas: HTMLCanvasElement, onDraw: (context: DrawingC
       onDraw(context)
     }
   }
-  const restores: (() => void)[] = []
-  for (const prototype of getContextPrototypes()) {
-    for (const name of drawCalls) {
-      if (typeof prototype[name] === 'function' && Object.hasOwn(prototype, name)) {
-        restores.push(watchDrawCall(prototype, name, handleDraw))
-      }
-    }
+  if (watchers.size === 0) {
+    wrapDrawCalls()
   }
+  watchers.add(handleDraw)
   return () => {
-    for (const restore of restores) {
-      restore()
+    if (watchers.delete(handleDraw) && watchers.size === 0) {
+      unwrapDrawCalls()
     }
   }
 }

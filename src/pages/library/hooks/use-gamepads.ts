@@ -48,7 +48,8 @@ function getSnapshot() {
 
 export function useGamepads() {
   const gamepads = useSyncExternalStore(subscribe, getSnapshot, () => null)
-  const gamepad = gamepads?.[0]
+  // The first connected, as the menus use (see getActiveGamepad): not always the first listed
+  const gamepad = gamepads?.find((gamepad) => gamepad?.connected) ?? undefined
   const connected = Boolean(gamepad)
   return { connected, gamepad, gamepads }
 }

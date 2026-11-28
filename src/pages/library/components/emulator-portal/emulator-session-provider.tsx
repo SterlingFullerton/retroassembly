@@ -1,34 +1,35 @@
 import { createContext, type ReactNode, useContext, useMemo, useReducer } from 'react'
 import { useGamepadMapping, type GamepadMapping } from '#@/pages/library/hooks/use-gamepad-mapping.ts'
+import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
+import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { useEmulatorSessionController } from './hooks/use-emulator.ts'
 
 const EmulatorGamepadMappingContext = createContext<GamepadMapping | null>(null)
-// A lazy session downloads the game and emulator only when the game is launched, instead of when the page opens
-const EmulatorLazyContext = createContext(false)
 const SessionContext = createContext<null | ReturnType<typeof useEmulatorSessionController>>(null)
 
 // One game session: the game, its emulator and everything about playing it, shared by every part of the game screen
-function Session({ children, lazy }: Readonly<{ children: ReactNode; lazy: boolean }>) {
+function Session({ children }: Readonly<{ children: ReactNode }>) {
   const emulatorGamepadMapping = useEmulatorGamepadMapping()
-  const session = useEmulatorSessionController({ emulatorGamepadMapping, lazy })
+  const session = useEmulatorSessionController({ emulatorGamepadMapping })
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
 
-export function EmulatorSessionProvider({ children, lazy = false }: Readonly<{ children: ReactNode; lazy?: boolean }>) {
+/**
+ * A session for the page's game. Another game, reached on the same page, or another emulator picked for it, gets a
+ * session of its own: nothing of the last one's, such as its own save, carries over
+ */
+export function EmulatorSessionProvider({ children }: Readonly<{ children: ReactNode }>) {
   const gamepadMapping = useGamepadMapping()
   const [emulatorGamepadMapping] = useReducer((mapping: GamepadMapping) => mapping, gamepadMapping)
+  const rom = useRom()
+  const { preference } = usePreference()
+  const core = preference.emulator.platform[rom.platform]?.core
 
   return (
     <EmulatorGamepadMappingContext.Provider value={emulatorGamepadMapping}>
-      <EmulatorLazyContext.Provider value={lazy}>
-        <Session lazy={lazy}>{children}</Session>
-      </EmulatorLazyContext.Provider>
+      <Session key={`${rom.id} ${core}`}>{children}</Session>
     </EmulatorGamepadMappingContext.Provider>
   )
-}
-
-export function useEmulatorLazy() {
-  return useContext(EmulatorLazyContext)
 }
 
 export function useEmulatorGamepadMapping() {

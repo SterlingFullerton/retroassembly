@@ -57,6 +57,11 @@ await describe('the keys that pause, rewind and fast-forward', async () => {
     assert.equal(playsGameButton(shared, ''), false)
   })
 
+  await it('can’t be a key a console’s own buttons have', () => {
+    assert.equal(playsGameButton(shared, 'p', { snes: { input_player1_a: 'p' } }), true)
+    assert.equal(playsGameButton(shared, 'p', { gba: null, snes: { input_player1_a: 'o' } }), false)
+  })
+
   await it('take a key from another shortcut', () => {
     assert.deepEqual(bindHotkey(shared, 'input_rewind', shared.$pause), { $pause: '', input_rewind: shared.$pause })
     assert.deepEqual(bindHotkey(shared, '$pause', 'p'), { $pause: 'p' })

@@ -77,8 +77,19 @@ const defaultRetroarchConfig: RetroarchConfig = {
 }
 
 // A game and its emulator are downloaded only when the player shows they're about to play: when the pointer reaches the
-// Start button, a finger touches it, or it's pressed. Browsing past games downloads none of them
+// Start button, a finger touches it, or it's pressed. Browsing past games downloads none of them, and nor does anything
+// else: a controller connecting, or a setting changing, never starts a download
 const preparations = new Map<string, Promise<Nostalgist | undefined>>()
+
+/** Shuts down an emulator that was got ready and never launched, so its memory is let go */
+function discard(emulator: Nostalgist | undefined) {
+  if (emulator?.getStatus() !== 'initial') {
+    return
+  }
+  try {
+    emulator.exit()
+  } catch {}
+}
 
 const remapDirectory = '/home/web_user/retroarch/userdata/config/remaps'
 
@@ -102,7 +113,7 @@ function isBlank(content: Uint8Array) {
 }
 
 function isSame(a: Uint8Array, b: Uint8Array | undefined) {
-  return b !== undefined && a.length === b.length && a.every((byte, index) => byte === b[index])
+  return a === b || (b !== undefined && a.length === b.length && a.every((byte, index) => byte === b[index]))
 }
 
 // A core's system files, downloaded and unpacked once per page
@@ -131,6 +142,17 @@ function getSystemFiles(core: string, onProgress?: (loaded: number, total: numbe
   return files
 }
 
+/** Leaves the fullscreen a launch that failed went into */
+async function leaveFullscreen(entering: Promise<void> | undefined) {
+  if (!entering) {
+    return
+  }
+  await entering
+  if (document.fullscreenElement) {
+    await attemptAsync(() => document.exitFullscreen())
+  }
+}
+
 function hasAnalogStickOnScreen() {
   return globalThis.matchMedia?.('(pointer: coarse)').matches ?? false
 }
@@ -147,10 +169,8 @@ export interface ChosenState {
  */
 export function useEmulatorSessionController({
   emulatorGamepadMapping,
-  lazy,
 }: {
   emulatorGamepadMapping: ReturnType<typeof useEmulatorGamepadMapping>
-  lazy: boolean
 }) {
   const rom: Rom = useRom()
   // The page the game is played from gives its discs, when it's on several: the game's page or the home page
@@ -164,7 +184,8 @@ export function useEmulatorSessionController({
   // once the game has started and its disc is in
   const chosenStateRef = useRef<ChosenState | undefined>(undefined)
   // The game's own save as this page last knew it: put back at launch, or read out while playing. `from` is the server's
-  // save it came from, so a newer one from another device is fetched instead
+  // save it came from, so a newer one from another device is fetched instead. The session is one game's, with one
+  // emulator (see EmulatorSessionProvider), so it's never another game's save
   const knownGameSave = useRef<{ content?: Uint8Array; from?: string }>({})
   const { preference, setPreference } = usePreference()
   // The gamepad in use, which may have buttons of its own for this console
@@ -303,26 +324,46 @@ export function useEmulatorSessionController({
     ],
   )
 
-  // A game is prepared on mount only when there's none yet, or the last one has been shut down. Preparing again while
-  // one runs would swap the running game for a fresh copy, which exit would then find not running and leave alone
-  const { cache } = useSWRConfig()
-  const cached = (cache.get(unstable_serialize(options)) as undefined | { data?: Nostalgist })?.data
+  // What's got ready is known by what it downloads: the game's files, the emulator, its shader and BIOS files, and the
+  // snapshot it continues from. The rest of the options, such as the keys and the controller, are read when it's got
+  // ready. Nothing is got ready because these change: only reaching for Start or Continue does that (see warmUp)
+  const biosFiles = JSON.stringify(bioses.map(({ fileId }) => fileId))
+  const preparedState = state?.fileId && !multiDisc ? state.fileId : ''
+  const key = useMemo(
+    () => ['emulator', rom.id, core, shader, discFiles, biosFiles, preparedState],
+    [rom.id, core, shader, discFiles, biosFiles, preparedState],
+  )
+  const preparedKey = unstable_serialize(key)
+  const optionsRef = useRef(options)
+  useEffect(() => {
+    optionsRef.current = options
+  })
+  // The key this session shows, while it's mounted
+  const currentKey = useRef<string | undefined>(preparedKey)
+  const { cache, mutate: mutateCache } = useSWRConfig()
   const {
     data,
     error,
     isValidating,
     mutate: prepare,
   } = useSWRImmutable(
-    options,
-    // An emulator with threads can only start on an isolated page (a PSP game's own). Anywhere else nothing is prepared,
-    // whatever asks: such a page sends the player to the game's page to play it
-    () =>
-      launchProfile.threads && !globalThis.crossOriginIsolated
-        ? Promise.resolve(undefined)
-        : Nostalgist.prepare(options),
-    {
-      revalidateOnMount: !lazy && (!cached || cached.getStatus() === 'terminated'),
+    key,
+    async () => {
+      // An emulator with threads can only start on an isolated page (a PSP game's own). Anywhere else nothing is
+      // prepared, whatever asks: such a page sends the player to the game's page to play it
+      if (launchProfile.threads && !globalThis.crossOriginIsolated) {
+        return
+      }
+      const prepared = await Nostalgist.prepare(optionsRef.current)
+      // Ready only after the player left the game, or its settings changed: let go, rather than kept for as long as the
+      // tab is open
+      if (currentKey.current !== preparedKey) {
+        discard(prepared)
+        return
+      }
+      return prepared
     },
+    { revalidateOnMount: false },
   )
 
   // The game being played is held from launch to exit, whatever the page's settings or data become meanwhile: were
@@ -331,43 +372,48 @@ export function useEmulatorSessionController({
   const emulator = playing ?? data
   // A game that couldn't start: said where a game that couldn't be got ready is, with Retry
   const [startError, setStartError] = useState<unknown>()
-  // A game got ready (by reaching for Start, or opening its page) and then left without being played is let go, rather
-  // than held in memory for as long as the tab is open
-  const prepared = useRef({ cache, data, key: '' })
+  // A game got ready (by reaching for Start) and then left without being played, or whose settings changed before it
+  // was, is let go, rather than held in memory for as long as the tab is open
   useEffect(() => {
-    prepared.current = { cache, data, key: unstable_serialize(options) }
-  })
-  useEffect(
-    () => () => {
-      const { cache: held, data: unplayed, key } = prepared.current
+    currentKey.current = preparedKey
+    return () => {
+      currentKey.current = undefined
+      const unplayed = (cache.get(preparedKey) as undefined | { data?: Nostalgist })?.data
       if (unplayed?.getStatus() === 'initial') {
-        held.delete(key)
+        cache.delete(preparedKey)
+        discard(unplayed)
       }
-    },
-    [],
-  )
+    }
+  }, [cache, preparedKey])
+  // The key the game being played was got ready under, which the page's data changing while it runs can change. Exit
+  // lets go of it
+  const launchedKey = useRef<string | undefined>(undefined)
+  /** Lets go of what was got ready under `key`: the next launch gets a game ready afresh */
+  async function forget(key: string) {
+    await attemptAsync(() => mutateCache(key, undefined, { revalidate: false }))
+  }
   // So its save pictures aren't black (see keepLastFrame)
   useEffect(() => {
     keepLastFrame(launchProfile.canvasThumbnail)
     return () => keepLastFrame(false)
   }, [launchProfile.canvasThumbnail])
-  // While a lazy game downloads, Start can still be pressed: it waits for the download
-  const isPreparing = !rom || (isValidating && !lazy)
+  // While a game downloads, Start can still be pressed: it waits for the download
+  const isPreparing = !rom
   const isDownloading = isValidating
 
   // Starts downloading the game, once however often it's asked for
   async function prepareOnce() {
-    const key = unstable_serialize(options)
-    let preparation = preparations.get(key)
+    let preparation = preparations.get(preparedKey)
     if (!preparation) {
+      const preparing = preparedKey
       preparation = (async () => {
         try {
           return await prepare()
         } finally {
-          preparations.delete(key)
+          preparations.delete(preparing)
         }
       })()
-      preparations.set(key, preparation)
+      preparations.set(preparedKey, preparation)
     }
     return await preparation
   }
@@ -433,7 +479,7 @@ export function useEmulatorSessionController({
     if (launchProfile.threads && !globalThis.crossOriginIsolated) {
       return
     }
-    if (lazy && !data) {
+    if (!data) {
       await Promise.all([
         attemptAsync(async () => await getEmulatorFiles()),
         attemptAsync(prepareOnce),
@@ -442,24 +488,70 @@ export function useEmulatorSessionController({
     }
   }
 
+  // One launch at a time: another press while a game gets ready is let pass
+  const launching = useRef(false)
+
   /**
    * Launches the game: from the start, from the newest snapshot (`withState`), or from a snapshot picked on the game's
-   * page (`from`)
+   * page (`from`). A launch that fails leaves nothing behind: the next one gets the game ready afresh, out of
+   * fullscreen
    */
   async function launch({ from, withState }: { from?: ChosenState; withState?: boolean } = {}) {
+    if (launching.current) {
+      return
+    }
+    launching.current = true
     setStartError(undefined)
     // Fullscreen now, while the tap on Start or Continue still counts: a browser only allows it just after one, and a
     // game can take longer than that to get ready. Nothing is waited for before this
+    let enteringFullscreen: Promise<void> | undefined
     if (goesFullscreen(preference.emulator.fullscreen) && !document.fullscreenElement) {
-      queueMicrotask(() => toggleFullscreen())
+      enteringFullscreen = new Promise((resolve) => {
+        queueMicrotask(() => resolve(toggleFullscreen()))
+      })
     }
-    // In a lazy session nothing is downloaded until now
-    const emulatorFiles = getEmulatorFiles()
-    const emulator = data ?? (lazy ? await prepareOnce() : undefined)
-    if (!emulator || !rom) {
-      return
+    const key = preparedKey
+    let emulator: Nostalgist | undefined
+    try {
+      // Nothing is downloaded until now, unless the player reached for the button first
+      const emulatorFiles = getEmulatorFiles()
+      emulator = data ?? (await prepareOnce())
+      if (!emulator || !rom) {
+        // Couldn't be got ready: said with the game's buttons, with Retry
+        await leaveFullscreen(enteringFullscreen)
+        return
+      }
+      await setUp(emulator, { emulatorFiles, from, withState })
+    } catch (error) {
+      gameReader.current?.close()
+      gameReader.current = undefined
+      // What was put in place for this launch stays with the emulator it was put in, so it's let go: launched again,
+      // the game starts from what the next launch asks for, and not what this one did
+      await forget(key)
+      discard(emulator)
+      await leaveFullscreen(enteringFullscreen)
+      throw error
+    } finally {
+      launching.current = false
     }
 
+    launchedKey.current = key
+    setPlaying(emulator)
+    setLaunched(true)
+
+    // Only a note that the game was played: failing to make it doesn't fail a game that has started
+    await attemptAsync(() => client.launch_records.$post({ form: { core, rom: rom.id } }))
+  }
+
+  /** Puts in place what the game launches with: the snapshot it continues from, its files and its own save */
+  async function setUp(
+    emulator: Nostalgist,
+    {
+      emulatorFiles,
+      from,
+      withState,
+    }: { emulatorFiles: ReturnType<typeof getEmulatorFiles>; from?: ChosenState; withState?: boolean },
+  ) {
     // The newest snapshot is put in place before the game boots, and so is any other picked on the game's page. A game
     // on several discs boots without one, and has it loaded once its disc is in
     const chosen = from && from.fileId !== state?.fileId ? from : undefined
@@ -473,6 +565,19 @@ export function useEmulatorSessionController({
     const files = await emulatorFiles
     if (files) {
       installSystemFiles(emulator, files)
+    }
+    // The game's own save is fetched and read before the game is opened from storage, which only one reader may have
+    // open at a time
+    const save = await getGameSave()
+    let saveFiles: SaveFiles | undefined
+    if (save && saveFolder) {
+      const folderName = saveFolder.slice(saveFolder.lastIndexOf('/') + 1)
+      // A save that can't be read stops the launch, as one that can't be fetched does (see getGameSave)
+      try {
+        saveFiles = await unzipSaveFiles(save, folderName)
+      } catch (error) {
+        throw new DownloadError('files', error)
+      }
     }
     if (launchProfile.threads) {
       const game = await getGameFile()
@@ -490,16 +595,7 @@ export function useEmulatorSessionController({
         installGame(emulator, game)
       }
     }
-    const save = await getGameSave()
-    if (save && saveFolder) {
-      const folderName = saveFolder.slice(saveFolder.lastIndexOf('/') + 1)
-      // A save that can't be read stops the launch, as one that can't be fetched does (see getGameSave)
-      let saveFiles: SaveFiles
-      try {
-        saveFiles = await unzipSaveFiles(save, folderName)
-      } catch (error) {
-        throw new DownloadError('files', error)
-      }
+    if (saveFiles && saveFolder) {
       restoreGameSaveFolder(emulator, saveFolder, saveFiles)
     } else if (save) {
       restoreGameSave(emulator, save)
@@ -515,12 +611,6 @@ export function useEmulatorSessionController({
     canvas.setAttribute('tabindex', '-1')
     canvas.dataset.snFocusStyle = JSON.stringify({ display: 'none' })
     focus(canvas)
-
-    setPlaying(emulator)
-    setLaunched(true)
-
-    // Only a note that the game was played: failing to make it doesn't fail a game that has started
-    await attemptAsync(() => client.launch_records.$post({ form: { core, rom: rom.id } }))
   }
 
   /** The game's own save to put back: the latest this page knows, or the server's when it has a newer one */
@@ -607,7 +697,10 @@ export function useEmulatorSessionController({
     focus(launchButton)
     offCancel()
     // The game is let go: Retry gets it ready afresh
-    await attemptAsync(() => prepare(undefined, { revalidate: false }))
+    if (launchedKey.current) {
+      await forget(launchedKey.current)
+      launchedKey.current = undefined
+    }
     setStartError(error ?? new Error('The game could not start'))
   }
 
@@ -719,8 +812,12 @@ export function useEmulatorSessionController({
       setIsFullscreen(false)
       focus(launchButton)
       offCancel()
-      // The game is let go, to be downloaded again when it's next started
-      await (lazy ? prepare(undefined, { revalidate: false }) : attemptAsync(prepare))
+      // The game is let go, to be downloaded again when it's next started: what it was got ready under, which the
+      // page's data or settings changing while it ran may have made other than what the page shows now
+      if (launchedKey.current) {
+        await forget(launchedKey.current)
+        launchedKey.current = undefined
+      }
       if (reloadAfterExit) {
         await keeping
         await refresh()

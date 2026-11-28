@@ -179,7 +179,9 @@ export function PerfReadout() {
   const { emulator } = useSession()
   const { visible: paused } = useGameOverlay()
   const [reading, setReading] = useState<Reading>()
-  const stream = useStreamStats(useSharingConnection(), 'host')
+  // Read only while the overlay shows it: reading a connection's numbers costs the host's main thread each time
+  const sharingConnection = useSharingConnection()
+  const stream = useStreamStats(enabled ? sharingConnection : undefined, 'host')
   // The log stays as the game left it while the pause menu is open, where its numbers are read
   const applyPaused = useEffectEvent(() => getFrameWatch()?.setPaused(paused))
 

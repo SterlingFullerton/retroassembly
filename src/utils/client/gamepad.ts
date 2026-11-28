@@ -11,6 +11,19 @@ interface GamepadButtonEvent {
 
 type Timer = ReturnType<typeof setTimeout>
 
+/**
+ * The controller that drives menus and settings: the first one connected, wherever the browser lists it. With the first
+ * one turned off, or a device that isn't one listed first, the next one still works
+ */
+export function getActiveGamepad() {
+  let gamepads: (Gamepad | null)[] = []
+  // A page the browser doesn't allow controllers on throws
+  try {
+    gamepads = navigator.getGamepads?.() ?? []
+  } catch {}
+  return gamepads.find((gamepad) => gamepad?.connected) ?? undefined
+}
+
 export const Gamepad = {
   callbacksMap: {} as Record<string, ((event: GamepadButtonEvent) => void)[]>,
   initialized: false,
@@ -18,7 +31,7 @@ export const Gamepad = {
 
   handleButton(event: { detail: GamepadButtonEvent }) {
     const { button, index, pressed } = event.detail
-    if (index) {
+    if (index !== getActiveGamepad()?.index) {
       return
     }
 
@@ -52,6 +65,9 @@ export const Gamepad = {
     listener.start()
     Gamepad.initialized = true
     listener.on('gamepad:button', Gamepad.handleButton.bind(Gamepad))
+    // A controller that drops while a button is held never says the button was let go
+    listener.on('gamepad:disconnected', Gamepad.stopRepeats.bind(Gamepad))
+    document.addEventListener('visibilitychange', Gamepad.stopRepeats.bind(Gamepad))
   },
 
   onButtonDown(callback: (event: GamepadButtonEvent) => void) {
@@ -91,9 +107,21 @@ export const Gamepad = {
     Gamepad.stopRepeat(button)
     Gamepad.timers[button] = setTimeout(() => {
       Gamepad.timers[button] = setInterval(() => {
+        // Repeated only while the button is still held on a controller that's still there
+        const gamepad = navigator.getGamepads?.()[detail.index]
+        if (!gamepad?.connected || !gamepad.buttons[button]?.pressed) {
+          Gamepad.stopRepeat(button)
+          return
+        }
         Gamepad.trigger('down', detail)
       }, 100)
     }, 500)
+  },
+
+  stopRepeats() {
+    for (const button of Object.keys(Gamepad.timers)) {
+      Gamepad.stopRepeat(Number(button))
+    }
   },
 
   stopRepeat(button: number) {

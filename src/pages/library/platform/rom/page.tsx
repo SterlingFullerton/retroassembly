@@ -102,7 +102,6 @@ export default function RomPage() {
                   )
                 }
                 compact={!wideButtons}
-                lazy
                 saves
                 stretch
               />
