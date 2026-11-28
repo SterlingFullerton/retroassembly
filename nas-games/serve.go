@@ -89,6 +89,7 @@ var (
 	errBadFile    = errors.New("no such game file")
 	validCore     = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
 	validPlayer   = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+	validID       = regexp.MustCompile(`^[a-z0-9]{5}$`)
 	validSaveType = regexp.MustCompile(`^[a-z0-9]{1,8}$`)
 	// How long an ended game's last save waits to be collected
 	keepEnded   = time.Hour
@@ -178,6 +179,10 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		SaveType  string `json:"saveType"`
 		StartedBy string `json:"startedBy"`
 		Title     string `json:"title"`
+		// Two consoles linked as by a DS's local wireless: the first is started with linkHost, and the second with
+		// linkWith, the first's id. Each is a game of its own, with its own players and save
+		LinkHost bool   `json:"linkHost"`
+		LinkWith string `json:"linkWith"`
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, 128<<20)).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -304,6 +309,21 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		"SAVE_NAME="+strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath)), "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
 		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+gameSaveDir,
 		"STATES_DIR="+filepath.Join(saveDir, "states", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))))
+	// The link's two sockets are named after the hosting game
+	switch {
+	case request.LinkHost:
+		command.Env = append(command.Env, "LINK_ID=0", "USERNAME=Player 1",
+			"LINK_SELF="+linkSocket(game.ID, 1), "LINK_PEER="+linkSocket(game.ID, 2))
+	case request.LinkWith != "":
+		host := strings.ToLower(request.LinkWith)
+		if !validID.MatchString(host) {
+			service.Unlock()
+			http.Error(w, errNoGame.Error(), http.StatusNotFound)
+			return
+		}
+		command.Env = append(command.Env, "LINK_ID=1", "USERNAME=Player 2",
+			"LINK_SELF="+linkSocket(host, 2), "LINK_PEER="+linkSocket(host, 1))
+	}
 	prefix := fmt.Sprintf("[%s] ", game.ID)
 	command.Stdout = &prefixed{prefix: prefix, out: os.Stdout}
 	command.Stderr = &prefixed{prefix: prefix, out: os.Stderr}
@@ -454,6 +474,11 @@ func stopGameRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	stopGame(game)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// linkSocket is where a console of a linked game, 1 or 2, takes the other's packets
+func linkSocket(host string, console int) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("nas-link-%s-%d.sock", host, console))
 }
 
 // saveBeforeStopping keeps a save state of a game left with nobody in it, for whoever started it, as its pause menu's

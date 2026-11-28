@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # with
 ARG CORES="a5200 desmume desmume2015 fbneo fceumm freechaf gambatte gearboy gearcoleco gearsystem genesis_plus_gx gw \
     mame2003_plus \
-    mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_vb mednafen_wswan mgba mupen64plus_next nestopia o2em \
+    melondsds mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_vb mednafen_wswan mgba mupen64plus_next nestopia o2em \
     pcsx_rearmed picodrive ppsspp prosystem quicknes snes9x snes9x2002 snes9x2005 snes9x2010 stella2014 tgbdual vba_next"
 RUN mkdir -p /cores /system && cd /cores \
     && for core in $CORES; do \
