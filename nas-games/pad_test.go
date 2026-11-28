@@ -20,7 +20,8 @@ func TestPadWithStylus(t *testing.T) {
 		t.Fatalf("stylus at %d, %d, down %v", p.pointerX, p.pointerY, p.pointerDown)
 	}
 
-	// Without the stylus, it's let go
+	// Without the stylus, it's let go, once a frame has seen it pressed
+	p.seen()
 	p.set(golden[:padStateSize])
 	if p.pointerDown || p.buttons != 1<<0|1<<3 {
 		t.Fatalf("without the stylus: buttons %b, down %v", p.buttons, p.pointerDown)
