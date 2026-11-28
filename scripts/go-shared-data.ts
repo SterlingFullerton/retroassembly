@@ -10,6 +10,7 @@ import { emulators } from '#@/consoles/emulators.ts'
 import { consoles } from '#@/consoles/registry.ts'
 import { shaders } from '#@/consoles/shaders.ts'
 import type { ConsoleDefinition, EmulatorDefinition } from '#@/consoles/types.ts'
+import { coreOptionsMap } from '#@/constants/core-options/index.ts'
 import { platforms } from '#@/constants/platform.ts'
 import { defaultPreference } from '#@/constants/preference.ts'
 import { locales } from '#@/locales/locales.ts'
@@ -88,6 +89,22 @@ function getCDNData() {
   }
 }
 
+/**
+ * The settings a player may give each emulator, and the values each may have, for the games the server runs: every
+ * setting the app shows for an emulator, and for one it shows none for, its settings a player starts with, at those
+ * values only
+ */
+function getCoreOptions() {
+  const options: Record<string, Record<string, string[]>> = {}
+  for (const [core, list] of Object.entries(coreOptionsMap)) {
+    options[core] = Object.fromEntries(list.map(({ name, options: values }) => [name, values]))
+  }
+  for (const [core, settings] of Object.entries(defaultPreference.emulator.core)) {
+    options[core] ??= Object.fromEntries(Object.entries(settings).map(([name, value]) => [name, [value]]))
+  }
+  return options
+}
+
 export const goSharedDataPath = path.join('server', 'internal', 'shared', 'shared.json')
 
 export function getGoSharedData() {
@@ -102,6 +119,8 @@ export function getGoSharedData() {
     cdn: getCDNData(),
     // Every emulator the app runs in the browser (src/consoles/emulators.ts), whose saves a player may upload
     cores: Object.keys(emulators).toSorted(),
+    // The settings a player may give each emulator, for the games the server runs (src/constants/core-options)
+    coreOptions: getCoreOptions(),
     // Each language's date format, for reading dates typed in it (src/utils/isomorphic/i18n.ts)
     dateFormats: dateFormatMap,
     defaultLanguage,

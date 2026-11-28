@@ -114,10 +114,12 @@ func (a *accountRemoval) remove(ctx context.Context, userID string) auth.RemoveD
 	}
 }
 
-// finish removes the files once the account is deleted. It goes on if the request that deleted the account ends
+// finish ends the account's games on the server and removes its files once the account is deleted. It goes on if the request that deleted the account ends
 // first: the account is gone, and nothing would remove them later
 func (a *accountRemoval) finish(s *Server, ctx context.Context, userID string) {
 	ctx = context.WithoutCancel(ctx)
+	// Its games on the server end, and their saves are no one's to keep
+	s.stopNASGamesOf(ctx, userID)
 	library.RemoveAccountFiles(files.Storage{Path: s.config.FilePath}, userID, a.fileIDs)
 	s.removeUnusedBioses(ctx, a.bioses)
 }

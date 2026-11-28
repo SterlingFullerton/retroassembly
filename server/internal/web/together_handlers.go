@@ -79,7 +79,9 @@ func (s *Server) answerInvitation(w http.ResponseWriter, r *http.Request, scope 
 		return
 	}
 	if id, isNAS := nasGameID(r.PathValue("code")); isNAS {
-		s.answerNASInvitation(w, r, scope, r.PathValue("code"), id, answer)
+		// The place in a game on the NAS the answer is for, as its invitation gave it
+		place, _ := object["place"].(string)
+		s.answerNASInvitation(w, r, scope, id, place, answer)
 		return
 	}
 	if err := s.together.Answer(r.PathValue("code"), guestOf(scope), answer); err != nil {

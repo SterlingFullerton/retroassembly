@@ -2,26 +2,47 @@ package web
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
 )
 
 // fakeNAS stands in for the game service on the NAS: it remembers the games it was asked to start, and the offers and
-// answers passed through for each player
+// answers passed through for each player. Its first game is abcde, its second fghjk
 type fakeNAS struct {
 	mu      sync.Mutex
 	games   []map[string]any
 	answers []string
 	key     string
-	// The game's own save as the NAS has it, and the checksums the app said it kept
-	save      []byte
+	// The games' own saves as the NAS has them, by game, and the checksums the app said it kept ("id:sha1")
+	saves     map[string][]byte
 	collected []string
+	// The games whose saves were asked for, in order, and those stopped
+	fetched []string
+	stopped []string
+	// The player the next place is kept for
+	nextPlayer int
+	// Running as many games as it may; answering failure to "collected"; and what it says at /version, if anything
+	full          bool
+	failCollected bool
+	version       string
 }
+
+var fakeNASIDs = []string{"abcde", "fghjk"}
+
+func sha1Hex(content []byte) string {
+	sum := sha1.Sum(content)
+	return hex.EncodeToString(sum[:])
+}
+
+var fakeNASPath = regexp.MustCompile(`^/games/([a-z0-9]+)(/.*)?$`)
 
 func (f *fakeNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
@@ -30,53 +51,104 @@ func (f *fakeNAS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not allowed", http.StatusUnauthorized)
 		return
 	}
+	if f.saves == nil {
+		f.saves = map[string][]byte{}
+	}
+	if f.nextPlayer == 0 {
+		f.nextPlayer = 2
+	}
+	var id, rest string
+	if match := fakeNASPath.FindStringSubmatch(r.URL.Path); match != nil {
+		id, rest = match[1], match[2]
+	}
 	switch {
 	case r.Method == http.MethodPost && r.URL.Path == "/games":
+		if f.full {
+			http.Error(w, "the NAS is running as many games as it may", http.StatusServiceUnavailable)
+			return
+		}
 		var start map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&start)
-		start["id"] = "abcde"
+		start["id"] = fakeNASIDs[len(f.games)%len(fakeNASIDs)]
 		f.games = append(f.games, start)
 		_ = json.NewEncoder(w).Encode(start)
+	case r.Method == http.MethodGet && r.URL.Path == "/version":
+		if f.version == "" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(f.version))
 	case r.Method == http.MethodGet && r.URL.Path == "/cores":
-		_ = json.NewEncoder(w).Encode([]string{"fceumm", "mupen64plus_next"})
+		_ = json.NewEncoder(w).Encode([]string{"fceumm", "melondsds", "mupen64plus_next"})
 	case r.Method == http.MethodGet && r.URL.Path == "/games":
-		_ = json.NewEncoder(w).Encode(f.games)
-	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/save":
-		if f.save == nil {
+		games := []map[string]any{}
+		for _, game := range f.games {
+			if game["ended"] != true || r.URL.Query().Get("all") == "1" {
+				games = append(games, game)
+			}
+		}
+		_ = json.NewEncoder(w).Encode(games)
+	case r.Method == http.MethodGet && rest == "/save":
+		f.fetched = append(f.fetched, id)
+		save := f.saves[id]
+		if save == nil {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		w.Header().Set("X-Save-Sha1", "sum-of-"+string(f.save))
-		_, _ = w.Write(f.save)
-	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/save/collected":
+		w.Header().Set("X-Save-Sha1", sha1Hex(save))
+		_, _ = w.Write(save)
+	case r.Method == http.MethodPost && rest == "/save/collected":
+		if f.failCollected {
+			http.Error(w, "couldn't", http.StatusInternalServerError)
+			return
+		}
 		var body map[string]string
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		f.collected = append(f.collected, body["sha1"])
-		f.save = nil
+		f.collected = append(f.collected, id+":"+body["sha1"])
+		if sha1Hex(f.saves[id]) == body["sha1"] {
+			delete(f.saves, id)
+		}
 		w.WriteHeader(http.StatusNoContent)
-	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/players":
-		_ = json.NewEncoder(w).Encode(map[string]any{"offer": "the NAS's offer", "player": 2})
-	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/players/2/answer":
+	case r.Method == http.MethodPost && rest == "/players":
+		_ = json.NewEncoder(w).Encode(map[string]any{"offer": "the NAS's offer", "player": f.nextPlayer})
+		f.nextPlayer++
+	case r.Method == http.MethodPost && strings.HasPrefix(rest, "/players/") && strings.HasSuffix(rest, "/answer"):
 		var body map[string]string
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		f.answers = append(f.answers, body["answer"])
+		player := strings.TrimSuffix(strings.TrimPrefix(rest, "/players/"), "/answer")
+		f.answers = append(f.answers, player+": "+body["answer"])
 		w.WriteHeader(http.StatusNoContent)
-	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/states":
+	case r.Method == http.MethodGet && rest == "/states":
 		_ = json.NewEncoder(w).Encode([]map[string]any{{"id": "20261127-172500123", "size": 5}})
-	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/states":
+	case r.Method == http.MethodPost && rest == "/states":
 		_ = json.NewEncoder(w).Encode(map[string]any{"id": "20261127-172600456", "size": 5})
-	case r.Method == http.MethodPost && r.URL.Path == "/games/abcde/states/20261127-172500123/load":
+	case r.Method == http.MethodPost && rest == "/states/20261127-172500123/load":
 		f.answers = append(f.answers, "loaded 20261127-172500123")
 		w.WriteHeader(http.StatusNoContent)
-	case r.Method == http.MethodGet && r.URL.Path == "/games/abcde/states/20261127-172500123/picture":
+	case r.Method == http.MethodGet && rest == "/states/20261127-172500123/picture":
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write([]byte("a picture"))
-	case r.Method == http.MethodDelete && r.URL.Path == "/games/abcde":
-		f.games = nil
+	case r.Method == http.MethodDelete && id != "" && rest == "":
+		for _, game := range f.games {
+			if game["id"] == id {
+				game["ended"] = true
+			}
+		}
+		f.stopped = append(f.stopped, id)
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+// setSave puts a game's own save on the fake NAS
+func (f *fakeNAS) setSave(id, save string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.saves == nil {
+		f.saves = map[string][]byte{}
+	}
+	f.saves[id] = []byte(save)
 }
 
 func TestGamesOnTheNAS(t *testing.T) {
@@ -93,7 +165,7 @@ func TestGamesOnTheNAS(t *testing.T) {
 	// The emulators it has decide where it's offered
 	var cores []string
 	guest.expectJSON(http.StatusOK, &cores, guest.get("/api/v1/nas_games/cores"))
-	if strings.Join(cores, ",") != "fceumm,mupen64plus_next" {
+	if strings.Join(cores, ",") != "fceumm,melondsds,mupen64plus_next" {
 		t.Fatalf("cores %+v", cores)
 	}
 
@@ -134,13 +206,21 @@ func TestGamesOnTheNAS(t *testing.T) {
 	if found["offer"] != "the NAS's offer" || found["host"] != "owner" || found["core"] != "fceumm" {
 		t.Fatalf("found %+v", found)
 	}
+	// A browser from before places had tokens answers for its newest
 	guest.expect(http.StatusOK, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "the answer"}))
-	if len(nas.answers) != 1 || nas.answers[0] != "the answer" {
+	if len(nas.answers) != 1 || nas.answers[0] != "2: the answer" {
 		t.Fatalf("the NAS was given %+v", nas.answers)
 	}
 	guest.expect(http.StatusNotFound, guest.get("/api/v1/play_together/invitations/0zzzzz"))
 
-	// Its save states: listed, saved, loaded and pictured by anyone in it
+	// Its save states: listed, saved, loaded and pictured by anyone in it, and no one else
+	stranger := api.register(t, "stranger")
+	stranger.expect(http.StatusForbidden, stranger.get("/api/v1/nas_games/0ABCDE/states"))
+	stranger.expect(http.StatusForbidden, stranger.json(http.MethodPost, "/api/v1/nas_games/0ABCDE/states", nil))
+	stranger.expect(http.StatusForbidden, stranger.json(http.MethodPost,
+		"/api/v1/nas_games/0ABCDE/states/20261127-172500123/load", nil))
+	stranger.expect(http.StatusForbidden, stranger.get("/api/v1/nas_games/0ABCDE/states/20261127-172500123/picture"))
+	owner.expect(http.StatusOK, owner.get("/api/v1/nas_games/0ABCDE/states"))
 	var states []map[string]any
 	guest.expectJSON(http.StatusOK, &states, guest.get("/api/v1/nas_games/0ABCDE/states"))
 	if len(states) != 1 || states[0]["id"] != "20261127-172500123" {
@@ -219,15 +299,13 @@ func TestSavesOfGamesOnTheNAS(t *testing.T) {
 	}
 
 	// A save the game made on the NAS becomes the player's latest, and the NAS is told it was kept
-	nas.mu.Lock()
-	nas.save = []byte("made on the NAS")
-	nas.mu.Unlock()
+	nas.setSave("abcde", "made on the NAS")
 	api.server.collectNASSavesOnce(context.Background())
 	list := saves()
 	if len(list) != 2 || list[0].Size != len("made on the NAS") {
 		t.Fatalf("saves after collecting %+v", list)
 	}
-	if len(nas.collected) != 1 || nas.collected[0] != "sum-of-made on the NAS" {
+	if len(nas.collected) != 1 || nas.collected[0] != "abcde:"+sha1Hex([]byte("made on the NAS")) {
 		t.Fatalf("collected %+v", nas.collected)
 	}
 	// Nothing new: nothing kept

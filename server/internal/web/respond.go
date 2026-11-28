@@ -43,6 +43,10 @@ func writeMessage(w http.ResponseWriter, status int, message string) {
 func writeError(w http.ResponseWriter, err error) {
 	var known *failure.Error
 	if errors.As(err, &known) {
+		if known.Code != "" {
+			writeJSON(w, known.Status, map[string]string{"code": known.Code, "message": known.Message})
+			return
+		}
 		writeMessage(w, known.Status, known.Message)
 		return
 	}

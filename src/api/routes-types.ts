@@ -105,11 +105,20 @@ export interface ApiRoutes {
         $delete: Endpoint<{ param: { code: string } }, null>
         $get: Endpoint<
           { param: { code: string } },
-          { controls: string; core?: string; host: string; offer: string; platform?: string; title: string }
+          {
+            controls: string
+            core?: string
+            host: string
+            offer: string
+            /** For a game on the server, the place the answer is for */
+            place?: string
+            platform?: string
+            title: string
+          }
         >
         answer: {
           $get: Endpoint<{ param: { code: string } }, { answer: string } | null>
-          $post: Endpoint<{ json: { answer: string }; param: { code: string } }, true>
+          $post: Endpoint<{ json: { answer: string; place?: string }; param: { code: string } }, true>
         }
       }
       $get: Endpoint<NoInput, { code: string; controls: string; host: string; title: string }[]>
