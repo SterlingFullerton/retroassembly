@@ -10,8 +10,8 @@ import (
 func (s *Server) searchRoms(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	query := r.URL.Query()
 	var check validation
-	page := check.number("page", query, 1)
-	pageSize := check.number("page_size", query, 100)
+	page := check.pageNumber("page", query, 1, maxPage)
+	pageSize := check.pageNumber("page_size", query, maxPageSize, maxPageSize)
 	var platform *string
 	if value, present := field(query, "platform"); present {
 		text, _ := check.OptionalString("platform", value, present, 0, 0)

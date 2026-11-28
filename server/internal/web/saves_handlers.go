@@ -45,6 +45,19 @@ func (s *Server) listRomStates(w http.ResponseWriter, r *http.Request, scope lib
 	writeJSON(w, http.StatusOK, states)
 }
 
+// The largest picture a save state may have: a screenshot is far smaller
+const maxThumbnailSize = 8 << 20
+
+// knownCore tells whether a save is of an emulator the app runs, answering 400 when it isn't. Its name is part of how
+// saves are told apart, so any other would only be a way to keep files the app never reads
+func (s *Server) knownCore(w http.ResponseWriter, core string) bool {
+	if !s.cores[core] {
+		writeMessage(w, http.StatusBadRequest, "Unknown core")
+		return false
+	}
+	return true
+}
+
 func (s *Server) createState(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	if !parseFormHolding(w, r, fileBodyLimit, saveFormMemory) {
 		return
@@ -73,7 +86,16 @@ func (s *Server) createState(w http.ResponseWriter, r *http.Request, scope libra
 	check.File("thumbnail", thumbnailUpload, values, "Blob")
 	typeValue, typePresent := field(values, "type")
 	input.Type = check.Enum("type", typeValue, typePresent, "auto", "manual")
-	if check.Failed(w) {
+	if check.Failed(w) || !s.knownCore(w, input.Core) {
+		return
+	}
+	// A save state's picture is a small screenshot
+	if thumbnailUpload.Size > maxThumbnailSize {
+		writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")
+		return
+	}
+	if err := library.CheckSavesQuota(scope.Storage, scope.User, s.config.SavesQuota, stateUpload.Size+thumbnailUpload.Size); err != nil {
+		writeError(w, err)
 		return
 	}
 	// Read from where the form put them as they're stored, rather than held in memory
@@ -149,7 +171,11 @@ func (s *Server) createGameSave(w http.ResponseWriter, r *http.Request, scope li
 	if ago, ok := check.OptionalInt("savedAgo", agoValue, agoPresent, 0); ok {
 		input.SavedAgo = time.Duration(ago) * time.Millisecond
 	}
-	if check.Failed(w) {
+	if check.Failed(w) || !s.knownCore(w, input.Core) {
+		return
+	}
+	if err := library.CheckSavesQuota(scope.Storage, scope.User, s.config.SavesQuota, upload.Size); err != nil {
+		writeError(w, err)
 		return
 	}
 	content, err := upload.Open()

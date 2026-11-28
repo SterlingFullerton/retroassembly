@@ -65,7 +65,18 @@ Where it differs from the Node server, on purpose:
 - The server has one set of BIOS files too, kept in the owner's settings: everyone plays with them and only admins
   add or remove them. Those accounts kept in their own settings are brought into it when the server starts.
 - Only the first account can sign up, and is the admin; an admin adds the others, unless `OPEN_SIGNUP=true` lets anyone
-  sign up, as a player. New passwords are at least 8 characters
+  sign up, as a player, up to 3 accounts an hour from one address. New passwords are at least 8 characters. New
+  usernames are 2 to 32 letters a to z, digits, dots, dashes and underscores; a few, such as Server, are reserved, and
+  one that looks like another account's (adm1n beside admin) or a deleted one's is refused. Older names keep working
+- Each player's and contributor's save states and game saves may take up to `SAVES_QUOTA_GB` (10 GiB by default, 0
+  for no limit); past that a save is answered with 507 and stays queued on the device. Saves are only of the app's
+  emulators, and a save state's picture is at most 8 MiB
+- Deleting an account removes its saves, save states, favorites, play history and settings, rows and files, and
+  forgets its name, password, address and browser. Its row stays, marked deleted, with only a hash of its name, so no
+  one takes it. Accounts deleted before this are finished when the server starts
+- A request's address is the connection's. Behind a reverse proxy, set `TRUSTED_PROXIES` to the proxy's address or
+  range, as the app sees it; requests from there are then taken to come from the last address in `X-Forwarded-For`
+  that isn't the proxy's own. Without it every visitor has the proxy's address, and the limits below are shared
 - At most 2 password hashes are made at a time, and 32 more wait; past that, a sign-in is answered with 503. One address
   may have 8 sign-ins under way, and 10 wrong passwords for a username in 15 minutes, 50 for all (`SIGN_IN_ATTEMPTS`
   sets the 10, 0 for no limit); past that, it's answered with 429. Signing in to an account that doesn't exist takes as

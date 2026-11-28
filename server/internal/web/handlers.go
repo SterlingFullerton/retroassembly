@@ -28,15 +28,15 @@ func isSecure(r *http.Request) bool {
 	return r.TLS != nil
 }
 
-func setSessionCookie(w http.ResponseWriter, r *http.Request, session *auth.Session) {
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Expires:  time.Time(session.ExpiresAt),
+		Expires:  expires,
 		HttpOnly: true,
 		Name:     "token",
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 		Secure:   isSecure(r),
-		Value:    session.Token,
+		Value:    token,
 	})
 }
 
@@ -66,7 +66,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.endReplacedSession(r, session)
-	setSessionCookie(w, r, session)
+	setSessionCookie(w, r, session.Token, time.Time(session.ExpiresAt))
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
 }
 
@@ -90,7 +90,14 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password registration is disabled")
 		return
 	}
-	end, err := s.signIns.begin(clientAddress(r), values["username"])
+	address := clientAddress(r)
+	if s.config.OpenSignup {
+		if err := s.signIns.maySignUp(address); err != nil {
+			writeError(w, err)
+			return
+		}
+	}
+	end, err := s.signIns.begin(address, values["username"])
 	if err != nil {
 		writeError(w, err)
 		return
@@ -103,6 +110,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	end(signedIn)
+	s.signIns.signedUp(address)
 	// Signed in straight away. The Node server checks the new password again first, which costs another hash
 	session, err := auth.StartPasswordSession(r.Context(), s.database, user.ID, client(r))
 	if err != nil {
@@ -110,7 +118,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.endReplacedSession(r, session)
-	setSessionCookie(w, r, session)
+	setSessionCookie(w, r, session.Token, time.Time(session.ExpiresAt))
 	writeJSON(w, http.StatusOK, loginAnswer{Session: session, User: user})
 }
 

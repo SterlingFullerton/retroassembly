@@ -1,7 +1,8 @@
 // Package together introduces two browsers that are to play a game together: the host's, which runs it, and a
 // guest's. The host leaves an invitation and gets a short code for it; the guest finds the invitation by the code and
 // leaves an answer, which the host collects. After that the two talk straight to each other, and the server has no
-// further part. Nothing is kept: an invitation lives in memory for a few minutes, and is gone when the server restarts.
+// further part. Nothing is kept: an invitation lives in memory while its host waits for a guest, and is gone when the
+// server restarts.
 package together
 
 import (
@@ -17,8 +18,12 @@ import (
 )
 
 const (
-	// How long an invitation waits for a guest
-	lifetime = 10 * time.Minute
+	// How long an invitation lasts after its host last asked for the answer. The host's browser asks again as soon as
+	// it's told to, so this is only reached once the host has gone: closed the game, or lost the connection
+	lifetime = time.Minute
+	// How long the guest who found an invitation has it to themselves, to answer it: their browser answers within
+	// seconds. Only they are given the host's offer, which says where the host's device can be reached
+	reservation = time.Minute
 	// Far more than a household plays at once: a limit on what a signed-in user can make the server remember
 	maxInvitations = 100
 	// A browser's offer or answer is a few thousand characters
@@ -31,6 +36,7 @@ const (
 var (
 	ErrNotFound = failure.New(http.StatusNotFound, "No game to join by that code")
 	ErrAnswered = failure.New(http.StatusConflict, "Someone has already joined that game")
+	ErrJoining  = failure.New(http.StatusConflict, "Someone else is joining that game")
 	ErrTooMany  = failure.New(http.StatusTooManyRequests, "Too many games are being shared")
 	ErrTooLong  = failure.New(http.StatusRequestEntityTooLarge, "Too long")
 )
@@ -62,10 +68,19 @@ type Listing struct {
 	Title    string `json:"title"`
 }
 
+// Guest is who answers an invitation: their account, and its name, which the host is told
+type Guest struct {
+	ID   string
+	Name string
+}
+
 type waiting struct {
 	Invitation
 	hostID string
 	answer string
+	// Who answered, or, before the answer, who found the invitation and has it to themselves until reservedUntil
+	guest         Guest
+	reservedUntil time.Time
 	// Closed when the answer arrives
 	answered chan struct{}
 	expires  time.Time
@@ -165,65 +180,86 @@ func (i *Invitations) List() []Listing {
 	return list
 }
 
-// Find is the invitation left under a code
-func (i *Invitations) Find(code string) (Invitation, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+// claim is the invitation under a code for a guest to answer, or why they can't: there's none, someone has answered,
+// or someone else found it first and may still answer. Called with the lock held
+func (i *Invitations) claim(code string, guest Guest) (*waiting, error) {
 	i.forget()
 	found := i.waiting[Normalize(code)]
 	if found == nil {
-		return Invitation{}, ErrNotFound
+		return nil, ErrNotFound
 	}
+	if found.answer != "" {
+		return nil, ErrAnswered
+	}
+	if found.guest.ID != "" && found.guest.ID != guest.ID && i.now().Before(found.reservedUntil) {
+		return nil, ErrJoining
+	}
+	return found, nil
+}
+
+// Find is the invitation left under a code, for a guest who means to answer it. It's theirs alone to answer for a
+// while: no one else is given it meanwhile, nor once it's answered
+func (i *Invitations) Find(code string, guest Guest) (Invitation, error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	found, err := i.claim(code, guest)
+	if err != nil {
+		return Invitation{}, err
+	}
+	found.guest, found.reservedUntil = guest, i.now().Add(reservation)
 	return found.Invitation, nil
 }
 
-// Answer leaves a guest's answer for the host. The first guest to answer is the one who joins
-func (i *Invitations) Answer(code, answer string) error {
+// Answer leaves a guest's answer for the host: the guest who found the invitation, or anyone once their time to answer
+// has passed. Only one guest joins
+func (i *Invitations) Answer(code string, guest Guest, answer string) error {
 	if len(answer) > maxTextLength {
 		return ErrTooLong
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	i.forget()
-	found := i.waiting[Normalize(code)]
-	if found == nil {
-		return ErrNotFound
+	found, err := i.claim(code, guest)
+	if err != nil {
+		return err
 	}
-	if found.answer != "" {
-		return ErrAnswered
-	}
-	found.answer = answer
+	found.answer, found.guest = answer, guest
 	close(found.answered)
 	return nil
 }
 
-// WaitForAnswer gives the host the guest's answer, waiting up to the given time for one. With none by then it returns
-// "", for the host to ask again. Only the host who left the invitation may collect its answer; once collected, the
-// invitation is gone
-func (i *Invitations) WaitForAnswer(ctx context.Context, code, hostID string, wait time.Duration) (string, error) {
+// WaitForAnswer gives the host the guest's answer and who the guest is, waiting up to the given time for one. With
+// none by then it returns "", for the host to ask again. Only the host who left the invitation may collect its answer;
+// once collected, the invitation is gone. A host waiting keeps the invitation open: it lasts while they ask
+func (i *Invitations) WaitForAnswer(ctx context.Context, code, hostID string, wait time.Duration) (string, Guest, error) {
 	code = Normalize(code)
 	i.mu.Lock()
 	i.forget()
 	found := i.waiting[code]
+	if found != nil && found.hostID == hostID {
+		found.expires = i.now().Add(wait + lifetime)
+	}
 	i.mu.Unlock()
 	if found == nil || found.hostID != hostID {
-		return "", ErrNotFound
+		return "", Guest{}, ErrNotFound
 	}
 	timer := time.NewTimer(wait)
 	defer timer.Stop()
 	select {
 	case <-found.answered:
 	case <-timer.C:
-		return "", nil
+		i.mu.Lock()
+		found.expires = i.now().Add(lifetime)
+		i.mu.Unlock()
+		return "", Guest{}, nil
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", Guest{}, ctx.Err()
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	if i.waiting[code] == found {
 		delete(i.waiting, code)
 	}
-	return found.answer, nil
+	return found.answer, found.guest, nil
 }
 
 // Close withdraws a host's invitation

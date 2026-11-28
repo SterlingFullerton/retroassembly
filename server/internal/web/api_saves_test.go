@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -163,4 +164,40 @@ func TestLateSavesKeepTheirTime(t *testing.T) {
 	if len(states) != 2 || states[0].ID != recentState.ID || states[1].ID != lateState.ID {
 		t.Fatalf("states: %+v, recent %s, late %s", states, recentState.ID, lateState.ID)
 	}
+}
+
+// A player's saves may take only so much space, and are only of the app's emulators
+func TestSavesAreLimited(t *testing.T) {
+	// About 1,000 bytes
+	t.Setenv("SAVES_QUOTA_GB", "0.000001")
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	player := api.register(t, "player")
+	admin.expect(http.StatusOK, admin.form(http.MethodPatch, "/api/v1/users/"+player.id, url.Values{"role": {"player"}}))
+	added := admin.addGame("Quest (USA).nes")
+	send := func(user *apiUser, core string, size int) response {
+		return user.multipart(http.MethodPost, "/api/v1/game_saves", map[string]string{"core": core, "rom": added.ID},
+			map[string]uploadFile{"file": {content: bytes.Repeat([]byte{byte(size)}, size), name: "blob"}})
+	}
+
+	player.expect(http.StatusBadRequest, send(player, "a1", 10))
+	player.expect(http.StatusBadRequest, player.multipart(http.MethodPost, "/api/v1/states",
+		map[string]string{"core": "../a1", "rom": added.ID, "type": "manual"}, map[string]uploadFile{
+			"state": {content: []byte("state"), name: "blob"}, "thumbnail": {content: []byte("thumbnail"), name: "blob"},
+		}))
+	player.expect(http.StatusRequestEntityTooLarge, player.multipart(http.MethodPost, "/api/v1/states",
+		map[string]string{"core": "fceumm", "rom": added.ID, "type": "manual"}, map[string]uploadFile{
+			"state": {content: []byte("state"), name: "blob"}, "thumbnail": {content: make([]byte, maxThumbnailSize+1), name: "blob"},
+		}))
+
+	player.expect(http.StatusOK, send(player, "fceumm", 600))
+	player.expect(http.StatusInsufficientStorage, send(player, "fceumm", 600))
+	player.expect(http.StatusInsufficientStorage, player.multipart(http.MethodPost, "/api/v1/states",
+		map[string]string{"core": "fceumm", "rom": added.ID, "type": "manual"}, map[string]uploadFile{
+			"state": {content: make([]byte, 500), name: "blob"}, "thumbnail": {content: []byte("thumbnail"), name: "blob"},
+		}))
+	player.expect(http.StatusOK, player.saveState(added.ID, "manual", ""))
+	// Admins have no limit
+	admin.expect(http.StatusOK, send(admin, "fceumm", 600))
+	admin.expect(http.StatusOK, send(admin, "fceumm", 700))
 }

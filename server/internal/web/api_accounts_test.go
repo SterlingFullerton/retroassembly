@@ -1,10 +1,14 @@
 package web
 
 import (
+	"context"
 	"net/http"
 	"net/url"
+	"os"
 	"testing"
 	"time"
+
+	"retroassembly/server/internal/auth"
 )
 
 type account struct {
@@ -170,7 +174,16 @@ func TestSessionLifetime(t *testing.T) {
 		started, now+day/2, now-day, token); err != nil {
 		t.Fatal(err)
 	}
-	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
+	request, err := http.NewRequest(http.MethodGet, api.app.URL+"/api/v1/preference", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.AddCookie(&http.Cookie{Name: "token", Value: token})
+	answer, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	answer.Body.Close()
 	var expiresAt int64
 	if err := api.database.QueryRow(`SELECT expires_at FROM sessions WHERE token = ?`, token).Scan(&expiresAt); err != nil {
 		t.Fatal(err)
@@ -178,6 +191,14 @@ func TestSessionLifetime(t *testing.T) {
 	if expiresAt != started+90*day {
 		t.Fatalf("renewed to %d days after it started", (expiresAt-started)/day)
 	}
+	// The browser's cookie lasts as long
+	cookies := answer.Cookies()
+	if len(cookies) != 1 || cookies[0].Value != token || !cookies[0].HttpOnly ||
+		cookies[0].Expires.Unix() != time.UnixMilli(expiresAt).Unix() {
+		t.Fatalf("cookies %+v", cookies)
+	}
+	// Not renewed again on the next request
+	admin.expect(http.StatusOK, admin.get("/api/v1/preference"))
 
 	if _, err := api.database.Exec(`UPDATE sessions SET expires_at = ? WHERE token = ?`, now-1, token); err != nil {
 		t.Fatal(err)
@@ -193,18 +214,28 @@ func TestUsernamesFollowTheRule(t *testing.T) {
 			url.Values{"libraryMode": {"1"}, "password": {"password-friend"}, "username": {username}})
 	}
 
-	for _, username := range []string{"", "   ", "a", "two words", "<b>bold</b>", "name@host", "abcdefghijklmnopqrstuvwxyz0123456"} {
+	// Letters from other alphabets look like these: "аdmin" has a Cyrillic а
+	for _, username := range []string{"", "   ", "a", "two words", "<b>bold</b>", "name@host", "abcdefghijklmnopqrstuvwxyz0123456",
+		"Zoë", "太郎", "аdmin", "Server", "s-e-r-v-e-r", "NAS", "5erver"} {
 		admin.expect(http.StatusBadRequest, add(username))
 	}
-	for _, username := range []string{"Friend", "jo", "anna.b-2_x", "Zoë", "太郎"} {
+	for _, username := range []string{"Friend", "jo", "anna.b-2_x", "Mila"} {
 		admin.expect(http.StatusOK, add(username))
 	}
-	// A name taken in other capitals is taken
-	admin.expect(http.StatusConflict, add("friend"))
-	admin.expect(http.StatusConflict, add("ADMIN"))
-	if count := api.count(t, `SELECT count(*) FROM users WHERE status = 1`); count != 6 {
-		t.Fatalf("%d accounts, not the admin and the 5 added", count)
+	// A name taken in other capitals is taken, and so is one that looks like another account's
+	for _, username := range []string{"friend", "ADMIN", "adm1n", "Fr1end", "fr_iend", "anna.b-2_x.", "MiIa", "rni1a"} {
+		admin.expect(http.StatusConflict, add(username))
 	}
+	if count := api.count(t, `SELECT count(*) FROM users WHERE status = 1`); count != 5 {
+		t.Fatalf("%d accounts, not the admin and the 4 added", count)
+	}
+	// Accounts from before the rule keep their names, and sign in with them
+	if _, err := api.database.Exec(`UPDATE users SET username = 'Zoë' WHERE username = 'Mila'`); err != nil {
+		t.Fatal(err)
+	}
+	zoe := api.browser(t)
+	zoe.expect(http.StatusOK, zoe.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-friend"}, "username": {"Zoë"}}))
 
 	// And signs in whatever capitals it's typed with
 	friend := api.browser(t)
@@ -349,37 +380,60 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 	player := api.register(t, "player")
 	other := api.register(t, "other")
 
-	// Each added a game to the library, and has a favorite, a play and settings of their own
+	// Each added a game to the library, and has a favorite, a play, a save state, a game save and settings of their own
 	kept := other.addGame("kept.nes")
 	gone := player.addGame("gone.nes")
 	for user, game := range map[*apiUser]game{other: kept, player: gone} {
 		user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/favorites", map[string]string{"romId": game.ID}))
 		user.expect(http.StatusOK, user.form(http.MethodPost, "/api/v1/launch_records", url.Values{"core": {"fceumm"}, "rom": {game.ID}}))
 		user.expect(http.StatusOK, user.json(http.MethodPost, "/api/v1/preference", map[string]any{"ui": map[string]any{"language": "fr"}}))
+		user.expect(http.StatusOK, user.saveState(game.ID, "manual", ""))
+		user.expect(http.StatusOK, user.multipart(http.MethodPost, "/api/v1/game_saves", map[string]string{"core": "fceumm", "rom": game.ID},
+			map[string]uploadFile{"file": {content: []byte("a save"), name: "blob"}}))
 	}
+	tables := []string{"favorites", "launch_records", "user_preferences", "sessions", "states", "game_saves"}
 	left := func(table, userID string) int {
-		query := `SELECT count(*) FROM ` + table + ` WHERE user_id = ?`
-		if table != "user_preferences" && table != "sessions" {
-			query += ` AND status = 1`
-		}
-		return api.count(t, query, userID)
+		return api.count(t, `SELECT count(*) FROM `+table+` WHERE user_id = ?`, userID)
 	}
-	for _, table := range []string{"favorites", "launch_records", "user_preferences", "sessions"} {
+	folders := func(userID string) (found []string) {
+		for _, folder := range []string{"states/" + userID, "game-saves/" + userID} {
+			folderPath, _ := api.config.FilePath(folder)
+			if _, err := os.Stat(folderPath); err == nil {
+				found = append(found, folder)
+			}
+		}
+		return found
+	}
+	for _, table := range tables {
 		if left(table, player.id) == 0 {
 			t.Fatalf("the player has nothing in %s to begin with", table)
 		}
+	}
+	if len(folders(player.id)) != 2 {
+		t.Fatalf("the player's folders: %v", folders(player.id))
 	}
 
 	admin.expect(http.StatusNotFound, admin.send(http.MethodDelete, "/api/v1/users/nobody", "", nil))
 	admin.expect(http.StatusOK, admin.send(http.MethodDelete, "/api/v1/users/"+player.id, "", nil))
 
-	for _, table := range []string{"favorites", "launch_records", "user_preferences", "sessions"} {
+	for _, table := range tables {
 		if count := left(table, player.id); count != 0 {
 			t.Errorf("the deleted account still has %d in %s", count, table)
 		}
 		if left(table, other.id) == 0 {
 			t.Errorf("another account lost what it had in %s", table)
 		}
+	}
+	if found := folders(player.id); len(found) != 0 {
+		t.Errorf("the deleted account's folders are left: %v", found)
+	}
+	if len(folders(other.id)) != 2 {
+		t.Errorf("another account lost its folders")
+	}
+	// Nothing says who it was
+	if count := api.count(t, `SELECT count(*) FROM users WHERE id = ? AND status = 0 AND username LIKE 'deleted:%'
+		AND password_hash IS NULL AND registration_ip IS NULL AND registration_user_agent IS NULL`, player.id); count != 1 {
+		t.Fatal("the deleted account still says who it was")
 	}
 	player.expect(http.StatusUnauthorized, player.get("/api/v1/preference"))
 	// The games they added are the library's, and stay
@@ -389,12 +443,50 @@ func TestDeletingAnAccountRemovesWhatItKept(t *testing.T) {
 		t.Fatalf("%d games left in the library", games)
 	}
 
-	// The name is free again, and a new account with it starts with nothing of the old one's
-	admin.expect(http.StatusOK, admin.form(http.MethodPost, "/api/v1/users",
-		url.Values{"password": {"password-player"}, "role": {"player"}, "username": {"player"}}))
-	again := api.login(t, "player")
-	if again.id == player.id || left("favorites", again.id) != 0 {
-		t.Fatal("the new account has the deleted one's favorites")
+	// No one takes the name of someone who left, nor one like it
+	for _, username := range []string{"player", "PLAYER", "p.layer"} {
+		admin.expect(http.StatusConflict, admin.form(http.MethodPost, "/api/v1/users",
+			url.Values{"password": {"password-player"}, "role": {"player"}, "username": {username}}))
+	}
+}
+
+// Accounts deleted before deletion forgot who they were are finished when the server starts
+func TestEarlierDeletedAccountsAreFinished(t *testing.T) {
+	api := newAPI(t)
+	api.register(t, "admin")
+	player := api.register(t, "player")
+	game := player.addGame("gone.nes")
+	player.expect(http.StatusOK, player.saveState(game.ID, "manual", ""))
+	player.expect(http.StatusOK, player.multipart(http.MethodPost, "/api/v1/game_saves", map[string]string{"core": "fceumm", "rom": game.ID},
+		map[string]uploadFile{"file": {content: []byte("a save"), name: "blob"}}))
+	// As deletion left it: marked deleted, with the name, password, address and browser, and the rows marked deleted
+	for _, statement := range []string{
+		`UPDATE users SET status = 0 WHERE id = ?`, `DELETE FROM sessions WHERE user_id = ?`,
+		`UPDATE states SET status = 0 WHERE user_id = ?`, `UPDATE game_saves SET status = 0 WHERE user_id = ?`,
+	} {
+		if _, err := api.database.Exec(statement, player.id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := api.server.FinishAccountDeletions(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if count := api.count(t, `SELECT count(*) FROM users WHERE id = ? AND username LIKE 'deleted:%' AND password_hash IS NULL
+		AND registration_ip IS NULL AND registration_user_agent IS NULL`, player.id); count != 1 {
+		t.Fatal("the deleted account still says who it was")
+	}
+	for _, table := range []string{"states", "game_saves", "user_preferences"} {
+		if count := api.count(t, `SELECT count(*) FROM `+table+` WHERE user_id = ?`, player.id); count != 0 {
+			t.Errorf("%d left in %s", count, table)
+		}
+	}
+	folderPath, _ := api.config.FilePath("game-saves/" + player.id)
+	if _, err := os.Stat(folderPath); err == nil {
+		t.Error("the game saves' folder is left")
+	}
+	// Done once
+	if ids, err := auth.DeletedAccountsToFinish(context.Background(), api.database); err != nil || len(ids) != 0 {
+		t.Fatalf("still to finish: %v, %v", ids, err)
 	}
 }
 

@@ -346,6 +346,22 @@ func biosFileIDs(emulator Object) map[string]bool {
 	return ids
 }
 
+// BiosFileIDs is the file ids of the BIOS files in stored emulator settings, as the column keeps them: only those in a
+// console's list of BIOS files. Any other text that looks like a file id is a setting, not a file
+func BiosFileIDs(emulator string) []string {
+	decoded, err := Decode([]byte(emulator))
+	if err != nil {
+		return nil
+	}
+	object, _ := decoded.(Object)
+	var fileIDs []string
+	for id := range biosFileIDs(object) {
+		fileIDs = append(fileIDs, id)
+	}
+	slices.Sort(fileIDs)
+	return fileIDs
+}
+
 // withOnlyOwnBioses leaves out of settings being saved the BIOS files the user didn't upload: those already in their
 // settings, and the one just uploaded. Whoever has a BIOS file in their settings may download it, so a file id copied
 // in from elsewhere would otherwise hand over someone else's file
@@ -379,6 +395,32 @@ func (s *Settings) withoutUnknownPlatforms(snippet Object) {
 	for name := range platforms {
 		if !s.known[name] {
 			delete(platforms, name)
+		}
+	}
+}
+
+// withKnownEmulatorSettings leaves out of settings being saved the emulator settings the app doesn't have: those the
+// defaults don't name, and a console's that its defaults don't. Anything a page sends is otherwise kept as it came
+func (s *Settings) withKnownEmulatorSettings(snippet Object) {
+	emulator := section(snippet, "emulator")
+	defaults := section(s.defaults, "emulator")
+	for key := range emulator {
+		if _, known := defaults[key]; !known {
+			delete(emulator, key)
+		}
+	}
+	consoleKeys := Object{}
+	for _, value := range section(defaults, "platform") {
+		if settings, ok := value.(Object); ok {
+			maps.Copy(consoleKeys, settings)
+		}
+	}
+	for _, value := range section(emulator, "platform") {
+		settings, _ := value.(Object)
+		for key := range settings {
+			if _, known := consoleKeys[key]; !known {
+				delete(settings, key)
+			}
 		}
 	}
 }
@@ -638,6 +680,7 @@ func (s *Settings) UpdateBioses(ctx context.Context, database *sql.DB, libraryOw
 func (s *Settings) update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object, newFileID string) (Object, error) {
 	withoutSharedBioses(snippet)
 	s.withoutUnknownPlatforms(snippet)
+	s.withKnownEmulatorSettings(snippet)
 	// Read, merged and saved in one transaction, so two saves at once (a BIOS file uploaded while a shader is chosen in
 	// another tab) each merge over the other's rather than over the same settings
 	transaction, err := database.BeginTx(ctx, nil)

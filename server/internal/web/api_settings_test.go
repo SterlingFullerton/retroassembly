@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"retroassembly/server/internal/files"
 )
@@ -277,4 +278,33 @@ func TestUnusedBIOSFilesAreRemoved(t *testing.T) {
 	if onDisk(newer) {
 		t.Fatal("kept once removed")
 	}
+}
+
+// A form's files that waited in the temporary folder are gone once the request is answered
+func TestUploadsLeaveNothingInTheTemporaryFolder(t *testing.T) {
+	temporary := t.TempDir()
+	t.Setenv("TMPDIR", temporary)
+	api := newAPI(t)
+	admin := api.register(t, "admin")
+	large := bytes.Repeat([]byte("a BIOS "), 2<<20/7)
+	admin.expect(http.StatusOK, admin.multipart(http.MethodPost, "/api/v1/preference/bioses",
+		map[string]string{"platform": "nes"}, map[string]uploadFile{"file": {content: large, name: "disksys.rom"}}))
+	// Refused, too
+	admin.expect(http.StatusBadRequest, admin.multipart(http.MethodPost, "/api/v1/preference/bioses",
+		map[string]string{"platform": "nes"}, map[string]uploadFile{"other": {content: large, name: "disksys.rom"}}))
+	left := func() []string {
+		found, err := filepath.Glob(filepath.Join(temporary, "multipart-*"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return found
+	}
+	// Removed as the answer is sent, which may be a moment after it arrives
+	for range 100 {
+		if len(left()) == 0 {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("left in the temporary folder: %v", left())
 }

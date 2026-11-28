@@ -104,10 +104,11 @@ func newToken() string {
 
 // CurrentUser is whoever the token belongs to, or nil. A session still in use is kept going: its last activity is
 // noted every 5 minutes, and a password session within a day of expiring is given another 30 days, up to 90 days after
-// it started
-func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) (*User, error) {
+// it started. renewedUntil is when a session given more time now expires, for the browser's cookie to last as long;
+// zero otherwise
+func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) (user *User, renewedUntil time.Time, err error) {
 	if token == "" {
-		return nil, nil
+		return nil, time.Time{}, nil
 	}
 	method := MethodPassword
 	if authMode == "oidc" {
@@ -117,22 +118,22 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 	var (
 		sessionID                          string
 		createdAt, expiresAt, lastActivity int64
-		user                               User
+		found                              User
 	)
-	err := database.QueryRowContext(ctx, `
+	err = database.QueryRowContext(ctx, `
 		SELECT s.id, s.created_at, s.expires_at, s.last_activity_at, u.id, u.role, u.username
 		FROM sessions s INNER JOIN users u ON s.user_id = u.id
 		WHERE s.token = ? AND s.status = ? AND u.status = ? AND s.authentication_method = ? AND s.expires_at > ?
 		LIMIT 1`,
 		token, db.StatusNormal, db.StatusNormal, method, db.Millis(now),
-	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &user.ID, &user.Role, &user.Username)
+	).Scan(&sessionID, &createdAt, &expiresAt, &lastActivity, &found.ID, &found.Role, &found.Username)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, time.Time{}, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, err
 	}
-	user.withRole(user.Role)
+	found.withRole(found.Role)
 
 	newExpiresAt, newLastActivity := db.Time(expiresAt), db.Time(lastActivity)
 	update := false
@@ -142,7 +143,7 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 			renewed = latest
 		}
 		if renewed.After(newExpiresAt) {
-			newExpiresAt = renewed
+			newExpiresAt, renewedUntil = renewed, renewed
 			update = true
 		}
 	}
@@ -156,10 +157,10 @@ func CurrentUser(ctx context.Context, database *sql.DB, token, authMode string) 
 			db.Millis(newExpiresAt), db.Millis(newLastActivity), db.Millis(now), sessionID,
 		)
 		if err != nil {
-			return nil, err
+			return nil, time.Time{}, err
 		}
 	}
-	return &user, nil
+	return &found, renewedUntil, nil
 }
 
 // CreateSession starts a session for a user, with a new token
@@ -289,16 +290,16 @@ func createUser(ctx context.Context, database *sql.DB, username, password, role,
 		}
 	}
 	username = strings.TrimSpace(username)
-	if !ValidUsername(username) {
-		return nil, errInvalidUsername
-	}
 	// Taken whatever its capitals, so "Jack" can't be added beside "jack"
 	existing, err := usernameInUse(ctx, database, username)
 	if err != nil {
 		return nil, err
 	}
 	if existing != "" {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
+		return nil, errUsernameTaken
+	}
+	if err := checkNewUsername(ctx, database, username, ""); err != nil {
+		return nil, err
 	}
 	if authMode == "local" && password == "" {
 		return nil, failure.New(http.StatusBadRequest, "Password is required")
@@ -328,7 +329,10 @@ func createUser(ctx context.Context, database *sql.DB, username, password, role,
 		return nil, err
 	}
 	if existing != "" {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
+		return nil, errUsernameTaken
+	}
+	if err := checkNewUsername(ctx, transaction, username, ""); err != nil {
+		return nil, err
 	}
 	if firstOnly {
 		if taken, err := hasAccounts(ctx, transaction); err != nil {

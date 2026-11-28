@@ -3,7 +3,9 @@ package config
 
 import (
 	"errors"
+	"log"
 	"math"
+	"net/netip"
 	"os"
 	"path"
 	"path/filepath"
@@ -149,6 +151,9 @@ type Config struct {
 	// Whether anyone can create an account from the login page, not only the first (OPEN_SIGNUP)
 	OpenSignup bool
 	Port       int
+	// How many bytes of save states and game saves a player or contributor may keep, 0 for no limit (SAVES_QUOTA_GB, in
+	// GiB, 10 by default). Admins have none
+	SavesQuota int64
 	// Wrong passwords allowed for one username from one address in 15 minutes, 0 for no limit (SIGN_IN_ATTEMPTS, 10 by
 	// default)
 	SignInAttempts int
@@ -157,6 +162,42 @@ type Config struct {
 	// The sites that may show the app in a frame, as Content-Security-Policy's frame-ancestors lists them
 	// (FRAME_ANCESTORS, 'self' by default)
 	FrameAncestors string
+	// The reverse proxies in front of the app, by address or range (TRUSTED_PROXIES, none by default). Only a request
+	// from one of them is taken to come from the address its X-Forwarded-For names; from anywhere else, that header is
+	// whatever the sender wrote, and the connection's own address is used
+	TrustedProxies []netip.Prefix
+}
+
+// trustedProxies reads TRUSTED_PROXIES: addresses and ranges (192.168.2.16, 172.16.0.0/12), separated by commas or
+// spaces. One that can't be read is left out, and said so
+func trustedProxies(value string) []netip.Prefix {
+	var proxies []netip.Prefix
+	for _, entry := range strings.FieldsFunc(value, func(r rune) bool { return r == ',' || r == ' ' || r == '\t' }) {
+		prefix, err := netip.ParsePrefix(entry)
+		if err != nil {
+			address, addressErr := netip.ParseAddr(entry)
+			if addressErr != nil {
+				log.Printf("TRUSTED_PROXIES: %q is neither an address nor a range, and is left out", entry)
+				continue
+			}
+			prefix = netip.PrefixFrom(address.Unmap(), address.Unmap().BitLen())
+		}
+		if prefix.Addr().Is4In6() {
+			prefix = netip.PrefixFrom(prefix.Addr().Unmap(), prefix.Bits()-96)
+		}
+		proxies = append(proxies, prefix.Masked())
+	}
+	return proxies
+}
+
+// savesQuota reads SAVES_QUOTA_GB, in GiB: 10 when unset or unreadable, and 0 (no limit) only when set to 0
+func savesQuota(value string) int64 {
+	value = strings.TrimSpace(value)
+	gigabytes, err := strconv.ParseFloat(value, 64)
+	if value == "" || err != nil || math.IsNaN(gigabytes) || math.IsInf(gigabytes, 0) || gigabytes < 0 {
+		gigabytes = 10
+	}
+	return int64(gigabytes * (1 << 30))
 }
 
 // signInAttempts reads SIGN_IN_ATTEMPTS: 10 when unset or unreadable, and 0 (no limit) only when set to 0
@@ -266,8 +307,10 @@ func Load() Config {
 		NASGames:       NASGames{Key: Get("NAS_GAMES_KEY"), URL: strings.TrimSuffix(Get("NAS_GAMES_URL"), "/")},
 		OpenSignup:     Get("OPEN_SIGNUP") == "true",
 		Port:           port,
+		SavesQuota:     savesQuota(Get("SAVES_QUOTA_GB")),
 		SignInAttempts: signInAttempts(Get("SIGN_IN_ATTEMPTS")),
 		StorageHost:    Get("STORAGE_HOST"),
+		TrustedProxies: trustedProxies(Get("TRUSTED_PROXIES")),
 	}
 }
 

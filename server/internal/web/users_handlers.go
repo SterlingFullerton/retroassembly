@@ -1,13 +1,16 @@
 package web
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
-	"regexp"
 
 	"retroassembly/server/internal/auth"
+	"retroassembly/server/internal/files"
 	"retroassembly/server/internal/library"
+	"retroassembly/server/internal/preference"
 )
 
 // GET /api/v1/users: every account, for the admin's settings
@@ -88,36 +91,66 @@ func (s *Server) updateAccount(w http.ResponseWriter, r *http.Request, scope lib
 	writeJSON(w, http.StatusOK, user)
 }
 
-// removeAccountData removes what a deleted account kept: its saves, favorites, history, own games and settings, and
-// the BIOS files no one else has
-func (s *Server) removeAccountData(r *http.Request, scope library.Scope, userID string) error {
-	if err := library.RemoveAccountData(r.Context(), s.database, scope.Storage, userID); err != nil {
-		return err
-	}
-	var emulator sql.NullString
-	err := s.database.QueryRowContext(r.Context(),
-		`DELETE FROM user_preferences WHERE user_id = ? RETURNING emulator`, userID).Scan(&emulator)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	s.removeUnusedBioses(r, biosFileID.FindAllString(emulator.String, -1))
-	return nil
+// accountRemoval removes what a deleted account kept: its rows, in the transaction that deletes the account (remove),
+// and afterwards its files and the BIOS files no one has any more (finish)
+type accountRemoval struct {
+	fileIDs, bioses []string
 }
 
-// A BIOS file's id wherever it's written in an account's settings
-var biosFileID = regexp.MustCompile(`bioses/[^"\\]+`)
+func (a *accountRemoval) remove(ctx context.Context, userID string) auth.RemoveData {
+	return func(transaction *sql.Tx) error {
+		fileIDs, err := library.RemoveAccountRows(ctx, transaction, userID)
+		if err != nil {
+			return err
+		}
+		var emulator sql.NullString
+		err = transaction.QueryRowContext(ctx,
+			`DELETE FROM user_preferences WHERE user_id = ? RETURNING emulator`, userID).Scan(&emulator)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		a.fileIDs, a.bioses = fileIDs, preference.BiosFileIDs(emulator.String)
+		return nil
+	}
+}
+
+// finish removes the files once the account is deleted. It goes on if the request that deleted the account ends
+// first: the account is gone, and nothing would remove them later
+func (a *accountRemoval) finish(s *Server, ctx context.Context, userID string) {
+	ctx = context.WithoutCancel(ctx)
+	library.RemoveAccountFiles(files.Storage{Path: s.config.FilePath}, userID, a.fileIDs)
+	s.removeUnusedBioses(ctx, a.bioses)
+}
+
+// FinishAccountDeletions finishes deleting the accounts that were deleted before deletion forgot who they were, or
+// whose deletion stopped part way. Run when the server starts
+func (s *Server) FinishAccountDeletions(ctx context.Context) error {
+	ids, err := auth.DeletedAccountsToFinish(ctx, s.database)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		var removal accountRemoval
+		if err := auth.FinishDeletedAccount(ctx, s.database, id, removal.remove(ctx, id)); err != nil {
+			return err
+		}
+		removal.finish(s, ctx, id)
+	}
+	if len(ids) > 0 {
+		log.Printf("Finished deleting %d accounts", len(ids))
+	}
+	return nil
+}
 
 // DELETE /api/v1/users/{id}: an account an admin deletes, with everything it kept
 func (s *Server) deleteAccount(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	id := r.PathValue("id")
-	if err := auth.DeleteAccount(r.Context(), s.database, scope.User, id); err != nil {
+	var removal accountRemoval
+	if err := auth.DeleteAccount(r.Context(), s.database, scope.User, id, removal.remove(r.Context(), id)); err != nil {
 		writeError(w, err)
 		return
 	}
-	if err := s.removeAccountData(r, scope, id); err != nil {
-		writeError(w, err)
-		return
-	}
+	removal.finish(s, r.Context(), id)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
@@ -134,16 +167,15 @@ func (s *Server) deleteOwnAccount(w http.ResponseWriter, r *http.Request, scope 
 		writeError(w, err)
 		return
 	}
-	err = auth.DeleteOwnAccount(r.Context(), s.database, scope.User, passwordText, s.authMode)
+	var removal accountRemoval
+	err = auth.DeleteOwnAccount(r.Context(), s.database, scope.User, passwordText, s.authMode,
+		removal.remove(r.Context(), scope.User.ID))
 	end(outcomeOf(err))
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	if err := s.removeAccountData(r, scope, scope.User.ID); err != nil {
-		writeError(w, err)
-		return
-	}
+	removal.finish(s, r.Context(), scope.User.ID)
 	http.SetCookie(w, &http.Cookie{MaxAge: -1, Name: "token", Path: "/"})
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }

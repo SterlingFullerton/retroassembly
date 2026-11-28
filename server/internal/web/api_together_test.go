@@ -34,6 +34,8 @@ func TestPlayingTogether(t *testing.T) {
 		t.Fatalf("found %+v", found)
 	}
 	guest.expect(http.StatusNotFound, guest.get("/api/v1/play_together/invitations/NOSUCH"))
+	// Found, the game is the guest's to join: no one else is given the host's offer
+	other.expect(http.StatusConflict, other.get(path))
 
 	guest.expect(http.StatusBadRequest, guest.json(http.MethodPost, path+"/answer", map[string]string{}))
 	guest.expect(http.StatusOK, guest.json(http.MethodPost, path+"/answer", map[string]string{"answer": "the answer"}))
@@ -44,7 +46,8 @@ func TestPlayingTogether(t *testing.T) {
 	other.expect(http.StatusNotFound, other.get(path+"/answer"))
 	var answered map[string]string
 	host.expectJSON(http.StatusOK, &answered, host.get(path+"/answer"))
-	if answered["answer"] != "the answer" {
+	// With who joined
+	if answered["answer"] != "the answer" || answered["guest"] != "guest" {
 		t.Fatalf("answer %+v", answered)
 	}
 	// Collected, the invitation is gone

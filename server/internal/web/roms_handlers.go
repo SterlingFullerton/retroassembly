@@ -112,9 +112,9 @@ func (v *validation) number(name string, values map[string][]string, fallback fl
 func (s *Server) launchHistory(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	query := r.URL.Query()
 	var check validation
-	page := check.number("page", query, 1)
+	page := check.pageNumber("page", query, 1, maxPage)
 	// Checked, but not used: the Node server passes it on under a name its list doesn't read, so pages are always 100
-	check.number("page_size", query, 100)
+	check.pageNumber("page_size", query, maxPageSize, maxPageSize)
 	const pageSize = 100
 	if check.Failed(w) {
 		return

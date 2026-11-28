@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -33,6 +34,8 @@ type Server struct {
 	// The server's copy of CDN files, when it keeps one
 	cdn        *cdn.Cache
 	compressor *psp.Compressor
+	// The emulators the app runs in the browser
+	cores map[string]bool
 	// The file extensions each console's games may have
 	fileExtensions map[string][]string
 	gameInfo       *gameinfo.Database
@@ -86,13 +89,17 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		cache.LaunchboxCovers = gameInfo.LaunchboxCover
 		cache.KeepOriginals = c.CDNKeepOriginals
 	}
+	cores := map[string]bool{}
+	for _, name := range data.Cores {
+		cores[name] = true
+	}
 	multiDisc := map[string]bool{}
 	for _, console := range data.MultiDiscConsoles {
 		multiDisc[console] = true
 	}
 	server := &Server{
 		authMode: authMode, cdn: cache,
-		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
+		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, cores: cores, fileExtensions: data.FileExtensions,
 		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		nasGames:      nasgames.New(c.NASGames.URL, c.NASGames.Key),
@@ -113,6 +120,8 @@ type state struct {
 	libraryOwnerID string
 	token          string
 	user           *auth.User
+	// The forms read from the request, whose files wait in the temporary folder until it's answered
+	forms []*multipart.Form
 }
 
 type stateKey struct{}
@@ -126,10 +135,16 @@ func stateOf(r *http.Request) *state {
 func (s *Server) globals(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		current := &state{language: s.languages.Detect(r.Header.Get("Accept-Language")), token: auth.Token(r)}
-		user, err := auth.CurrentUser(r.Context(), s.database, current.token, s.authMode)
+		user, renewedUntil, err := auth.CurrentUser(r.Context(), s.database, current.token, s.authMode)
 		if err != nil {
 			writeError(w, err)
 			return
+		}
+		// A session given more time keeps its cookie as long, or the browser would drop it 30 days after signing in
+		if !renewedUntil.IsZero() {
+			if cookie, err := r.Cookie("token"); err == nil && cookie.Value == current.token {
+				setSessionCookie(w, r, current.token, renewedUntil)
+			}
 		}
 		if user != nil {
 			current.user = user
@@ -138,6 +153,13 @@ func (s *Server) globals(next http.Handler) http.Handler {
 				return
 			}
 		}
+		// The files of a form a handler read are removed once it's answered. The server removes them itself only for
+		// the request it was given, and handlers are given this copy of it
+		defer func() {
+			for _, form := range current.forms {
+				form.RemoveAll()
+			}
+		}()
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), stateKey{}, current)))
 	})
 }
@@ -331,5 +353,5 @@ func (s *Server) Handler() (http.Handler, error) {
 		w.Write([]byte(version))
 	})
 	outer.Handle("/", staticFiles(s.config.ClientRoot, signedIn))
-	return s.isolation(outer), nil
+	return forwardedClient(s.config.TrustedProxies, s.isolation(outer)), nil
 }

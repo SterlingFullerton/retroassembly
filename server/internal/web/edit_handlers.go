@@ -13,6 +13,9 @@ import (
 	"retroassembly/server/internal/preference"
 )
 
+// The most players a game's details may say it has
+const maxGamePlayers = 16
+
 // jsNumber reads text as JavaScript's Number() does: blank is 0, 0x, 0o and 0b prefixes are hexadecimal, octal and
 // binary, and anything else that isn't a number is NaN
 func jsNumber(text string) float64 {
@@ -93,10 +96,14 @@ func (s *Server) updateRom(w http.ResponseWriter, r *http.Request, scope library
 			fields[name] = text
 		}
 	}
-	// "Unknown" is stored as none
-	players := math.Trunc(jsNumber(given["gamePlayers"]))
+	// "Unknown" is stored as none. Otherwise it's a whole number of players, 1 to 16: no game has more, and a number
+	// such as Infinity couldn't be written in the game's details
+	players := jsNumber(given["gamePlayers"])
 	if _, ok := given["gamePlayers"]; !ok || math.IsNaN(players) || players == 0 {
 		fields["gamePlayers"] = nil
+	} else if players != math.Trunc(players) || players < 1 || players > maxGamePlayers {
+		writeMessage(w, http.StatusBadRequest, "Players must be a whole number from 1 to 16")
+		return
 	} else {
 		fields["gamePlayers"] = players
 	}
