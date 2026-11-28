@@ -191,6 +191,9 @@ func setOption(key, value string) {
 type picture struct {
 	data          []byte
 	width, height int
+	// Which of the game's frames it is, counted from the start, paused ones included. A game that shows the same
+	// picture again sends nothing for it, so the numbers say how much time passed between two pictures sent
+	frame int64
 }
 
 // run plays the game a frame at a time, at its own frame rate, and hands each new picture and its sound on at once
@@ -202,7 +205,9 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 	var saved []byte
 	// The latest frame, for a save state's picture
 	var last picture
+	var frame int64
 	for {
+		frame++
 		// The stylus is the first player's who has it down, or else where the first player left it
 		stylusSet := false
 		for port := range pads {
@@ -254,9 +259,9 @@ func run(period time.Duration, pictures chan<- picture, sounds chan<- []int16, s
 		if size > 0 {
 			copied := make([]byte, size)
 			copy(copied, buffer[:size])
-			last = picture{copied, int(width), int(height)}
+			last = picture{copied, int(width), int(height), frame}
 			select {
-			case pictures <- picture{copied, int(width), int(height)}:
+			case pictures <- last:
 			default:
 				counters.Lock()
 				counters.dropped++
@@ -331,7 +336,7 @@ func anyNonZero(data []byte) bool {
 func encodePictures(pictures <-chan picture, fps float64, period time.Duration) {
 	var encoder *C.video_encoder
 	width, height := 0, 0
-	var pts int64
+	var previous int64
 	for p := range pictures {
 		if encoder == nil || p.width != width || p.height != height {
 			if encoder != nil {
@@ -351,8 +356,7 @@ func encodePictures(pictures <-chan picture, fps float64, period time.Duration) 
 		}
 		started := time.Now()
 		var out *C.uint8_t
-		size := int(C.ve_encode(encoder, (*C.uint8_t)(unsafe.Pointer(&p.data[0])), C.int(keyframe), C.int64_t(pts), &out))
-		pts++
+		size := int(C.ve_encode(encoder, (*C.uint8_t)(unsafe.Pointer(&p.data[0])), C.int(keyframe), C.int64_t(p.frame), &out))
 		took := time.Since(started)
 		counters.Lock()
 		counters.encode.add(took)
@@ -367,6 +371,15 @@ func encodePictures(pictures <-chan picture, fps float64, period time.Duration) 
 			counters.Lock()
 			counters.bytes += size
 			counters.Unlock()
+			// The frames since the last picture sent, beyond the one that picture took up: this picture's timestamp
+			// moves on past them, so a browser shows it when it was made. Without that, a game that repeats pictures,
+			// as most do when they run at 30 frames a second or less, looks to the browser as if each picture were
+			// late, and it holds the stream back further and further to make up, with long stops between pictures.
+			// An empty sample moves the timestamp on and sends nothing, so they aren't taken for lost packets
+			if skipped := min(p.frame-previous-1, 1000); previous > 0 && skipped > 0 {
+				_ = videoTrack.WriteSample(media.Sample{Duration: time.Duration(skipped) * period})
+			}
+			previous = p.frame
 			_ = videoTrack.WriteSample(media.Sample{Data: data, Duration: period})
 		}
 	}

@@ -120,6 +120,8 @@ export default function JoinPage() {
   // The stylus on a DS game on the NAS: a finger or the mouse on the picture, whose bottom half is the touch screen.
   // Undefined while there's no touch screen to send it to
   const stylus = useRef<Stylus | undefined>(undefined)
+  // Where a press began that hasn't been sent yet: a tap quicker than one send to the next is still sent as a touch
+  const stylusPress = useRef<Stylus | undefined>(undefined)
   const touchHeld = useRef(new Set<RetroPadButton>())
   // eslint-disable-next-line react/hook-use-state -- made once, and never changed
   const [onScreen] = useState(connectGuestOnScreenGamepad)
@@ -245,12 +247,14 @@ export default function JoinPage() {
       timer = setInterval(() => {
         const keyStick = { axes: stickAxes(stickKeysHeld.current, keyInputsSent.current.sticks) }
         const pad = mergePads([...keysHeld.current, ...touchHeld.current], [keyStick, getController(), onScreen])
-        const state = encodePadState(pad, stylus.current).join(',')
+        const pen = stylusPress.current ?? stylus.current
+        stylusPress.current = undefined
+        const state = encodePadState(pad, pen).join(',')
         const now = performance.now()
         if (state !== lastSent || now - lastSentAt >= resendEvery) {
           lastSent = state
           lastSentAt = now
-          session?.sendPad(pad, stylus.current)
+          session?.sendPad(pad, pen)
         }
       }, sendEvery)
     }
@@ -345,6 +349,9 @@ export default function JoinPage() {
       down: isDown,
       x: (event.clientX - box.left) / box.width,
       y: (event.clientY - box.top) / box.height,
+    }
+    if (down) {
+      stylusPress.current = stylus.current
     }
   }
 
