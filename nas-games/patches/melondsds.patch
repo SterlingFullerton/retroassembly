@@ -1,0 +1,142 @@
+diff --git a/src/libretro/net/mp.cpp b/src/libretro/net/mp.cpp
+index caa185d..1e31d50 100644
+--- a/src/libretro/net/mp.cpp
++++ b/src/libretro/net/mp.cpp
+@@ -15,7 +15,7 @@
+ */
+ #include "mp.hpp"
+ #include "environment.hpp"
+-#include <ctime>
++#include <chrono>
+ #include <libretro.h>
+ #include <retro_assert.h>
+ #include <retro_endianness.h>
+@@ -24,7 +24,10 @@ using namespace MelonDsDs;
+ // How many successive timeouts before
+ // the player gets notified they are not supposed to use a VPN.
+ constexpr int SUCCESSIVE_TIMEOUTS_WARNING = 6;
+-constexpr long RECV_TIMEOUT_MS = 25;
++constexpr auto RECV_TIMEOUT = std::chrono::milliseconds(25);
++// A packet that has waited longer than about a frame is one the console has moved past: melonDS's LAN play lets it
++// go rather than hand it over late, which would leave the receiver answering, or waiting on, the wrong frame
++constexpr auto STALE_AFTER = std::chrono::milliseconds(16);
+ 
+ uint64_t swapToNetwork(uint64_t n) {
+     return swap_if_little64(n);
+@@ -110,37 +113,59 @@ void MpState::PacketReceived(const void *buf, size_t len, uint16_t client_id) no
+         _hostId = client_id;
+         //retro::debug("Host client id is {}", client_id);
+     }
++    p.SetReceived(std::chrono::steady_clock::now());
+     receivedPackets.push(std::move(p));
+ }
+ 
+-std::optional<Packet> MpState::NextPacket() noexcept {
+-    retro_assert(IsReady());
+-    if(receivedPackets.empty()) {
+-        _sendFn(RETRO_NETPACKET_FLUSH_HINT, NULL, 0, RETRO_NETPACKET_BROADCAST);
++// Brings in what has arrived, as melonDS's LAN play does (LAN::ProcessLAN): stale packets at the front are let go; a
++// read for an ordinary packet lets an MP frame at the front go too; and a blocking read waits up to 25 ms, by the
++// clock on the wall, for a packet to arrive
++void MpState::Receive(bool block) noexcept {
++    using clock = std::chrono::steady_clock;
++    clock::time_point now = clock::now();
++    while (!receivedPackets.empty()) {
++        auto age = now - receivedPackets.front().Received();
++        if (age > STALE_AFTER || age < clock::duration::zero()) {
++            receivedPackets.pop();
++            continue;
++        }
++        if (block || receivedPackets.front().PacketType() == Packet::Type::Other) {
++            return;
++        }
++        receivedPackets.pop();
++        break;
++    }
++    _sendFn(RETRO_NETPACKET_FLUSH_HINT, NULL, 0, RETRO_NETPACKET_BROADCAST);
++    _pollFn();
++    if (!block) {
++        return;
++    }
++    clock::time_point deadline = clock::now() + RECV_TIMEOUT;
++    while (receivedPackets.empty() && clock::now() < deadline) {
+         _pollFn();
+     }
+-    if(receivedPackets.empty()) {
++}
++
++std::optional<Packet> MpState::NextPacket() noexcept {
++    retro_assert(IsReady());
++    Receive(false);
++    if (receivedPackets.empty()) {
+         return std::nullopt;
+-    } else {
+-        _timeoutCount = 0;
+-        Packet p = receivedPackets.front();
+-        receivedPackets.pop();
+-        return p;
+     }
++    _timeoutCount = 0;
++    Packet p = receivedPackets.front();
++    receivedPackets.pop();
++    return p;
+ }
+ 
+ std::optional<Packet> MpState::NextPacketBlock() noexcept {
+     retro_assert(IsReady());
+-    if (receivedPackets.empty()) {
+-        for(std::clock_t start = std::clock(); std::clock() < (start + (RECV_TIMEOUT_MS * CLOCKS_PER_SEC / 1000));) {
+-            _sendFn(RETRO_NETPACKET_FLUSH_HINT, NULL, 0, RETRO_NETPACKET_BROADCAST);
+-            _pollFn();
+-            if(!receivedPackets.empty()) {
+-                return NextPacket();
+-            }
+-        }
+-    } else {
+-        return NextPacket();
++    Receive(true);
++    if (!receivedPackets.empty()) {
++        _timeoutCount = 0;
++        Packet p = receivedPackets.front();
++        receivedPackets.pop();
++        return p;
+     }
+     _timeoutCount++;
+     if (_timeoutCount >= SUCCESSIVE_TIMEOUTS_WARNING && !_warnedHighLatency) {
+diff --git a/src/libretro/net/mp.hpp b/src/libretro/net/mp.hpp
+index f6b5dfc..eddbce1 100644
+--- a/src/libretro/net/mp.hpp
++++ b/src/libretro/net/mp.hpp
+@@ -14,6 +14,7 @@
+     with melonDS DS. If not, see http://www.gnu.org/licenses/.
+ */
+ #pragma once
++#include <chrono>
+ #include <cstdint>
+ #include <queue>
+ #include <optional>
+@@ -50,7 +51,16 @@ public:
+     };
+ 
+     std::vector<uint8_t> ToBuf() const;
++
++    // When it arrived here, so that one left waiting too long can be let go, as melonDS's own LAN play does
++    [[nodiscard]] std::chrono::steady_clock::time_point Received() const noexcept {
++        return _received;
++    }
++    void SetReceived(std::chrono::steady_clock::time_point received) noexcept {
++        _received = received;
++    }
+ private:
++    std::chrono::steady_clock::time_point _received {};
+     uint64_t _timestamp;
+     uint8_t _aid;
+     Packet::Type _type;
+@@ -67,6 +77,7 @@ public:
+     std::optional<Packet> NextPacket() noexcept;
+     std::optional<Packet> NextPacketBlock() noexcept;
+ private:
++    void Receive(bool block) noexcept;
+     bool _warnedHighLatency = false;
+     int _timeoutCount = 0;
+     retro_netpacket_send_t _sendFn;

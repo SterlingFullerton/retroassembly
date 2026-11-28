@@ -22,6 +22,19 @@ RUN git clone https://github.com/libretro/melonDS.git /melonds && cd /melonds \
     && git checkout 4081e8358e66f1ea11879560be6b813dfeaab75a && git apply /melonds.patch \
     && make platform=unix HAVE_OPENGL=0 HAVE_WIFI=0 -j"$(nproc)"
 
+# melonDS DS, the build of melonDS that links two consoles as by local wireless: built from its 1.4.0 source with a patch
+# (patches/melondsds.patch) that gives its wireless packets melonDS's own LAN play timing, letting stale ones go, so
+# two linked consoles don't keep waiting on each other
+FROM debian:trixie AS melondsds
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git pkg-config \
+      libgl-dev libegl-dev python3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY patches/melondsds.patch /melondsds.patch
+RUN git clone --depth 1 -b v1.4.0 https://github.com/JesseTG/melonds-ds.git /melondsds && cd /melondsds \
+    && git apply /melondsds.patch \
+    && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$(nproc)" \
+    && cp "$(find build -name melondsds_libretro.so | head -1)" /melondsds_libretro.so
+
 FROM debian:trixie
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libegl1 libgl1 libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers libyuv0 libopus0 libspeexdsp1 libx264-164 \
@@ -31,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # with
 ARG CORES="a5200 desmume desmume2015 fbneo fceumm freechaf gambatte gearboy gearcoleco gearsystem genesis_plus_gx gw \
     mame2003_plus \
-    melondsds mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_vb mednafen_wswan mgba mupen64plus_next nestopia o2em \
+    mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_vb mednafen_wswan mgba mupen64plus_next nestopia o2em \
     pcsx_rearmed picodrive ppsspp prosystem quicknes snes9x snes9x2002 snes9x2005 snes9x2010 stella2014 tgbdual vba_next"
 RUN mkdir -p /cores /system && cd /cores \
     && for core in $CORES; do \
@@ -44,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends patchelf \
     && for core in /cores/*.so; do patchelf --clear-execstack "$core"; done \
     && apt-get purge -y curl unzip patchelf && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 COPY --from=melonds /melonds/melonds_libretro.so /cores/melonds_libretro.so
+COPY --from=melondsds /melondsds_libretro.so /cores/melondsds_libretro.so
 COPY --from=build /host /host
 ENTRYPOINT ["/host"]
 CMD ["serve"]
