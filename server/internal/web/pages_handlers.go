@@ -1,6 +1,7 @@
 package web
 
 import (
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -179,8 +180,9 @@ func listQuery(r *http.Request) library.ListQuery {
 	if direction != "asc" && direction != "desc" {
 		direction = library.DefaultDirection(order)
 	}
+	// A page the address can't mean, such as Infinity or 2.5, is the first
 	page := jsNumber(values.Get("page"))
-	if !(page >= 1) {
+	if !(page >= 1) || page > maxPage || page != math.Trunc(page) {
 		page = 1
 	}
 	return library.ListQuery{

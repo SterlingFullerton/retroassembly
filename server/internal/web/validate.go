@@ -78,6 +78,15 @@ type numberTooSmallIssue struct {
 	Message   string   `json:"message"`
 }
 
+type numberTooBigIssue struct {
+	Origin    string   `json:"origin"`
+	Code      string   `json:"code"`
+	Maximum   int      `json:"maximum"`
+	Inclusive bool     `json:"inclusive"`
+	Path      []string `json:"path"`
+	Message   string   `json:"message"`
+}
+
 // received is how zod names the type of a value it didn't expect
 func received(value any, present bool) string {
 	if !present {
@@ -192,6 +201,40 @@ func (v *validation) OptionalInt(name string, value any, present bool, minimum i
 	}
 	return int64(number), true
 }
+
+// pageNumber checks a page or a page's size in a query is, when it's there, a whole number from 1 to maximum, and is
+// it, or fallback when it isn't there. Anything else, such as Infinity, would make a page no list can have
+func (v *validation) pageNumber(name string, values url.Values, fallback float64, maximum int) float64 {
+	if _, present := field(values, name); !present {
+		return fallback
+	}
+	number := v.number(name, values, fallback)
+	switch {
+	case math.IsNaN(number):
+	case number != math.Trunc(number) || math.IsInf(number, 0):
+		v.issues = append(v.issues, intIssue{
+			Expected: "int", Code: "invalid_type", Format: "safeint", Path: []string{name},
+			Message: "Invalid input: expected int, received number",
+		})
+	case number < 1:
+		v.issues = append(v.issues, numberTooSmallIssue{
+			Origin: "number", Code: "too_small", Minimum: 1, Inclusive: true, Path: []string{name},
+			Message: "Too small: expected number to be >=1",
+		})
+	case number > float64(maximum):
+		v.issues = append(v.issues, numberTooBigIssue{
+			Origin: "number", Code: "too_big", Maximum: maximum, Inclusive: true, Path: []string{name},
+			Message: "Too big: expected number to be <=" + itoa(maximum),
+		})
+	}
+	return number
+}
+
+// The most a page may hold, and the furthest page asked for, which no list comes near
+const (
+	maxPageSize = 100
+	maxPage     = 1 << 30
+)
 
 // File checks a field is an uploaded file. expected is how the schema names it: File, or Blob
 func (v *validation) File(name string, file *multipart.FileHeader, values url.Values, expected string) {

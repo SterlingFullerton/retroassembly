@@ -259,3 +259,20 @@ func TestSearchSeesChangesAtOnce(t *testing.T) {
 		t.Fatalf("after deleting one: %d", got)
 	}
 }
+
+// A page or page size no list can have is refused, rather than failing the answer; a page in a page's address that
+// can't be one is the first
+func TestPagesAreWholeNumbers(t *testing.T) {
+	api := newAPI(t)
+	player := api.register(t, "player")
+	player.addGame("Quest (USA).nes")
+	for _, query := range []string{"page_size=0", "page_size=101", "page_size=1.5", "page=Infinity", "page=0", "page=-1",
+		"page_size=Infinity"} {
+		player.expect(http.StatusBadRequest, player.get("/api/v1/roms/search?query=quest&"+query))
+		player.expect(http.StatusBadRequest, player.get("/api/v1/launch_records?"+query))
+	}
+	player.expect(http.StatusOK, player.get("/api/v1/roms/search?query=quest&page=2&page_size=1"))
+	for _, page := range []string{"Infinity", "-Infinity", "1e300", "2.5"} {
+		player.expect(http.StatusOK, player.get("/api/v1/pages/library/roms?page="+page))
+	}
+}
