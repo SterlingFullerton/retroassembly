@@ -16,8 +16,13 @@ const (
 	// How long failed sign-ins are counted for
 	failureWindow = 15 * time.Minute
 	// Failed sign-ins allowed from one address for all usernames, as a multiple of those for one username
-	// (SIGN_IN_ATTEMPTS). Behind a reverse proxy every visitor has the proxy's address, so it's high
+	// (SIGN_IN_ATTEMPTS). Behind a reverse proxy that isn't trusted (TRUSTED_PROXIES), every visitor has the proxy's
+	// address, so it's high
 	addressFailuresPerAccount = 5
+	// Accounts one address may make for itself with OPEN_SIGNUP, in signUpWindow: enough for a household, too few to
+	// fill the server with accounts
+	maxSignUpsPerAddress = 3
+	signUpWindow         = time.Hour
 	// Sign-ins under way at once from one address, waiting their turn or checking a password. Only 2 checks run at once
 	// in all, and 32 wait, so one address can't fill the queue and keep everyone else from signing in
 	maxHashingPerAddress = 8
@@ -37,12 +42,14 @@ type signInLimit struct {
 	maxFailuresPerAccount, maxFailuresPerAddress int
 	hashing                                      map[string]int
 	lastTidy                                     time.Time
+	// Accounts made from the login page, by address
+	signUps map[string]*failures
 }
 
 // newSignInLimit allows attempts wrong passwords per username and address in the window, or any number for 0
 func newSignInLimit(attempts int) *signInLimit {
 	return &signInLimit{
-		failed: map[string]*failures{}, hashing: map[string]int{},
+		failed: map[string]*failures{}, hashing: map[string]int{}, signUps: map[string]*failures{},
 		maxFailuresPerAccount: attempts, maxFailuresPerAddress: attempts * addressFailuresPerAccount,
 	}
 }
@@ -62,6 +69,38 @@ func (l *signInLimit) tidy(now time.Time) {
 			delete(l.failed, key)
 		}
 	}
+	for key, counted := range l.signUps {
+		if now.Sub(counted.since) >= signUpWindow {
+			delete(l.signUps, key)
+		}
+	}
+}
+
+// maySignUp is nil when an address may make another account from the login page, or the error to answer with
+func (l *signInLimit) maySignUp(address string) error {
+	now := time.Now()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	l.tidy(now)
+	if counted := l.signUps[address]; counted != nil && now.Sub(counted.since) < signUpWindow && counted.count >= maxSignUpsPerAddress {
+		minutes := int(math.Ceil((signUpWindow - now.Sub(counted.since)).Minutes()))
+		return failure.New(http.StatusTooManyRequests,
+			fmt.Sprintf("Too many new accounts. Try again in %d minute(s)", minutes))
+	}
+	return nil
+}
+
+// signedUp counts an account an address made from the login page
+func (l *signInLimit) signedUp(address string) {
+	now := time.Now()
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	counted := l.signUps[address]
+	if counted == nil || now.Sub(counted.since) >= signUpWindow {
+		counted = &failures{since: now}
+		l.signUps[address] = counted
+	}
+	counted.count++
 }
 
 func (l *signInLimit) waitFor(key string, limit int, now time.Time) time.Duration {

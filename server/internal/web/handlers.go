@@ -90,7 +90,14 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusForbidden, "Password registration is disabled")
 		return
 	}
-	end, err := s.signIns.begin(clientAddress(r), values["username"])
+	address := clientAddress(r)
+	if s.config.OpenSignup {
+		if err := s.signIns.maySignUp(address); err != nil {
+			writeError(w, err)
+			return
+		}
+	}
+	end, err := s.signIns.begin(address, values["username"])
 	if err != nil {
 		writeError(w, err)
 		return
@@ -103,6 +110,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	end(signedIn)
+	s.signIns.signedUp(address)
 	// Signed in straight away. The Node server checks the new password again first, which costs another hash
 	session, err := auth.StartPasswordSession(r.Context(), s.database, user.ID, client(r))
 	if err != nil {

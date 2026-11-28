@@ -112,3 +112,27 @@ func TestRecheckDays(t *testing.T) {
 		}
 	}
 }
+
+func TestTrustedProxies(t *testing.T) {
+	read := trustedProxies(" 192.168.2.16, 172.16.0.0/12 fd00::/8,::ffff:10.0.0.1 nonsense 10.1.2.3/40")
+	want := []string{"192.168.2.16/32", "172.16.0.0/12", "fd00::/8", "10.0.0.1/32"}
+	if len(read) != len(want) {
+		t.Fatalf("read %v, want %v", read, want)
+	}
+	for i, prefix := range read {
+		if prefix.String() != want[i] {
+			t.Errorf("%d: %s, want %s", i, prefix, want[i])
+		}
+	}
+	if len(trustedProxies("")) != 0 {
+		t.Error("none set, some trusted")
+	}
+}
+
+func TestSavesQuota(t *testing.T) {
+	for value, want := range map[string]int64{"": 10 << 30, "2": 2 << 30, "0": 0, "0.5": 1 << 29, "-1": 10 << 30, "lots": 10 << 30} {
+		if got := savesQuota(value); got != want {
+			t.Errorf("%q: %d, want %d", value, got, want)
+		}
+	}
+}

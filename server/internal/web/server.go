@@ -331,5 +331,5 @@ func (s *Server) Handler() (http.Handler, error) {
 		w.Write([]byte(version))
 	})
 	outer.Handle("/", staticFiles(s.config.ClientRoot, signedIn))
-	return s.isolation(outer), nil
+	return forwardedClient(s.config.TrustedProxies, s.isolation(outer)), nil
 }
