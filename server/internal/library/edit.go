@@ -84,14 +84,19 @@ func RomFiles(ctx context.Context, scope Scope, id string) (boxart, thumbnails *
 	return boxart, thumbnails, err
 }
 
-// DeleteRoms deletes games from the library, and everyone's play history of them. A game's file goes once no game
-// uses it any more. Only for admins
+// DeleteRoms deletes games from the library, and everyone's play history of them. A game on several discs goes with
+// all its discs: the one that stands for it holds everyone's saves and favorites, and the next disc would otherwise
+// stand in for it without them. A game's file goes once no game uses it any more. Only for admins
 func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 	if err := AssertCanDelete(scope); err != nil {
 		return err
 	}
 	if len(ids) == 0 {
 		return nil
+	}
+	ids, err := withOtherDiscs(ctx, scope, ids)
+	if err != nil {
+		return err
 	}
 	now := db.Millis(time.Now())
 	arguments := append([]any{db.StatusDeleted, now}, strings2any(ids)...)
@@ -139,6 +144,35 @@ func DeleteRoms(ctx context.Context, scope Scope, ids []string) error {
 		scope.Storage.DeleteFolder(folder)
 	}
 	return RemoveUnusedRomFiles(ctx, scope, fileIDs)
+}
+
+// withOtherDiscs is the games given and the other discs in the library of those on several discs
+func withOtherDiscs(ctx context.Context, scope Scope, ids []string) ([]string, error) {
+	rows, err := scope.Database.QueryContext(ctx, `SELECT discs.id FROM roms discs
+		WHERE discs.user_id = ?1 AND discs.status = ?2 AND discs.disc_group IS NOT NULL AND (discs.platform, discs.disc_group) IN (
+			SELECT platform, disc_group FROM roms
+			WHERE user_id = ?1 AND disc_group IS NOT NULL AND id IN (SELECT value FROM json_each(?3))
+		)`, scope.LibraryOwnerID, db.StatusNormal, string(mustJSON(ids)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	all := append([]string(nil), ids...)
+	given := map[string]bool{}
+	for _, id := range ids {
+		given[id] = true
+	}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if !given[id] {
+			given[id] = true
+			all = append(all, id)
+		}
+	}
+	return all, rows.Err()
 }
 
 // IsPictureOf tells whether a stored file is a picture added to that game: in its folder, under whichever account
