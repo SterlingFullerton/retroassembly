@@ -43,12 +43,11 @@ function subscribeNever() {
 export function GameButtons({
   beforeSaves,
   compact = false,
-  lazy = false,
   saves = false,
   stretch = false,
-}: Readonly<{ beforeSaves?: ReactNode; compact?: boolean; lazy?: boolean; saves?: boolean; stretch?: boolean }>) {
+}: Readonly<{ beforeSaves?: ReactNode; compact?: boolean; saves?: boolean; stretch?: boolean }>) {
   return (
-    <EmulatorSessionProvider lazy={lazy}>
+    <EmulatorSessionProvider>
       <div>
         <GameButtonsContent beforeSaves={beforeSaves} compact={compact} saves={saves} stretch={stretch} />
       </div>
