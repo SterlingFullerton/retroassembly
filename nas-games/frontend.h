@@ -9,6 +9,8 @@ void fe_set_option(const char *key, const char *value);
 double fe_fps(void);
 double fe_aspect(void);
 double fe_sample_rate(void);
+// What the core changed since the last call: 1 its picture's shape, 2 its frame rate and sound rate
+int fe_take_av_changes(void);
 void fe_run(void);
 void fe_reset(void);
 #include <stddef.h>
@@ -25,11 +27,13 @@ void fe_unload(void);
 
 typedef struct video_encoder video_encoder;
 video_encoder *ve_new(int width, int height, double fps, int kilobits);
-int ve_encode(video_encoder *encoder, uint8_t *i420, int keyframe, int64_t pts, uint8_t **out);
+int ve_encode(video_encoder *encoder, uint8_t *i420, int width, int height, int keyframe, int64_t pts, uint8_t **out);
+void ve_set_bitrate(video_encoder *encoder, int kilobits);
 void ve_free(video_encoder *encoder);
 
 typedef struct sound_encoder sound_encoder;
 sound_encoder *se_new(double rate);
+void se_set_rate(sound_encoder *encoder, double rate);
 int se_push(sound_encoder *encoder, const int16_t *samples, int frames, uint8_t *out, int packet_capacity, int *sizes,
             int max_packets);
 

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <time.h>
 #include <unistd.h>
 #include <x264.h>
 
@@ -54,6 +55,10 @@ static struct {
 static char system_dir[512], save_dir[512];
 static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 static struct retro_system_av_info av;
+// What the core changed since Go last asked (fe_take_av_changes): its picture's shape, or its frame rate and sound rate
+static int av_changes;
+// How the core asks for its picture to be turned, in quarter turns counter-clockwise (SET_ROTATION)
+static unsigned rotation;
 
 // Core options: the defaults the core declares, and overrides from the host
 #define MAX_OPTIONS 512
@@ -115,6 +120,7 @@ static PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer_;
 static PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage_;
 static PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer_;
 static PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus_;
+static PFNGLBINDBUFFERPROC glBindBuffer_;
 
 static uintptr_t current_framebuffer(void) { return framebuffer; }
 
@@ -160,6 +166,7 @@ static bool create_context(void) {
   glRenderbufferStorage_ = (void *)eglGetProcAddress("glRenderbufferStorage");
   glFramebufferRenderbuffer_ = (void *)eglGetProcAddress("glFramebufferRenderbuffer");
   glCheckFramebufferStatus_ = (void *)eglGetProcAddress("glCheckFramebufferStatus");
+  glBindBuffer_ = (void *)eglGetProcAddress("glBindBuffer");
   fprintf(stderr, "[host] GL context: %s, %s\n", glGetString(GL_RENDERER), glGetString(GL_VERSION));
   return true;
 }
@@ -189,12 +196,38 @@ static bool create_framebuffer(unsigned width, unsigned height) {
   return status == GL_FRAMEBUFFER_COMPLETE;
 }
 
+// Makes the framebuffer larger for a core whose largest picture has grown (SET_GEOMETRY, SET_SYSTEM_AV_INFO), keeping
+// the same framebuffer, so the core goes on drawing into it as before. Between frames; the core's own bindings are put
+// back after
+static void grow_framebuffer(unsigned width, unsigned height) {
+  GLint texture = 0, renderbuffer = 0, unpack_buffer = 0;
+  glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture);
+  glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &unpack_buffer);
+  // With a buffer bound for unpacking, the empty picture below would be read from it
+  glBindBuffer_(GL_PIXEL_UNPACK_BUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, color_texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindBuffer_(GL_PIXEL_UNPACK_BUFFER, unpack_buffer);
+  if (depth_buffer) {
+    glGetIntegerv(GL_RENDERBUFFER_BINDING, &renderbuffer);
+    glBindRenderbuffer_(GL_RENDERBUFFER, depth_buffer);
+    glRenderbufferStorage_(GL_RENDERBUFFER, hw.stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT24, width, height);
+    glBindRenderbuffer_(GL_RENDERBUFFER, renderbuffer);
+  }
+  framebuffer_width = width;
+  framebuffer_height = height;
+  fprintf(stderr, "[host] framebuffer now %ux%u\n", width, height);
+}
+
 // ---- The picture: each frame as I420, ready for the encoder ----
 
 static uint8_t *rgba;  // read back from the framebuffer
 static size_t rgba_size;
 static uint8_t *frame;  // I420
 static size_t frame_capacity;
+static uint8_t *unturned;  // I420, before it's turned as the core asks
+static size_t unturned_capacity;
 static int frame_width, frame_height;
 static bool frame_ready;
 
@@ -206,17 +239,56 @@ static void ensure(uint8_t **buffer, size_t *capacity, size_t size) {
   }
 }
 
+// Reads the framebuffer into `rgba`, w by h. The core may leave the pixel pack state set for its own reads (a row
+// length, rows to skip, a buffer to read into), which would have this read write past `rgba` or not into it at all:
+// it's set as this read needs, and the core's put back after
+static void read_framebuffer(int w, int h) {
+  GLint pack_buffer = 0, row_length = 0, skip_rows = 0, skip_pixels = 0, alignment = 4, read_framebuffer = 0,
+        read_buffer = GL_COLOR_ATTACHMENT0;
+  glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &pack_buffer);
+  glGetIntegerv(GL_PACK_ROW_LENGTH, &row_length);
+  glGetIntegerv(GL_PACK_SKIP_ROWS, &skip_rows);
+  glGetIntegerv(GL_PACK_SKIP_PIXELS, &skip_pixels);
+  glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+  glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_framebuffer);
+  glBindBuffer_(GL_PIXEL_PACK_BUFFER, 0);
+  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+  glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_PACK_ALIGNMENT, 4);
+  glBindFramebuffer_(GL_READ_FRAMEBUFFER, framebuffer);
+  glGetIntegerv(GL_READ_BUFFER, &read_buffer);
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+  glReadBuffer(read_buffer);
+  glBindFramebuffer_(GL_READ_FRAMEBUFFER, read_framebuffer);
+  glBindBuffer_(GL_PIXEL_PACK_BUFFER, pack_buffer);
+  glPixelStorei(GL_PACK_ROW_LENGTH, row_length);
+  glPixelStorei(GL_PACK_SKIP_ROWS, skip_rows);
+  glPixelStorei(GL_PACK_SKIP_PIXELS, skip_pixels);
+  glPixelStorei(GL_PACK_ALIGNMENT, alignment);
+}
+
 static void video_refresh(const void *data, unsigned width, unsigned height, size_t pitch) {
   if (!data || width < 2 || height < 2) return;  // the same frame again: nothing new to send
+  if (data == RETRO_HW_FRAME_BUFFER_VALID) {
+    // Never past the framebuffer, should the core say its picture is larger than the framebuffer is yet
+    if (width > framebuffer_width) width = framebuffer_width;
+    if (height > framebuffer_height) height = framebuffer_height;
+    if (width < 2 || height < 2) return;
+  }
   int w = width & ~1u, h = height & ~1u;
   ensure(&frame, &frame_capacity, (size_t)w * h * 3 / 2);
-  uint8_t *y = frame, *u = frame + w * h, *v = u + w * h / 4;
+  // Made as the core draws it, then turned as it asks, into `frame`
+  uint8_t *target = frame;
+  if (rotation) {
+    ensure(&unturned, &unturned_capacity, (size_t)w * h * 3 / 2);
+    target = unturned;
+  }
+  uint8_t *y = target, *u = target + w * h, *v = u + w * h / 4;
   if (data == RETRO_HW_FRAME_BUFFER_VALID) {
     ensure(&rgba, &rgba_size, (size_t)w * h * 4);
-    glBindFramebuffer_(GL_FRAMEBUFFER, framebuffer);
-    glPixelStorei(GL_PACK_ALIGNMENT, 4);
-    glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
-    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    read_framebuffer(w, h);
     // Read bottom row first; a negative height turns it the right way up
     ABGRToI420(rgba, w * 4, y, w, u, w / 2, v, w / 2, w, hw.bottom_left_origin ? -h : h);
   } else if (pixel_format == RETRO_PIXEL_FORMAT_XRGB8888) {
@@ -225,6 +297,16 @@ static void video_refresh(const void *data, unsigned width, unsigned height, siz
     RGB565ToI420(data, pitch, y, w, u, w / 2, v, w / 2, w, h);
   } else {
     ARGB1555ToI420(data, pitch, y, w, u, w / 2, v, w / 2, w, h);
+  }
+  if (rotation) {
+    // libretro turns counter-clockwise, libyuv clockwise
+    static const enum RotationMode modes[4] = {kRotate0, kRotate270, kRotate180, kRotate90};
+    bool sideways = rotation % 2;
+    int turned_w = sideways ? h : w, turned_h = sideways ? w : h;
+    uint8_t *ty = frame, *tu = frame + w * h, *tv = tu + w * h / 4;
+    I420Rotate(y, w, u, w / 2, v, w / 2, ty, turned_w, tu, turned_w / 2, tv, turned_w / 2, w, h, modes[rotation]);
+    w = turned_w;
+    h = turned_h;
   }
   frame_width = w;
   frame_height = h;
@@ -295,12 +377,29 @@ void fe_set_pad(int port, uint16_t pressed, int16_t lx, int16_t ly, int16_t rx, 
 
 static void input_poll(void) {}
 
+// Whether the core has read a port's left stick: until it does, the stick also works the D-pad, as RetroArch's "left
+// analog" D-pad mode does in the browser, so a controller's stick steers games of consoles with only a D-pad
+static bool reads_left_stick[4];
+// How far the stick goes before it counts as the D-pad: half way
+#define STICK_AS_DPAD 0x4000
+
+static uint16_t pad_buttons(unsigned port) {
+  uint16_t pressed = buttons[port];
+  if (reads_left_stick[port]) return pressed;
+  int16_t x = axes[port][0], y = axes[port][1];
+  if (x <= -STICK_AS_DPAD) pressed |= 1 << RETRO_DEVICE_ID_JOYPAD_LEFT;
+  if (x >= STICK_AS_DPAD) pressed |= 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+  if (y <= -STICK_AS_DPAD) pressed |= 1 << RETRO_DEVICE_ID_JOYPAD_UP;
+  if (y >= STICK_AS_DPAD) pressed |= 1 << RETRO_DEVICE_ID_JOYPAD_DOWN;
+  return pressed;
+}
+
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
   if (port > 3) return 0;
   switch (device & RETRO_DEVICE_MASK) {
     case RETRO_DEVICE_JOYPAD:
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return (int16_t)buttons[port];
-      return id < 16 ? (buttons[port] >> id) & 1 : 0;
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return (int16_t)pad_buttons(port);
+      return id < 16 ? (pad_buttons(port) >> id) & 1 : 0;
     case RETRO_DEVICE_POINTER:
       if (port != 0 || index != 0) return 0;
       switch (id) {
@@ -311,6 +410,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
       }
       return 0;
     case RETRO_DEVICE_ANALOG:
+      if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT) reads_left_stick[port] = true;
       if (index < 2 && id < 2) return axes[port][index * 2 + id];
       if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON && id < 16) return ((buttons[port] >> id) & 1) ? 0x7fff : 0;
       return 0;
@@ -321,7 +421,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 // ---- What the core asks of the frontend ----
 
 static void core_log(enum retro_log_level level, const char *format, ...) {
-  if (level < RETRO_LOG_INFO) return;
+  // Warnings and errors only: the log is kept, and a core's information is many lines a game
+  if (level < RETRO_LOG_WARN) return;
   va_list args;
   va_start(args, format);
   fprintf(stderr, "[core] ");
@@ -338,10 +439,15 @@ static struct {
   uint16_t id;
   struct sockaddr_un peer;
   int started;
-} linked = {.socket = -1};
+  // Whether the other console is there (link_check_peer), and a socket to look with
+  int peer_there;
+  int probe;
+  long long checked_at;
+} linked = {.socket = -1, .peer_there = 1, .probe = -1};
 
 static bool environment(unsigned command, void *data) {
-  switch (command & ~RETRO_ENVIRONMENT_EXPERIMENTAL) {
+  // As the core sends it: the experimental ones carry RETRO_ENVIRONMENT_EXPERIMENTAL, as their cases below do
+  switch (command) {
     case RETRO_ENVIRONMENT_GET_CAN_DUPE:
       *(bool *)data = true;
       return true;
@@ -416,11 +522,22 @@ static bool environment(unsigned command, void *data) {
     case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL:
       declare_v2(((const struct retro_core_options_v2_intl *)data)->us);
       return true;
-    case RETRO_ENVIRONMENT_SET_GEOMETRY:
-      av.geometry = *(const struct retro_game_geometry *)data;
+    case RETRO_ENVIRONMENT_SET_GEOMETRY: {
+      // The picture's size and shape; the largest it can be stays as it was
+      const struct retro_game_geometry *geometry = data;
+      av.geometry.base_width = geometry->base_width;
+      av.geometry.base_height = geometry->base_height;
+      av.geometry.aspect_ratio = geometry->aspect_ratio;
+      av_changes |= 1;
       return true;
+    }
     case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       av = *(const struct retro_system_av_info *)data;
+      av_changes |= 1 | 2;
+      return true;
+    case RETRO_ENVIRONMENT_SET_ROTATION:
+      rotation = *(const unsigned *)data % 4;
+      av_changes |= 1;
       return true;
     case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
       return true;
@@ -481,11 +598,49 @@ static void RETRO_CALLCONV link_send(int flags, const void *buf, size_t len, uin
   sendto(linked.socket, buf, len, MSG_DONTWAIT, (struct sockaddr *)&linked.peer, sizeof linked.peer);
 }
 
+// Looks, at most every 10 ms, whether the other console's socket is there to send to, and tells the core when that
+// changes: a console that has stopped is then not waited for. Its socket file is gone (ENOENT), or left with nothing
+// bound to it (ECONNREFUSED)
+static void link_check_peer(void) {
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  long long ms = now.tv_sec * 1000LL + now.tv_nsec / 1000000;
+  if (ms - linked.checked_at < 10) {
+    return;
+  }
+  linked.checked_at = ms;
+  if (linked.probe < 0) {
+    linked.probe = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+    if (linked.probe < 0) {
+      return;
+    }
+  }
+  int there = 1;
+  if (connect(linked.probe, (struct sockaddr *)&linked.peer, sizeof linked.peer) != 0) {
+    if (errno != ECONNREFUSED && errno != ENOENT) {
+      return;
+    }
+    there = 0;
+  }
+  if (there == linked.peer_there) {
+    return;
+  }
+  linked.peer_there = there;
+  uint16_t other = linked.id == 0 ? 1 : 0;
+  fprintf(stderr, "[host] console %u %s\n", other + 1, there ? "is back" : "is gone");
+  if (there && linked.callback.connected) {
+    linked.callback.connected(other);
+  } else if (!there && linked.callback.disconnected) {
+    linked.callback.disconnected(other);
+  }
+}
+
 static void RETRO_CALLCONV link_poll_receive(void) {
   static uint8_t packet[65536];
   if (linked.socket < 0) {
     return;
   }
+  link_check_peer();
   for (;;) {
     ssize_t got = recv(linked.socket, packet, sizeof packet, MSG_DONTWAIT);
     if (got <= 0) {
@@ -543,6 +698,10 @@ static void link_stop(void) {
     unlink(getenv("LINK_SELF"));
   }
   linked.socket = -1;
+  if (linked.probe >= 0) {
+    close(linked.probe);
+  }
+  linked.probe = -1;
 }
 
 // ---- Starting, running and stopping ----
@@ -587,12 +746,17 @@ int fe_load(const char *core_path, const char *game_path, const char *system_pat
     long size = ftell(file);
     fseek(file, 0, SEEK_SET);
     game_data = malloc(size);
-    if (fread(game_data, 1, size, file) != (size_t)size) return -2;
+    bool read = game_data && fread(game_data, 1, size, file) == (size_t)size;
     fclose(file);
+    if (!read) return -2;
     game.data = game_data;
     game.size = size;
   }
-  if (!core.load_game(&game)) return -3;
+  bool loaded = core.load_game(&game);
+  // The core has its own copy by now: the data is only good until load_game returns, as libretro has it
+  free(game_data);
+  game_data = NULL;
+  if (!loaded) return -3;
   core.get_system_av_info(&av);
   fprintf(stderr, "[host] %s %s: %ux%u (max %ux%u), %.3f fps, %.0f Hz, %s\n", info.library_name,
           info.library_version, av.geometry.base_width, av.geometry.base_height, av.geometry.max_width,
@@ -601,7 +765,11 @@ int fe_load(const char *core_path, const char *game_path, const char *system_pat
     if (!create_framebuffer(av.geometry.max_width, av.geometry.max_height)) return -4;
     if (hw.context_reset) hw.context_reset();
   }
-  for (unsigned port = 0; port < 4; port++) core.set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+  // PCSX ReARMed is told its controllers are DualShocks (libretro's analog controller, the second of its kinds), as
+  // in the browser: the on-screen controls have sticks, and analog games need them
+  unsigned device = info.library_name && strcmp(info.library_name, "PCSX-ReARMed") == 0 ? RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 1)
+                                                                   : RETRO_DEVICE_JOYPAD;
+  for (unsigned port = 0; port < 4; port++) core.set_controller_port_device(port, device);
   link_start();
   return 0;
 }
@@ -610,11 +778,22 @@ double fe_fps(void) { return av.timing.fps; }
 // The picture's shape as the core means it to be shown: its own aspect ratio, or its size's
 double fe_aspect(void) {
   if (av.geometry.aspect_ratio > 0) return av.geometry.aspect_ratio;
-  return av.geometry.base_height ? (double)av.geometry.base_width / av.geometry.base_height : 4.0 / 3.0;
+  double aspect = av.geometry.base_height ? (double)av.geometry.base_width / av.geometry.base_height : 4.0 / 3.0;
+  // Its size is before it's turned
+  return rotation % 2 ? 1 / aspect : aspect;
+}
+int fe_take_av_changes(void) {
+  int changes = av_changes;
+  av_changes = 0;
+  return changes;
 }
 double fe_sample_rate(void) { return av.timing.sample_rate; }
 
 void fe_run(void) {
+  if (hw_render && (av.geometry.max_width > framebuffer_width || av.geometry.max_height > framebuffer_height)) {
+    grow_framebuffer(av.geometry.max_width > framebuffer_width ? av.geometry.max_width : framebuffer_width,
+                     av.geometry.max_height > framebuffer_height ? av.geometry.max_height : framebuffer_height);
+  }
   if (linked.started) {
     link_poll_receive();
     if (linked.callback.poll) {
@@ -647,6 +826,8 @@ struct video_encoder {
   x264_t *x264;
   x264_picture_t picture;
   int width, height;
+  // A smaller picture, scaled to the encoder's size
+  uint8_t *scaled;
 };
 
 video_encoder *ve_new(int width, int height, double fps, int kilobits) {
@@ -682,8 +863,20 @@ video_encoder *ve_new(int width, int height, double fps, int kilobits) {
   return encoder;
 }
 
-int ve_encode(video_encoder *encoder, uint8_t *i420, int keyframe, int64_t pts, uint8_t **out) {
+// Encodes a picture of any size up to the encoder's: one smaller is scaled to it first, so a game that changes its
+// picture's size doesn't need a new encoder, and players' browsers a new stream, each time
+int ve_encode(video_encoder *encoder, uint8_t *i420, int width, int height, int keyframe, int64_t pts, uint8_t **out) {
   int w = encoder->width, h = encoder->height;
+  if (width != w || height != h) {
+    if (width > w || height > h) return -1;
+    if (!encoder->scaled) encoder->scaled = malloc((size_t)w * h * 3 / 2);
+    if (!encoder->scaled) return -1;
+    uint8_t *su = i420 + width * height, *sv = su + width * height / 4;
+    uint8_t *y = encoder->scaled, *u = y + w * h, *v = u + w * h / 4;
+    I420Scale(i420, width, su, width / 2, sv, width / 2, width, height, y, w, u, w / 2, v, w / 2, w, h,
+              kFilterBilinear);
+    i420 = encoder->scaled;
+  }
   x264_picture_t *picture = &encoder->picture;
   picture->img.plane[0] = i420;
   picture->img.plane[1] = i420 + w * h;
@@ -702,8 +895,18 @@ int ve_encode(video_encoder *encoder, uint8_t *i420, int keyframe, int64_t pts, 
   return size;
 }
 
+// Sets the most the picture may take, in kilobits a second, from the next picture on
+void ve_set_bitrate(video_encoder *encoder, int kilobits) {
+  x264_param_t param;
+  x264_encoder_parameters(encoder->x264, &param);
+  param.rc.i_vbv_max_bitrate = kilobits;
+  param.rc.i_vbv_buffer_size = kilobits / 10;
+  x264_encoder_reconfig(encoder->x264, &param);
+}
+
 void ve_free(video_encoder *encoder) {
   x264_encoder_close(encoder->x264);
+  free(encoder->scaled);
   free(encoder);
 }
 
@@ -724,6 +927,12 @@ sound_encoder *se_new(double rate) {
   encoder->opus = opus_encoder_create(48000, 2, OPUS_APPLICATION_RESTRICTED_LOWDELAY, &error);
   opus_encoder_ctl(encoder->opus, OPUS_SET_BITRATE(96000));
   return encoder;
+}
+
+// The core's sound rate changed (SET_SYSTEM_AV_INFO): resampled from the new one from here on
+void se_set_rate(sound_encoder *encoder, double rate) {
+  speex_resampler_set_rate_frac(encoder->resampler, (spx_uint32_t)(rate * 100), 4800000, (spx_uint32_t)(rate + 0.5),
+                                48000);
 }
 
 // Takes `frames` of the core's sound; returns how many 10 ms packets are ready, written to `out` one after another,
