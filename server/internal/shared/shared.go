@@ -39,6 +39,8 @@ type GameInfoPlatform struct {
 
 type Data struct {
 	CDN CDN `json:"cdn"`
+	// The settings a player may give each emulator, and the values each may have, for the games the server runs
+	CoreOptions map[string]map[string][]string `json:"coreOptions"`
 	// The file extensions each console's games may have
 	FileExtensions map[string][]string `json:"fileExtensions"`
 	// Each console's names in the game info database
