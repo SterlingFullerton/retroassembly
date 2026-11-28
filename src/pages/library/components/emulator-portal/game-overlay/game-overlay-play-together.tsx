@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { startSharing, stopSharing } from '#@/emulator/play-together-session.ts'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
@@ -8,7 +9,7 @@ import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 
 // Playing together, from the host's side: in the pause menu's Play together page, a button that shares the running game and
-// shows the code a guest joins by. Its words are in English
+// shows the code a guest joins by
 
 const button =
   'flex h-12 shrink-0 items-center gap-3 rounded-full border border-solid border-white bg-black/30 px-4 text-white transition-colors hover:bg-white/15'
@@ -26,6 +27,7 @@ export function PlayTogetherLifetime() {
 }
 
 export function GameOverlayPlayTogether() {
+  const { t } = useTranslation()
   const sharing = useSharing()
   const { core, emulator } = useSession()
   const rom = useRom()
@@ -50,7 +52,7 @@ export function GameOverlayPlayTogether() {
     <section className='game-overlay-peek-dim flex flex-col gap-2' data-testid='play-together'>
       {sharing.stage === 'inviting' && !sharing.listed ? (
         <div>
-          <div className='text-sm text-white/70'>Code for the other player</div>
+          <div className='text-sm text-white/70'>{t('playTogether.codeFor')}</div>
           <div className='font-mono text-3xl font-semibold tracking-[0.3em]' data-testid='play-together-code'>
             {sharing.code}
           </div>
@@ -58,13 +60,14 @@ export function GameOverlayPlayTogether() {
       ) : null}
       {sharing.stage === 'inviting' ? (
         <div className='text-sm text-white/70' data-testid='play-together-waiting'>
-          {sharing.listed ? 'Waiting for a player to join from Join a game.' : 'Waiting for them to join.'} Resume the
-          game when they have.
+          {sharing.listed
+            ? t('playTogether.waitingListed', { joinGame: t('nav.joinGame') })
+            : t('playTogether.waitingCode')}
         </div>
       ) : null}
-      {sharing.stage === 'connected' ? <div className='text-sm'>A player has joined as player 2.</div> : null}
-      {sharing.stage === 'starting' ? <div className='text-sm text-white/70'>Getting a code.</div> : null}
-      {sharing.stage === 'failed' ? <div className='text-sm text-[#ffc46b]'>Couldn’t share the game.</div> : null}
+      {sharing.stage === 'connected' ? <div className='text-sm'>{t('playTogether.connected')}</div> : null}
+      {sharing.stage === 'starting' ? <div className='text-sm text-white/70'>{t('playTogether.starting')}</div> : null}
+      {sharing.stage === 'failed' ? <div className='text-sm text-[#ffc46b]'>{t('playTogether.failed')}</div> : null}
       <div className='flex'>
         <button
           className={button}
@@ -74,7 +77,7 @@ export function GameOverlayPlayTogether() {
           type='button'
         >
           <span className={idle ? 'icon-[mdi--account-multiple-plus] size-5' : 'icon-[mdi--close] size-5'} />
-          <span className='text-[15px]'>{idle ? 'Invite a player' : 'Stop sharing'}</span>
+          <span className='text-[15px]'>{idle ? t('playTogether.invite') : t('playTogether.stop')}</span>
         </button>
       </div>
     </section>

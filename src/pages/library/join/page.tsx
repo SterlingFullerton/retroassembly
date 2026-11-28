@@ -33,7 +33,7 @@ import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { ServerPauseMenu } from './server-pause-menu.tsx'
 
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
-// device's keys, controller or on-screen controls playing as the next player. Its words are in English.
+// device's keys, controller or on-screen controls playing as the next player.
 //
 // A game on the NAS is played here too, by everyone in it: whoever starts it from its page arrives with its code, and
 // joins first. Such a game has a pause menu, which pauses it for everyone in it
@@ -500,7 +500,7 @@ export default function JoinPage() {
       {/* Someone else paused a game on the NAS */}
       {playing && onNAS && nasNumbers?.paused && !menuOpen ? (
         <div className='pointer-events-none absolute inset-x-0 top-1/3 flex justify-center'>
-          <span className='rounded-full bg-black/70 px-4 py-1.5 text-lg font-semibold'>Paused</span>
+          <span className='rounded-full bg-black/70 px-4 py-1.5 text-lg font-semibold'>{t('pauseMenu.paused')}</span>
         </div>
       ) : null}
 
@@ -523,7 +523,11 @@ export default function JoinPage() {
           <span className='icon-[mdi--loading] size-8 animate-spin' />
           <p className='text-lg font-semibold'>{found.invitation.title}</p>
           <p className='text-white/70'>
-            {onNAS ? 'Connecting to the server.' : `Connecting to ${found.invitation.host || 'the other player'}.`}
+            {onNAS
+              ? t('playTogether.connectingServer')
+              : found.invitation.host
+                ? t('playTogether.connectingTo', { host: found.invitation.host })
+                : t('playTogether.connectingOther')}
           </p>
         </div>
       ) : null}
@@ -532,10 +536,10 @@ export default function JoinPage() {
         <div className='flex w-full max-w-md flex-col items-stretch gap-6 p-6' data-sn-section=''>
           <h1 className='text-center text-2xl font-semibold'>{t('nav.joinGame')}</h1>
 
-          {stage === 'ended' ? <p className='text-center'>The game ended.</p> : null}
+          {stage === 'ended' ? <p className='text-center'>{t('playTogether.ended')}</p> : null}
           {stage === 'unreachable' ? (
             <p className='text-center text-[#ffc46b]' data-testid='guest-unreachable'>
-              Couldn’t connect to the other player’s device.
+              {t('playTogether.unreachable')}
             </p>
           ) : null}
 
@@ -557,16 +561,12 @@ export default function JoinPage() {
                 </span>
               </button>
             ))}
-            {games?.length === 0 ? (
-              <p className='text-center text-white/70'>
-                No games are being shared right now. One appears here when a player invites from their pause menu.
-              </p>
-            ) : null}
+            {games?.length === 0 ? <p className='text-center text-white/70'>{t('playTogether.noGames')}</p> : null}
           </div>
 
           <form className='flex flex-col items-center gap-3 border-t border-white/15 pt-5' onSubmit={handleCode}>
             <label className='flex flex-col items-center gap-2'>
-              <span className='text-sm text-white/70'>Or a code, if the other player has one for you</span>
+              <span className='text-sm text-white/70'>{t('playTogether.orCode')}</span>
               <input
                 autoCapitalize='characters'
                 autoComplete='off'
@@ -579,14 +579,14 @@ export default function JoinPage() {
                 value={code}
               />
             </label>
-            {notFound ? <p className='text-[#ffc46b]'>No game to join by that code.</p> : null}
+            {notFound ? <p className='text-[#ffc46b]'>{t('playTogether.notFound')}</p> : null}
             <button
               className={pill}
               data-testid='guest-join'
               disabled={code.replaceAll(/\s/gu, '').length < codeLength}
               type='submit'
             >
-              Join with code
+              {t('playTogether.joinWithCode')}
             </button>
           </form>
         </div>
@@ -594,7 +594,7 @@ export default function JoinPage() {
 
       {playing && onNAS && !menuOpen ? (
         <button
-          aria-label='Pause'
+          aria-label={t('emulator.pause')}
           className='top-safe-offset-2 right-safe-offset-14 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
           data-sn-enabled
           data-testid='nas-pause'
@@ -607,7 +607,7 @@ export default function JoinPage() {
 
       {menuOpen ? null : (
         <button
-          aria-label='Leave'
+          aria-label={t('pauseMenu.leave')}
           className='top-safe-offset-2 right-safe-offset-2 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
           data-sn-enabled
           onClick={leave}
