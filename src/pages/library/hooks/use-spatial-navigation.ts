@@ -259,20 +259,26 @@ export function useSpatialNavigation() {
     }
   }, [])
 
-  // focus when an element got hovered
+  // focus when an element got hovered. Not while a game is played: a button the mouse passed over would keep the
+  // focus unseen, and Space or Enter pressed for the game would press it
+  const focusHovered = useEffectEvent((element: HTMLElement) => {
+    if (!isIdle && !isPaused()) {
+      focus(element)
+    }
+  })
   useEffect(() => {
     const eventName = 'mouseover'
     const selector = navigableSelector
 
     function handleMouseOver(event: Event) {
-      if (!isIdle && event.currentTarget instanceof HTMLElement) {
-        focus(event.currentTarget)
+      if (event.currentTarget instanceof HTMLElement) {
+        focusHovered(event.currentTarget)
       }
     }
     on(eventName, selector, handleMouseOver)
 
     return () => off(eventName, selector, handleMouseOver)
-  }, [isIdle])
+  }, [])
 
   // auto resize or move the focus indicator
   useEffect(() => {
