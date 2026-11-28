@@ -88,6 +88,8 @@ function ServerStates({
 
 export function ServerPauseMenu({
   code,
+  friendCode,
+  linked,
   onClose,
   onEnd,
   onLeave,
@@ -98,6 +100,10 @@ export function ServerPauseMenu({
   title,
 }: Readonly<{
   code: string
+  /** On the starter's console of a linked pair, the code that joins the friend's console */
+  friendCode?: string
+  /** A console of a linked pair: two consoles can't be put back in step, so there are no snapshots */
+  linked: boolean
   onClose: () => void
   /** Ends the game for everyone in it */
   onEnd: () => Promise<void>
@@ -127,6 +133,9 @@ export function ServerPauseMenu({
   useEffect(() => {
     let stopped = false
     async function count() {
+      if (linked) {
+        return
+      }
       let found: NASState[] = []
       try {
         found = await listNASStates(code)
@@ -143,7 +152,7 @@ export function ServerPauseMenu({
     return () => {
       stopped = true
     }
-  }, [code])
+  }, [code, linked])
 
   async function open(next: Exclude<PauseMenuPage, 'main'>) {
     setPage(next)
@@ -180,15 +189,20 @@ export function ServerPauseMenu({
 
   const exitActions: PauseMenuAction[] = startedHere
     ? [
-        {
-          icon: 'icon-[mdi--content-save-move]',
-          label: t('pauseMenu.saveAndExit'),
-          onClick: saveAndEnd,
-          testId: 'pause-save-exit',
-        },
+        ...(linked
+          ? []
+          : [
+              {
+                icon: 'icon-[mdi--content-save-move]',
+                label: t('pauseMenu.saveAndExit'),
+                onClick: saveAndEnd,
+                testId: 'pause-save-exit',
+              },
+            ]),
         {
           icon: 'icon-[mdi--exit-to-app]',
-          label: t('pauseMenu.exitWithoutSaving'),
+          // A linked game has no snapshot to leave unsaved: its own save is kept all the same
+          label: linked ? t('common.exit') : t('pauseMenu.exitWithoutSaving'),
           onClick: onEnd,
           testId: 'pause-exit-now',
         },
@@ -220,6 +234,7 @@ export function ServerPauseMenu({
         onResume={onClose}
         onSave={save}
         page={page}
+        snapshots={!linked}
         pages={{
           controls: (
             <>
@@ -249,8 +264,10 @@ export function ServerPauseMenu({
           ),
           together: (
             <div className='flex flex-col gap-3' data-testid='server-together'>
-              <div className='font-mono text-3xl font-semibold tracking-[0.3em]'>{code}</div>
-              <p className='text-sm text-white/70'>{t('pauseMenu.joinHint')}</p>
+              <div className='font-mono text-3xl font-semibold tracking-[0.3em]'>{friendCode ?? code}</div>
+              <p className='text-sm text-white/70'>
+                {friendCode ? t('pauseMenu.friendJoinHint') : t('pauseMenu.joinHint')}
+              </p>
               {players && players > 1 ? <p className='text-sm'>{t('pauseMenu.players', { count: players })}</p> : null}
             </div>
           ),

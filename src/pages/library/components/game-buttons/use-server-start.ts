@@ -17,6 +17,9 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
   const { preference } = usePreference()
   const { core } = preference.emulator.platform[rom.platform as keyof typeof preference.emulator.platform]
   const [available, setAvailable] = useState(false)
+  // A DS game can also be played with a friend, on two consoles linked as by local wireless, where the server has
+  // the emulator that links them
+  const [linkable, setLinkable] = useState(false)
   const [starting, setStarting] = useState(false)
   const [failure, setFailure] = useState<string>()
 
@@ -29,6 +32,7 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
       const cores = await getNASCores()
       if (current) {
         setAvailable(cores.includes(core))
+        setLinkable(rom.platform === 'nds' && cores.includes(linkedCore))
       }
     }
     // oxlint-disable-next-line typescript/no-floating-promises -- getNASCores() never fails: no cores is its answer
@@ -36,16 +40,20 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
     return () => {
       current = false
     }
-  }, [core, enabled])
+  }, [core, enabled, rom.platform])
 
-  async function start() {
+  async function start({ linked = false } = {}) {
     setStarting(true)
     setFailure(undefined)
     try {
       const resolved = resolveConsole(rom.platform, core)
       const controls = resolved.controls ?? ''
       // An emulator that keeps its own save, such as the DS's, keeps it in a file of its own kind
-      const code = await startNASGame({ controls, core, rom: rom.id, saveFileType: resolved.saveFileType })
+      const code = await startNASGame(
+        linked
+          ? { controls, core, linked, rom: rom.id }
+          : { controls, core, rom: rom.id, saveFileType: resolved.saveFileType },
+      )
       // Whoever starts it joins first, and is its first player
       await navigate(`${routes.libraryJoin}?code=${encodeURIComponent(code)}&started=1`)
     } catch (error) {
@@ -54,8 +62,11 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
     }
   }
 
-  return { available, failure, start, starting }
+  return { available, failure, linkable, start, starting }
 }
+
+/** The emulator the server runs a linked DS game with */
+const linkedCore = 'melondsds'
 
 /** What went wrong starting a game on the server, in words: a server already running all the games it may is said plainly */
 function describeFailure(error: unknown, full: string) {

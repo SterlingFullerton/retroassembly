@@ -1,0 +1,223 @@
+diff --git a/src/libretro/core/core.hpp b/src/libretro/core/core.hpp
+index bb52319..f59f309 100644
+--- a/src/libretro/core/core.hpp
++++ b/src/libretro/core/core.hpp
+@@ -95,7 +95,7 @@ namespace MelonDsDs {
+         void MpStopped() noexcept;
+         bool MpSendPacket(const Packet &p) noexcept;
+         std::optional<Packet> MpNextPacket() noexcept;
+-        std::optional<Packet> MpNextPacketBlock() noexcept;
++        std::optional<Packet> MpNextPacketBlock(MpState::Kind kind = MpState::Kind::Host) noexcept;
+         bool MpActive() const noexcept;
+ 
+         void WriteNdsSave(std::span<const std::byte> savedata, uint32_t writeoffset, uint32_t writelen) noexcept;
+diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
+index b56f23a..da7a6be 100644
+--- a/src/libretro/libretro.cpp
++++ b/src/libretro/libretro.cpp
+@@ -394,7 +394,7 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
+     u16 ret = 0;
+     int loops = 0;
+     while((ret & aidmask) != aidmask) {
+-        std::optional<MelonDsDs::Packet> o_p = MelonDsDs::Core.MpNextPacketBlock();
++        std::optional<MelonDsDs::Packet> o_p = MelonDsDs::Core.MpNextPacketBlock(MelonDsDs::MpState::Kind::Reply);
+         if(!o_p.has_value()) {
+             return ret;
+         }
+@@ -405,9 +405,15 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
+         if(p.PacketType() != MelonDsDs::Packet::Type::Reply) {
+             continue;
+         }
+-        ret |= 1<<p.Aid();
+-        memcpy(&packets[(p.Aid()-1)*1024], p.Data(), std::min(p.Length(), (uint64_t)1024));
++        // A client with nothing to say still answers, with an empty reply and no AID (Wifi.cpp sends it). As melonDS's
++        // own multiplayer on one machine does (LocalMP), any fresh reply means the client has answered: with two
++        // consoles at most there's no other to wait for, so a missing AID ends the wait rather than running it out
++        if (p.Aid() != 0 && p.Length() > 0) {
++            ret |= 1<<p.Aid();
++            memcpy(&packets[(p.Aid()-1)*1024], p.Data(), std::min(p.Length(), (uint64_t)1024));
++        }
+         loops++;
++        return ret;
+     }
+     return ret;
+ }
+diff --git a/src/libretro/net/mp.cpp b/src/libretro/net/mp.cpp
+index caa185d..d9779e2 100644
+--- a/src/libretro/net/mp.cpp
++++ b/src/libretro/net/mp.cpp
+@@ -15,7 +15,7 @@
+ */
+ #include "mp.hpp"
+ #include "environment.hpp"
+-#include <ctime>
++#include <chrono>
+ #include <libretro.h>
+ #include <retro_assert.h>
+ #include <retro_endianness.h>
+@@ -24,7 +24,7 @@ using namespace MelonDsDs;
+ // How many successive timeouts before
+ // the player gets notified they are not supposed to use a VPN.
+ constexpr int SUCCESSIVE_TIMEOUTS_WARNING = 6;
+-constexpr long RECV_TIMEOUT_MS = 25;
++constexpr auto RECV_TIMEOUT = std::chrono::milliseconds(25);
+ 
+ uint64_t swapToNetwork(uint64_t n) {
+     return swap_if_little64(n);
+@@ -110,38 +110,68 @@ void MpState::PacketReceived(const void *buf, size_t len, uint16_t client_id) no
+         _hostId = client_id;
+         //retro::debug("Host client id is {}", client_id);
+     }
+-    receivedPackets.push(std::move(p));
++    if (p.PacketType() == Packet::Type::Reply) {
++        receivedReplies.push(std::move(p));
++    } else if (p.PacketType() == Packet::Type::Cmd) {
++        receivedHostPackets.emplace(std::move(p), std::chrono::steady_clock::now());
++    } else {
++        receivedPackets.push(std::move(p));
++    }
+ }
+ 
+-std::optional<Packet> MpState::NextPacket() noexcept {
++// A host packet left waiting longer than about a frame belongs to a frame the client has moved past
++constexpr auto HOST_PACKET_STALE = std::chrono::milliseconds(16);
++
++// The next packet of a kind, if one has arrived: a wait for a host packet takes a command or ack first, then any other
++std::optional<Packet> MpState::Take(Kind kind) noexcept {
++    std::queue<Packet> *queue = nullptr;
++    if (kind == Kind::Reply) {
++        queue = &receivedReplies;
++    } else {
++        if (kind == Kind::Host) {
++            auto now = std::chrono::steady_clock::now();
++            while (!receivedHostPackets.empty() && now - receivedHostPackets.front().second > HOST_PACKET_STALE) {
++                receivedHostPackets.pop();
++            }
++            if (!receivedHostPackets.empty()) {
++                Packet p = receivedHostPackets.front().first;
++                receivedHostPackets.pop();
++                return p;
++            }
++        }
++        queue = &receivedPackets;
++    }
++    if (queue->empty()) {
++        return std::nullopt;
++    }
++    Packet p = queue->front();
++    queue->pop();
++    return p;
++}
++
++std::optional<Packet> MpState::NextPacket(Kind kind) noexcept {
+     retro_assert(IsReady());
+-    if(receivedPackets.empty()) {
++    std::optional<Packet> p = Take(kind);
++    if (!p) {
+         _sendFn(RETRO_NETPACKET_FLUSH_HINT, NULL, 0, RETRO_NETPACKET_BROADCAST);
+         _pollFn();
++        p = Take(kind);
+     }
+-    if(receivedPackets.empty()) {
+-        return std::nullopt;
+-    } else {
++    if (p) {
+         _timeoutCount = 0;
+-        Packet p = receivedPackets.front();
+-        receivedPackets.pop();
+-        return p;
+     }
++    return p;
+ }
+ 
+-std::optional<Packet> MpState::NextPacketBlock() noexcept {
++// Waits up to 25 ms by the clock on the wall, not by processor time, for a packet of the kind asked for
++std::optional<Packet> MpState::NextPacketBlock(Kind kind) noexcept {
+     retro_assert(IsReady());
+-    if (receivedPackets.empty()) {
+-        for(std::clock_t start = std::clock(); std::clock() < (start + (RECV_TIMEOUT_MS * CLOCKS_PER_SEC / 1000));) {
+-            _sendFn(RETRO_NETPACKET_FLUSH_HINT, NULL, 0, RETRO_NETPACKET_BROADCAST);
+-            _pollFn();
+-            if(!receivedPackets.empty()) {
+-                return NextPacket();
+-            }
++    auto deadline = std::chrono::steady_clock::now() + RECV_TIMEOUT;
++    do {
++        if (std::optional<Packet> p = NextPacket(kind)) {
++            return p;
+         }
+-    } else {
+-        return NextPacket();
+-    }
++    } while (std::chrono::steady_clock::now() < deadline);
+     _timeoutCount++;
+     if (_timeoutCount >= SUCCESSIVE_TIMEOUTS_WARNING && !_warnedHighLatency) {
+         retro::set_warn_message("LAN Multiplayer will NOT work using VPNs or tunnels such as Hamachi!");
+@@ -156,6 +186,8 @@ void MpState::SendPacket(const Packet &p) noexcept {
+     uint16_t dest = RETRO_NETPACKET_BROADCAST;
+     if(p.PacketType() == Packet::Type::Cmd) {
+         _hostId = std::nullopt;
++        // A new command: replies to the ones before it are no use any more
++        receivedReplies = {};
+     }
+     if(p.PacketType() == Packet::Type::Reply && _hostId.has_value()) {
+         dest = _hostId.value();
+diff --git a/src/libretro/net/mp.hpp b/src/libretro/net/mp.hpp
+index f6b5dfc..d513045 100644
+--- a/src/libretro/net/mp.hpp
++++ b/src/libretro/net/mp.hpp
+@@ -14,7 +14,9 @@
+     with melonDS DS. If not, see http://www.gnu.org/licenses/.
+ */
+ #pragma once
++#include <chrono>
+ #include <cstdint>
++#include <utility>
+ #include <queue>
+ #include <optional>
+ #include <vector>
+@@ -64,8 +66,14 @@ public:
+     void SetPollFn(retro_netpacket_poll_receive_t pollFn) noexcept;
+     bool IsReady() const noexcept;
+     void SendPacket(const Packet &p) noexcept;
+-    std::optional<Packet> NextPacket() noexcept;
+-    std::optional<Packet> NextPacketBlock() noexcept;
++    // Replies, which only the host waits for, are kept apart from every other packet, as melonDS's own multiplayer
++    // on one machine keeps them (LocalMP): a read for other packets can't take a reply the host is about to wait for
++    // Host packets (commands and acks), which a client waits for, are kept apart too: a client's routine read for other
++    // packets would otherwise take a command its wireless chip isn't expecting yet and throw it away, leaving the host
++    // waiting for a reply and the client for a command
++    enum class Kind { Other, Host, Reply };
++    std::optional<Packet> NextPacket(Kind kind = Kind::Other) noexcept;
++    std::optional<Packet> NextPacketBlock(Kind kind = Kind::Host) noexcept;
+ private:
+     bool _warnedHighLatency = false;
+     int _timeoutCount = 0;
+@@ -73,5 +81,8 @@ private:
+     retro_netpacket_poll_receive_t _pollFn;
+     std::optional<uint16_t> _hostId;
+     std::queue<Packet> receivedPackets;
++    std::queue<Packet> receivedReplies;
++    std::queue<std::pair<Packet, std::chrono::steady_clock::time_point>> receivedHostPackets;
++    std::optional<Packet> Take(Kind kind) noexcept;
+ };
+ }
+diff --git a/src/libretro/platform/mp.cpp b/src/libretro/platform/mp.cpp
+index 30ee4c2..5dd32ac 100644
+--- a/src/libretro/platform/mp.cpp
++++ b/src/libretro/platform/mp.cpp
+@@ -73,12 +73,12 @@ std::optional<MelonDsDs::Packet> MelonDsDs::CoreState::MpNextPacket() noexcept {
+     return _mpState.NextPacket();
+ }
+ 
+-std::optional<MelonDsDs::Packet> MelonDsDs::CoreState::MpNextPacketBlock() noexcept {
++std::optional<MelonDsDs::Packet> MelonDsDs::CoreState::MpNextPacketBlock(MpState::Kind kind) noexcept {
+     ZoneScopedN(TracyFunction);
+     if(!_mpState.IsReady()) {
+         return std::nullopt;
+     }
+-    return _mpState.NextPacketBlock();
++    return _mpState.NextPacketBlock(kind);
+ }
+ 
+ bool MelonDsDs::CoreState::MpActive() const noexcept {

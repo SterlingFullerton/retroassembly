@@ -94,7 +94,10 @@ export interface ApiRoutes {
       }
     }
     cores: { $get: Endpoint<NoInput, string[]> }
-    $post: Endpoint<{ json: { controls: string; core: string; rom: string; saveFileType?: string } }, { code: string }>
+    $post: Endpoint<
+      { json: { controls: string; core: string; linked?: boolean; rom: string; saveFileType?: string } },
+      { code: string; friendCode?: string }
+    >
   }
   play_together: {
     invitations: {

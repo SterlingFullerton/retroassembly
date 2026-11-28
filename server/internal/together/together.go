@@ -48,6 +48,10 @@ type Invitation struct {
 	Title string `json:"title"`
 	// Whether the game is shown to everyone signed in, to join without a code. Otherwise only its code finds it
 	Listed bool `json:"-"`
+	// A console of a linked pair on the server, which has no save states; for the starter's, the code that joins the
+	// friend's console
+	Linked     bool   `json:"linked,omitempty"`
+	FriendCode string `json:"friendCode,omitempty"`
 }
 
 // Listing is a game shown to everyone signed in: what it is, whose, and the code that joins it

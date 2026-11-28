@@ -151,6 +151,7 @@ func main() {
 	// Named after the library's copy of the game, the same whichever name the game is started under
 	savePath := filepath.Join(saveDir, envOr("SAVE_NAME", strings.TrimSuffix(filepath.Base(game), filepath.Ext(game)))+".srm")
 	restoreSave(savePath)
+	listenToPartner()
 
 	// Asked to end: the game's own save is kept, then it ends
 	ending := make(chan os.Signal, 1)

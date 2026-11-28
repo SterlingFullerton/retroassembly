@@ -9,6 +9,8 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <libyuv.h>
 #include <opus/opus.h>
 #include <speex/speex_resampler.h>
@@ -16,6 +18,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 #include <x264.h>
 
 #include "libretro.h"
@@ -324,6 +329,17 @@ static void core_log(enum retro_log_level level, const char *format, ...) {
   va_end(args);
 }
 
+// The link to the other console of a linked game: see Linked consoles below
+static struct {
+  // Copied: the core may hand it over from its stack
+  struct retro_netpacket_callback callback;
+  int has_callback;
+  int socket;
+  uint16_t id;
+  struct sockaddr_un peer;
+  int started;
+} linked = {.socket = -1};
+
 static bool environment(unsigned command, void *data) {
   switch (command & ~RETRO_ENVIRONMENT_EXPERIMENTAL) {
     case RETRO_ENVIRONMENT_GET_CAN_DUPE:
@@ -414,8 +430,18 @@ static bool environment(unsigned command, void *data) {
     case RETRO_ENVIRONMENT_GET_LANGUAGE:
       *(unsigned *)data = RETRO_LANGUAGE_ENGLISH;
       return true;
-    case RETRO_ENVIRONMENT_GET_USERNAME:
-      *(const char **)data = "Player";
+    case RETRO_ENVIRONMENT_GET_USERNAME: {
+      // A linked DS takes its wireless address from it (melonDS DS's "from-username"), so each console of a linked
+      // game is given its own
+      const char *name = getenv("USERNAME");
+      *(const char **)data = name && *name ? name : "Player";
+      return true;
+    }
+    case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
+      if (data) {
+        linked.callback = *(const struct retro_netpacket_callback *)data;
+        linked.has_callback = 1;
+      }
       return true;
     case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
       *(bool *)data = false;
@@ -436,6 +462,87 @@ static bool environment(unsigned command, void *data) {
       return true;
   }
   return false;
+}
+
+// ---- Linked consoles ----
+//
+// Two consoles of one game, each in its own process on the NAS, talking as the DS's local wireless does: the core
+// sends its packets through the frontend (libretro's netpacket interface), and here they go to the other console over
+// a local socket. LINK_SELF and LINK_PEER are the two sockets' paths, and LINK_ID is 0 for the console that hosts and 1
+// for the other. Two consoles on one machine answer each other in well under a millisecond, which the DS needs
+
+static void RETRO_CALLCONV link_send(int flags, const void *buf, size_t len, uint16_t client_id) {
+  (void)flags;
+  (void)client_id;
+  // Only the other console to send to; nothing to flush, as every packet goes at once
+  if (!buf || !len || linked.socket < 0) {
+    return;
+  }
+  sendto(linked.socket, buf, len, MSG_DONTWAIT, (struct sockaddr *)&linked.peer, sizeof linked.peer);
+}
+
+static void RETRO_CALLCONV link_poll_receive(void) {
+  static uint8_t packet[65536];
+  if (linked.socket < 0) {
+    return;
+  }
+  for (;;) {
+    ssize_t got = recv(linked.socket, packet, sizeof packet, MSG_DONTWAIT);
+    if (got <= 0) {
+      return;
+    }
+    linked.callback.receive(packet, (size_t)got, linked.id == 0 ? 1 : 0);
+  }
+}
+
+// Starts the link if this console has one and its core can use it: 1 if started
+static int link_start(void) {
+  const char *self = getenv("LINK_SELF"), *peer = getenv("LINK_PEER"), *id = getenv("LINK_ID");
+  if (!self || !peer || !id || !*self || !*peer) {
+    return 0;
+  }
+  if (!linked.has_callback || !linked.callback.start || !linked.callback.receive) {
+    fprintf(stderr, "[host] the core can't link consoles\n");
+    return 0;
+  }
+  struct sockaddr_un own = {.sun_family = AF_UNIX};
+  strncpy(own.sun_path, self, sizeof own.sun_path - 1);
+  linked.peer.sun_family = AF_UNIX;
+  strncpy(linked.peer.sun_path, peer, sizeof linked.peer.sun_path - 1);
+  linked.socket = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+  unlink(self);
+  if (linked.socket < 0 || bind(linked.socket, (struct sockaddr *)&own, sizeof own) != 0) {
+    fprintf(stderr, "[host] can't open the link at %s: %s\n", self, strerror(errno));
+    if (linked.socket >= 0) {
+      close(linked.socket);
+    }
+    linked.socket = -1;
+    return 0;
+  }
+  int room = 1 << 20;
+  setsockopt(linked.socket, SOL_SOCKET, SO_SNDBUF, &room, sizeof room);
+  setsockopt(linked.socket, SOL_SOCKET, SO_RCVBUF, &room, sizeof room);
+  linked.id = (uint16_t)atoi(id);
+  linked.callback.start(linked.id, link_send, link_poll_receive);
+  // The host is told the other console has joined: it's there from the start
+  if (linked.id == 0 && linked.callback.connected) {
+    linked.callback.connected(1);
+  }
+  linked.started = 1;
+  fprintf(stderr, "[host] linked as console %u\n", linked.id + 1);
+  return 1;
+}
+
+static void link_stop(void) {
+  if (linked.started && linked.callback.stop) {
+    linked.callback.stop();
+  }
+  linked.started = 0;
+  if (linked.socket >= 0) {
+    close(linked.socket);
+    unlink(getenv("LINK_SELF"));
+  }
+  linked.socket = -1;
 }
 
 // ---- Starting, running and stopping ----
@@ -495,6 +602,7 @@ int fe_load(const char *core_path, const char *game_path, const char *system_pat
     if (hw.context_reset) hw.context_reset();
   }
   for (unsigned port = 0; port < 4; port++) core.set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+  link_start();
   return 0;
 }
 
@@ -506,7 +614,15 @@ double fe_aspect(void) {
 }
 double fe_sample_rate(void) { return av.timing.sample_rate; }
 
-void fe_run(void) { core.run(); }
+void fe_run(void) {
+  if (linked.started) {
+    link_poll_receive();
+    if (linked.callback.poll) {
+      linked.callback.poll();
+    }
+  }
+  core.run();
+}
 void fe_reset(void) { core.reset(); }
 
 // The game as it is now, to be put back later: a save state
@@ -519,6 +635,7 @@ int fe_save_size(void) { return (int)core.get_memory_size(RETRO_MEMORY_SAVE_RAM)
 void *fe_save_data(void) { return core.get_memory_data(RETRO_MEMORY_SAVE_RAM); }
 
 void fe_unload(void) {
+  link_stop();
   if (hw_render && hw.context_destroy) hw.context_destroy();
   core.unload_game();
   core.deinit();

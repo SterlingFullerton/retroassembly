@@ -20,8 +20,17 @@ export function getNASCores() {
   return cores
 }
 
-/** Runs a game from the library on the NAS, and is the code that joins it */
-export async function startNASGame(start: { controls: string; core: string; rom: string; saveFileType?: string }) {
+/**
+ * Runs a game from the library on the NAS, and is the code that joins it. A linked one is a DS game on two consoles
+ * linked as by local wireless, the starter's and a friend's: the code is the starter's
+ */
+export async function startNASGame(start: {
+  controls: string
+  core: string
+  linked?: boolean
+  rom: string
+  saveFileType?: string
+}) {
   const { code } = await parseResponse(client.nas_games.$post({ json: start }))
   return code
 }

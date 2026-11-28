@@ -507,6 +507,8 @@ export default function JoinPage() {
       {playing && onNAS && menuOpen && found ? (
         <ServerPauseMenu
           code={joinedCode}
+          friendCode={found.invitation.friendCode}
+          linked={Boolean(found.invitation.linked)}
           onClose={() => setMenuOpen(false)}
           onEnd={endGame}
           onLeave={leave}

@@ -34,6 +34,8 @@ interface PauseMenuProps {
   /** Everyone in a game on the server, this player among them */
   players?: number
   saveCount?: number
+  /** Whether the game has snapshots to save and load: a linked console on the server has none */
+  snapshots?: boolean
   title: string
   where: 'device' | 'server'
 }
@@ -151,6 +153,7 @@ export function PauseMenu({
   pages,
   players,
   saveCount,
+  snapshots = true,
   title,
   where,
 }: Readonly<PauseMenuProps>) {
@@ -247,20 +250,24 @@ export function PauseMenu({
                 label={t('game.resume')}
                 onClick={onResume}
               />
-              <PauseMenuItem icon={saveIcon} label={saveLabel} onClick={save} testId='pause-save' />
-              <PauseMenuItem
-                className='pause-item-load'
-                end={
-                  <>
-                    {saveCount || null}
-                    {chevron}
-                  </>
-                }
-                icon='icon-[mdi--history]'
-                label={t('pauseMenu.load')}
-                onClick={() => onOpen('load')}
-                testId='pause-load'
-              />
+              {snapshots ? (
+                <>
+                  <PauseMenuItem icon={saveIcon} label={saveLabel} onClick={save} testId='pause-save' />
+                  <PauseMenuItem
+                    className='pause-item-load'
+                    end={
+                      <>
+                        {saveCount || null}
+                        {chevron}
+                      </>
+                    }
+                    icon='icon-[mdi--history]'
+                    label={t('pauseMenu.load')}
+                    onClick={() => onOpen('load')}
+                    testId='pause-load'
+                  />
+                </>
+              ) : null}
               <Divider />
               <PauseMenuItem
                 className='pause-item-controls'

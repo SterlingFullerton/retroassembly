@@ -37,6 +37,12 @@ type Game struct {
 	Started      time.Time `json:"started"`
 	StartedBy    string    `json:"startedBy"`
 	Title        string    `json:"title"`
+	// A console of a linked pair: 1 for the starter's, 2 for a friend's, and the other console's id
+	Console    int    `json:"console,omitempty"`
+	LinkedWith string `json:"linkedWith,omitempty"`
+	// The emulator and kind of file the game's own save is kept as in the player's library, when not its own
+	KeepAsCore     string `json:"keepAsCore,omitempty"`
+	KeepAsFileType string `json:"keepAsFileType,omitempty"`
 }
 
 // Start is what the service needs to run a game: the emulator, and the game's file, relative to the games folder it
@@ -62,6 +68,9 @@ type Start struct {
 	SaveType  string `json:"saveType,omitempty"`
 	StartedBy string `json:"startedBy"`
 	Title     string `json:"title"`
+	// The emulator and kind of file the game's own save is kept as in the player's library, when not its own
+	KeepAsCore     string `json:"keepAsCore,omitempty"`
+	KeepAsFileType string `json:"keepAsFileType,omitempty"`
 }
 
 // File is a file by its name, with its content
@@ -133,6 +142,23 @@ func (c *Client) Start(ctx context.Context, start Start) (Game, error) {
 	var game Game
 	err := c.call(ctx, http.MethodPost, "/games", start, &game)
 	return game, err
+}
+
+// StartLinked runs two consoles of a game linked as by a DS's local wireless, the starter's and a friend's, and
+// answers with both, the starter's first, once they're ready for players
+func (c *Client) StartLinked(ctx context.Context, start Start) ([]Game, error) {
+	body := struct {
+		Start
+		Linked bool `json:"linked"`
+	}{start, true}
+	var games []Game
+	if err := c.call(ctx, http.MethodPost, "/games", body, &games); err != nil {
+		return nil, err
+	}
+	if len(games) != 2 {
+		return nil, ErrUnavailable
+	}
+	return games, nil
 }
 
 // List is the games running

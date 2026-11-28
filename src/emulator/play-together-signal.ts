@@ -17,6 +17,10 @@ export interface Invitation {
   platform?: string
   /** The game's name */
   title: string
+  /** A console of a linked pair on the server, which has no snapshots */
+  linked?: boolean
+  /** For the starter's console of a linked pair, the code that joins the friend's */
+  friendCode?: string
 }
 
 /**

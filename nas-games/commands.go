@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -34,19 +37,68 @@ func listenForCommands(channel *webrtc.DataChannel) {
 		if json.Unmarshal(message.Data, &command) != nil {
 			return
 		}
-		switch command.Do {
-		case "pause":
-			paused.Store(true)
-		case "resume":
-			paused.Store(false)
-		case "restart":
-			restarting.Store(true)
-			paused.Store(false)
-		default:
-			return
+		if apply(command.Do) {
+			tellPartner(command.Do)
 		}
-		tellPlayers()
 	})
+}
+
+// apply does what a pause menu asks, and tells the players: whether it was something to do
+func apply(do string) bool {
+	switch do {
+	case "pause":
+		paused.Store(true)
+	case "resume":
+		paused.Store(false)
+	case "restart":
+		restarting.Store(true)
+		paused.Store(false)
+	default:
+		return false
+	}
+	tellPlayers()
+	return true
+}
+
+// The other console of a linked pair (serve.go), which pauses, resumes and restarts with this one: paused alone, it
+// would leave the other's wireless waiting on it, and restarted alone, the two would no longer match. Told over a
+// socket of their own, PARTNER_SELF and PARTNER_PEER, which works while the game stands paused
+var partner struct {
+	conn *net.UnixConn
+	peer *net.UnixAddr
+}
+
+// listenToPartner opens this console's end, if it has a partner, and does what the partner's players ask
+func listenToPartner() {
+	self, peer := os.Getenv("PARTNER_SELF"), os.Getenv("PARTNER_PEER")
+	if self == "" || peer == "" {
+		return
+	}
+	_ = os.Remove(self)
+	conn, err := net.ListenUnixgram("unixgram", &net.UnixAddr{Name: self, Net: "unixgram"})
+	if err != nil {
+		log.Printf("can't listen for the other console: %v", err)
+		return
+	}
+	partner.conn, partner.peer = conn, &net.UnixAddr{Name: peer, Net: "unixgram"}
+	go func() {
+		buffer := make([]byte, 64)
+		for {
+			n, err := conn.Read(buffer)
+			if err != nil {
+				return
+			}
+			// Done here and not passed back: the partner has done it already
+			apply(string(buffer[:n]))
+		}
+	}()
+}
+
+// tellPartner asks the other console of a linked pair to do what this one's players asked
+func tellPartner(do string) {
+	if partner.conn != nil {
+		_, _ = partner.conn.WriteToUnix([]byte(do), partner.peer)
+	}
 }
 
 type numbers struct {

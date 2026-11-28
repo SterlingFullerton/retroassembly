@@ -76,6 +76,10 @@ func (s *Server) nasListings(ctx context.Context) []together.Listing {
 	}
 	listings := make([]together.Listing, 0, len(games))
 	for _, game := range games {
+		// A linked pair is listed by its friend's console: the starter's is theirs, and joined from the game's page
+		if game.Console == 1 {
+			continue
+		}
 		listings = append(listings, together.Listing{
 			Code: nasCode(game.ID), Controls: game.Controls, Host: s.nasStarter(ctx, game), Title: game.Title,
 		})
@@ -109,9 +113,14 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 		return
 	}
 	s.nasPlaces.Store(nasPlaceKey(code, scope), player)
-	writeJSON(w, http.StatusOK, together.Invitation{
-		Controls: game.Controls, Core: game.Core, Host: s.nasStarter(r.Context(), game), Offer: offer, Platform: game.Platform, Title: game.Title,
-	})
+	invitation := together.Invitation{
+		Controls: game.Controls, Core: game.Core, Host: s.nasStarter(r.Context(), game), Linked: game.LinkedWith != "",
+		Offer: offer, Platform: game.Platform, Title: game.Title,
+	}
+	if game.Console == 1 && game.LinkedWith != "" {
+		invitation.FriendCode = nasCode(game.LinkedWith)
+	}
+	writeJSON(w, http.StatusOK, invitation)
 }
 
 func (s *Server) answerNASInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope, code, id, answer string) {
@@ -149,8 +158,32 @@ func (s *Server) nasCores(w http.ResponseWriter, r *http.Request, _ library.Scop
 	writeJSON(w, http.StatusOK, s.nasCoresCache.cores)
 }
 
+// A linked DS game runs two consoles of melonDS DS, whose wireless the service links: the starter's and a friend's
+const linkedCore = "melondsds"
+
+// melonDS DS's settings for a linked console: each console's wireless address made from its player's name, so the two
+// tell each other apart; drawn by the processor, as the service has no screen; a DS, not a DSi; and no pointer dot
+// on the touch screen, which the player's own pointer is
+var linkedOptions = map[string]string{
+	"melonds_console_mode":     "ds",
+	"melonds_mac_address_mode": "from-username",
+	"melonds_render_mode":      "software",
+	"melonds_show_cursor":      "disabled",
+}
+
+// The emulator, and kind of file, whose saves a linked game starts from and keeps its starter's save as: melonDS's
+// plain .sav, the same as melonDS DS's own
+const (
+	linkedSaveCore = "melonds"
+	linkedSaveType = "sav"
+)
+
+// errNotLinkable is a linked game asked for of a console that has no wireless to link
+var errNotLinkable = failure.New(http.StatusBadRequest, "Only DS games can be played with a friend on the server")
+
 // startNASGame runs a game from the library on the NAS, with the emulator the player has chosen for its console and
-// the on-screen controls their browser shows for it. It answers with the code that joins it
+// the on-screen controls their browser shows for it. It answers with the code that joins it. With "linked", a DS game
+// runs as two linked consoles, and the answer has the friend's code too
 func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope library.Scope) {
 	if s.nasGames == nil {
 		writeError(w, nasgames.ErrOff)
@@ -173,13 +206,22 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	if check.Failed(w) {
 		return
 	}
+	linked, isBool := object["linked"].(bool)
+	if _, present := object["linked"]; present && !isBool {
+		writeError(w, failure.New(http.StatusBadRequest, "linked must be true or false"))
+		return
+	}
+	if linked {
+		core, saveType = linkedCore, ""
+	}
 	// A game of this ROM that this player started and is still running is joined again rather than started twice: a
 	// second press, or one after a connection that didn't come up, lands in the same game
 	if games, err := s.nasGames.List(r.Context()); err == nil {
 		for _, game := range games {
+			// A linked game is joined again on the starter's console, and a game of one console only as one
 			if !game.Ended && game.StartedBy == scope.User.ID && game.LibraryOwner == scope.LibraryOwnerID &&
-				game.Rom == romID && game.Core == core {
-				writeJSON(w, http.StatusOK, map[string]string{"code": nasCode(game.ID)})
+				game.Rom == romID && game.Core == core && (linked == (game.Console == 1)) && game.Console != 2 {
+				writeJSON(w, http.StatusOK, nasCodes(game))
 				return
 			}
 		}
@@ -199,6 +241,10 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 		writeError(w, err)
 		return
 	}
+	if linked && platform != "nds" {
+		writeError(w, errNotLinkable)
+		return
+	}
 	// The service has the same games folder: a game's file is found there by its path inside it
 	file, isGame := strings.CutPrefix(fileID, "roms/")
 	if !isGame {
@@ -207,7 +253,11 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 	}
 	// It starts with the player's latest save of the game with this emulator, made here or on the NAS
 	var save []byte
-	if latest, err := library.LatestGameSave(r.Context(), scope, core, romID); err == nil && latest != nil {
+	saveCore := core
+	if linked {
+		saveCore = linkedSaveCore
+	}
+	if latest, err := library.LatestGameSave(r.Context(), scope, saveCore, romID); err == nil && latest != nil {
 		save, _ = scope.Storage.Read(latest.FileID)
 	}
 	bioses, options, err := s.nasSettings(r, scope, platform, core)
@@ -229,17 +279,41 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 			}
 		}
 	}
-	game, err := s.nasGames.Start(r.Context(), nasgames.Start{
+	start := nasgames.Start{
 		Bioses: bioses, Controls: controls, Core: core, Discs: discs, File: file, FileName: fileName,
 		LibraryOwner: scope.LibraryOwnerID, Options: options, Platform: platform, Rom: romID, Save: save,
 		SaveType: saveType, StartedBy: scope.User.ID,
 		Title: title,
-	})
+	}
+	if !linked {
+		game, err := s.nasGames.Start(r.Context(), start)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, nasCodes(game))
+		return
+	}
+	for key, value := range linkedOptions {
+		start.Options[key] = value
+	}
+	start.KeepAsCore, start.KeepAsFileType = linkedSaveCore, linkedSaveType
+	games, err := s.nasGames.StartLinked(r.Context(), start)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"code": nasCode(game.ID)})
+	writeJSON(w, http.StatusOK, nasCodes(games[0]))
+}
+
+// nasCodes is the code that joins a game, and for the starter's console of a linked pair, the code that joins the
+// friend's
+func nasCodes(game nasgames.Game) map[string]string {
+	codes := map[string]string{"code": nasCode(game.ID)}
+	if game.Console == 1 && game.LinkedWith != "" {
+		codes["friendCode"] = nasCode(game.LinkedWith)
+	}
+	return codes
 }
 
 // stopNASGame ends a game on the NAS: for whoever started it, or an admin
@@ -285,7 +359,8 @@ func (s *Server) collectNASSavesOnce(ctx context.Context) {
 		return
 	}
 	for _, game := range games {
-		if game.StartedBy == "" || game.Rom == "" || game.LibraryOwner == "" {
+		// A friend's console of a linked pair starts from no save, and its save isn't the starter's to keep
+		if game.StartedBy == "" || game.Rom == "" || game.LibraryOwner == "" || game.Console == 2 {
 			continue
 		}
 		content, sha1, err := s.nasGames.Save(ctx, game.ID)
@@ -299,6 +374,14 @@ func (s *Server) collectNASSavesOnce(ctx context.Context) {
 		save := library.NewGameSave{Content: bytes.NewReader(content), Core: game.Core, Rom: game.Rom}
 		if game.SaveType != "" {
 			save.FileType = &game.SaveType
+		}
+		// Kept as another emulator's save, where its saves are the same: a linked DS game's as melonDS's
+		if game.KeepAsCore != "" {
+			save.Core = game.KeepAsCore
+			save.FileType = nil
+			if game.KeepAsFileType != "" {
+				save.FileType = &game.KeepAsFileType
+			}
 		}
 		if _, err := library.CreateGameSave(ctx, scope, save); err != nil {
 			log.Printf("nas games: keeping the save of %s (%s): %v", game.ID, game.Title, err)

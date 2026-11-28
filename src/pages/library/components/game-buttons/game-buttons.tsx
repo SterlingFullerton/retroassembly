@@ -197,7 +197,13 @@ function GameButtonsContent({
 
   // A choice in the menu beside Continue
   async function handleSelectWay(way: string) {
-    await (way === 'play-on-server' ? server.start() : startFresh())
+    if (way === 'play-on-server') {
+      await server.start()
+    } else if (way === 'play-with-friend') {
+      await server.start({ linked: true })
+    } else {
+      await startFresh()
+    }
   }
 
   // Start fresh, from the menu beside Continue: the game starts as Start starts it, with its progress on Continue
@@ -415,6 +421,16 @@ function GameButtonsContent({
             icon: 'icon-[mdi--server]',
             label: t('nasGames.startOnServer'),
             testId: 'play-on-server',
+          },
+        ]
+      : []),
+    ...(server.linkable
+      ? [
+          {
+            detail: t('nasGames.withFriendNote'),
+            icon: 'icon-[mdi--account-multiple]',
+            label: t('nasGames.withFriend'),
+            testId: 'play-with-friend',
           },
         ]
       : []),

@@ -22,6 +22,19 @@ RUN git clone https://github.com/libretro/melonDS.git /melonds && cd /melonds \
     && git checkout 4081e8358e66f1ea11879560be6b813dfeaab75a && git apply /melonds.patch \
     && make platform=unix HAVE_OPENGL=0 HAVE_WIFI=0 -j"$(nproc)"
 
+# melonDS DS, the build of melonDS that links two consoles as by local wireless: built from its 1.4.0 source with a patch
+# (patches/melondsds.patch) that handles its wireless packets as melonDS's own multiplayer on one machine does, replies
+# kept apart from other packets and waits timed by the clock, so two linked consoles don't keep waiting on each other
+FROM debian:trixie AS melondsds
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake git pkg-config \
+      libgl-dev libegl-dev python3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY patches/melondsds.patch /melondsds.patch
+RUN git clone --depth 1 -b v1.4.0 https://github.com/JesseTG/melonds-ds.git /melondsds && cd /melondsds \
+    && git apply /melondsds.patch \
+    && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j"$(nproc)" \
+    && cp "$(find build -name melondsds_libretro.so | head -1)" /melondsds_libretro.so
+
 FROM debian:trixie
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libegl1 libgl1 libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers libyuv0 libopus0 libspeexdsp1 libx264-164 \
@@ -44,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends patchelf \
     && for core in /cores/*.so; do patchelf --clear-execstack "$core"; done \
     && apt-get purge -y curl unzip patchelf && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 COPY --from=melonds /melonds/melonds_libretro.so /cores/melonds_libretro.so
+COPY --from=melondsds /melondsds_libretro.so /cores/melondsds_libretro.so
 COPY --from=build /host /host
 ENTRYPOINT ["/host"]
 CMD ["serve"]
