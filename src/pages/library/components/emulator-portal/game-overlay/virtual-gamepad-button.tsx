@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type ButtonHTMLAttributes, type PointerEvent, useEffect, useId, useMemo, useState } from 'react'
+import { type ButtonHTMLAttributes, type PointerEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
@@ -162,6 +162,15 @@ export function VirtualGamepadButton({
 
   const resolvedButtonNames = useMemo(() => buttonNames || (buttonName ? [buttonName] : []), [buttonName, buttonNames])
 
+  // The callbacks are read when a press starts or ends, not kept: a parent drawn again with new ones, as the join page
+  // is each second, doesn't register the button again, which would let go of a direction still held
+  const callbacks = useRef({ onVirtualPressEnd, onVirtualPressStart })
+  useEffect(() => {
+    callbacks.current = { onVirtualPressEnd, onVirtualPressStart }
+  })
+  const hasStart = Boolean(onVirtualPressStart)
+  const hasEnd = Boolean(onVirtualPressEnd)
+
   useEffect(() => {
     virtualGamepadButtons.set(id, {
       activePointerIds: new Set(),
@@ -169,8 +178,8 @@ export function VirtualGamepadButton({
       emulator,
       // A button without a group is a group of its own, which no other finger can slide onto
       group: group ?? id,
-      onVirtualPressEnd,
-      onVirtualPressStart,
+      onVirtualPressEnd: hasEnd ? () => callbacks.current.onVirtualPressEnd?.() : undefined,
+      onVirtualPressStart: hasStart ? () => callbacks.current.onVirtualPressStart?.() : undefined,
       setTouching,
     })
 
@@ -182,18 +191,7 @@ export function VirtualGamepadButton({
         virtualGamepadButtons.delete(id)
       }
     }
-  }, [emulator, group, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
-
-  useEffect(() => {
-    const button = virtualGamepadButtons.get(id)
-    if (button) {
-      button.buttonNames = resolvedButtonNames
-      button.emulator = emulator
-      button.group = group ?? id
-      button.onVirtualPressEnd = onVirtualPressEnd
-      button.onVirtualPressStart = onVirtualPressStart
-    }
-  }, [emulator, group, id, onVirtualPressEnd, onVirtualPressStart, resolvedButtonNames])
+  }, [emulator, group, hasEnd, hasStart, id, resolvedButtonNames])
 
   useEffect(() => {
     const abortController = new AbortController()

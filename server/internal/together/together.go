@@ -58,6 +58,9 @@ type Invitation struct {
 	// friend's console
 	Linked     bool   `json:"linked,omitempty"`
 	FriendCode string `json:"friendCode,omitempty"`
+	// A game on the server that the player looking it up started, so they get its starter's menu however they came back
+	// to it. Never taken from a person's own invitation
+	StartedHere bool `json:"startedHere,omitempty"`
 }
 
 // Listing is a game shown to everyone signed in: what it is, whose, and the code that joins it

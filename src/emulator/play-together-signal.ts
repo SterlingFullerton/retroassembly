@@ -23,6 +23,8 @@ export interface Invitation {
   friendCode?: string
   /** For a game on the server, the place in it kept for this browser, which its answer is for */
   place?: string
+  /** A game on the server that the player looking it up started, who can end it */
+  startedHere?: boolean
 }
 
 /**

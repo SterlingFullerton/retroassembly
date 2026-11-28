@@ -1,11 +1,21 @@
 import { clsx } from 'clsx'
-import { type PointerEvent as ReactPointerEvent, type SubmitEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { delay, noop } from 'es-toolkit'
+import {
+  type PointerEvent as ReactPointerEvent,
+  type SubmitEvent,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
+import { goesFullscreen } from '#@/constants/preference.ts'
 import { followVolume } from '#@/emulator/audio.ts'
 import { getPictureLayout, type PictureArea } from '#@/emulator/game-picture.ts'
-import { isNASCode, stopNASGame } from '#@/emulator/nas-games.ts'
+import { failureWordsFor, isGameGone, isNASCode, normalizeCode, stopNASGame } from '#@/emulator/nas-games.ts'
 import { connectGuestOnScreenGamepad } from '#@/emulator/on-screen-gamepad.ts'
 import { findInvitation, getOwnAddress, listOpenGames, type OpenGame } from '#@/emulator/play-together-signal.ts'
 import { encodePadState, joinGame, type NASCommand, type NASNumbers, type Stylus } from '#@/emulator/play-together.ts'
@@ -13,7 +23,7 @@ import { getConsoleKeys } from '#@/input/console-keys.ts'
 import { getConsoleKeyInputs, getKeyButtons, type KeyInputs, mergePads, stickAxes } from '#@/input/guest-pad.ts'
 import { getPadKeys } from '#@/input/pad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
-import { useSpatialNavigationPaused } from '#@/pages/library/atoms.ts'
+import { useGameJoined, useSpatialNavigationPaused } from '#@/pages/library/atoms.ts'
 import { TestSessionProvider } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
 import { ConsoleControls } from '#@/pages/library/components/emulator-portal/game-overlay/console-controls.tsx'
 import {
@@ -22,15 +32,23 @@ import {
   Section,
   StreamSection,
 } from '#@/pages/library/components/emulator-portal/game-overlay/perf-readout.tsx'
+import { VirtualGamepadButton } from '#@/pages/library/components/emulator-portal/game-overlay/virtual-gamepad-button.tsx'
+import { useFocusIndicator } from '#@/pages/library/hooks/use-focus-indicator.ts'
+import { useGamepadMapping } from '#@/pages/library/hooks/use-gamepad-mapping.ts'
+import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useKeyboardMapping } from '#@/pages/library/hooks/use-keyboard-mapping.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
 import { usePerfOverlay } from '#@/pages/library/hooks/use-perf-overlay.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { useStreamStats } from '#@/pages/library/hooks/use-stream-stats.ts'
+import { useFollowTouchControls, useTouchControls } from '#@/pages/library/hooks/use-touch-controls.ts'
 import { getKeyNameFromCode } from '#@/pages/library/utils/keyboard.ts'
-import { cancel } from '#@/pages/library/utils/spatial-navigation.ts'
+import { cancel, holdLayer } from '#@/pages/library/utils/spatial-navigation.ts'
 import { routes } from '#@/pages/routes.ts'
-import { getRomGoodcodes } from '#@/utils/client/library.ts'
+import { Gamepad } from '#@/utils/client/gamepad.ts'
+import { holdsShortcut, remapController, serverGameTitle } from './controller.ts'
 import { ServerPauseMenu } from './server-pause-menu.tsx'
+import { canSetVolume, closeSound, contextReady, playThroughContext, readySound } from './sound.ts'
 
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
 // device's keys, controller or on-screen controls playing as the next player.
@@ -44,20 +62,32 @@ import { ServerPauseMenu } from './server-pause-menu.tsx'
 // The controller is sent when it changes, and again this often in case a message was lost on the way
 const resendEvery = 100
 const sendEvery = 16
-// How often the list of games is looked at again
+// How often the list of games is looked at again, while the page is in view
 const listEvery = 3000
 // How long the two devices are given to reach each other before it's called off
 const connectWithin = 20_000
+// A game on the NAS sends its numbers every second: this long without them, the connection is in trouble
+const quietFor = 4000
 
-// Choosing a game, reaching its host, playing, or one of the two ways it stops
-type Stage = 'choosing' | 'connecting' | 'ended' | 'playing' | 'unreachable'
+// Choosing a game, reaching its host, playing, or one of the ways it stops: the game ended, it was never reached, or
+// the connection to a game on the NAS was lost while the game may still be running
+type Stage = 'choosing' | 'connecting' | 'ended' | 'lost' | 'playing' | 'unreachable'
 
 type Found = Awaited<ReturnType<typeof findInvitation>>
+
+// A join that didn't work: what's said, and whether it was about a code typed in the box
+interface Failure {
+  typed: boolean
+  words: string
+}
 
 const codeLength = 6
 const pill =
   'flex min-h-12 items-center gap-3 rounded-full border border-solid border-white px-5 py-2 hover:bg-white/15 disabled:opacity-50'
 const focusStyle = JSON.stringify({ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: '24px' })
+// The top bar's buttons, as a game on this device has them: squares a finger can hit
+const barIcon = 'absolute top-safe flex size-11 items-center justify-center rounded hover:bg-white/15'
+const keypadControls = new Set(['atari5200', 'colecovision'])
 
 /** The first real controller connected to this device */
 function getController() {
@@ -70,6 +100,21 @@ function findConsole(platform: string, core: string) {
     return resolveConsole(platform, core)
   } catch {
     return undefined
+  }
+}
+
+/** Fullscreen, where the player has games go fullscreen, in the press that joins while the browser still allows it */
+function goFullscreen(fullscreen: Parameters<typeof goesFullscreen>[0]) {
+  if (goesFullscreen(fullscreen) && !document.fullscreenElement) {
+    // oxlint-disable-next-line promise/prefer-await-to-then -- not waited for: the game is joined all the same
+    document.body.requestFullscreen?.().catch(noop)
+  }
+}
+
+function leaveFullscreen() {
+  if (document.fullscreenElement) {
+    // oxlint-disable-next-line promise/prefer-await-to-then -- nothing to wait for
+    document.exitFullscreen().catch(noop)
   }
 }
 
@@ -89,28 +134,47 @@ function NASSection({ numbers }: Readonly<{ numbers: NASNumbers }>) {
 export default function JoinPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const notify = useNotice()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   // The code of the game joined, and whether this player started it, which only a game on the NAS can be
   const [joinedCode, setJoinedCode] = useState('')
-  const startedHere = searchParams.get('started') === '1'
+  const [startedHere, setStartedHere] = useState(false)
   const onNAS = isNASCode(joinedCode)
   const [menuOpen, setMenuOpen] = useState(false)
+  // A guest of a person's game has no pause menu: pause asks whether to leave instead
+  const [leaveAsked, setLeaveAsked] = useState(false)
+  const overlayOpen = menuOpen || leaveAsked
   const { preference } = usePreference()
   const [nasNumbers, setNASNumbers] = useState<NASNumbers>()
   const sendCommand = useRef<(command: NASCommand) => void>(undefined)
+  // Sends the controller as it is now, rather than at the next send
+  const sendNow = useRef<() => void>(undefined)
   const keyboard = useKeyboardMapping()
+  const gamepadMapping = useGamepadMapping()
   const [stage, setStage] = useState<Stage>('choosing')
   const [games, setGames] = useState<OpenGame[]>()
   const [code, setCode] = useState('')
-  const [notFound, setNotFound] = useState(false)
+  // The code being looked up, while it is: the list and the box wait for it, so a second press can't join twice
+  const [pending, setPending] = useState<string>()
+  const joining = useRef(false)
+  // The starter's End under way: the game stopping is then no news, and the menu stays up until the page is left
+  const ending = useRef(false)
+  const [failure, setFailure] = useState<Failure>()
   const [found, setFound] = useState<Found>()
   // Where the game's picture is in what the host sends, which is their whole screen
   const [area, setArea] = useState<PictureArea>()
   // The connection to the host once it's made: what the performance overlay reads the stream from
   const [connection, setConnection] = useState<RTCPeerConnection>()
+  // The connection to a game on the NAS has gone quiet or dropped, and may come back
+  const [trouble, setTrouble] = useState(false)
   const [perfOverlay] = usePerfOverlay()
   const stream = useStreamStats(perfOverlay ? connection : undefined, 'guest')
   const video = useRef<HTMLVideoElement>(null)
+  const picture = useRef<MediaStream>(undefined)
+  // Whether the game's sound plays, or waits for a press to let it in; and whether the picture itself waits for one
+  const [sound, setSound] = useState<'blocked' | 'off' | 'on'>('off')
+  const [startBlocked, setStartBlocked] = useState(false)
   // Everything this device is playing with: keys held, on-screen buttons held, and the on-screen sticks
   const keysHeld = useRef(new Set<RetroPadButton>())
   // Keys held that push a stick, such as the N64's arrows
@@ -130,19 +194,56 @@ export default function JoinPage() {
     pressDown: (button: string) => touchHeld.current.add(button as RetroPadButton),
     pressUp: (button: string) => touchHeld.current.delete(button as RetroPadButton),
   }))
-  const touch = globalThis.matchMedia?.('(pointer: coarse)').matches ?? false
+  // On-screen controls by how the game is played, as on this device: a touch brings them, a real key puts them away,
+  // and a controller connected puts them away until the toggle brings them back
+  useFollowTouchControls()
+  const touchControls = useTouchControls()
+  const { connected } = useGamepads()
+  const [controlsShown, setControlsShown] = useState(!connected)
+  const [wasConnected, setWasConnected] = useState(connected)
+  if (wasConnected !== connected) {
+    setWasConnected(connected)
+    setControlsShown(!connected)
+  }
+  const [keypadOpen, setKeypadOpen] = useState(false)
   const joined = stage === 'connecting' || stage === 'playing'
+  const playing = stage === 'playing'
 
-  // The games to choose from, looked at again every few seconds while choosing
+  // For what outlives a render: the loop that sends the controller, and the listeners
+  const latest = useRef({ menuOpen, onNAS, players: 0 })
+  const gamepadMappings = useRef(preference.input.gamepadMappings)
+  useEffect(() => {
+    latest.current = { menuOpen, onNAS, players: nasNumbers?.players ?? 0 }
+    gamepadMappings.current = preference.input.gamepadMappings
+  })
+
+  // The page is a layer over the library: what's behind it can't be reached by Tab, the arrows or a screen reader
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => (root.current ? holdLayer(root.current) : undefined), [])
+
+  // While a game is reached or played, the phone's bar is put away, as it is under a game on this device
+  const [, setGameJoined] = useGameJoined()
+  useEffect(() => {
+    setGameJoined(joined)
+    return () => setGameJoined(false)
+  }, [joined, setGameJoined])
+
+  // The games to choose from, looked at again every few seconds while choosing and while the page is in view
   useEffect(() => {
     if (joined) {
       return
     }
     let stopped = false
+    let shown = ''
     async function look() {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
       try {
         const list = await listOpenGames()
-        if (!stopped) {
+        const listed = JSON.stringify(list)
+        if (!stopped && listed !== shown) {
+          shown = listed
           setGames(list)
         }
       } catch {
@@ -152,40 +253,158 @@ export default function JoinPage() {
     // oxlint-disable-next-line typescript/no-floating-promises -- look() answers for its own failures
     look()
     const timer = setInterval(look, listEvery)
+    const abortController = new AbortController()
+    document.addEventListener('visibilitychange', look, { signal: abortController.signal })
     return () => {
       stopped = true
       clearInterval(timer)
+      abortController.abort()
     }
   }, [joined])
 
-  // Joining is the guest's own press, which sound can't start without
-  async function join(joinCode: string) {
-    setNotFound(false)
+  /**
+   * Joins a game: the guest's own press, which sound can't start without. `arrived` is one started from its page, whose
+   * code was never typed; `rejoin` is one whose connection was lost
+   */
+  async function join(joinCode: string, { arrived = false, rejoin = false, started = false, typed = false } = {}) {
+    if (joining.current) {
+      return
+    }
+    joining.current = true
+    readySound()
+    if (!arrived) {
+      goFullscreen(preference.emulator.fullscreen)
+    }
+    const normalized = normalizeCode(joinCode)
+    setPending(normalized)
+    setFailure(undefined)
     try {
-      setFound(await findInvitation(joinCode))
-      setJoinedCode(joinCode.replaceAll(/\s/gu, '').toUpperCase())
+      const joining = await findInvitation(normalized)
+      setFound(joining)
+      setJoinedCode(normalized)
+      // The server says whether this player started a game on it, however they came back to it
+      setStartedHere(isNASCode(normalized) && (started || Boolean(joining.invitation.startedHere)))
       setStage('connecting')
-    } catch {
-      setNotFound(true)
+    } catch (error) {
+      leaveFullscreen()
+      let words = failureWordsFor(error)
+      const notFound = isGameGone(error)
+      if (rejoin && notFound) {
+        words = 'playTogether.ended'
+      } else if (arrived && (notFound || !words)) {
+        // A code never typed: the game started, but couldn't be joined
+        words = 'join.joinFailedServer'
+      }
+      setFailure({ typed, words: words ?? 'join.joinFailed' })
+      if (rejoin || arrived) {
+        setStage('choosing')
+      }
+    } finally {
+      joining.current = false
+      setPending(undefined)
     }
   }
 
-  // Arriving with a game's code, from starting it on the NAS, joins it straight away. The press that started it lets
-  // its sound play here
+  // Arriving with a game's code, from starting it on the NAS, joins it straight away, as its starter. The press that
+  // started it lets its sound play here. The code is taken from the address, so going back to it doesn't join again
   const arrivedWith = useRef(searchParams.get('code'))
+  const arrivedStarted = useRef(Boolean((location.state as { started?: boolean } | null)?.started))
   useEffect(() => {
     const arrived = arrivedWith.current
     if (arrived) {
       arrivedWith.current = null
+      // oxlint-disable-next-line typescript/no-floating-promises -- the address is only tidied
+      navigate(routes.libraryJoin, { replace: true })
       // oxlint-disable-next-line typescript/no-floating-promises -- join() answers for its own failures
-      join(arrived)
+      join(arrived, { arrived: true, started: arrivedStarted.current })
     }
   })
 
   async function handleCode(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    await join(code)
+    await join(code, { typed: true })
   }
+
+  async function rejoin() {
+    await join(joinedCode, { rejoin: true, started: startedHere })
+  }
+
+  // The picture plays muted at first, which every browser allows, then the sound is let in where the browser allows it
+  // without a press; otherwise a tap lets it in
+  const showPicture = useEffectEvent(async (given: MediaStream) => {
+    const element = video.current
+    if (!element) {
+      return
+    }
+    if (element.srcObject !== given) {
+      // Given again as the sound joins the picture; setting it again would start the video over
+      picture.current = given
+      element.srcObject = given
+      element.muted = true
+      try {
+        await element.play()
+        setStartBlocked(false)
+      } catch {
+        setStartBlocked(true)
+        return
+      }
+    }
+    if (sound === 'on' || given.getAudioTracks().length === 0) {
+      return
+    }
+    if (!canSetVolume()) {
+      setSound(contextReady() && playThroughContext(given) ? 'on' : 'blocked')
+      return
+    }
+    element.muted = false
+    try {
+      await element.play()
+      setSound('on')
+    } catch {
+      element.muted = true
+      // oxlint-disable-next-line promise/prefer-await-to-then -- it played muted a moment ago
+      element.play().catch(noop)
+      setSound('blocked')
+    }
+  })
+
+  // A press lets the picture and its sound in
+  async function pressForSound() {
+    const element = video.current
+    const given = picture.current
+    if (!element || !given) {
+      return
+    }
+    // Before anything is waited for, while the press still counts
+    readySound()
+    const withSound = canSetVolume() && given.getAudioTracks().length > 0
+    element.muted = !withSound
+    try {
+      await element.play()
+      setStartBlocked(false)
+    } catch {
+      setStartBlocked(true)
+      return
+    }
+    if (withSound || playThroughContext(given)) {
+      setSound('on')
+    }
+  }
+
+  useEffect(() => {
+    if (!playing || (sound !== 'blocked' && !startBlocked)) {
+      return
+    }
+    // Any touch, click or key lets the sound in, not only the prompt
+    const abortController = new AbortController()
+    const options = { capture: true, signal: abortController.signal }
+    document.addEventListener('pointerup', pressForSound, options)
+    document.addEventListener('keydown', pressForSound, options)
+    return () => abortController.abort()
+  })
+
+  // The sound stops with the game
+  useEffect(() => closeSound, [])
 
   useEffect(() => {
     if (!joined || !found) {
@@ -201,6 +420,14 @@ export default function JoinPage() {
         setStage('unreachable')
       }
     }, connectWithin)
+    // A game on the NAS that stops is told apart from a connection to it that's lost, which can be joined again
+    function stopped() {
+      if (ending.current) {
+        return
+      }
+      const state = session?.connection.connectionState
+      setStage(onNAS && state !== 'connected' && state !== 'closed' ? 'lost' : 'ended')
+    }
 
     async function connect(joining: Found) {
       session = await joinGame({
@@ -208,16 +435,17 @@ export default function JoinPage() {
         offer: joining.invitation.offer,
         onEnd() {
           if (reached && !closed) {
-            setStage('ended')
+            stopped()
           }
         },
-        onNumbers: setNASNumbers,
+        onNumbers(numbers) {
+          lastNumbers.current = performance.now()
+          setNASNumbers(numbers)
+        },
         onPicture: setArea,
-        onStream(stream) {
-          // Given again as the sound joins the picture; setting it again would start the video over
-          if (video.current && video.current.srcObject !== stream) {
-            video.current.srcObject = stream
-          }
+        onStream(given) {
+          // oxlint-disable-next-line typescript/no-floating-promises -- showPicture() answers for its own failures
+          showPicture(given)
         },
         reachableAt: await getOwnAddress(),
       })
@@ -231,53 +459,100 @@ export default function JoinPage() {
         if (closed) {
           return
         }
-        if (connection.connectionState === 'connected') {
+        const state = connection.connectionState
+        if (state === 'connected') {
           reached = true
+          lastNumbers.current = performance.now()
+          setTrouble(false)
           setConnection(connection)
           setStage('playing')
-        } else if (connection.connectionState === 'failed' || connection.connectionState === 'closed') {
+        } else if (state === 'disconnected') {
+          setTrouble(reached)
+        } else if (state === 'failed') {
+          if (reached) {
+            stopped()
+          } else {
+            setStage('unreachable')
+          }
+        } else if (state === 'closed' && !ending.current) {
           setStage(reached ? 'ended' : 'unreachable')
         }
       })
       await joining.answer(session.answer)
+      // Left while the answer was on its way
+      if (closed) {
+        return
+      }
 
       let lastSent = ''
       let lastSentAt = 0
-      timer = setInterval(() => {
+      function send(force = false) {
         const keyStick = { axes: stickAxes(stickKeysHeld.current, keyInputsSent.current.sticks) }
-        const pad = mergePads([...keysHeld.current, ...touchHeld.current], [keyStick, getController(), onScreen])
+        const controller = getController()
+        const own = controller ? remapController(controller, gamepadMappings.current[controller.id]) : undefined
+        const pad = mergePads([...keysHeld.current, ...touchHeld.current], [keyStick, own, onScreen])
         const pen = stylusPress.current ?? stylus.current
         stylusPress.current = undefined
         const state = encodePadState(pad, pen).join(',')
         const now = performance.now()
-        if (state !== lastSent || now - lastSentAt >= resendEvery) {
+        if (force || state !== lastSent || now - lastSentAt >= resendEvery) {
           lastSent = state
           lastSentAt = now
           session?.sendPad(pad, pen)
         }
-      }, sendEvery)
+      }
+      sendNow.current = () => send(true)
+      timer = setInterval(send, sendEvery)
     }
-    // A game that can't be joined after all is one that couldn't be reached
+    // A game that can't be joined after all is one that couldn't be reached, unless the server said why: someone else
+    // joining it first, say
     // oxlint-disable-next-line promise/prefer-await-to-then -- an effect can't wait
-    connect(found).catch(() => setStage('unreachable'))
+    connect(found).catch((error: unknown) => {
+      const words = failureWordsFor(error)
+      if (words && !closed) {
+        setFailure({ typed: false, words })
+        setStage('choosing')
+      } else {
+        setStage('unreachable')
+      }
+    })
     return () => {
       closed = true
       clearTimeout(giveUp)
       clearInterval(timer)
+      // A player who goes with the menu open leaves the game running for the others
+      if (onNAS && latest.current.menuOpen) {
+        session?.sendCommand('resume')
+      }
       session?.close()
       sendCommand.current = undefined
+      sendNow.current = undefined
       setConnection(undefined)
       setNASNumbers(undefined)
+      setTrouble(false)
       setMenuOpen(false)
+      setLeaveAsked(false)
     }
   }, [joined, found, onScreen, onNAS])
 
-  const playing = stage === 'playing'
+  // A game on the NAS that goes quiet, or whose connection drops, is said to be in trouble until it's heard again
+  const lastNumbers = useRef(0)
+  useEffect(() => {
+    if (!playing || !onNAS) {
+      return
+    }
+    const timer = setInterval(() => {
+      const quiet = performance.now() - lastNumbers.current > quietFor
+      setTrouble(quiet || connection?.connectionState === 'disconnected')
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [playing, onNAS, connection])
+
   // The top of the controls that a game is kept above in portrait, as it is on this device: the DS's, Lynx's and
   // WonderSwan's. The picture then takes the space above them, from the top of the screen
   const controlsTop = useRef<HTMLDivElement>(null)
   const [room, setRoom] = useState<number>()
-  const showControls = playing && touch && Boolean(found) && !menuOpen
+  const showControls = playing && touchControls && controlsShown && Boolean(found) && !overlayOpen
   useEffect(() => {
     if (!showControls) {
       return
@@ -293,13 +568,14 @@ export default function JoinPage() {
     globalThis.visualViewport?.addEventListener('resize', measure, { signal: abortController.signal })
     return () => abortController.abort()
   }, [showControls])
-  const layout = getPictureLayout(area, room)
+  const layout = getPictureLayout(area, showControls ? room : undefined)
 
-  // The game's sound plays as loud as the volume in the pause menu's settings, the same one games on this device use
+  // The game's sound plays as loud as the volume in the pause menu's settings, the same one games on this device use.
+  // Where a video's volume can't be set, the sound plays through an AudioContext, which follows it by itself
   useEffect(
     () =>
       followVolume((gain) => {
-        if (video.current) {
+        if (video.current && canSetVolume()) {
           video.current.volume = gain
         }
       }),
@@ -326,6 +602,11 @@ export default function JoinPage() {
     keyInputsSent.current = keyInputs
   }, [keyInputs])
   const padKeys = gameConsole ? getPadKeys(gameConsole, keyboard, { own: ownKeys }) : undefined
+  // A game on the NAS by its name as the library shows it; a person's game by the name its host gave
+  let title = found?.invitation.title ?? ''
+  if (found && onNAS) {
+    title = serverGameTitle(found.invitation.title, platform)
+  }
 
   // A DS game on the NAS takes the stylus; a person's device, sharing a game, doesn't
   const takesStylus = onNAS && platform === 'nds'
@@ -333,8 +614,16 @@ export default function JoinPage() {
     stylus.current = takesStylus ? { down: false, x: 0.5, y: 0.75 } : undefined
   }, [takesStylus])
 
+  // The stylus is lifted as the menu opens, so a touch held as it opened doesn't stay down in the game
+  useEffect(() => {
+    if (overlayOpen && stylus.current) {
+      stylus.current = { ...stylus.current, down: false }
+      stylusPress.current = undefined
+    }
+  }, [overlayOpen])
+
   function moveStylus(event: ReactPointerEvent<HTMLDivElement>, down?: boolean) {
-    if (!stylus.current || menuOpen) {
+    if (!stylus.current || overlayOpen) {
       return
     }
     const box = event.currentTarget.getBoundingClientRect()
@@ -355,12 +644,44 @@ export default function JoinPage() {
   }
 
   // While the game is played, the arrows and Enter are the game's, not the page's: the highlight moving between the
-  // page's buttons stands still, as it does in a game played in the browser. A NAS game's open menu has them back
+  // page's buttons stands still, as it does in a game played in the browser. An open menu has them back
   const [, setNavigationPaused] = useSpatialNavigationPaused()
   useEffect(() => {
-    setNavigationPaused(playing && !menuOpen)
+    setNavigationPaused(playing && !overlayOpen)
     return () => setNavigationPaused(false)
-  }, [playing, menuOpen, setNavigationPaused])
+  }, [playing, overlayOpen, setNavigationPaused])
+
+  // Back in the game, nothing of the page keeps the focus or its highlight: a join pressed from the list, or the menu
+  // just closed, leaves none over the picture
+  const { syncStyle } = useFocusIndicator()
+  useEffect(() => {
+    if (joined && !overlayOpen && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+    syncStyle()
+  }, [joined, overlayOpen, syncStyle])
+
+  // Pause opens a game on the server's menu, and goes back in it: from a page to the menu, and from the menu to the
+  // game. A guest of a person's game is asked whether to leave
+  function pressPause() {
+    if (onNAS) {
+      if (menuOpen) {
+        cancel()
+      } else {
+        setMenuOpen(true)
+      }
+    } else {
+      setLeaveAsked(!leaveAsked)
+    }
+  }
+
+  // A controller's pause buttons, as set in Settings, do the same, as they do in a game on this device
+  const handleGamepadPress = useEffectEvent(({ gamepad }: { gamepad: globalThis.Gamepad }) => {
+    if (playing && holdsShortcut(gamepad.buttons, gamepadMapping.$pause, gamepadMapping)) {
+      pressPause()
+    }
+  })
+  useEffect(() => Gamepad.onPress(handleGamepadPress), [])
 
   useEffect(() => {
     if (!playing) {
@@ -372,19 +693,15 @@ export default function JoinPage() {
     const abortController = new AbortController()
     function handleKey(event: KeyboardEvent) {
       const keyName = getKeyNameFromCode(event.code)
-      // The pause key opens a game on the server's pause menu, and goes back in it: from a page to the menu, and from
-      // the menu to the game
-      if (onNAS && event.type === 'keydown' && keyName === keyboard.$pause) {
+      if (event.type === 'keydown' && keyName === keyboard.$pause) {
         event.preventDefault()
-        if (menuOpen) {
-          cancel()
-        } else {
-          setMenuOpen(true)
+        if (!event.repeat) {
+          pressPause()
         }
         return
       }
       // With the menu open, the keys move in it, and play nothing
-      if (menuOpen) {
+      if (overlayOpen) {
         return
       }
       const button = buttons.get(keyName)
@@ -404,6 +721,9 @@ export default function JoinPage() {
         } else {
           stickHeld.delete(keyName)
         }
+      } else if (keyName === 'enter' || keyName === 'space') {
+        // Not for whatever button of the page has the focus: Space held out of habit doesn't leave the game
+        event.preventDefault()
       }
     }
     document.addEventListener('keydown', handleKey, { signal: abortController.signal })
@@ -413,7 +733,39 @@ export default function JoinPage() {
       held.clear()
       stickHeld.clear()
     }
-  }, [playing, keyboard, keyInputs, onNAS, menuOpen])
+  })
+
+  // Keys and buttons held as the player switches to another window or app are let go, since their release goes there.
+  // A player alone in a game on the NAS who switches away has it paused, and finds its menu when they're back
+  useEffect(() => {
+    if (!playing) {
+      return
+    }
+    function letGo() {
+      keysHeld.current.clear()
+      stickKeysHeld.current.clear()
+      touchHeld.current.clear()
+      if (stylus.current) {
+        stylus.current = { ...stylus.current, down: false }
+      }
+      sendNow.current?.()
+    }
+    function handleVisibility() {
+      if (document.visibilityState !== 'hidden') {
+        return
+      }
+      letGo()
+      const { menuOpen: open, onNAS: server, players } = latest.current
+      if (server && players === 1 && !open) {
+        sendCommand.current?.('pause')
+        setMenuOpen(true)
+      }
+    }
+    const abortController = new AbortController()
+    globalThis.addEventListener('blur', letGo, { signal: abortController.signal })
+    document.addEventListener('visibilitychange', handleVisibility, { signal: abortController.signal })
+    return () => abortController.abort()
+  }, [playing])
 
   // The menu pauses the game while it's open, for everyone in it. Only a player who paused it resumes it: one who has
   // just joined a game paused by someone else's menu leaves it paused
@@ -436,32 +788,96 @@ export default function JoinPage() {
     setMenuOpen(false)
   }
 
-  // Ending the game goes back to where it was started from, its page, as exiting a game on this device does
-  async function endGame() {
-    try {
-      await stopNASGame(joinedCode)
-    } catch {
-      // Already over
-    }
-    setMenuOpen(false)
-    setStage('ended')
+  // Back to where the game was joined or started from, as exiting a game on this device goes back to its page
+  async function goBack() {
+    leaveFullscreen()
     await (globalThis.history.length > 1 ? navigate(-1) : navigate(routes.libraryHome))
   }
 
-  async function leave() {
-    await navigate(routes.libraryHome)
+  // Ending the game goes back to where it was started from, its page. A game already over is ended all the same; one
+  // that couldn't be ended stays, and says so
+  async function endGame() {
+    ending.current = true
+    try {
+      await stopNASGame(joinedCode)
+    } catch (error) {
+      if (!isGameGone(error)) {
+        ending.current = false
+        notify(t(failureWordsFor(error) ?? 'join.endFailed'))
+        return
+      }
+    }
+    await goBack()
   }
 
+  // Leaving with the menu open lets the game go on for the others first
+  async function leave() {
+    if (onNAS && menuOpen) {
+      sendCommand.current?.('resume')
+      await delay(100)
+    }
+    await goBack()
+  }
+
+  // What's happening, for a screen reader: said as it changes
+  const status = (() => {
+    if (pending) {
+      return t('join.joining')
+    }
+    if (stage === 'connecting') {
+      return onNAS ? t('playTogether.connectingServer') : t('playTogether.connectingOther')
+    }
+    if (stage === 'ended') {
+      return t('playTogether.ended')
+    }
+    if (playing && trouble) {
+      return t('join.reconnecting')
+    }
+    if (playing && onNAS && nasNumbers?.paused && !menuOpen) {
+      return t('pauseMenu.paused')
+    }
+    return ''
+  })()
+  const failureText = (() => {
+    if (stage === 'unreachable') {
+      return onNAS ? t('join.unreachableServer') : t('playTogether.unreachable')
+    }
+    if (stage === 'lost') {
+      return t('join.connectionLost')
+    }
+    return failure ? t(failure.words) : ''
+  })()
+  let connectingText = t('playTogether.connectingOther')
+  if (onNAS) {
+    connectingText = t('playTogether.connectingServer')
+  } else if (found?.invitation.host) {
+    connectingText = t('playTogether.connectingTo', { host: found.invitation.host })
+  }
+  const keypad = Boolean(found && keypadControls.has(found.invitation.controls))
+
   return (
-    <div className='fixed inset-0 z-20 flex touch-none items-center justify-center overflow-auto bg-black text-white'>
+    <div
+      className={clsx(
+        'fixed inset-0 z-20 flex justify-center overflow-auto bg-black text-white',
+        // Playing, the page is the game's, and takes every touch; choosing, it scrolls, from its top where it's taller
+        // than the screen
+        joined ? 'touch-none items-center' : 'items-center-safe',
+      )}
+      data-sn-layer=''
+      ref={root}
+    >
+      <output aria-live='polite' className='sr-only'>
+        {status}
+      </output>
+
       {/* The game's picture alone, as large as fits, and its sound. What arrives is the host's whole screen, with black
           around the picture; until the host says where the picture is, all of it is shown. On an upright touch screen
           the picture sits at the top, clear of the controls */}
       <div
         className={clsx('overflow-hidden', playing ? 'relative' : 'hidden', {
           // Under the top bar's buttons, which are 44 points tall, unless it's kept above the controls
-          'portrait:mt-safe-offset-11': touch && room === undefined,
-          'portrait:self-start': touch,
+          'portrait:mt-safe-offset-11': touchControls && (!showControls || room === undefined),
+          'portrait:self-start': touchControls,
           'size-full': !layout,
         })}
         data-testid='guest-picture'
@@ -474,13 +890,14 @@ export default function JoinPage() {
         }}
         onPointerMove={(event) => moveStylus(event)}
         onPointerUp={(event) => moveStylus(event, false)}
-        style={layout?.box ?? (room === undefined ? undefined : { height: room })}
+        style={layout?.box ?? (showControls && room !== undefined ? { height: room } : undefined)}
       >
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a game's picture and sound, which has no words to caption */}
         <video
           autoPlay
           className={layout ? 'absolute max-w-none object-fill' : 'size-full object-contain'}
           data-testid='guest-video'
+          muted
           playsInline
           ref={video}
           style={layout?.video}
@@ -490,14 +907,19 @@ export default function JoinPage() {
       {showControls && found ? (
         <TestSessionProvider emulator={standIn}>
           <div className='pointer-events-none absolute inset-0 *:pointer-events-auto'>
-            <ConsoleControls kind={found.invitation.controls} top={controlsTop} />
+            <ConsoleControls
+              keypadOpen={keypadOpen}
+              kind={found.invitation.controls}
+              onKeypadClose={() => setKeypadOpen(false)}
+              top={controlsTop}
+            />
           </div>
         </TestSessionProvider>
       ) : null}
 
       {/* The performance overlay's stream numbers, and a game on the NAS's own, where this device has it switched on.
           They take no touches */}
-      {playing && perfOverlay && (stream || nasNumbers) && !menuOpen ? (
+      {playing && perfOverlay && (stream || nasNumbers) && !overlayOpen ? (
         <div className='pointer-events-none absolute inset-0'>
           <div className={readoutBox} data-testid='guest-stream'>
             {nasNumbers ? <NASSection numbers={nasNumbers} /> : null}
@@ -506,11 +928,41 @@ export default function JoinPage() {
         </div>
       ) : null}
 
-      {/* Someone else paused a game on the NAS */}
-      {playing && onNAS && nasNumbers?.paused && !menuOpen ? (
+      {/* Someone else paused a game on the NAS, or the connection to it is in trouble */}
+      {playing && !overlayOpen && (trouble || (onNAS && nasNumbers?.paused)) ? (
         <div className='pointer-events-none absolute inset-x-0 top-1/3 flex justify-center'>
-          <span className='rounded-full bg-black/70 px-4 py-1.5 text-lg font-semibold'>{t('pauseMenu.paused')}</span>
+          <span className='flex items-center gap-2 rounded-full bg-black/70 px-4 py-1.5 text-lg font-semibold'>
+            {trouble ? <span className='icon-[svg-spinners--180-ring] size-5' /> : null}
+            {trouble ? t('join.reconnecting') : t('pauseMenu.paused')}
+          </span>
         </div>
+      ) : null}
+
+      {/* The picture waits for a press, where the browser wouldn't start it by itself */}
+      {playing && startBlocked && !overlayOpen ? (
+        <button
+          className='absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 text-lg font-semibold'
+          data-sn-enabled
+          data-testid='guest-tap-to-start'
+          onClick={pressForSound}
+          type='button'
+        >
+          <span className='icon-[mdi--play-circle] size-16' />
+          {t('join.tapToStart')}
+        </button>
+      ) : null}
+
+      {/* So does the sound, which any press lets in */}
+      {playing && !startBlocked && sound === 'blocked' && !overlayOpen ? (
+        <button
+          className='top-safe-offset-2 absolute left-1/2 flex h-9 -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 px-4 text-sm font-semibold ring-1 ring-white/25'
+          data-testid='guest-tap-for-sound'
+          onClick={pressForSound}
+          type='button'
+        >
+          <span className='icon-[mdi--volume-off] size-5' />
+          {t('join.tapForSound')}
+        </button>
       ) : null}
 
       {playing && onNAS && menuOpen && found ? (
@@ -525,21 +977,54 @@ export default function JoinPage() {
           pad={padKeys}
           players={nasNumbers?.players}
           startedHere={startedHere}
-          title={getRomGoodcodes({ fileName: found.invitation.title, platform: found.invitation.platform }).rom}
+          title={title}
         />
+      ) : null}
+
+      {/* A guest of a person's game, asked whether to leave it */}
+      {playing && leaveAsked ? (
+        <div
+          aria-labelledby='guest-leave-title'
+          aria-modal
+          className='absolute inset-0 flex items-center justify-center bg-black/60 p-6'
+          data-testid='guest-leave'
+          role='alertdialog'
+        >
+          <div className='flex flex-col items-center gap-5 rounded-2xl bg-neutral-900/90 p-6 text-center'>
+            <p className='text-lg font-semibold' id='guest-leave-title'>
+              {t('join.leaveAsk')}
+            </p>
+            <div className='flex gap-3'>
+              <button
+                className={pill}
+                data-sn-enabled
+                data-sn-focus-style={focusStyle}
+                onClick={() => setLeaveAsked(false)}
+                type='button'
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                className={pill}
+                data-sn-enabled
+                data-sn-focus-style={focusStyle}
+                data-testid='guest-leave-confirm'
+                onClick={leave}
+                type='button'
+              >
+                <span className='icon-[mdi--exit-to-app] size-5' />
+                {t('pauseMenu.leave')}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {stage === 'connecting' && found ? (
         <div className='flex flex-col items-center gap-3 p-6 text-center' data-testid='guest-connecting'>
           <span className='icon-[mdi--loading] size-8 animate-spin' />
-          <p className='text-lg font-semibold'>{found.invitation.title}</p>
-          <p className='text-white/70'>
-            {onNAS
-              ? t('playTogether.connectingServer')
-              : found.invitation.host
-                ? t('playTogether.connectingTo', { host: found.invitation.host })
-                : t('playTogether.connectingOther')}
-          </p>
+          <p className='text-lg font-semibold'>{title}</p>
+          <p className='text-white/70'>{connectingText}</p>
         </div>
       ) : null}
 
@@ -548,9 +1033,30 @@ export default function JoinPage() {
           <h1 className='text-center text-2xl font-semibold'>{t('nav.joinGame')}</h1>
 
           {stage === 'ended' ? <p className='text-center'>{t('playTogether.ended')}</p> : null}
-          {stage === 'unreachable' ? (
-            <p className='text-center text-[#ffc46b]' data-testid='guest-unreachable'>
-              {t('playTogether.unreachable')}
+          {stage === 'unreachable' || stage === 'lost' ? (
+            <div className='flex flex-col items-center gap-3'>
+              <p className='text-center text-[#ffc46b]' data-testid='guest-unreachable' role='alert'>
+                {failureText}
+              </p>
+              {stage === 'lost' ? (
+                <button
+                  className={pill}
+                  data-sn-enabled
+                  data-sn-focus-style={focusStyle}
+                  data-testid='guest-rejoin'
+                  disabled={Boolean(pending)}
+                  onClick={rejoin}
+                  type='button'
+                >
+                  <span className={clsx('size-6', pending ? 'icon-[svg-spinners--180-ring]' : 'icon-[mdi--refresh]')} />
+                  {t('join.rejoin')}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {failure && !failure.typed ? (
+            <p className='text-center text-[#ffc46b]' data-testid='guest-join-failed' role='alert'>
+              {t(failure.words)}
             </p>
           ) : null}
 
@@ -561,13 +1067,21 @@ export default function JoinPage() {
                 className={pill}
                 data-sn-enabled
                 data-sn-focus-style={focusStyle}
+                disabled={Boolean(pending)}
                 key={game.code}
                 onClick={() => join(game.code)}
                 type='button'
               >
-                <span className='icon-[mdi--play] size-6 shrink-0' />
+                <span
+                  className={clsx(
+                    'size-6 shrink-0',
+                    pending === normalizeCode(game.code) ? 'icon-[svg-spinners--180-ring]' : 'icon-[mdi--play]',
+                  )}
+                />
                 <span className='min-w-0 text-left'>
-                  <span className='block truncate font-semibold'>{game.title}</span>
+                  <span className='block truncate font-semibold'>
+                    {isNASCode(game.code) ? serverGameTitle(game.title) : game.title}
+                  </span>
                   <span className='block truncate text-sm text-white/70'>{game.host}</span>
                 </span>
               </button>
@@ -579,6 +1093,8 @@ export default function JoinPage() {
             <label className='flex flex-col items-center gap-2'>
               <span className='text-sm text-white/70'>{t('playTogether.orCode')}</span>
               <input
+                aria-describedby={failure?.typed ? 'guest-code-failure' : undefined}
+                aria-invalid={failure?.typed ? true : undefined}
                 autoCapitalize='characters'
                 autoComplete='off'
                 autoCorrect='off'
@@ -586,42 +1102,80 @@ export default function JoinPage() {
                 data-testid='guest-code'
                 maxLength={codeLength + 1}
                 onChange={(event) => setCode(event.target.value)}
+                readOnly={Boolean(pending)}
                 spellCheck={false}
                 value={code}
               />
             </label>
-            {notFound ? <p className='text-[#ffc46b]'>{t('playTogether.notFound')}</p> : null}
+            {failure?.typed ? (
+              <p className='text-center text-[#ffc46b]' id='guest-code-failure' role='alert'>
+                {t(failure.words)}
+              </p>
+            ) : null}
             <button
               className={pill}
               data-testid='guest-join'
-              disabled={code.replaceAll(/\s/gu, '').length < codeLength}
+              disabled={Boolean(pending) || code.replaceAll(/\s/gu, '').length < codeLength}
               type='submit'
             >
+              {pending && pending === normalizeCode(code) ? (
+                <span className='icon-[svg-spinners--180-ring] size-5' />
+              ) : null}
               {t('playTogether.joinWithCode')}
             </button>
           </form>
         </div>
       )}
 
-      {playing && onNAS && !menuOpen ? (
-        <button
-          aria-label={t('emulator.pause')}
-          className='top-safe-offset-2 right-safe-offset-14 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
-          data-sn-enabled
-          data-testid='nas-pause'
-          onClick={() => setMenuOpen(true)}
-          type='button'
-        >
-          <span className='icon-[mdi--pause] size-6' />
-        </button>
+      {/* The top bar, as a game on this device has it: pause at the top left, where the controls leave room for it, and
+          the ColecoVision's and Atari 5200's keypad beside it; the on-screen controls' toggle at the top right. A
+          guest's pause asks whether to leave */}
+      {playing && !overlayOpen ? (
+        <>
+          <button
+            aria-label={onNAS ? t('emulator.pause') : t('pauseMenu.leave')}
+            className={clsx(barIcon, 'left-safe')}
+            data-testid={onNAS ? 'nas-pause' : 'guest-leave-ask'}
+            onClick={pressPause}
+            type='button'
+          >
+            <span className={clsx('size-6', onNAS ? 'icon-[mdi--pause]' : 'icon-[mdi--close]')} />
+          </button>
+          {showControls && keypad ? (
+            <TestSessionProvider emulator={standIn}>
+              <VirtualGamepadButton
+                aria-label={t('join.keypad')}
+                aria-pressed={keypadOpen}
+                className={clsx(barIcon, 'left-safe-offset-11', keypadOpen && 'bg-[#ff9a4a] text-[#3a1a00]')}
+                onClick={() => setKeypadOpen(!keypadOpen)}
+                title={t('join.keypad')}
+              >
+                <span className='icon-[mdi--dialpad] size-6' />
+              </VirtualGamepadButton>
+            </TestSessionProvider>
+          ) : null}
+          {touchControls ? (
+            <button
+              aria-label={t('join.onScreenControls')}
+              aria-pressed={controlsShown}
+              className={clsx(barIcon, 'right-safe')}
+              data-testid='guest-controls-toggle'
+              onClick={() => setControlsShown(!controlsShown)}
+              type='button'
+            >
+              <span className='icon-[mdi--gamepad-square] size-6' />
+            </button>
+          ) : null}
+        </>
       ) : null}
 
-      {menuOpen ? null : (
+      {/* Before a game is joined, back to the library */}
+      {joined ? null : (
         <button
-          aria-label={t('pauseMenu.leave')}
-          className='top-safe-offset-2 right-safe-offset-2 absolute flex size-11 items-center justify-center rounded-full hover:bg-white/15'
+          aria-label={t('common.back')}
+          className={clsx(barIcon, 'right-safe-offset-2 top-safe-offset-2')}
           data-sn-enabled
-          onClick={leave}
+          onClick={goBack}
           type='button'
         >
           <span className='icon-[mdi--close] size-6' />

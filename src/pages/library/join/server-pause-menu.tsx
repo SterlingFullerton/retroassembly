@@ -1,5 +1,6 @@
+import { clsx } from 'clsx'
 import { delay } from 'es-toolkit'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getNASStatePicture, listNASStates, loadNASState, type NASState, saveNASState } from '#@/emulator/nas-games.ts'
 import type { PadKeys } from '#@/input/pad.ts'
@@ -16,19 +17,70 @@ import {
 } from '#@/pages/library/components/pause-menu/pause-menu.tsx'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
 import { useKeyboardMapping } from '#@/pages/library/hooks/use-keyboard-mapping.ts'
+import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
+import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
+import { dateFormatMap } from '#@/utils/isomorphic/i18n.ts'
+import { humanizeDate } from '#@/utils/isomorphic/misc.ts'
 
 // The pause menu of a game on the server: the same menu as a game on this device's, which pauses the game for everyone
 // in it while it's open. Its save states are the server's own, kept for whoever started the game: the server's
 // emulators are other builds than the browser's, and their states don't load in each other
 
-function formatSaved(created: string) {
-  const date = new Date(created)
-  const today = new Date().toDateString() === date.toDateString()
-  return new Intl.DateTimeFormat(
-    undefined,
-    today ? { timeStyle: 'short' } : { dateStyle: 'medium', timeStyle: 'short' },
-  ).format(date)
+function subscribeToFullscreen(callback: () => void) {
+  document.addEventListener('fullscreenchange', callback)
+  return () => document.removeEventListener('fullscreenchange', callback)
+}
+
+async function toggleFullscreen() {
+  try {
+    await (document.fullscreenElement ? document.exitFullscreen() : document.body.requestFullscreen())
+  } catch {
+    // The browser said no
+  }
+}
+
+/** Fullscreen, as the switch in a game on this device's settings: the whole page goes fullscreen, the game with it */
+function FullscreenSwitch() {
+  const { t } = useTranslation()
+  const fullscreen = useSyncExternalStore(
+    subscribeToFullscreen,
+    () => Boolean(document.fullscreenElement),
+    () => false,
+  )
+  if (!globalThis.document?.fullscreenEnabled) {
+    return null
+  }
+  return (
+    <div className='flex'>
+      <button
+        aria-checked={fullscreen}
+        className='flex h-12 shrink-0 items-center gap-3 rounded-full border border-solid border-white bg-black/30 pr-3 pl-4 text-white transition-colors hover:bg-white/15'
+        data-sn-enabled
+        data-sn-focus-style={JSON.stringify({ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: '24px' })}
+        data-testid='nas-fullscreen'
+        onClick={toggleFullscreen}
+        role='switch'
+        type='button'
+      >
+        <span className={clsx('size-5', fullscreen ? 'icon-[mdi--fullscreen-exit]' : 'icon-[mdi--fullscreen]')} />
+        <span className='text-[15px]'>{t('emulator.fullscreen')}</span>
+        <span
+          className={clsx(
+            'relative h-5 w-9 shrink-0 rounded-full transition-colors',
+            fullscreen ? 'bg-white' : 'bg-white/25',
+          )}
+        >
+          <span
+            className={clsx(
+              'absolute top-0.5 size-4 rounded-full transition-all',
+              fullscreen ? 'left-4.5 bg-black' : 'left-0.5 bg-white',
+            )}
+          />
+        </span>
+      </button>
+    </div>
+  )
 }
 
 /** The server's save states as pictures: choosing one loads it and resumes */
@@ -37,8 +89,14 @@ function ServerStates({
   onLoaded,
   states,
 }: Readonly<{ code: string; onLoaded: () => void; states: NASState[] | undefined }>) {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
+  const { preference } = usePreference()
   const [failed, setFailed] = useState(false)
+  // Saved times as the game's own snapshots show them: in the app's language and date format
+  const dateFormat =
+    preference.ui.dateFormat === 'auto'
+      ? dateFormatMap[i18n.language as keyof typeof dateFormatMap]
+      : preference.ui.dateFormat
 
   async function load(state: NASState) {
     setFailed(false)
@@ -55,7 +113,11 @@ function ServerStates({
   }
   return (
     <div className='flex flex-col gap-3' data-testid='nas-states'>
-      {failed ? <p className='text-sm text-[#ffc46b]'>{t('error.loadSnapshotFailed')}</p> : null}
+      {failed ? (
+        <p className='text-sm text-[#ffc46b]' role='alert'>
+          {t('error.loadSnapshotFailed')}
+        </p>
+      ) : null}
       {states.length === 0 ? (
         <div className='flex items-center justify-center gap-2 py-6 text-sm text-neutral-400'>
           <span className='icon-[mdi--database-outline] text-xl' />
@@ -77,7 +139,7 @@ function ServerStates({
                 className='aspect-4/3 w-full rounded-md bg-black object-contain'
                 src={getNASStatePicture(code, state.id)}
               />
-              <span className='px-1 text-xs'>{formatSaved(state.created)}</span>
+              <span className='px-1 text-xs'>{humanizeDate(state.created, dateFormat)}</span>
             </button>
           ))}
         </div>
@@ -116,8 +178,11 @@ export function ServerPauseMenu({
   title: string
 }>) {
   const { t } = useTranslation()
+  const notify = useNotice()
   const keyboard = useKeyboardMapping()
   const { connected } = useGamepads()
+  // An exit under way, which a second press doesn't start again
+  const exiting = useRef(false)
   const [page, setPage] = useState<PauseMenuPage>('main')
   const [states, setStates] = useState<NASState[]>()
 
@@ -178,13 +243,37 @@ export function ServerPauseMenu({
     await reloadStates()
   }
 
+  // Saved first, as a game on this device is: a snapshot that fails is said, and the game goes on, to be ended without
+  // saving from the same page if the player chooses
   async function saveAndEnd() {
+    if (exiting.current) {
+      return
+    }
+    exiting.current = true
     try {
       await saveNASState(code)
     } catch {
-      // Ended all the same: the game's own saves are kept as it's played
+      exiting.current = false
+      notify(t('emulator.snapshotFailed'))
+      return
     }
-    await onEnd()
+    try {
+      await onEnd()
+    } finally {
+      exiting.current = false
+    }
+  }
+
+  async function end() {
+    if (exiting.current) {
+      return
+    }
+    exiting.current = true
+    try {
+      await onEnd()
+    } finally {
+      exiting.current = false
+    }
   }
 
   const exitActions: PauseMenuAction[] = startedHere
@@ -203,7 +292,7 @@ export function ServerPauseMenu({
           icon: 'icon-[mdi--exit-to-app]',
           // A linked game has no snapshot to leave unsaved: its own save is kept all the same
           label: linked ? t('common.exit') : t('pauseMenu.exitWithoutSaving'),
-          onClick: onEnd,
+          onClick: end,
           testId: 'pause-exit-now',
         },
         {
@@ -260,6 +349,7 @@ export function ServerPauseMenu({
                 </div>
               </section>
               <PerfOverlaySwitch />
+              <FullscreenSwitch />
             </div>
           ),
           together: (

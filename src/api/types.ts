@@ -199,7 +199,16 @@ export type PlatformPageData =
   | (RomList & { favorite: boolean; platform: PlatformName; title: string })
   | { redirect: { platform: string } }
 export type RomPageData =
-  | { discs: Disc[]; gameSave: GameSave | undefined; rom: Rom; state: State; states: State[]; title: string }
+  | {
+      discs: Disc[]
+      gameSave: GameSave | undefined
+      rom: Rom
+      /** The game's own save is newer than its newest snapshot, as after playing it on the server */
+      startFromSave?: boolean
+      state: State
+      states: State[]
+      title: string
+    }
   | { redirect: { fileName: string; platform: string } }
 
 export interface SearchPage {

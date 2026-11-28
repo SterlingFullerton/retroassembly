@@ -10,11 +10,16 @@ async function askForCores() {
   try {
     return await parseResponse(client.nas_games.cores.$get())
   } catch {
+    // Not kept: a server that was restarting is asked again the next time a game's buttons are shown
+    cores = undefined
     return []
   }
 }
 
-/** The emulators the NAS has, by name: none where games on the NAS aren't set up. Asked for once a page load */
+/**
+ * The emulators the NAS has, by name: none where games on the NAS aren't set up. Asked for once a page load, unless the
+ * server couldn't be asked
+ */
 export function getNASCores() {
   cores ??= askForCores()
   return cores
@@ -40,9 +45,92 @@ export async function stopNASGame(code: string) {
   await parseResponse(client.nas_games[':code'].$delete({ param: { code } }))
 }
 
+/**
+ * A code as it was meant: without spaces, in capitals, and with the letter O read as the zero it can only be. No code
+ * has an O, and only a game on the NAS's has a zero, at its start
+ */
+export function normalizeCode(code: string) {
+  return code.replaceAll(/\s/gu, '').toUpperCase().replaceAll('O', '0')
+}
+
 /** Whether a code joins a game on the NAS: theirs start with a zero, which a person's never has */
 export function isNASCode(code: string) {
-  return code.trim().startsWith('0')
+  return normalizeCode(code).startsWith('0')
+}
+
+// What the app server says went wrong with a game on the server, by the stable code it gives with its message, as the
+// name of the words that say it in the player's language. A failure with no code, or one not listed here, is said in
+// general words by whoever asked
+const serverDown = 'join.serverUnavailable'
+const busy = 'join.busy'
+const saveProblem = 'join.saveProblem'
+const notYours = 'join.notYours'
+const failureWords: Record<string, string> = {
+  server_busy: busy,
+  server_failed: serverDown,
+  server_full: 'nasGames.full',
+  server_game_full: 'join.gameFull',
+  server_game_not_found: 'playTogether.notFound',
+  server_linked_states: busy,
+  server_not_yours: notYours,
+  server_off: serverDown,
+  server_one_game: 'join.gameLimit',
+  server_out_of_date: serverDown,
+  server_places_waiting: busy,
+  server_refused: serverDown,
+  server_save_missing: saveProblem,
+  server_save_too_large: saveProblem,
+  server_save_unreadable: saveProblem,
+  server_save_waiting: 'join.saveWaiting',
+  server_start_timeout: serverDown,
+  server_starting: busy,
+  server_states_not_yours: notYours,
+  server_unreachable: serverDown,
+  // fetch() itself failed: the app couldn't be reached
+  unreachable: 'join.serverUnreachable',
+}
+
+/** The failure's code, from what the API threw: the server's JSON, or what the request threw */
+export function failureCode(error: unknown) {
+  if (error instanceof TypeError) {
+    return 'unreachable'
+  }
+  const { code, data, detail } = (error ?? {}) as {
+    code?: unknown
+    data?: { code?: unknown }
+    detail?: { data?: { code?: unknown } }
+  }
+  const found = code ?? data?.code ?? detail?.data?.code
+  return typeof found === 'string' ? found : undefined
+}
+
+/** Whether a failure says there's no game by the code: one that ended, or never was */
+export function isGameGone(error: unknown) {
+  if (typeof Response !== 'undefined' && error instanceof Response) {
+    return error.status === 404
+  }
+  const { status, statusCode } = (error ?? {}) as { status?: unknown; statusCode?: unknown }
+  return failureCode(error) === 'server_game_not_found' || status === 404 || statusCode === 404
+}
+
+/** The name of the words for what went wrong, where they're known */
+export function failureWordsFor(error: unknown) {
+  const code = failureCode(error)
+  if (code) {
+    return failureWords[code]
+  }
+  // A person's shared game is turned down with a message and no code: by someone else joining it, or having joined it
+  const { message } = (error ?? {}) as { message?: unknown }
+  if (typeof message === 'string' && sharedGameTaken[message]) {
+    return sharedGameTaken[message]
+  }
+  return isGameGone(error) ? 'playTogether.notFound' : undefined
+}
+
+// The app server's words for a person's game someone else is joining, or has joined (409)
+const sharedGameTaken: Record<string, string> = {
+  'Someone else is joining that game': 'join.someoneJoining',
+  'Someone has already joined that game': 'join.alreadyJoined',
 }
 
 /** A save state of a game on the NAS */

@@ -23,6 +23,12 @@ export function useEmulatorLaunched() {
   return useAtom(emulatorLaunchedAtom)
 }
 
+// A game joined from the join page is being reached or played: like a game on this device, it has the screen to itself
+const gameJoinedAtom = atom(false)
+export function useGameJoined() {
+  return useAtom(gameJoinedAtom)
+}
+
 const spatialNavigationPaused = atom(false)
 export function useSpatialNavigationPaused() {
   return useAtom(spatialNavigationPaused)

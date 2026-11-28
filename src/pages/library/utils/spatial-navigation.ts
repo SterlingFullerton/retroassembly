@@ -403,9 +403,43 @@ export function resetFocus({ force }: { force?: boolean } = {}) {
   }
 }
 
+// A page drawn over the whole library, such as the join page, marked `data-sn-layer`: while it's there, only its own
+// controls (and a dialog's) can be moved to
+const layerSelector = '[data-sn-layer]'
+
+function inTopLayer(element: HTMLElement) {
+  const layer = [...document.querySelectorAll<HTMLElement>(layerSelector)].at(-1)
+  return !layer || layer.contains(element) || Boolean(element.closest(dialogSelector))
+}
+
+/**
+ * Makes everything in the library's layout around `layer` unreachable while it's over it: by the arrows, Tab and a
+ * screen reader alike, as if it weren't there. Returns how to give it back
+ */
+export function holdLayer(layer: HTMLElement) {
+  const held: HTMLElement[] = []
+  for (let node = layer; node.parentElement && node !== document.body; node = node.parentElement) {
+    for (const sibling of node.parentElement.children) {
+      if (sibling !== node && sibling instanceof HTMLElement && !sibling.inert) {
+        sibling.inert = true
+        held.push(sibling)
+      }
+    }
+    if (node.parentElement.matches('.library-layout')) {
+      break
+    }
+  }
+  return () => {
+    for (const element of held) {
+      element.inert = false
+    }
+  }
+}
+
 export function init() {
   SpatialNavigation.set({
-    navigableFilter: (element: HTMLElement) => !holdsControls(element) && isBeside(element),
+    navigableFilter: (element: HTMLElement) =>
+      !holdsControls(element) && isBeside(element) && inTopLayer(element) && !element.closest('[inert]'),
   })
 
   SpatialNavigation.add({
