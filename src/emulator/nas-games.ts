@@ -66,9 +66,6 @@ const busy = 'join.busy'
 const saveProblem = 'join.saveProblem'
 const notYours = 'join.notYours'
 const failureWords: Record<string, string> = {
-  // A person's shared game: someone else is joining it, or has joined it
-  together_answered: 'join.alreadyJoined',
-  together_joining: 'join.someoneJoining',
   server_busy: busy,
   server_failed: serverDown,
   server_full: 'nasGames.full',
@@ -89,6 +86,9 @@ const failureWords: Record<string, string> = {
   server_starting: busy,
   server_states_not_yours: notYours,
   server_unreachable: serverDown,
+  // A person's shared game: someone else is joining it, or has joined it
+  together_answered: 'join.alreadyJoined',
+  together_joining: 'join.someoneJoining',
   // fetch() itself failed: the app couldn't be reached
   unreachable: 'join.serverUnreachable',
 }

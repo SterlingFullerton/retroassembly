@@ -117,10 +117,10 @@ export function getGoSharedData() {
     .toSorted()
   return {
     cdn: getCDNData(),
-    // Every emulator the app runs in the browser (src/consoles/emulators.ts), whose saves a player may upload
-    cores: Object.keys(emulators).toSorted(),
     // The settings a player may give each emulator, for the games the server runs (src/constants/core-options)
     coreOptions: getCoreOptions(),
+    // Every emulator the app runs in the browser (src/consoles/emulators.ts), whose saves a player may upload
+    cores: Object.keys(emulators).toSorted(),
     // Each language's date format, for reading dates typed in it (src/utils/isomorphic/i18n.ts)
     dateFormats: dateFormatMap,
     defaultLanguage,
