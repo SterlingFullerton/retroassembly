@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type CSSProperties, type PointerEvent, type ReactNode, useRef } from 'react'
+import { type CSSProperties, type PointerEvent, type ReactNode, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { VirtualGamepadButton } from './virtual-gamepad-button.tsx'
@@ -64,6 +64,21 @@ export function useStick({
 }>) {
   const knob = useRef<HTMLDivElement>(null)
   const activePointer = useRef<number | undefined>(undefined)
+  const release = useRef(onRelease)
+  useEffect(() => {
+    release.current = onRelease
+  })
+  // A stick put away while a thumb holds it, as the controls are for the pause menu, comes back to the middle in the
+  // game too: its thumb's lifting would never be heard
+  useEffect(
+    () => () => {
+      if (activePointer.current !== undefined) {
+        activePointer.current = undefined
+        release.current()
+      }
+    },
+    [],
+  )
 
   function move(event: PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect()
