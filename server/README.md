@@ -68,6 +68,9 @@ Where it differs from the Node server, on purpose:
   sign up, as a player, up to 3 accounts an hour from one address. New passwords are at least 8 characters. New
   usernames are 2 to 32 letters a to z, digits, dots, dashes and underscores; a few, such as Server, are reserved, and
   one that looks like another account's (adm1n beside admin) or a deleted one's is refused. Older names keep working
+- Each player's and contributor's save states and game saves may take up to `SAVES_QUOTA_GB` (10 GiB by default, 0
+  for no limit); past that a save is answered with 507 and stays queued on the device. Saves are only of the app's
+  emulators, and a save state's picture is at most 8 MiB
 - Deleting an account removes its saves, save states, favorites, play history and settings, rows and files, and
   forgets its name, password, address and browser. Its row stays, marked deleted, with only a hash of its name, so no
   one takes it. Accounts deleted before this are finished when the server starts

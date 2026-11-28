@@ -34,6 +34,8 @@ type Server struct {
 	// The server's copy of CDN files, when it keeps one
 	cdn        *cdn.Cache
 	compressor *psp.Compressor
+	// The emulators the app runs in the browser
+	cores map[string]bool
 	// The file extensions each console's games may have
 	fileExtensions map[string][]string
 	gameInfo       *gameinfo.Database
@@ -87,13 +89,17 @@ func New(c config.Config, database *sql.DB, authMode string, data shared.Data) (
 		cache.LaunchboxCovers = gameInfo.LaunchboxCover
 		cache.KeepOriginals = c.CDNKeepOriginals
 	}
+	cores := map[string]bool{}
+	for _, name := range data.Cores {
+		cores[name] = true
+	}
 	multiDisc := map[string]bool{}
 	for _, console := range data.MultiDiscConsoles {
 		multiDisc[console] = true
 	}
 	server := &Server{
 		authMode: authMode, cdn: cache,
-		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, fileExtensions: data.FileExtensions,
+		compressor: &psp.Compressor{Database: database, FilePath: c.FilePath}, cores: cores, fileExtensions: data.FileExtensions,
 		gameInfo:  gameInfo,
 		multiDisc: multiDisc, multiDiscList: data.MultiDiscConsoles, config: c, database: database, languages: i18n.New(data),
 		nasGames:      nasgames.New(c.NASGames.URL, c.NASGames.Key),

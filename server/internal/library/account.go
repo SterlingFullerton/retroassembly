@@ -3,8 +3,13 @@ package library
 import (
 	"context"
 	"database/sql"
+	"io/fs"
+	"net/http"
 	"path"
+	"path/filepath"
 
+	"retroassembly/server/internal/auth"
+	"retroassembly/server/internal/failure"
 	"retroassembly/server/internal/files"
 )
 
@@ -75,4 +80,40 @@ func textValues(ctx context.Context, query interface {
 		}
 	}
 	return values, rows.Err()
+}
+
+// ErrSavesQuotaReached refuses a save that would take an account past what its saves may use
+var ErrSavesQuotaReached = failure.New(http.StatusInsufficientStorage, "Save storage is full. Delete some save states to save more")
+
+// CheckSavesQuota refuses a save of the given size that would take the user's save states and game saves past quota
+// bytes on disk. Admins have no limit, nor anyone when quota is 0. A player who made an account for themselves could
+// otherwise fill the disk the database is on, and the app would stop for everyone
+func CheckSavesQuota(storage files.Storage, user *auth.User, quota, size int64) error {
+	if quota <= 0 || user.IsAdmin() {
+		return nil
+	}
+	if savesSize(storage, user.ID)+size > quota {
+		return ErrSavesQuotaReached
+	}
+	return nil
+}
+
+// savesSize is how many bytes an account's save states, their pictures and its game saves take on disk
+func savesSize(storage files.Storage, userID string) int64 {
+	var size int64
+	for _, folder := range []string{"states", "game-saves"} {
+		folderPath, ok := storage.Path(path.Join(folder, userID))
+		if !ok || userID == "" {
+			continue
+		}
+		filepath.WalkDir(folderPath, func(_ string, entry fs.DirEntry, err error) error {
+			if err == nil && entry.Type().IsRegular() {
+				if info, err := entry.Info(); err == nil {
+					size += info.Size()
+				}
+			}
+			return nil
+		})
+	}
+	return size
 }
