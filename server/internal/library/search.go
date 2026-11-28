@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math"
 	"strings"
 	"sync"
@@ -37,8 +38,9 @@ func number(value any) float64 {
 }
 
 // A search's matches are kept for a short while, as one search asks for them several times: for its list, for the
-// counts beside it, and again for each further page. They are kept only while nothing in the database changes, so a
-// game added, renamed, removed or made a favorite is in the next search
+// counts beside it, and again for each further page. They are kept only while the games and favorites are as they were,
+// so a game added, renamed, removed or made a favorite is in the next search. Requests for the same search at the same
+// time, as a list's and its counts' are, wait for one to find them
 type searchKey struct {
 	database              *sql.DB
 	user, owner, platform string
@@ -49,9 +51,17 @@ type searchKey struct {
 type searchResult struct {
 	matches  []*search.Candidate
 	searched int
-	// The database as it was when they were found (see databaseVersion), and when that was
-	version [2]int64
+	// The library's version when they were found (see libraryVersion), and when that was
+	version int64
 	found   time.Time
+}
+
+// A search being run, which other requests for it wait for
+type searchRun struct {
+	done    chan struct{}
+	version int64
+	result  searchResult
+	err     error
 }
 
 const (
@@ -62,13 +72,13 @@ const (
 var searches = struct {
 	sync.Mutex
 	results map[searchKey]searchResult
-}{results: map[searchKey]searchResult{}}
+	running map[searchKey]*searchRun
+}{results: map[searchKey]searchResult{}, running: map[searchKey]*searchRun{}}
 
-// databaseVersion changes whenever the database does: how many rows the server's one connection has changed, and
-// SQLite's own count of changes made by anything else
-func databaseVersion(ctx context.Context, database *sql.DB) (version [2]int64, err error) {
-	err = database.QueryRowContext(ctx,
-		`SELECT total_changes(), (SELECT data_version FROM pragma_data_version)`).Scan(&version[0], &version[1])
+// libraryVersion goes up with every change to the games or the favorites, made by anything: triggers on those tables
+// count them (migration 0017). Saves, save states and play history don't change it
+func libraryVersion(ctx context.Context, database *sql.DB) (version int64, err error) {
+	err = database.QueryRowContext(ctx, `SELECT version FROM library_version WHERE id = 1`).Scan(&version)
 	return version, err
 }
 
@@ -80,17 +90,53 @@ func FindSearchMatches(ctx context.Context, scope Scope, narrow SearchScope, que
 		database: scope.Database, favorite: narrow.Favorite, owner: scope.LibraryOwnerID, platform: narrow.Platform,
 		platforms: strings.Join(narrow.Platforms, ","), query: query, user: scope.User.ID,
 	}
-	version, err := databaseVersion(ctx, scope.Database)
+	version, err := libraryVersion(ctx, scope.Database)
 	if err != nil {
 		return nil, 0, err
 	}
 	searches.Lock()
 	kept, found := searches.results[key]
-	searches.Unlock()
 	if found && kept.version == version && time.Since(kept.found) < searchesKeptFor {
+		searches.Unlock()
 		return kept.matches, kept.searched, nil
 	}
-	matches, searched, err := findSearchMatches(ctx, scope, narrow, query)
+	if running := searches.running[key]; running != nil && running.version == version {
+		searches.Unlock()
+		select {
+		case <-running.done:
+		case <-ctx.Done():
+			return nil, 0, ctx.Err()
+		}
+		// Unless it failed, as when the request that ran it went away; this one then runs it itself
+		if running.err == nil {
+			return running.result.matches, running.result.searched, nil
+		}
+		return findAndKeep(ctx, scope, narrow, query, key, version, nil)
+	}
+	run := &searchRun{done: make(chan struct{}), version: version}
+	searches.running[key] = run
+	searches.Unlock()
+	return findAndKeep(ctx, scope, narrow, query, key, version, run)
+}
+
+// findAndKeep finds a search's matches and keeps them; with run, it tells those waiting for it too
+func findAndKeep(ctx context.Context, scope Scope, narrow SearchScope, query string, key searchKey, version int64,
+	run *searchRun) (matches []*search.Candidate, searched int, err error) {
+	if run != nil {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				err = fmt.Errorf("search: %v", recovered)
+			}
+			run.result, run.err = searchResult{matches: matches, searched: searched}, err
+			searches.Lock()
+			if searches.running[key] == run {
+				delete(searches.running, key)
+			}
+			searches.Unlock()
+			close(run.done)
+		}()
+	}
+	matches, searched, err = findSearchMatches(ctx, scope, narrow, query)
 	if err != nil {
 		return nil, 0, err
 	}
