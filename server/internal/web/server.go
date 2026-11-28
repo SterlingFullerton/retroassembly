@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -113,6 +114,8 @@ type state struct {
 	libraryOwnerID string
 	token          string
 	user           *auth.User
+	// The forms read from the request, whose files wait in the temporary folder until it's answered
+	forms []*multipart.Form
 }
 
 type stateKey struct{}
@@ -144,6 +147,13 @@ func (s *Server) globals(next http.Handler) http.Handler {
 				return
 			}
 		}
+		// The files of a form a handler read are removed once it's answered. The server removes them itself only for
+		// the request it was given, and handlers are given this copy of it
+		defer func() {
+			for _, form := range current.forms {
+				form.RemoveAll()
+			}
+		}()
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), stateKey{}, current)))
 	})
 }

@@ -298,10 +298,14 @@ func parseForm(w http.ResponseWriter, r *http.Request, limit int64) bool {
 }
 
 // parseFormHolding is parseForm holding up to memory bytes of the form's files in memory; any more waits on disk, in
-// the temporary folder, until it's read
+// the temporary folder, until the request is answered (see globals)
 func parseFormHolding(w http.ResponseWriter, r *http.Request, limit, memory int64) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, limit)
-	if err := r.ParseMultipartForm(memory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	err := r.ParseMultipartForm(memory)
+	if current := stateOf(r); current != nil && r.MultipartForm != nil {
+		current.forms = append(current.forms, r.MultipartForm)
+	}
+	if err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
 			writeMessage(w, http.StatusRequestEntityTooLarge, "Request body too large")
