@@ -39,6 +39,7 @@ import (
 //	GET    /games/{id}/states/{state}/picture
 //	POST   /games/{id}/states/{state}/load
 //	POST   /games/{id}/save/collected    {sha1}
+//	POST   /games/{id}/save              {save?, keepFor: {libraryOwner, rom, user}}
 //	GET    /cores                        -> the emulators it has, by name
 //	DELETE /games/{id}
 //	POST   /games/{id}/players           -> {player, offer}
@@ -72,15 +73,21 @@ type runningGame struct {
 	// as the app asked, for a save that's the same as another emulator's
 	KeepAsCore     string `json:"keepAsCore,omitempty"`
 	KeepAsFileType string `json:"keepAsFileType,omitempty"`
+	// For a friend's console of a linked pair, the player whose own save it was given, and whose it's kept as
+	KeepFor *keepFor `json:"keepFor,omitempty"`
 
 	address string
 	command *exec.Cmd
 	// The checksum of the save last collected, or given at the start
 	collected string
 	done      chan struct{}
-	endedAt   time.Time
-	idleSince time.Time
-	port      int
+	// The game's own folder, removed once it ends for good; and whether its console is being started again, which
+	// doesn't end it
+	workDir    string
+	restarting bool
+	endedAt    time.Time
+	idleSince  time.Time
+	port       int
 	// Being saved and stopped for having nobody in it
 	stopping bool
 	// Where the game keeps its own save: a file, or a folder of them, zipped to be collected
@@ -128,6 +135,7 @@ func serve() {
 	mux.HandleFunc("DELETE /games/{id}", stopGameRequest)
 	mux.HandleFunc("GET /games/{id}/save", gameSave)
 	mux.HandleFunc("POST /games/{id}/save/collected", saveCollected)
+	mux.HandleFunc("POST /games/{id}/save", giveGameSave)
 	mux.HandleFunc("POST /games/{id}/players", func(w http.ResponseWriter, r *http.Request) {
 		forward(w, r, "/players")
 	})
@@ -352,6 +360,7 @@ func startConsole(request startRequest, id string, link *consoleLink) (*runningG
 		Platform: request.Platform, Rom: request.Rom, SaveType: saveType, Started: time.Now(), StartedBy: request.StartedBy,
 		Title: request.Title, KeepAsCore: request.KeepAsCore, KeepAsFileType: request.KeepAsFileType, collected: collected, saveFolder: saveFolder, savePath: savePath,
 		address: fmt.Sprintf("127.0.0.1:%d", port+1000), done: make(chan struct{}), idleSince: time.Now(), port: port,
+		workDir: workDir,
 	}
 	self, _ := os.Executable()
 	command := exec.Command(self)
@@ -375,37 +384,88 @@ func startConsole(request startRequest, id string, link *consoleLink) (*runningG
 	service.games[game.ID] = game
 	running = true
 	service.Unlock()
-	go func() {
-		_ = command.Wait()
-		close(game.done)
-		_ = os.RemoveAll(workDir)
-		service.Lock()
-		game.Ended, game.endedAt, game.Players = true, time.Now(), 0
-		service.Unlock()
-		log.Printf("game %s (%s) ended", game.ID, game.Title)
-		// One console of a linked pair can't play on alone: the other's wireless would wait on it
-		if partner := partnerOf(game); partner != nil {
-			stopGame(partner)
-		}
-	}()
-
-	// Ready once it answers; a game that never does is stopped
-	ready := false
-	for deadline := time.Now().Add(readyWithin); time.Now().Before(deadline) && !ready; {
-		select {
-		case <-game.done:
-			return nil, http.StatusInternalServerError, errors.New("the game stopped as it started")
-		case <-time.After(250 * time.Millisecond):
-		}
-		_, err := status(game)
-		ready = err == nil
-	}
-	if !ready {
-		stopGame(game)
-		return nil, http.StatusGatewayTimeout, errors.New("the game didn't start in time")
+	go watchConsole(game, command, game.done)
+	if err := awaitReady(game); err != nil {
+		return nil, http.StatusGatewayTimeout, err
 	}
 	log.Printf("game %s started: %s, %s, port %d", game.ID, game.Title, request.Core, port)
 	return game, http.StatusOK, nil
+}
+
+// watchConsole waits for a console's process to end, and ends its game: unless it's being started again
+func watchConsole(game *runningGame, command *exec.Cmd, done chan struct{}) {
+	_ = command.Wait()
+	close(done)
+	service.Lock()
+	restarting := game.restarting
+	if !restarting {
+		game.Ended, game.endedAt, game.Players = true, time.Now(), 0
+	}
+	service.Unlock()
+	if restarting {
+		return
+	}
+	_ = os.RemoveAll(game.workDir)
+	log.Printf("game %s (%s) ended", game.ID, game.Title)
+	// One console of a linked pair can't play on alone: the other's wireless would wait on it
+	if partner := partnerOf(game); partner != nil {
+		stopGame(partner)
+	}
+}
+
+// awaitReady waits for a console to answer; one that never does is stopped
+func awaitReady(game *runningGame) error {
+	service.Lock()
+	done := game.done
+	service.Unlock()
+	for deadline := time.Now().Add(readyWithin); time.Now().Before(deadline); {
+		select {
+		case <-done:
+			return errors.New("the game stopped as it started")
+		case <-time.After(250 * time.Millisecond):
+		}
+		if _, err := status(game); err == nil {
+			return nil
+		}
+	}
+	stopGame(game)
+	return errors.New("the game didn't start in time")
+}
+
+// restartWithSave starts a console's game again from the start with a save in place of its own: an emulator that reads
+// its save only as the game loads, as melonDS DS does, sees it then. Its process is started anew with all else the same:
+// its code, its port, and for a linked console, its link to the other
+func restartWithSave(game *runningGame, save []byte) error {
+	service.Lock()
+	old := game.command
+	game.restarting = true
+	service.Unlock()
+	stopGame(game)
+	// Written once the old process has kept its own save as it ended
+	if err := os.WriteFile(game.savePath, save, 0o644); err != nil {
+		return err
+	}
+	command := exec.Command(old.Path)
+	command.Env, command.Stdout, command.Stderr = old.Env, old.Stdout, old.Stderr
+	done := make(chan struct{})
+	service.Lock()
+	game.command, game.done, game.restarting, game.Players = command, done, false, 0
+	game.collected = checksum(save)
+	err := command.Start()
+	if err != nil {
+		// It can't play on: it ends, and its partner with it
+		game.Ended, game.endedAt = true, time.Now()
+	}
+	service.Unlock()
+	if err != nil {
+		_ = os.RemoveAll(game.workDir)
+		if partner := partnerOf(game); partner != nil {
+			stopGame(partner)
+		}
+		return err
+	}
+	go watchConsole(game, command, done)
+	return awaitReady(game)
 }
 
 // listCores is the emulators the NAS has, by the names the app gives them
@@ -458,6 +518,53 @@ func findGame(id string) *runningGame {
 		return game
 	}
 	return nil
+}
+
+// keepFor is a player's copy of a game in a library: whose library, the game's id there, and the player
+type keepFor struct {
+	LibraryOwner string `json:"libraryOwner"`
+	Rom          string `json:"rom"`
+	User         string `json:"user"`
+}
+
+// giveGameSave puts a player's own save into the friend's console of a linked pair, which started before its player
+// was known, and starts its game again so it reads it. The console's save is kept as that player's from then on
+func giveGameSave(w http.ResponseWriter, r *http.Request) {
+	game := findGame(r.PathValue("id"))
+	if game == nil {
+		http.Error(w, errNoGame.Error(), http.StatusNotFound)
+		return
+	}
+	if game.Console != 2 {
+		http.Error(w, "only a friend's console of a linked pair is given a save", http.StatusConflict)
+		return
+	}
+	var body struct {
+		Save    []byte  `json:"save"`
+		KeepFor keepFor `json:"keepFor"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 128<<20)).Decode(&body); err != nil ||
+		body.KeepFor.LibraryOwner == "" || body.KeepFor.Rom == "" || body.KeepFor.User == "" {
+		http.Error(w, "whose save it is", http.StatusBadRequest)
+		return
+	}
+	// A player with no save of the game yet keeps what the console makes from its blank one
+	if len(body.Save) == 0 {
+		service.Lock()
+		game.KeepFor = &body.KeepFor
+		service.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if err := restartWithSave(game, body.Save); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("game %s (%s): started again with its player's save", game.ID, game.Title)
+	service.Lock()
+	game.KeepFor = &body.KeepFor
+	service.Unlock()
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // The game's own save, as the game last kept it, when it isn't the one collected last. A game keeps its save every
@@ -597,11 +704,16 @@ func saveBeforeStopping(game *runningGame) {
 
 // stopGame asks a game to end, and ends it if it doesn't within a few seconds
 func stopGame(game *runningGame) {
-	_ = game.command.Process.Signal(syscall.SIGTERM)
+	// Its process as it is now: one started again has another
+	service.Lock()
+	command, done := game.command, game.done
+	service.Unlock()
+	_ = command.Process.Signal(syscall.SIGTERM)
 	select {
-	case <-game.done:
+	case <-done:
 	case <-time.After(5 * time.Second):
-		_ = game.command.Process.Kill()
+		_ = command.Process.Kill()
+		<-done
 	}
 }
 

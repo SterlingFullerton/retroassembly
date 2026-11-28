@@ -107,6 +107,9 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 		writeError(w, err)
 		return
 	}
+	if game.Console == 2 && game.KeepFor == nil && scope.User.ID != game.StartedBy {
+		s.giveFriendSave(r.Context(), scope, game)
+	}
 	player, offer, err := s.nasGames.Offer(r.Context(), id)
 	if err != nil {
 		writeError(w, err)
@@ -121,6 +124,35 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 		invitation.FriendCode = nasCode(game.LinkedWith)
 	}
 	writeJSON(w, http.StatusOK, invitation)
+}
+
+// giveFriendSave gives the friend joining a linked game's second console their own save of the game, from the copy
+// in their library, and has it kept for them. A friend without the game in their library plays from a blank save, which
+// isn't kept: for Download Play, a game on one console is enough
+func (s *Server) giveFriendSave(ctx context.Context, scope library.Scope, game nasgames.Game) {
+	var fileID, fileName, platform string
+	err := s.database.QueryRowContext(ctx, `SELECT file_id, file_name, platform FROM roms WHERE user_id = ? AND id = ? LIMIT 1`,
+		game.LibraryOwner, game.Rom).Scan(&fileID, &fileName, &platform)
+	if err != nil {
+		return
+	}
+	// Their copy: the same file in the games folder, or one by the same name
+	var rom string
+	err = scope.Database.QueryRowContext(ctx,
+		`SELECT id FROM roms WHERE user_id = ? AND status = ? AND platform = ? AND (file_id = ? OR file_name = ?)
+		ORDER BY file_id = ? DESC LIMIT 1`,
+		scope.LibraryOwnerID, db.StatusNormal, platform, fileID, fileName, fileID).Scan(&rom)
+	if err != nil {
+		return
+	}
+	var save []byte
+	if latest, err := library.LatestGameSave(ctx, scope, linkedSaveCore, rom); err == nil && latest != nil {
+		save, _ = scope.Storage.Read(latest.FileID)
+	}
+	keepFor := nasgames.KeepFor{LibraryOwner: scope.LibraryOwnerID, Rom: rom, User: scope.User.ID}
+	if err := s.nasGames.GiveSave(ctx, game.ID, save, keepFor); err != nil {
+		log.Printf("nas games: giving %s its friend's save: %v", game.ID, err)
+	}
 }
 
 func (s *Server) answerNASInvitation(w http.ResponseWriter, r *http.Request, scope library.Scope, code, id, answer string) {
@@ -359,19 +391,27 @@ func (s *Server) collectNASSavesOnce(ctx context.Context) {
 		return
 	}
 	for _, game := range games {
-		// A friend's console of a linked pair starts from no save, and its save isn't the starter's to keep
-		if game.StartedBy == "" || game.Rom == "" || game.LibraryOwner == "" || game.Console == 2 {
+		if game.StartedBy == "" || game.Rom == "" || game.LibraryOwner == "" {
 			continue
+		}
+		// A friend's console of a linked pair keeps its save for the friend, when it was given theirs; otherwise its
+		// save is no one's to keep
+		owner, libraryOwner, rom := game.StartedBy, game.LibraryOwner, game.Rom
+		if game.Console == 2 {
+			if game.KeepFor == nil {
+				continue
+			}
+			owner, libraryOwner, rom = game.KeepFor.User, game.KeepFor.LibraryOwner, game.KeepFor.Rom
 		}
 		content, sha1, err := s.nasGames.Save(ctx, game.ID)
 		if err != nil || content == nil {
 			continue
 		}
 		scope := library.Scope{
-			Database: s.database, LibraryOwnerID: game.LibraryOwner, MaxAutoStates: s.config.MaxAutoStatesPerRom,
-			Messages: s.languages.T, Storage: files.Storage{Path: s.config.FilePath}, User: &auth.User{ID: game.StartedBy},
+			Database: s.database, LibraryOwnerID: libraryOwner, MaxAutoStates: s.config.MaxAutoStatesPerRom,
+			Messages: s.languages.T, Storage: files.Storage{Path: s.config.FilePath}, User: &auth.User{ID: owner},
 		}
-		save := library.NewGameSave{Content: bytes.NewReader(content), Core: game.Core, Rom: game.Rom}
+		save := library.NewGameSave{Content: bytes.NewReader(content), Core: game.Core, Rom: rom}
 		if game.SaveType != "" {
 			save.FileType = &game.SaveType
 		}

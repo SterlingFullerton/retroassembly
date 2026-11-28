@@ -43,6 +43,15 @@ type Game struct {
 	// The emulator and kind of file the game's own save is kept as in the player's library, when not its own
 	KeepAsCore     string `json:"keepAsCore,omitempty"`
 	KeepAsFileType string `json:"keepAsFileType,omitempty"`
+	// For a friend's console of a linked pair, the player whose save it was given, and whose it's kept as
+	KeepFor *KeepFor `json:"keepFor,omitempty"`
+}
+
+// KeepFor is a player's copy of a game: whose library it's in, its id there, and the player
+type KeepFor struct {
+	LibraryOwner string `json:"libraryOwner"`
+	Rom          string `json:"rom"`
+	User         string `json:"user"`
 }
 
 // Start is what the service needs to run a game: the emulator, and the game's file, relative to the games folder it
@@ -159,6 +168,16 @@ func (c *Client) StartLinked(ctx context.Context, start Start) ([]Game, error) {
 		return nil, ErrUnavailable
 	}
 	return games, nil
+}
+
+// GiveSave puts a player's own save into the friend's console of a linked pair, which starts its game again with it,
+// and keeps that console's save as theirs from then on. A player with no save gives none, and keeps what it makes
+func (c *Client) GiveSave(ctx context.Context, id string, save []byte, keepFor KeepFor) error {
+	body := map[string]any{"keepFor": keepFor}
+	if len(save) > 0 {
+		body["save"] = save
+	}
+	return c.call(ctx, http.MethodPost, "/games/"+url.PathEscape(id)+"/save", body, nil)
 }
 
 // List is the games running
