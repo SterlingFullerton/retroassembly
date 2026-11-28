@@ -246,6 +246,8 @@ export const gameSaveTable = sqliteTable(
   (table) => [
     index('idx_game_saves_user_rom_core').on(table.userId, table.romId, table.core, table.status, table.createdAt),
     uniqueIndex('idx_game_saves_user_client_id').on(table.userId, table.clientId),
+    // Everyone's saves of a game, moved when its discs are merged or it's uploaded again after a delete
+    index('idx_game_saves_rom').on(table.romId),
   ],
 )
 
@@ -260,6 +262,8 @@ export const launchRecordTable = sqliteTable(
   },
   (table) => [
     index('idx_launch_records_user_status_platform').on(table.userId, table.status, table.platform, table.createdAt),
+    // Everyone's history of a game, moved when its discs are merged and marked deleted with it
+    index('idx_launch_records_rom').on(table.romId),
   ],
 )
 
@@ -273,7 +277,8 @@ export const userPreferenceTable = sqliteTable(
     userId: text().notNull(),
     ...baseSchema,
   },
-  (table) => [index('idx_user_preferences').on(table.userId)],
+  // One row per account, so two settings saved at once update it rather than add another
+  (table) => [uniqueIndex('idx_user_preferences').on(table.userId)],
 )
 
 export const favoriteTable = sqliteTable(
@@ -288,5 +293,14 @@ export const favoriteTable = sqliteTable(
     index('idx_favorites_user_status_created').on(table.userId, table.status, table.createdAt),
     // For remove-favorite.ts: soft-delete favorite with status check
     index('idx_favorites_user_rom_status').on(table.userId, table.romId, table.status),
+    // Everyone's favorite of a game, moved when its discs are merged or it's uploaded again after a delete
+    index('idx_favorites_rom').on(table.romId),
   ],
 )
+
+// One row, whose version goes up with every change to the games or the favorites, made by triggers on those tables
+// (migration 0017, written by hand as Drizzle has no triggers). The server keeps a search's matches while it's the same
+export const libraryVersionTable = sqliteTable('library_version', {
+  id: integer().primaryKey(),
+  version: integer().notNull().default(0),
+})
