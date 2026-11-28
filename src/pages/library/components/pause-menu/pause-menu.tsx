@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react'
+import { Fragment, type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GameInputMessageItem } from '#@/pages/library/components/emulator-portal/game-overlay/game-input-message-item.tsx'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -165,6 +165,32 @@ export function PauseMenu({
   // The exit item that's under way, such as a save before exiting, which can take a few seconds. The others wait for it
   const [exiting, setExiting] = useState<string>()
   const root = useRef<HTMLDivElement>(null)
+  // On a phone held upright the menu is a sheet: dragged down by its handle, it closes and the game goes on
+  const [dragged, setDragged] = useState(0)
+  const drag = useRef<{ at: number; pointer: number; startY: number } | undefined>(undefined)
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    drag.current = { at: event.timeStamp, pointer: event.pointerId, startY: event.clientY }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+  function moveDrag(event: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.pointer === event.pointerId) {
+      setDragged(Math.max(0, event.clientY - drag.current.startY))
+    }
+  }
+  function endDrag(event: PointerEvent<HTMLDivElement>) {
+    const started = drag.current
+    if (started?.pointer !== event.pointerId) {
+      return
+    }
+    drag.current = undefined
+    const distance = Math.max(0, event.clientY - started.startY)
+    const speed = distance / Math.max(1, event.timeStamp - started.at)
+    // Far enough, or flicked: it closes. Otherwise it goes back up
+    if (distance > 96 || (distance > 24 && speed > 0.6)) {
+      onResume()
+    }
+    setDragged(0)
+  }
 
   // A dialog: the focus goes back where it was when the menu closes, unless the game has already put it somewhere
   useEffect(() => {
@@ -282,11 +308,23 @@ export function PauseMenu({
       <div
         className={clsx(
           'pause-panel flex min-h-0 flex-col gap-4 overflow-y-auto bg-neutral-900/80 text-white backdrop-blur-xl',
+          dragged === 0 && 'transition-transform duration-200',
           'landscape:pl-safe-offset-5 landscape:py-safe-offset-6 landscape:h-full landscape:w-[min(30rem,45%)] landscape:min-w-80 landscape:border-r landscape:border-white/10 landscape:pr-5',
           'portrait:pb-safe-offset-5 portrait:max-h-[85%] portrait:w-full portrait:rounded-t-2xl portrait:px-4 portrait:pt-3',
         )}
+        style={dragged > 0 ? { transform: `translateY(${dragged}px)` } : undefined}
       >
-        <div className='mx-auto h-1 w-9 shrink-0 rounded-full bg-white/30 landscape:hidden' />
+        {/* The handle, with room around it for a thumb */}
+        <div
+          aria-hidden
+          className='-mx-4 -mt-3 -mb-2 flex shrink-0 cursor-grab touch-none justify-center pt-3 pb-2 active:cursor-grabbing landscape:hidden'
+          onPointerCancel={endDrag}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+        >
+          <div className='h-1 w-9 rounded-full bg-white/30' />
+        </div>
 
         {page === 'main' ? (
           <>

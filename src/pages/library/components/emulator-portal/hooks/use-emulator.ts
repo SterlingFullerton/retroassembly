@@ -82,6 +82,38 @@ const defaultRetroarchConfig: RetroarchConfig = {
 // else: a controller connecting, or a setting changing, never starts a download
 const preparations = new Map<string, Promise<Nostalgist | undefined>>()
 
+// How many of the screen's refreshes each frame of the game waits for. RetroArch is woken at every refresh and runs a
+// frame when one is due: on a 120 Hz screen a 60 fps game then misses a wake now and then, and that frame lasts three
+// refreshes (25 ms) instead of two, about one frame in eight. Waiting for every second refresh keeps each at two. A
+// screen of 90 Hz or so is woken at every refresh, as one of 60 is: waiting for two would slow the game below 60
+let refreshRate: Promise<number> | undefined
+function measureRefreshRate() {
+  return new Promise<number>((resolve) => {
+    const times: number[] = []
+    // A hidden page isn't woken for refreshes: it's taken as 60 Hz
+    const fallback = setTimeout(() => resolve(60), 1000)
+    function tick(time: number) {
+      times.push(time)
+      if (times.length < 25) {
+        requestAnimationFrame(tick)
+        return
+      }
+      clearTimeout(fallback)
+      const gaps = times
+        .slice(1)
+        .map((time, index) => time - times[index])
+        .toSorted((a, b) => a - b)
+      const gap = gaps[Math.floor(gaps.length / 2)]
+      resolve(gap > 0 ? 1000 / gap : 60)
+    }
+    requestAnimationFrame(tick)
+  })
+}
+async function getSwapInterval() {
+  refreshRate ??= measureRefreshRate()
+  return Math.max(1, Math.floor(((await refreshRate) + 2) / 60))
+}
+
 /** Shuts down an emulator that was got ready and never launched, so its memory is let go */
 function discard(emulator: Nostalgist | undefined) {
   if (emulator?.getStatus() !== 'initial') {
@@ -392,7 +424,11 @@ export function useEmulatorSessionController({
       if (launchProfile.threads && !globalThis.crossOriginIsolated) {
         return
       }
-      const prepared = await Nostalgist.prepare(optionsRef.current)
+      const options = optionsRef.current
+      const prepared = await Nostalgist.prepare({
+        ...options,
+        retroarchConfig: { ...options.retroarchConfig, video_swap_interval: await getSwapInterval() },
+      })
       // Ready only after the player left the game, or its settings changed: let go, rather than kept for as long as the
       // tab is open
       if (currentKey.current !== preparedKey) {
