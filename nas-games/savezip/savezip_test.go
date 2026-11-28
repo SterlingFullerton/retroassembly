@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -70,5 +71,30 @@ func TestReadAndWrite(t *testing.T) {
 	}
 	if files, _ := Read(folder); len(files) != 1 {
 		t.Fatalf("after writing one file, %d", len(files))
+	}
+}
+
+func TestUnzipRefusesTooMuch(t *testing.T) {
+	// More than the saves may take unpacked, in files that each say they're small: packed, it's a few kilobytes
+	var buffer bytes.Buffer
+	writer := zip.NewWriter(&buffer)
+	for index := range 3 {
+		file, _ := writer.Create("SAVEDATA/GAME/" + string(rune('A'+index)))
+		_, _ = file.Write(make([]byte, MaxSize/2))
+	}
+	_ = writer.Close()
+	if _, err := Unzip(buffer.Bytes(), "SAVEDATA"); err != ErrTooBig {
+		t.Fatalf("unzipped %d bytes packed: %v", buffer.Len(), err)
+	}
+
+	// More files than any game's saves
+	buffer.Reset()
+	writer = zip.NewWriter(&buffer)
+	for index := range MaxFiles + 1 {
+		_, _ = writer.Create("GAME/" + strconv.Itoa(index))
+	}
+	_ = writer.Close()
+	if _, err := Unzip(buffer.Bytes(), "SAVEDATA"); err != ErrTooBig {
+		t.Fatalf("unzipped %d files: %v", MaxFiles+1, err)
 	}
 }

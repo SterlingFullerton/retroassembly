@@ -79,12 +79,25 @@ func Zip(files []File) []byte {
 	return append(append(local.Bytes(), central.Bytes()...), end...)
 }
 
+// The most a zip of saves may hold, unpacked, and the most files: far more than any game's saves, and little enough
+// that a zip made to unpack into gigabytes is turned away rather than filling memory and the disk
+const (
+	MaxSize  = 64 << 20
+	MaxFiles = 1000
+)
+
+// ErrTooBig is a zip of saves past MaxSize or MaxFiles
+var ErrTooBig = errors.New("the saves are bigger than any game's")
+
 // Unzip is the files in a zip of saves, compressed or not. A zip of the whole folder, with the folder's own name at
 // the start of every path (`SAVEDATA/…`), is read as the folder's contents. Nothing outside the folder is taken
 func Unzip(data []byte, folderName string) ([]File, error) {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return nil, err
+	}
+	if len(reader.File) > MaxFiles {
+		return nil, ErrTooBig
 	}
 	var entries []*zip.File
 	for _, entry := range reader.File {
@@ -98,7 +111,12 @@ func Unzip(data []byte, folderName string) ([]File, error) {
 		wrapped = wrapped && strings.HasPrefix(entry.Name, prefix)
 	}
 	var files []File
+	// What the files take unpacked so far. The sizes a zip states are only a first check: the limit is on what's read
+	left := int64(MaxSize)
 	for _, entry := range entries {
+		if entry.UncompressedSize64 > uint64(left) {
+			return nil, ErrTooBig
+		}
 		name := entry.Name
 		if wrapped {
 			name = strings.TrimPrefix(name, prefix)
@@ -110,10 +128,13 @@ func Unzip(data []byte, folderName string) ([]File, error) {
 		if err != nil {
 			return nil, err
 		}
-		content, err := io.ReadAll(io.LimitReader(opened, 256<<20))
+		content, err := io.ReadAll(io.LimitReader(opened, left+1))
 		_ = opened.Close()
 		if err != nil {
 			return nil, err
+		}
+		if left -= int64(len(content)); left < 0 {
+			return nil, ErrTooBig
 		}
 		files = append(files, File{Content: content, Path: name})
 	}
