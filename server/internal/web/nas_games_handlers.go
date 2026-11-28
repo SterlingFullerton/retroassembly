@@ -506,7 +506,8 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 		return
 	}
 	// A game of this ROM that this player started and is still running is joined again rather than started twice: a
-	// second press, or one after a connection that didn't come up, lands in the same game. Any other is a second game
+	// second press, or one after a connection that didn't come up, lands in the same game. Any other is a second game,
+	// which only an admin may start
 	for _, game := range games {
 		if game.Ended || game.StartedBy != scope.User.ID || game.Console == 2 {
 			continue
@@ -517,8 +518,11 @@ func (s *Server) startNASGame(w http.ResponseWriter, r *http.Request, scope libr
 			writeJSON(w, http.StatusOK, nasCodes(game))
 			return
 		}
-		writeError(w, errNASOneGame)
-		return
+		// One game on the server at a time, so one player can't take every slot. Admins may run several
+		if scope.User.Role != auth.RoleAdmin {
+			writeError(w, errNASOneGame)
+			return
+		}
 	}
 	// A save of an ended game of this player's that's still waiting to be kept is kept first, so the game starts from
 	// it rather than from the save before

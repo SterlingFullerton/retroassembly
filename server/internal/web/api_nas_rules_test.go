@@ -36,6 +36,8 @@ func failureOf(t *testing.T, body []byte) map[string]string {
 func TestServerGameLimits(t *testing.T) {
 	nas := &fakeNAS{}
 	api := withNAS(t, nas)
+	// The first account is the admin
+	admin := api.register(t, "admin")
 	player := api.register(t, "player")
 	balloon := player.addGame("Balloon Fight (U) [!].nes")
 	quest := player.addGame("Quest (USA).nes")
@@ -61,6 +63,13 @@ func TestServerGameLimits(t *testing.T) {
 		t.Fatalf("a second game: %+v", said)
 	}
 	player.expect(http.StatusOK, player.send(http.MethodDelete, "/api/v1/nas_games/0ABCDE", "", nil))
+
+	// An admin may run several
+	adminStart := func(rom string) response {
+		return admin.json(http.MethodPost, "/api/v1/nas_games", map[string]string{"controls": "nes", "core": "fceumm", "rom": rom})
+	}
+	admin.expect(http.StatusOK, adminStart(admin.addGame("Balloon Fight (U) [!].nes").ID))
+	admin.expect(http.StatusOK, adminStart(admin.addGame("Quest (USA).nes").ID))
 
 	// A full server is told as one, with a code, about the server
 	nas.mu.Lock()
@@ -95,7 +104,8 @@ func TestServerGameLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 	said = failureOf(t, player.expect(http.StatusInternalServerError, start(quest.ID)))
-	if said["code"] != "server_save_missing" || len(nas.games) != 1 {
+	// Started so far: the player's first game and the admin's two
+	if said["code"] != "server_save_missing" || len(nas.games) != 3 {
 		t.Fatalf("unreadable: %+v, %d started", said, len(nas.games))
 	}
 }
