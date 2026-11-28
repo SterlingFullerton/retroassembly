@@ -10,6 +10,10 @@ RUN go mod download
 COPY . ./
 RUN go build -trimpath -o /host .
 
+# The service's checks and tests, which need the libraries above: CI builds this stage (docker build --target test)
+FROM build AS test
+RUN test -z "$(gofmt -l .)" && go vet ./... && go test -race ./...
+
 # melonDS as the browser has it: libretro's, at the same commit, with the same patch (patches/melonds.patch, a copy of
 # src/assets/cores/melonds_libretro.patch). Its fix gives the DS default wireless firmware, without which HeartGold and
 # SoulSilver stop at a communication error on loading a save; it also puts the mic and the lid on L3 and L2. Drawn by
