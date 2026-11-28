@@ -638,7 +638,14 @@ func (s *Settings) UpdateBioses(ctx context.Context, database *sql.DB, libraryOw
 func (s *Settings) update(ctx context.Context, database *sql.DB, userID, libraryOwnerID string, snippet Object, newFileID string) (Object, error) {
 	withoutSharedBioses(snippet)
 	s.withoutUnknownPlatforms(snippet)
-	existing, err := scanRow(database.QueryRowContext(ctx,
+	// Read, merged and saved in one transaction, so two saves at once (a BIOS file uploaded while a shader is chosen in
+	// another tab) each merge over the other's rather than over the same settings
+	transaction, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer transaction.Rollback()
+	existing, err := scanRow(transaction.QueryRowContext(ctx,
 		`SELECT emulator, input, ui FROM user_preferences WHERE user_id = ? LIMIT 1`, userID))
 	if errors.Is(err, sql.ErrNoRows) {
 		existing, err = nil, nil
@@ -672,7 +679,7 @@ func (s *Settings) update(ctx context.Context, database *sql.DB, userID, library
 			}
 		}
 		arguments = append(arguments, userID)
-		saved, err = scanRow(database.QueryRowContext(ctx,
+		saved, err = scanRow(transaction.QueryRowContext(ctx,
 			`UPDATE user_preferences SET `+set+` WHERE user_id = ? RETURNING emulator, input, ui`, arguments...))
 	} else {
 		inserted := maps.Clone(snippet)
@@ -680,11 +687,14 @@ func (s *Settings) update(ctx context.Context, database *sql.DB, userID, library
 			inserted["ui"] = maps.Clone(ui)
 		}
 		s.normalize(inserted)
-		saved, err = scanRow(database.QueryRowContext(ctx, `
+		saved, err = scanRow(transaction.QueryRowContext(ctx, `
 			INSERT INTO user_preferences (emulator, input, ui, user_id, created_at, id, status, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING emulator, input, ui`,
 			column(inserted["emulator"]), column(inserted["input"]), column(inserted["ui"]), userID, now, ids.New(),
 			db.StatusNormal, now))
+	}
+	if err == nil {
+		err = transaction.Commit()
 	}
 	if err != nil {
 		return nil, err
