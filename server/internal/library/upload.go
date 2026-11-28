@@ -70,13 +70,29 @@ func SaveUploadedRom(ctx context.Context, scope Scope, platform, fileName string
 		}
 		return rom, "", nil
 	}
+	id := ids.New()
 	columns = append(columns, "created_at", "id", "status", "updated_at")
-	arguments = append(arguments, now, ids.New(), db.StatusNormal, now)
+	arguments = append(arguments, now, id, db.StatusNormal, now)
 	rom, err := scanObject(transaction.QueryRowContext(ctx,
 		`INSERT INTO roms (`+strings.Join(columns, ", ")+`) VALUES (`+placeholders(len(columns))+`) RETURNING `+
 			selectColumns("", romColumns), arguments...), romColumns)
 	if err != nil {
 		return nil, "", err
+	}
+	// A game deleted and uploaded again gets back everyone's saves, save states and favorites, still kept under the
+	// deleted game. Its play history went with it
+	deleted := `SELECT id FROM roms WHERE user_id = ?2 AND platform = ?3 AND file_name = ?4 AND status = ?5`
+	for _, statement := range []string{
+		`UPDATE states SET rom_id = ?1 WHERE rom_id IN (` + deleted + `)`,
+		`UPDATE game_saves SET rom_id = ?1 WHERE rom_id IN (` + deleted + `)`,
+		// Someone with a favorite on two deleted copies keeps one
+		`UPDATE OR IGNORE favorites SET rom_id = ?1 WHERE rom_id IN (` + deleted + `)`,
+		`DELETE FROM favorites WHERE rom_id IN (` + deleted + `)`,
+	} {
+		if _, err := transaction.ExecContext(ctx, statement, id, scope.LibraryOwnerID, platform, fileName,
+			db.StatusDeleted); err != nil {
+			return nil, "", err
+		}
 	}
 	return rom, "", transaction.Commit()
 }

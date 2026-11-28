@@ -64,6 +64,8 @@ type Cache struct {
 	conversions map[string]*call
 	coverLists  map[string]*coverList
 	coverParses map[string]*call
+	// Files being fetched again in the background
+	refreshes map[string]bool
 }
 
 type call struct {

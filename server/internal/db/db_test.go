@@ -183,6 +183,105 @@ func TestMigrateCopiesTheDatabaseBeforeAnUpgrade(t *testing.T) {
 	}
 }
 
+// A copy from an earlier upgrade that was put back is older than the database's latest changes: it's set aside, and a
+// fresh copy taken, so putting back the copy loses nothing written since
+func TestMigrateTakesAFreshCopyOverAStaleOne(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "retroassembly.sqlite")
+	migrations := t.TempDir()
+	database, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	writeMigrations(t, migrations, "first")
+	if _, err := Migrate(database, migrations); err != nil {
+		t.Fatal(err)
+	}
+	stale := path + ".before-second"
+	if err := os.WriteFile(stale, []byte("stale"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(stale, old, old); err != nil {
+		t.Fatal(err)
+	}
+	writeMigrations(t, migrations, "first", "second")
+	if _, err := Migrate(database, migrations); err != nil {
+		t.Fatal(err)
+	}
+	setAside := "second-" + old.Format("20060102-150405")
+	if found := backups(t, path); strings.Join(found, " ") != "second "+setAside {
+		t.Fatalf("copies are %v, want a fresh one and the old one set aside", found)
+	}
+	if got := tables(t, stale); got != "first" {
+		t.Errorf("the copy has tables %q, want the database as it was", got)
+	}
+	if content, _ := os.ReadFile(path + ".before-" + setAside); string(content) != "stale" {
+		t.Errorf("the old copy set aside holds %q", content)
+	}
+}
+
+// A copy made after the database last changed is from an upgrade that failed, and is kept as it is
+func TestMigrateKeepsACurrentCopy(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "retroassembly.sqlite")
+	migrations := t.TempDir()
+	database, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	writeMigrations(t, migrations, "first")
+	if _, err := Migrate(database, migrations); err != nil {
+		t.Fatal(err)
+	}
+	current := path + ".before-second"
+	if err := os.WriteFile(current, []byte("current"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	later := time.Now().Add(time.Minute)
+	if err := os.Chtimes(current, later, later); err != nil {
+		t.Fatal(err)
+	}
+	writeMigrations(t, migrations, "first", "second")
+	if _, err := Migrate(database, migrations); err != nil {
+		t.Fatal(err)
+	}
+	if found := backups(t, path); len(found) != 1 {
+		t.Errorf("copies are %v, want the one there", found)
+	}
+	if content, _ := os.ReadFile(current); string(content) != "current" {
+		t.Errorf("the copy holds %q, want it kept", content)
+	}
+}
+
+// In WAL mode a read goes on while another connection is writing, rather than waiting for it
+func TestOpenReadsWhileAWriteIsUnderWay(t *testing.T) {
+	database, err := Open(filepath.Join(t.TempDir(), "retroassembly.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	var mode string
+	if err := database.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil || mode != "wal" {
+		t.Fatalf("journal mode %q, %v", mode, err)
+	}
+	if _, err := database.Exec(`CREATE TABLE games (name text)`); err != nil {
+		t.Fatal(err)
+	}
+	transaction, err := database.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer transaction.Rollback()
+	if _, err := transaction.Exec(`INSERT INTO games VALUES ('unsaved')`); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err := database.QueryRow(`SELECT count(*) FROM games`).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("read %d games, %v; want 0 while the write isn't committed", count, err)
+	}
+}
+
 func TestMigrateKeepsOnlyTheNewestCopies(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "retroassembly.sqlite")
 	migrations := t.TempDir()

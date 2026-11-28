@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -113,8 +114,10 @@ func (c *Compressor) compress(isoFileID string) error {
 			os.Remove(csoPath)
 			return err
 		}
+		// The game may have been deleted meanwhile, taking its ISO with it; its CSO goes too
 		info, err := os.Stat(isoPath)
 		if err != nil {
+			os.Remove(csoPath)
 			return err
 		}
 		// A disc that hardly compresses (one of video, mostly) stays an ISO, and is remembered so it isn't tried again
@@ -128,9 +131,17 @@ func (c *Compressor) compress(isoFileID string) error {
 		log.Printf("Compressed %s: %d MB to %d MB in %ds", isoFileID, megabytes(info.Size()), megabytes(size),
 			int64(math.Round(time.Since(started).Seconds())))
 	}
+	// Under the lock the ISO and CSO share, where a delete removes them and an upload looks for them
 	unlock := files.Lock(isoFileID)
 	_, err := c.Database.Exec(`UPDATE roms SET file_id = ?, updated_at = ? WHERE file_id = ?`, csoFileID,
 		db.Millis(time.Now()), isoFileID)
+	if err == nil {
+		// Deleted while it was compressed or checked, no game uses the CSO
+		var used bool
+		if used, err = c.isUsed(csoFileID); err == nil && !used {
+			os.Remove(csoPath)
+		}
+	}
 	unlock()
 	if err != nil {
 		return err
@@ -141,6 +152,36 @@ func (c *Compressor) compress(isoFileID string) error {
 	// By then the game may have been deleted too, taking its CSO with it; the ISO goes all the same
 	time.AfterFunc(isoKeptFor, func() { c.removeUnusedISO(isoFileID, true) })
 	return nil
+}
+
+// isUsed tells whether a game in the library uses a file
+func (c *Compressor) isUsed(fileID string) (bool, error) {
+	var used string
+	err := c.Database.QueryRow(`SELECT id FROM roms WHERE file_id = ? AND status = ? LIMIT 1`, fileID, db.StatusNormal).
+		Scan(&used)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+// removeUnusedCSO removes a CSO no game uses, nor the ISO it was made from: one left by a game deleted while it was
+// being compressed, by a version that didn't remove it then
+func (c *Compressor) removeUnusedCSO(csoFileID string) {
+	defer files.Lock(csoFileID)()
+	csoPath, ok := c.FilePath(csoFileID)
+	if !ok {
+		return
+	}
+	base := strings.TrimSuffix(csoFileID, path.Ext(csoFileID))
+	for _, fileID := range []string{csoFileID, base + ".iso", base + ".ISO"} {
+		if used, err := c.isUsed(fileID); err != nil || used {
+			return
+		}
+	}
+	if os.Remove(csoPath) == nil {
+		log.Printf("Removed %s, which no game uses", csoFileID)
+	}
 }
 
 // removeUnusedISO removes an ISO no game uses any more, once its CSO is in place
@@ -160,7 +201,7 @@ func (c *Compressor) removeUnusedISO(isoFileID string, evenWithoutCso bool) {
 }
 
 // CompressAll runs at startup: it compresses PSP ISOs uploaded before compression existed, or whose compression was
-// cut short, and removes ISOs left behind by a restart during the wait after a swap
+// cut short, removes ISOs left behind by a restart during the wait after a swap, and CSOs no game uses
 func (c *Compressor) CompressAll() error {
 	rows, err := c.Database.Query(`SELECT DISTINCT file_id FROM roms WHERE platform = 'psp' AND status = ? AND file_id LIKE '%.iso'`,
 		db.StatusNormal)
@@ -207,6 +248,9 @@ func (c *Compressor) CompressAll() error {
 		c.mutex.Unlock()
 		if isoExtension.MatchString(entry.Name()) && !replaced {
 			c.removeUnusedISO(fileID, false)
+		}
+		if csoName.MatchString(entry.Name()) && entry.Type().IsRegular() {
+			c.removeUnusedCSO(fileID)
 		}
 	}
 	return nil

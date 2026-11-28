@@ -267,9 +267,22 @@ func CoverListURL(folder string) string {
 
 var coverLink = regexp.MustCompile(`<a href="([^"?/][^"]*\.png)"`)
 
-// coverList is libretro's box art for a console, by title, from the copy kept with the cache
-func (c *Cache) coverList(folder string, offline bool) (*coverList, error) {
-	cached, err := c.File(CoverListURL(folder), coverListMaxAge, offline)
+// coverList is libretro's box art for a console, by title, from the copy kept with the cache. Without wait, as for a
+// page, the copy there is used however old, and a new one is fetched in the background when it's due, so a page never
+// waits for libretro's server to send a list of a few MB
+func (c *Cache) coverList(folder string, offline, wait bool) (*coverList, error) {
+	href := CoverListURL(folder)
+	var cached *Entry
+	var err error
+	if wait || offline {
+		cached, err = c.File(href, coverListMaxAge, offline)
+	} else {
+		cached, err = c.File(href, 0, true)
+		if err == nil && (cached == nil || cached.Stale ||
+			cached.Status == 200 && millis(time.Now())-cached.Time > float64(coverListMaxAge.Milliseconds())) {
+			c.refreshInBackground(href)
+		}
+	}
 	if err != nil || cached == nil || cached.Status != 200 {
 		return nil, nil
 	}
@@ -315,15 +328,43 @@ func (c *Cache) parseCoverList(folder string, cached *Entry) error {
 	return nil
 }
 
+// refreshInBackground fetches a file again without anyone waiting for it, once at a time
+func (c *Cache) refreshInBackground(href string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if c.refreshes == nil {
+		c.refreshes = map[string]bool{}
+	}
+	if c.refreshes[href] {
+		return
+	}
+	c.refreshes[href] = true
+	go func() {
+		defer func() {
+			recover()
+			c.mutex.Lock()
+			delete(c.refreshes, href)
+			c.mutex.Unlock()
+		}()
+		c.File(href, coverListMaxAge, false)
+	}()
+}
+
 // RefreshCoverList fetches libretro's list of covers for a console, so matching works offline. Run by the prefetch
 func (c *Cache) RefreshCoverList(folder string) (bool, error) {
-	list, err := c.coverList(folder, false)
+	list, err := c.coverList(folder, false, true)
 	return list != nil, err
 }
 
 // MatchedCover is the address of libretro's box art for a game whose own names find none, matched by title: its name
 // in libretro's database, its file name, then its LaunchBox name. Empty when libretro has no box art with that title
 func (c *Cache) MatchedCover(rom Rom, offline bool) (string, error) {
+	return c.matchedCover(rom, offline, true)
+}
+
+// matchedCover is MatchedCover; without wait, a list of covers that's due to be fetched again is fetched in the
+// background, and the one there is used meanwhile
+func (c *Cache) matchedCover(rom Rom, offline, wait bool) (string, error) {
 	platform := rom.Metadata.libretroPlatform()
 	if platform == "" {
 		platform = rom.Platform
@@ -332,7 +373,7 @@ func (c *Cache) MatchedCover(rom Rom, offline bool) (string, error) {
 	if folder == "" {
 		return "", nil
 	}
-	list, err := c.coverList(folder, offline)
+	list, err := c.coverList(folder, offline, wait)
 	if err != nil || list == nil {
 		return "", err
 	}
@@ -424,7 +465,8 @@ func (c *Cache) CoverCandidates(rom Rom) ([]string, error) {
 			return candidates, err
 		}
 	}
-	matched, err := c.MatchedCover(rom, c.Offline)
+	// A page doesn't wait for libretro's list of covers
+	matched, err := c.matchedCover(rom, c.Offline, false)
 	if err != nil {
 		return nil, err
 	}
