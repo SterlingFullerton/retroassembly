@@ -331,7 +331,9 @@ static void core_log(enum retro_log_level level, const char *format, ...) {
 
 // The link to the other console of a linked game: see Linked consoles below
 static struct {
-  const struct retro_netpacket_callback *callback;
+  // Copied: the core may hand it over from its stack
+  struct retro_netpacket_callback callback;
+  int has_callback;
   int socket;
   uint16_t id;
   struct sockaddr_un peer;
@@ -436,7 +438,10 @@ static bool environment(unsigned command, void *data) {
       return true;
     }
     case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
-      linked.callback = data;
+      if (data) {
+        linked.callback = *(const struct retro_netpacket_callback *)data;
+        linked.has_callback = 1;
+      }
       return true;
     case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
       *(bool *)data = false;
@@ -486,7 +491,7 @@ static void RETRO_CALLCONV link_poll_receive(void) {
     if (got <= 0) {
       return;
     }
-    linked.callback->receive(packet, (size_t)got, linked.id == 0 ? 1 : 0);
+    linked.callback.receive(packet, (size_t)got, linked.id == 0 ? 1 : 0);
   }
 }
 
@@ -496,7 +501,7 @@ static int link_start(void) {
   if (!self || !peer || !id || !*self || !*peer) {
     return 0;
   }
-  if (!linked.callback) {
+  if (!linked.has_callback || !linked.callback.start || !linked.callback.receive) {
     fprintf(stderr, "[host] the core can't link consoles\n");
     return 0;
   }
@@ -518,10 +523,10 @@ static int link_start(void) {
   setsockopt(linked.socket, SOL_SOCKET, SO_SNDBUF, &room, sizeof room);
   setsockopt(linked.socket, SOL_SOCKET, SO_RCVBUF, &room, sizeof room);
   linked.id = (uint16_t)atoi(id);
-  linked.callback->start(linked.id, link_send, link_poll_receive);
+  linked.callback.start(linked.id, link_send, link_poll_receive);
   // The host is told the other console has joined: it's there from the start
-  if (linked.id == 0 && linked.callback->connected) {
-    linked.callback->connected(1);
+  if (linked.id == 0 && linked.callback.connected) {
+    linked.callback.connected(1);
   }
   linked.started = 1;
   fprintf(stderr, "[host] linked as console %u\n", linked.id + 1);
@@ -529,8 +534,8 @@ static int link_start(void) {
 }
 
 static void link_stop(void) {
-  if (linked.started && linked.callback->stop) {
-    linked.callback->stop();
+  if (linked.started && linked.callback.stop) {
+    linked.callback.stop();
   }
   linked.started = 0;
   if (linked.socket >= 0) {
@@ -612,8 +617,8 @@ double fe_sample_rate(void) { return av.timing.sample_rate; }
 void fe_run(void) {
   if (linked.started) {
     link_poll_receive();
-    if (linked.callback->poll) {
-      linked.callback->poll();
+    if (linked.callback.poll) {
+      linked.callback.poll();
     }
   }
   core.run();
