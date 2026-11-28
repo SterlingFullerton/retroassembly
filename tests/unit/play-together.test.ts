@@ -75,6 +75,20 @@ await describe('a controller sent across the network', async () => {
     assert.deepEqual(to.axes.slice(1), [0, 0, 0])
   })
 
+  // The same bytes are fed to the game service's pad in nas-games/pad_test.go: a change on either side fails one
+  // of them
+  await it('with a stylus, is these twelve bytes', () => {
+    const golden = [1, 2, 1, 127, 129, 64, 0, 0, 64, 255, 255, 1]
+    assert.deepEqual([...encodePadState(pad([0, 9, 16], [1, -1, 0.5, 0]), { down: true, x: 0.25, y: 1 })], golden)
+  })
+
+  await it('with a stylus, is ignored by a person’s game, which takes none', () => {
+    const to = pad([4], [0.5, 0, 0, 0])
+    const withStylus = encodePadState(pad([1]), { down: true, x: 0.5, y: 0.5 })
+    assert.equal(decodePadState(withStylus, to), false)
+    assert.deepEqual(to, pad([4], [0.5, 0, 0, 0]))
+  })
+
   await it('is ignored when it’s the wrong length, leaving the controller as it was', () => {
     const to = pad([4])
     assert.equal(decodePadState(new Uint8Array(3), to), false)
