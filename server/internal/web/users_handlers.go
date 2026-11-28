@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"regexp"
 
 	"retroassembly/server/internal/auth"
 	"retroassembly/server/internal/library"
+	"retroassembly/server/internal/preference"
 )
 
 // GET /api/v1/users: every account, for the admin's settings
@@ -100,12 +100,9 @@ func (s *Server) removeAccountData(r *http.Request, scope library.Scope, userID 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	s.removeUnusedBioses(r, biosFileID.FindAllString(emulator.String, -1))
+	s.removeUnusedBioses(r, preference.BiosFileIDs(emulator.String))
 	return nil
 }
-
-// A BIOS file's id wherever it's written in an account's settings
-var biosFileID = regexp.MustCompile(`bioses/[^"\\]+`)
 
 // DELETE /api/v1/users/{id}: an account an admin deletes, with everything it kept
 func (s *Server) deleteAccount(w http.ResponseWriter, r *http.Request, scope library.Scope) {

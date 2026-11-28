@@ -274,15 +274,19 @@ func (s *Server) addBIOS(w http.ResponseWriter, r *http.Request, scope library.S
 }
 
 // removeUnusedBioses deletes the BIOS files that are in no one's settings any more. One file is shared by everyone
-// who added the same content
+// who added the same content. Only a BIOS file's id is ever deleted, written as it's stored: an id that only starts
+// like one, such as bioses/../roms/..., names some other file, and is left alone
 func (s *Server) removeUnusedBioses(r *http.Request, fileIDs []string) {
 	for _, fileID := range fileIDs {
+		if kind, ok := files.KindOf(fileID); !ok || kind.Name != "bios" || path.Clean(fileID) != fileID {
+			continue
+		}
 		unlock := files.Lock(fileID)
 		var users int
 		err := s.database.QueryRowContext(r.Context(),
 			`SELECT count(*) FROM user_preferences WHERE instr(emulator, ?) > 0`, fileID).Scan(&users)
 		if err == nil && users == 0 {
-			if filePath, ok := s.config.FilePath(fileID); ok && strings.HasPrefix(fileID, "bioses/") {
+			if filePath, ok := s.config.FilePath(fileID); ok {
 				os.Remove(filePath)
 			}
 		}
