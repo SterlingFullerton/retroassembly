@@ -129,7 +129,8 @@ func assignDiscGroups(ctx context.Context, transaction *sql.Tx, consoles []strin
 
 // mergeDiscGroups moves each player's saves, favorites and play history from a game's other discs to the disc that
 // stands for it (the lowest-numbered one in the library), so the game has them all in one place. Saves keep which disc
-// they were made on. With only, just that game's discs are gone through
+// they were made on. With only, just that game's discs are gone through. Only discs that have something to move are
+// read: at each start that's almost none, as the rest were merged before
 func mergeDiscGroups(ctx context.Context, transaction *sql.Tx, only *DiscGroup) error {
 	filter, arguments := "", []any{}
 	if only != nil {
@@ -137,14 +138,22 @@ func mergeDiscGroups(ctx context.Context, transaction *sql.Tx, only *DiscGroup) 
 		arguments = []any{only.UserID, only.Platform, only.Group}
 	}
 	rows, err := transaction.QueryContext(ctx, `
-		SELECT roms.id, roms.disc_number, (
-			SELECT first.id FROM roms first
-			WHERE first.user_id = roms.user_id AND first.platform = roms.platform AND first.disc_group = roms.disc_group
-				AND first.status = 1
-			ORDER BY first.disc_number, first.created_at LIMIT 1
-		) AS representative
-		FROM roms
-		WHERE roms.disc_group IS NOT NULL AND roms.status = 1`+filter, arguments...)
+		SELECT discs.id, discs.disc_number, discs.representative FROM (
+			SELECT roms.id, roms.disc_number, (
+				SELECT first.id FROM roms first
+				WHERE first.user_id = roms.user_id AND first.platform = roms.platform AND first.disc_group = roms.disc_group
+					AND first.status = 1
+				ORDER BY first.disc_number, first.created_at LIMIT 1
+			) AS representative
+			FROM roms
+			WHERE roms.disc_group IS NOT NULL AND roms.status = 1`+filter+`
+		) discs
+		WHERE discs.representative != discs.id AND (
+			EXISTS (SELECT 1 FROM states WHERE states.rom_id = discs.id)
+			OR EXISTS (SELECT 1 FROM launch_records WHERE launch_records.rom_id = discs.id)
+			OR EXISTS (SELECT 1 FROM game_saves WHERE game_saves.rom_id = discs.id)
+			OR EXISTS (SELECT 1 FROM favorites WHERE favorites.rom_id = discs.id)
+		)`, arguments...)
 	if err != nil {
 		return err
 	}
