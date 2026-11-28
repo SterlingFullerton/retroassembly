@@ -31,12 +31,19 @@ import (
 // on one thread: a request waits for the frame loop to take it.
 //
 //	GET  /states            -> the game's states, newest first
-//	POST /states            -> the new state
+//	POST /states            -> the new state; with ?auto=1, one the game service keeps as it stops a game left idle
 //	GET  /states/{id}/picture
 //	POST /states/{id}/load
+//
+// The service gives each game a folder of states for the player, the game and the emulator, as one emulator's states
+// don't load in another's. States kept automatically are in a folder of their own in it, with a limit of their own, so
+// they never take the place of the player's own
 
-// How many states a player keeps of a game; past this, the oldest go
-const keptStates = 20
+// How many states a player keeps of a game, and how many automatic ones; past these, the oldest go
+const (
+	keptStates     = 20
+	keptAutoStates = 3
+)
 
 var validStateID = regexp.MustCompile(`^[0-9]{8}-[0-9]{9}$`)
 
@@ -45,6 +52,8 @@ type stateInfo struct {
 	Created time.Time `json:"created"`
 	// Its size on the NAS, compressed
 	Size int64 `json:"size"`
+	// Kept by the service as it stopped the game, not by a player
+	Auto bool `json:"auto,omitempty"`
 }
 
 // A state is taken or put back between frames, and only that: compressing it and the files are done after, outside
@@ -64,19 +73,40 @@ var stateRequests = make(chan stateRequest, 4)
 
 func statesDir() string { return envOr("STATES_DIR", "/config/states") }
 
+// The folder a state is kept in: the player's, or the automatic ones'
+func statesFolder(auto bool) string {
+	if auto {
+		return filepath.Join(statesDir(), "auto")
+	}
+	return statesDir()
+}
+
 // A state's file: compressed. Uncompressed ones from before are still read
 const stateExtension = ".state.gz"
 
+// stateFile is where a state is, in either folder; its picture is beside it
 func stateFile(id string) string {
-	compressed := filepath.Join(statesDir(), id+stateExtension)
-	if _, err := os.Stat(compressed); err == nil {
-		return compressed
+	for _, auto := range []bool{false, true} {
+		for _, extension := range []string{stateExtension, ".state"} {
+			path := filepath.Join(statesFolder(auto), id+extension)
+			if _, err := os.Stat(path); err == nil {
+				return path
+			}
+		}
 	}
-	return filepath.Join(statesDir(), id+".state")
+	return filepath.Join(statesDir(), id+stateExtension)
 }
 
+// listStates is the game's states, the player's and the automatic ones, newest first
 func listStates() []stateInfo {
-	files, _ := filepath.Glob(filepath.Join(statesDir(), "*.state*"))
+	states := append(statesIn(false), statesIn(true)...)
+	sort.Slice(states, func(a, b int) bool { return states[a].ID > states[b].ID })
+	return states
+}
+
+// statesIn is the states in one folder, newest first
+func statesIn(auto bool) []stateInfo {
+	files, _ := filepath.Glob(filepath.Join(statesFolder(auto), "*.state*"))
 	states := make([]stateInfo, 0, len(files))
 	for _, file := range files {
 		info, err := os.Stat(file)
@@ -85,7 +115,7 @@ func listStates() []stateInfo {
 		if err != nil || !validStateID.MatchString(id) {
 			continue
 		}
-		states = append(states, stateInfo{Created: info.ModTime(), ID: id, Size: info.Size()})
+		states = append(states, stateInfo{Auto: auto, Created: info.ModTime(), ID: id, Size: info.Size()})
 	}
 	sort.Slice(states, func(a, b int) bool { return states[a].ID > states[b].ID })
 	return states
@@ -132,9 +162,11 @@ func putState(data []byte) stateResult {
 	return stateResult{}
 }
 
-// keepState writes a state taken, compressed, with its picture, and lets the oldest go past the newest few
-func keepState(taken stateResult) (stateInfo, error) {
-	if err := os.MkdirAll(statesDir(), 0o755); err != nil {
+// keepState writes a state taken, compressed, with its picture, and lets the oldest of its kind go past the newest
+// few
+func keepState(taken stateResult, auto bool) (stateInfo, error) {
+	folder := statesFolder(auto)
+	if err := os.MkdirAll(folder, 0o755); err != nil {
 		return stateInfo{}, err
 	}
 	now := time.Now()
@@ -150,7 +182,7 @@ func keepState(taken stateResult) (stateInfo, error) {
 		return stateInfo{}, err
 	}
 	// Written whole, then named, so a state is never seen half written
-	path := filepath.Join(statesDir(), id+stateExtension)
+	path := filepath.Join(folder, id+stateExtension)
 	if err := os.WriteFile(path+".part", compressed.Bytes(), 0o644); err != nil {
 		return stateInfo{}, err
 	}
@@ -158,14 +190,18 @@ func keepState(taken stateResult) (stateInfo, error) {
 		return stateInfo{}, err
 	}
 	if taken.picture.data != nil {
-		_ = os.WriteFile(filepath.Join(statesDir(), id+".jpg"), pictureJPEG(taken.picture), 0o644)
+		_ = os.WriteFile(filepath.Join(folder, id+".jpg"), pictureJPEG(taken.picture), 0o644)
 	}
-	states := listStates()
-	for _, old := range states[min(len(states), keptStates):] {
+	kept := keptStates
+	if auto {
+		kept = keptAutoStates
+	}
+	states := statesIn(auto)
+	for _, old := range states[min(len(states), kept):] {
 		_ = os.Remove(stateFile(old.ID))
-		_ = os.Remove(filepath.Join(statesDir(), old.ID+".jpg"))
+		_ = os.Remove(filepath.Join(folder, old.ID+".jpg"))
 	}
-	return stateInfo{Created: now, ID: id, Size: int64(compressed.Len())}, nil
+	return stateInfo{Auto: auto, Created: now, ID: id, Size: int64(compressed.Len())}, nil
 }
 
 // readState is a state kept, uncompressed
@@ -219,13 +255,13 @@ func handleListStates(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(listStates())
 }
 
-func handleSaveState(w http.ResponseWriter, _ *http.Request) {
+func handleSaveState(w http.ResponseWriter, r *http.Request) {
 	taken := askFrameLoop(nil)
 	if taken.err != nil {
 		http.Error(w, taken.err.Error(), http.StatusConflict)
 		return
 	}
-	info, err := keepState(taken)
+	info, err := keepState(taken, r.URL.Query().Get("auto") == "1")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -258,7 +294,7 @@ func handleStatePicture(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no such state", http.StatusNotFound)
 		return
 	}
-	data, err := os.ReadFile(filepath.Join(statesDir(), id+".jpg"))
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(stateFile(id)), id+".jpg"))
 	if err != nil {
 		http.Error(w, "no picture", http.StatusNotFound)
 		return

@@ -10,9 +10,20 @@ over WebRTC, as play together does. Players join from the app's join page. The a
   no screen; each frame is encoded (H.264) and sent at once, and the sound (Opus) on a steady 10 ms clock.
 - `players.go`, `commands.go`: players joining, their controllers, and their pause menus.
 
-Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDLE_MINUTES` (1), `FIRST_MEDIA_PORT`
-(47900; one port each game, the next ones after), `ICE_INTERFACES` (the network interfaces players reach the NAS on,
-with the container on the host's network), `ROMS_DIR` (/roms), `SAVE_DIR` (/config/saves).
+Settings: `SERVICE_KEY` (required, 32 characters or more), `MAX_GAMES` (3), `IDLE_MINUTES` (1; a game with nobody
+in it is stopped after this), `QUIET_MINUTES` (15; a game with players in it but nobody moving anything is stopped
+after this, or twice this while paused), `FIRST_MEDIA_PORT` (47900; one port each game, the next ones after),
+`ICE_INTERFACES` (the network interfaces players reach the NAS on, with the container on the host's network),
+`ROMS_DIR` (/roms), `SAVE_DIR` (/config/saves), `STATES_MB_PER_PLAYER` (2048) and `STATES_MB_IN_ALL` (20480; past
+these, the oldest save states go). A game is given only the settings it needs, never `SERVICE_KEY`.
+
+Saves: each game keeps its own save in a folder of its own, `SAVE_DIR/<player>/games/<id>`, with a note of the game,
+until the app has collected its last save; the folder then goes. A service started again collects what such folders
+still hold. Save states are kept in `SAVE_DIR/<player>/states/<game>/<emulator>`, the service's own (kept as it stops
+an idle game) in `auto` there. Stopped (SIGTERM), the service stops every game, each keeping its save, in under 20
+seconds.
+
+Tests: `docker build --target test .`, as CI runs them: the service builds only on Linux, with its libraries.
 
 Emulators: every one the app uses, in `/cores`, from libretro's build server, but melonDS, which is built here from
 the same source and patch as the browser's (`patches/melonds.patch`, a copy of `src/assets/cores/melonds_libretro.patch`).
