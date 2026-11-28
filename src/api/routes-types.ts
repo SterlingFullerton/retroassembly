@@ -108,7 +108,7 @@ export interface ApiRoutes {
           { controls: string; core?: string; host: string; offer: string; platform?: string; title: string }
         >
         answer: {
-          $get: Endpoint<{ param: { code: string } }, { answer: string } | null>
+          $get: Endpoint<{ param: { code: string } }, { answer: string; guest?: string } | null>
           $post: Endpoint<{ json: { answer: string }; param: { code: string } }, true>
         }
       }

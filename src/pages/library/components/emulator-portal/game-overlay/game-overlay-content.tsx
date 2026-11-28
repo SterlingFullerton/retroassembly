@@ -24,6 +24,23 @@ import { GameStates } from './game-states.tsx'
 import { KeyboardPad } from './keyboard-pad.tsx'
 import { LoadExternalState } from './load-external-state.tsx'
 
+// Handhelds: their games read one player's buttons, so a guest invited to play would have none
+const oneController = new Set([
+  'atarilynx',
+  'gameandwatch',
+  'gamegear',
+  'gb',
+  'gba',
+  'gbc',
+  'nds',
+  'ngp',
+  'ngpc',
+  'psp',
+  'vb',
+  'wonderswan',
+  'wonderswancolor',
+])
+
 function handleAnimationComplete(animation) {
   if (animation.opacity === 1) {
     focusPauseMenu('main')
@@ -168,7 +185,7 @@ export function GameOverlayContent() {
                 </>
               ),
               settings: <GameOverlaySettings />,
-              together: emulator ? <GameOverlayPlayTogether /> : undefined,
+              together: emulator && !oneController.has(rom.platform) ? <GameOverlayPlayTogether /> : undefined,
             }}
             players={sharing.stage === 'connected' ? 2 : undefined}
             saveCount={states.length}
