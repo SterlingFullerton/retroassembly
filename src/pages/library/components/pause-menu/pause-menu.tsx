@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
+import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GameInputMessageItem } from '#@/pages/library/components/emulator-portal/game-overlay/game-input-message-item.tsx'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -119,6 +119,9 @@ function Divider() {
   return <div className='mx-1 my-1 h-px shrink-0 bg-white/10' />
 }
 
+const focusable =
+  'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+
 const chevron = <span className='icon-[mdi--chevron-right] size-4' />
 
 type Saving = 'failed' | 'idle' | 'saved' | 'saving'
@@ -159,6 +162,58 @@ export function PauseMenu({
 }: Readonly<PauseMenuProps>) {
   const { t } = useTranslation()
   const [saving, setSaving] = useState<Saving>('idle')
+  // The exit item that's under way, such as a save before exiting, which can take a few seconds. The others wait for it
+  const [exiting, setExiting] = useState<string>()
+  const root = useRef<HTMLDivElement>(null)
+
+  // A dialog: the focus goes back where it was when the menu closes, unless the game has already put it somewhere
+  useEffect(() => {
+    const before = document.activeElement
+    const menu = root.current
+    return () => {
+      const now = document.activeElement
+      const lost = !now || now === document.body || Boolean(menu?.contains(now))
+      if (lost && before instanceof HTMLElement && before !== document.body && before.isConnected) {
+        before.focus({ preventScroll: true })
+      }
+    }
+  }, [])
+
+  // Tab goes round the panel's own items, never out to the page behind the game
+  function keepFocus(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Tab') {
+      return
+    }
+    const items = [...(root.current?.querySelectorAll<HTMLElement>(focusable) ?? [])].filter(
+      (item) => item.getClientRects().length > 0,
+    )
+    const first = items.at(0)
+    const last = items.at(-1)
+    if (!first || !last) {
+      event.preventDefault()
+      return
+    }
+    const inside = root.current?.contains(document.activeElement)
+    if (event.shiftKey && (!inside || document.activeElement === first)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && (!inside || document.activeElement === last)) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  async function runExit(action: PauseMenuAction) {
+    if (exiting !== undefined) {
+      return
+    }
+    setExiting(action.label)
+    try {
+      await action.onClick()
+    } finally {
+      setExiting(undefined)
+    }
+  }
 
   // "Saved" for a moment, then the item is itself again; a failure is said a little longer, to be read
   useEffect(() => {
@@ -207,7 +262,11 @@ export function PauseMenu({
   const playersText = players && players > 1 ? t('pauseMenu.players', { count: players }) : ''
 
   return (
+    // A dialog over the game, which holds the keyboard's focus while it's open: Tab is kept to its own items
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the keys are the dialog's, not a control's
     <div
+      aria-label={title}
+      aria-modal='true'
       className={clsx(
         'pause-menu absolute inset-0 flex',
         'landscape:bg-linear-to-r landscape:from-black/55 landscape:to-black/25',
@@ -215,6 +274,10 @@ export function PauseMenu({
       )}
       data-sn-section=''
       data-testid='pause-menu'
+      onKeyDown={keepFocus}
+      ref={root}
+      // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a <dialog> brings its own Escape and styles, where the menu has its own Back
+      role='dialog'
     >
       <div
         className={clsx(
@@ -324,9 +387,11 @@ export function PauseMenu({
                   <Fragment key={action.label}>
                     {action.apart ? <Divider /> : null}
                     <PauseMenuItem
-                      icon={action.icon}
+                      // Not disabled, which would take the focus from the chosen item: a second press waits all the same
+                      className={exiting !== undefined && exiting !== action.label ? 'opacity-50' : undefined}
+                      icon={exiting === action.label ? 'icon-[svg-spinners--180-ring]' : action.icon}
                       label={action.label}
-                      onClick={() => action.onClick()}
+                      onClick={() => runExit(action)}
                       testId={action.testId}
                     />
                   </Fragment>
