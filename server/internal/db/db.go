@@ -25,15 +25,47 @@ const (
 	StatusNormal  = 1
 )
 
-// Open opens the database, waiting up to 5 seconds for a backup or a script holding the file rather than failing
+// connections is how many connections the server keeps to the database. In WAL mode readers don't wait for a write,
+// nor a write for them, so requests that only read (most of them: pages, covers, files) go on while a game is saved
+const connections = 4
+
+// Open opens the database, waiting up to 5 seconds for a backup or a script holding the file rather than failing.
+//
+// The database is kept in WAL mode: a write is appended to retroassembly.sqlite-wal and copied into the database now
+// and then, and is safe once it's there, with fewer waits for the disk (synchronous NORMAL). The first start in WAL mode
+// switches the file over, which stays so for any version that opens it. Writes still go one at a time: a transaction
+// takes the write lock as it begins (_txlock=immediate), so one that reads and then writes can't be refused halfway
+// because another wrote in between. Where WAL can't be used, it's one connection with the journal SQLite has by default
 func Open(path string) (*sql.DB, error) {
-	dsn := (&url.URL{Scheme: "file", Opaque: path, RawQuery: "_pragma=busy_timeout(5000)"}).String()
+	database, err := open(path, []string{"busy_timeout(5000)", "journal_mode(WAL)", "synchronous(NORMAL)"})
+	if err == nil {
+		var mode string
+		if err = database.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err == nil && strings.EqualFold(mode, "wal") {
+			database.SetMaxOpenConns(connections)
+			database.SetMaxIdleConns(connections)
+			return database, nil
+		}
+		if err == nil {
+			err = fmt.Errorf("its journal mode is %s", mode)
+		}
+		database.Close()
+	}
+	log.Printf("The database can't be kept in WAL mode, so it's opened with one connection: %v", err)
+	database, err = open(path, []string{"busy_timeout(5000)"})
+	if err != nil {
+		return nil, err
+	}
+	database.SetMaxOpenConns(1)
+	return database, nil
+}
+
+func open(path string, pragmas []string) (*sql.DB, error) {
+	query := url.Values{"_pragma": pragmas, "_txlock": {"immediate"}}
+	dsn := (&url.URL{Scheme: "file", Opaque: path, RawQuery: query.Encode()}).String()
 	database, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
-	// One connection, as the Node server has: SQLite allows one writer at a time anyway
-	database.SetMaxOpenConns(1)
 	if err := database.Ping(); err != nil {
 		database.Close()
 		return nil, err
@@ -105,7 +137,8 @@ const backupsKept = 5
 // newest recorded, which passes over one merged in later with an earlier time; here that one is applied too.
 //
 // Before a database in use is changed, it's copied beside itself as <file>.before-<first migration applied>, which is
-// what to put back to return to the version before. A database with a migration newer than any in directory was
+// what to put back to return to the version before, with the server stopped and the database's -wal and -shm files
+// removed (they belong to the database replaced). A database with a migration newer than any in directory was
 // upgraded by a newer version, and is refused with ErrNewerDatabase rather than run with tables this one doesn't expect
 func Migrate(database *sql.DB, directory string) (applied int, err error) {
 	migrations, err := readMigrations(directory)
@@ -129,8 +162,9 @@ func Migrate(database *sql.DB, directory string) (applied int, err error) {
 	}
 	for when := range recorded {
 		if when > newestKnown {
-			return 0, fmt.Errorf("%w: start that version, or put back the copy of the database made before it upgraded (%s)",
-				ErrNewerDatabase, backupPattern(database))
+			return 0, fmt.Errorf("%w: start that version, or, with the server stopped, put back the copy of the database "+
+				"made before it upgraded (%s) and remove the -wal and -shm files beside the database", ErrNewerDatabase,
+				backupPattern(database))
 		}
 	}
 	var pending []migration
@@ -227,15 +261,25 @@ func backupPattern(database *sql.DB) string {
 }
 
 // backup copies the database beside itself before the migration named is applied, and removes all but the newest
-// copies. One already there is kept: it was made by an upgrade that then failed, so it holds the same database
+// copies. One already there is kept only if it was made after the database last changed: it's from an upgrade that then
+// failed, so it holds the same database. An older one is from an upgrade that was put back, and the database has been
+// used since; it's set aside under the time it was made and a fresh copy taken, so putting back <file>.before-<tag>
+// always returns to the database as it was just before this upgrade
 func backup(database *sql.DB, tag string) error {
 	file, err := databaseFile(database)
 	if err != nil || file == "" {
 		return err
 	}
 	target := file + backupInfix + tag
-	if _, err := os.Stat(target); err == nil {
-		return nil
+	if info, err := os.Stat(target); err == nil {
+		if info.ModTime().After(lastChanged(file)) {
+			return nil
+		}
+		older := target + "-" + info.ModTime().Format("20060102-150405")
+		if err := os.Rename(target, older); err != nil {
+			return err
+		}
+		log.Printf("Set aside an older copy of the database as %s", older)
 	}
 	// Written under another name first, so a copy cut short is never taken for a whole one
 	partial := target + ".partial"
@@ -255,6 +299,20 @@ func backup(database *sql.DB, tag string) error {
 		log.Printf("Couldn't remove older copies of the database: %v", err)
 	}
 	return nil
+}
+
+// lastChanged is when the database was last written: to its file, or in WAL mode to the -wal file beside it, which
+// holds the latest changes until they're copied in. Now, when that can't be told, so a copy is never taken for current
+func lastChanged(file string) time.Time {
+	info, err := os.Stat(file)
+	if err != nil {
+		return time.Now()
+	}
+	changed := info.ModTime()
+	if wal, err := os.Stat(file + "-wal"); err == nil && wal.ModTime().After(changed) {
+		changed = wal.ModTime()
+	}
+	return changed
 }
 
 func removeOldBackups(file string) error {
