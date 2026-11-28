@@ -498,6 +498,17 @@ func (c *Client) Stop(ctx context.Context, id string) error {
 	return c.call(ctx, http.MethodDelete, "/games/"+url.PathEscape(id), nil, nil)
 }
 
+// ForgetUser ends a deleted player's games on the server and removes the saves it keeps for them. A service from
+// before it could do this answers 404, which is no failure: its games were ended one by one
+func (c *Client) ForgetUser(ctx context.Context, user string) error {
+	err := c.call(ctx, http.MethodDelete, "/users/"+url.PathEscape(user), nil, nil)
+	var refused *failure.Error
+	if errors.As(err, &refused) && refused.Status == http.StatusNotFound {
+		return nil
+	}
+	return err
+}
+
 // Offer keeps a place in a game for a new player, and is the offer their browser answers
 func (c *Client) Offer(ctx context.Context, id string) (player int, offer string, err error) {
 	var made struct {

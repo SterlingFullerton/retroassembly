@@ -908,6 +908,7 @@ export default function JoinPage() {
         <TestSessionProvider emulator={standIn}>
           <div className='pointer-events-none absolute inset-0 *:pointer-events-auto'>
             <ConsoleControls
+              coin={gameConsole?.coin}
               keypadOpen={keypadOpen}
               kind={found.invitation.controls}
               onKeypadClose={() => setKeypadOpen(false)}

@@ -723,6 +723,10 @@ func (s *Server) stopNASGamesOf(ctx context.Context, user string) {
 			}
 		}
 	}
+	// And the saves the server keeps for them go
+	if err := s.nasGames.ForgetUser(ctx, user); err != nil {
+		log.Printf("nas games: removing the saves of deleted user %s: %v", user, err)
+	}
 }
 
 // How often the games on the NAS are asked for their own saves, and how long keeping each game's may take. A game

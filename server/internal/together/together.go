@@ -35,8 +35,8 @@ const (
 
 var (
 	ErrNotFound = failure.New(http.StatusNotFound, "No game to join by that code")
-	ErrAnswered = failure.New(http.StatusConflict, "Someone has already joined that game")
-	ErrJoining  = failure.New(http.StatusConflict, "Someone else is joining that game")
+	ErrAnswered = failure.Coded(http.StatusConflict, "together_answered", "Someone has already joined that game")
+	ErrJoining  = failure.Coded(http.StatusConflict, "together_joining", "Someone else is joining that game")
 	ErrTooMany  = failure.New(http.StatusTooManyRequests, "Too many games are being shared")
 	ErrTooLong  = failure.New(http.StatusRequestEntityTooLarge, "Too long")
 )
