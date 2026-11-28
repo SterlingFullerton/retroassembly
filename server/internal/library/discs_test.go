@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"retroassembly/server/internal/auth"
+	"retroassembly/server/internal/files"
 )
 
 // The answers parseDisc gives (scripts/go-test-fixtures.ts, removed with the Node server)
@@ -99,5 +102,70 @@ func TestMergeDiscGroupLeavesOtherGamesAlone(t *testing.T) {
 	}
 	if got != "ff1 mgs2" {
 		t.Errorf("history is on %q, want the first game's moved to its disc 1 and the other left", got)
+	}
+}
+
+// Deleting a game on several discs deletes every disc, so no other disc stands for it without everyone's saves
+func TestDeleteRomsDeletesEveryDisc(t *testing.T) {
+	database := setup(t)
+	_, err := database.Exec(`
+		INSERT INTO roms (file_name, platform, created_at, id, status, updated_at, file_id, user_id, disc_group, disc_number) VALUES
+			('FF7 (Disc 1).cue', 'psx', 1, 'ff1', 1, 1, 'roms/psx/1.cue', 'owner', 'FF7', 1),
+			('FF7 (Disc 2).cue', 'psx', 2, 'ff2', 1, 1, 'roms/psx/2.cue', 'owner', 'FF7', 2),
+			('MGS (Disc 1).cue', 'psx', 3, 'mgs1', 1, 1, 'roms/psx/3.cue', 'owner', 'MGS', 1),
+			('FF7 (Disc 1).cue', 'saturn', 4, 'saturn', 1, 1, 'roms/saturn/1.cue', 'owner', 'FF7', 1)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	scope := Scope{Database: database, LibraryOwnerID: "owner", User: &auth.User{ID: "owner", Role: auth.RoleAdmin},
+		Storage: files.Storage{Path: func(id string) (string, bool) { return filepath.Join(folder, filepath.FromSlash(id)), true }}}
+	if err := DeleteRoms(t.Context(), scope, []string{"ff1"}); err != nil {
+		t.Fatal(err)
+	}
+	var live string
+	if err := database.QueryRow(`SELECT group_concat(id, ' ') FROM (SELECT id FROM roms WHERE status = 1 ORDER BY id)`).Scan(&live); err != nil {
+		t.Fatal(err)
+	}
+	if live != "mgs1 rom1 saturn" {
+		t.Errorf("games left are %q, want both discs of FF7 gone and the rest kept", live)
+	}
+}
+
+// A game deleted and uploaded again has everyone's saves, save states and favorites back
+func TestSaveUploadedRomBringsBackADeletedGamesSaves(t *testing.T) {
+	database := setup(t)
+	_, err := database.Exec(`
+		INSERT INTO roms (file_name, platform, created_at, id, status, updated_at, file_id, user_id) VALUES
+			('Crash.cue', 'psx', 1, 'old1', 0, 1, 'roms/psx/1.cue', 'owner'),
+			('Crash.cue', 'psx', 2, 'old2', 0, 1, 'roms/psx/1.cue', 'owner'),
+			('Crash.cue', 'psx', 3, 'theirs', 0, 1, 'roms/psx/1.cue', 'contributor');
+		INSERT INTO states (id, core, platform, rom_id, thumbnail_file_id, type, user_id, file_id, created_at, updated_at, status)
+			VALUES ('s1', 'c', 'psx', 'old1', 't', 'manual', 'u1', 'f', 1, 1, 1),
+			       ('s2', 'c', 'psx', 'theirs', 't', 'manual', 'u1', 'f', 1, 1, 1);
+		INSERT INTO game_saves (id, core, platform, rom_id, sha1, size, user_id, file_id, created_at, updated_at, status)
+			VALUES ('g1', 'c', 'psx', 'old2', 'x', 1, 'u1', 'f', 1, 1, 1);
+		INSERT INTO favorites (id, rom_id, user_id, created_at, updated_at, status)
+			VALUES ('f1', 'old1', 'u1', 1, 1, 1), ('f2', 'old2', 'u1', 1, 1, 1), ('f3', 'old2', 'u2', 1, 1, 1)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope := Scope{Database: database, LibraryOwnerID: "owner", User: &auth.User{ID: "owner", Role: auth.RoleAdmin}}
+	rom, _, err := SaveUploadedRom(t.Context(), scope, "psx", "Crash.cue", []RomField{
+		{"file_id", "roms/psx/2.cue"}, {"file_name", "Crash.cue"}, {"platform", "psx"}, {"user_id", "owner"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, _ := rom.Get("id").(string)
+	for _, check := range []struct{ query, want string }{
+		{`SELECT group_concat(id || ':' || (rom_id = ?1), ' ') FROM (SELECT * FROM states ORDER BY id)`, "s1:1 s2:0"},
+		{`SELECT group_concat(id || ':' || (rom_id = ?1), ' ') FROM (SELECT * FROM game_saves ORDER BY id)`, "g1:1"},
+		{`SELECT group_concat(user_id || ':' || (rom_id = ?1), ' ') FROM (SELECT * FROM favorites ORDER BY user_id)`, "u1:1 u2:1"},
+	} {
+		var got string
+		if err := database.QueryRow(check.query, id).Scan(&got); err != nil || got != check.want {
+			t.Errorf("%s\n%q %v, want %q", check.query, got, err, check.want)
+		}
 	}
 }
