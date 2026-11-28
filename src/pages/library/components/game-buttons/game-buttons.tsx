@@ -62,7 +62,7 @@ function GameButtonsContent({
   saves,
   stretch,
 }: Readonly<{ beforeSaves?: ReactNode; compact: boolean; saves: boolean; stretch: boolean }>) {
-  const { rom, state } = useLoaderData()
+  const { rom, startFromSave, state } = useLoaderData()
   const { i18n, t } = useTranslation()
   const { error: prepareError, isDownloading, isPreparing, launch, loadingProgress, prepare, warmUp } = useSession()
   // Which button was pressed, while its game loads, and whether it's taken long enough to show how far it's got.
@@ -201,9 +201,25 @@ function GameButtonsContent({
       await server.start()
     } else if (way === 'play-with-friend') {
       await server.start({ linked: true })
+    } else if (way === 'play-continue') {
+      await continueFromMenu()
     } else {
       await startFresh()
     }
+  }
+
+  // Continue, from the menu where Start is the button: the game continues from its newest snapshot, with its progress on
+  // Start
+  async function continueFromMenu() {
+    if (isPreparing) {
+      return
+    }
+    if (awayFromGamePage) {
+      await navigate(gamePage)
+      return
+    }
+    pressButton(mainButton.current)
+    await launchFrom('continue', true)
   }
 
   // Start fresh, from the menu beside Continue: the game starts as Start starts it, with its progress on Continue
@@ -230,6 +246,18 @@ function GameButtonsContent({
     }
   }
 
+  // How starting on the server is going, said to a screen reader too: a live region that stays, whose words change
+  const serverStatus = (
+    <div aria-live='polite' className='flex flex-col gap-1.5 empty:hidden'>
+      {server.starting ? <p className='text-sm opacity-70'>{t('nasGames.starting')}</p> : null}
+      {server.failure === undefined ? null : (
+        <p className='text-sm text-(--red-11)' data-testid='play-on-server-failure' role='alert'>
+          {t('nasGames.failed')} <span className='[overflow-wrap:anywhere] opacity-70'>{server.failure}</span>
+        </p>
+      )}
+    </div>
+  )
+
   // The game's snapshots and own save, on its page. They stay when the game can't be played here, for downloading
   const savesShown = saves ? (
     <>
@@ -252,6 +280,42 @@ function GameButtonsContent({
     )
   }
 
+  // Starting on the server, and playing with a friend there, under a message saying the game can't be played here:
+  // what these ways are for
+  const serverWays =
+    server.available || server.linkable ? (
+      <div className='flex flex-col gap-1.5'>
+        <div className='flex flex-wrap gap-2'>
+          {server.available ? (
+            <Button
+              data-testid='play-on-server'
+              disabled={server.starting}
+              onClick={() => server.start()}
+              size='2'
+              type='button'
+            >
+              <span className={server.starting ? 'icon-[svg-spinners--180-ring]' : 'icon-[mdi--server]'} />
+              {t('nasGames.startOnServer')}
+            </Button>
+          ) : null}
+          {server.linkable ? (
+            <Button
+              data-testid='play-with-friend'
+              disabled={server.starting}
+              onClick={() => server.start({ linked: true })}
+              size='2'
+              type='button'
+              variant='outline'
+            >
+              <span className='icon-[mdi--account-multiple]' />
+              {t('nasGames.withFriend')}
+            </Button>
+          ) : null}
+        </div>
+        {serverStatus}
+      </div>
+    ) : null
+
   if (cannotIsolate) {
     return (
       <>
@@ -261,6 +325,7 @@ function GameButtonsContent({
             {t('error.browserCannotRunPlatform', { platform: t(platformMap[rom.platform].displayNameI18nKey) })}
           </span>
         </div>
+        {serverWays}
         {savesShown}
       </>
     )
@@ -289,6 +354,7 @@ function GameButtonsContent({
             {t('common.retry')}
           </Button>
         </div>
+        {serverWays}
         {savesShown}
       </>
     )
@@ -402,15 +468,28 @@ function GameButtonsContent({
   )
 
   // On the game's page, one button: Continue, or Start for a game with no snapshot, with an arrow beside it for the
-  // other ways to play: starting fresh, and starting on the server
+  // other ways to play: starting fresh, and starting on the server. Where the game's own save is newer than its newest
+  // snapshot, as after playing it on the server, Start is the button, from that save, and Continue is in the menu: the
+  // snapshot would put the game back to before it
+  const continueFirst = Boolean(state) && !startFromSave
   const ways = [
-    ...(state
+    ...(state && continueFirst
       ? [
           {
             detail: t('pauseMenu.onThisDevice'),
             icon: 'icon-[mdi--play]',
             label: t('emulator.startFresh'),
             testId: 'play-start-fresh',
+          },
+        ]
+      : []),
+    ...(state && !continueFirst
+      ? [
+          {
+            detail: t('gameButtons.continueOlder'),
+            icon: 'icon-[mdi--arrow-u-right-top-bold]',
+            label: t('common.continue'),
+            testId: 'play-continue',
           },
         ]
       : []),
@@ -442,15 +521,15 @@ function GameButtonsContent({
       <div className={clsx('flex w-full', stretch ? 'sm:max-w-96' : 'lg:w-96')} ref={buttonsRef}>
         <LaunchButton
           compact={compact}
-          data-testid={state ? 'play-continue' : 'play-start'}
+          data-testid={continueFirst ? 'play-continue' : 'play-start'}
           disabled={busy}
           joined={ways.length > 0}
-          onClick={state ? handleClickContinue : handleClickStart}
+          onClick={continueFirst ? handleClickContinue : handleClickStart}
           progress={pressed ? progress : undefined}
           ref={mainButton}
           {...warmUpHandlers}
         >
-          {state ? continueContent : startContent(false)}
+          {continueFirst ? continueContent : startContent(false)}
         </LaunchButton>
         {ways.length > 0 ? (
           <DropdownMenu.Root>
@@ -492,12 +571,7 @@ function GameButtonsContent({
         ) : null}
         <EmulatorPortal />
       </div>
-      {server.starting ? <p className='text-sm opacity-70'>{t('nasGames.starting')}</p> : null}
-      {server.failure ? (
-        <p className='text-sm text-(--red-11)' data-testid='play-on-server-failure'>
-          {t('nasGames.failed')} <span className='[overflow-wrap:anywhere] opacity-70'>{server.failure}</span>
-        </p>
-      ) : null}
+      {serverStatus}
     </div>
   )
 

@@ -1,10 +1,23 @@
+import { noop } from 'es-toolkit'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
-import { getNASCores, startNASGame } from '#@/emulator/nas-games.ts'
+import { goesFullscreen } from '#@/constants/preference.ts'
+import { failureWordsFor, getNASCores, startNASGame } from '#@/emulator/nas-games.ts'
 import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
+import { closeSound, readySound } from '#@/pages/library/join/sound.ts'
 import { routes } from '#@/pages/routes.ts'
+
+/** Whether the server can play a console's game with an emulator: not one played with a keyboard it doesn't send */
+function playsOnServer(platform: string, core: string) {
+  try {
+    // The Odyssey²'s and Videopac's keyboard has no way to the server yet, and their games wait for a key at the start
+    return resolveConsole(platform, core).keyboard !== 'odyssey2'
+  } catch {
+    return false
+  }
+}
 
 /**
  * Starting a game on the server, from the menu beside Continue on a game's page: the game runs on the server, and this
@@ -31,7 +44,7 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
     async function look() {
       const cores = await getNASCores()
       if (current) {
-        setAvailable(cores.includes(core))
+        setAvailable(cores.includes(core) && playsOnServer(rom.platform, core))
         setLinkable(rom.platform === 'nds' && cores.includes(linkedCore))
       }
     }
@@ -43,6 +56,16 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
   }, [core, enabled, rom.platform])
 
   async function start({ linked = false } = {}) {
+    if (starting) {
+      return
+    }
+    // The sound, where it needs a press to play, and fullscreen, as a game on this device goes: now, while the press
+    // still lets the page ask for them
+    readySound()
+    if (goesFullscreen(preference.emulator.fullscreen) && !document.fullscreenElement) {
+      // oxlint-disable-next-line promise/prefer-await-to-then -- not waited for: the game starts all the same
+      document.body.requestFullscreen?.().catch(noop)
+    }
     setStarting(true)
     setFailure(undefined)
     try {
@@ -54,11 +77,18 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
           ? { controls, core, linked, rom: rom.id }
           : { controls, core, rom: rom.id, saveFileType: resolved.saveFileType },
       )
-      // Whoever starts it joins first, and is its first player
-      await navigate(`${routes.libraryJoin}?code=${encodeURIComponent(code)}&started=1`)
+      // Whoever starts it joins first, and is its first player. The join page drops the code from the address once it
+      // has it, so going back to it doesn't join again
+      await navigate(`${routes.libraryJoin}?code=${encodeURIComponent(code)}`, { state: { started: true } })
     } catch (error) {
-      setFailure(describeFailure(error, t('nasGames.full')))
+      const words = failureWordsFor(error)
+      setFailure(words ? t(words) : '')
       setStarting(false)
+      closeSound()
+      if (document.fullscreenElement) {
+        // oxlint-disable-next-line promise/prefer-await-to-then -- nothing to wait for
+        document.exitFullscreen().catch(noop)
+      }
     }
   }
 
@@ -67,21 +97,3 @@ export function useServerStart(rom: { id: string; platform: string }, enabled = 
 
 /** The emulator the server runs a linked DS game with */
 const linkedCore = 'melondsds'
-
-/** What went wrong starting a game on the server, in words: a server already running all the games it may is said plainly */
-function describeFailure(error: unknown, full: string) {
-  const { detail, message, statusCode } = (error ?? {}) as {
-    detail?: { data?: unknown }
-    message?: unknown
-    statusCode?: number
-  }
-  if (statusCode === 503) {
-    return full
-  }
-  const data = detail?.data as { message?: unknown } | string | undefined
-  const said = typeof data === 'string' ? data : data?.message
-  if (typeof said === 'string' && said) {
-    return said
-  }
-  return typeof message === 'string' ? message : ''
-}
