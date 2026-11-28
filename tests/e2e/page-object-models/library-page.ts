@@ -18,7 +18,15 @@ export class LibraryPage {
     const recorded = page.waitForResponse(
       (response) => response.request().method() === 'POST' && response.url().endsWith('/api/v1/launch_records'),
     )
-    await page.getByText(button).click()
+    // On a game's page, Continue is the one button when there's a snapshot, and Start fresh is in the menu beside it
+    if (button === 'continue') {
+      await page.getByTestId('play-continue').click()
+    } else if (await page.getByTestId('play-start').isVisible()) {
+      await page.getByTestId('play-start').click()
+    } else {
+      await page.getByTestId('play-more').click()
+      await page.getByTestId('play-start-fresh').click()
+    }
     await recorded
     await page.locator('#canvas').waitFor()
   }

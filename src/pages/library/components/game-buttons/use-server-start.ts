@@ -1,6 +1,4 @@
-import { Button } from '@radix-ui/themes'
 import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { getNASCores, startNASGame } from '#@/emulator/nas-games.ts'
@@ -8,11 +6,11 @@ import { usePreference } from '#@/pages/library/hooks/use-preference.ts'
 import { routes } from '#@/pages/routes.ts'
 
 /**
- * Play on the NAS, under Continue and Start on a game's page: the game runs on the NAS, and this device shows it and
- * plays it, as a guest does a game someone shares. Only where the NAS has the emulator chosen for the game's console
+ * Starting a game on the server, from the menu beside Continue on a game's page: the game runs on the server, and this
+ * device shows it and plays it, as a guest does a game someone shares. Only where the server has the emulator chosen
+ * for the game's console
  */
-export function PlayOnNAS({ rom }: Readonly<{ rom: { id: string; platform: string } }>) {
-  const { t } = useTranslation()
+export function useServerStart(rom: { id: string; platform: string }, enabled = true) {
   const navigate = useNavigate()
   const { preference } = usePreference()
   const { core } = preference.emulator.platform[rom.platform as keyof typeof preference.emulator.platform]
@@ -21,6 +19,9 @@ export function PlayOnNAS({ rom }: Readonly<{ rom: { id: string; platform: strin
   const [failure, setFailure] = useState<string>()
 
   useEffect(() => {
+    if (!enabled) {
+      return
+    }
     let current = true
     async function look() {
       const cores = await getNASCores()
@@ -33,13 +34,9 @@ export function PlayOnNAS({ rom }: Readonly<{ rom: { id: string; platform: strin
     return () => {
       current = false
     }
-  }, [core])
+  }, [core, enabled])
 
-  if (!available) {
-    return null
-  }
-
-  async function handleClick() {
+  async function start() {
     setStarting(true)
     setFailure(undefined)
     try {
@@ -55,25 +52,5 @@ export function PlayOnNAS({ rom }: Readonly<{ rom: { id: string; platform: strin
     }
   }
 
-  return (
-    <div className='mt-3 flex w-full flex-col gap-1.5 lg:w-80'>
-      <Button
-        className='w-full!'
-        data-testid='play-on-nas'
-        disabled={starting}
-        onClick={handleClick}
-        size='3'
-        type='button'
-        variant='soft'
-      >
-        <span className={starting ? 'icon-[svg-spinners--180-ring]' : 'icon-[mdi--server-network]'} />
-        {starting ? t('nasGames.starting') : t('nasGames.playOnNAS')}
-      </Button>
-      {failure ? (
-        <p className='text-sm text-(--red-11)' data-testid='play-on-nas-failure'>
-          {t('nasGames.failed')} <span className='[overflow-wrap:anywhere] opacity-70'>{failure}</span>
-        </p>
-      ) : null}
-    </div>
-  )
+  return { available, failure, start, starting }
 }

@@ -1,4 +1,4 @@
-import { Button, HoverCard } from '@radix-ui/themes'
+import { Button, DropdownMenu, HoverCard } from '@radix-ui/themes'
 import { clsx } from 'clsx'
 import { noop } from 'es-toolkit'
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -23,7 +23,7 @@ import { EmulatorPortal } from '../emulator-portal/emulator-portal.tsx'
 import { EmulatorSessionProvider } from '../emulator-portal/emulator-session-provider.tsx'
 import { BioseMissingMessage } from './biose-missing-message.tsx'
 import { OnDeviceLine } from './on-device-line.tsx'
-import { PlayOnNAS } from './play-on-nas.tsx'
+import { useServerStart } from './use-server-start.ts'
 
 const isAppleMobile = /iphone|ipad|ipod/iu.test(navigator.userAgent)
 const isChromeLike = /chrome/iu.test(navigator.userAgent)
@@ -72,6 +72,9 @@ function GameButtonsContent({
   const buttonsRef = useRef<HTMLDivElement>(null)
   const [progressShown, setProgressShown] = useState(false)
   const [launchError, setLaunchError] = useState<unknown>()
+  // On the game's page: the one button, Continue or Start, which Start fresh in its menu shows its progress on
+  const mainButton = useRef<HTMLButtonElement>(null)
+  const server = useServerStart(rom, saves)
   const error = prepareError ?? launchError
   useEffect(() => {
     if (!pressed) {
@@ -135,7 +138,11 @@ function GameButtonsContent({
   )
 
   function handleClickCommon(event: MouseEvent<HTMLButtonElement>) {
-    const button = event.currentTarget
+    pressButton(event.currentTarget)
+  }
+
+  // The button the game starts from, which shows how far it's got
+  function pressButton(button: HTMLButtonElement | null) {
     if (button) {
       setLaunchButton(button)
       button.blur()
@@ -185,6 +192,24 @@ function GameButtonsContent({
       return
     }
     handleClickCommon(event)
+    await launchFrom('start', false)
+  }
+
+  // A choice in the menu beside Continue
+  async function handleSelectWay(way: string) {
+    await (way === 'play-on-server' ? server.start() : startFresh())
+  }
+
+  // Start fresh, from the menu beside Continue: the game starts as Start starts it, with its progress on Continue
+  async function startFresh() {
+    if (isPreparing) {
+      return
+    }
+    if (awayFromGamePage) {
+      await navigate(gamePage)
+      return
+    }
+    pressButton(mainButton.current)
     await launchFrom('start', false)
   }
 
@@ -266,6 +291,67 @@ function GameButtonsContent({
   // Start as a square beside Continue. While it shows how far its game has got, it has its usual share for the words
   const startIconOnly = compact && Boolean(state) && !(pressed === 'start' && progress)
 
+  // What Continue shows: its icon, its name, and the snapshot it continues from
+  const continueContent = state ? (
+    <>
+      <span
+        className={clsx(
+          compact ? 'absolute left-3' : 'absolute left-10',
+          isPreparing || isDownloading
+            ? 'icon-[svg-spinners--180-ring]'
+            : ['size-6', mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--arrow-u-right-top-bold]'],
+        )}
+      />
+      {/* Compact, the name is centred in the room between the icon and the save's picture, so it never runs under it */}
+      <span className={clsx('flex-1 truncate font-semibold', compact ? 'pr-8 pl-6 text-base lg:text-lg' : 'text-2xl')}>
+        {t('common.continue')}
+      </span>
+      <HoverCard.Root>
+        <HoverCard.Trigger>
+          <img
+            alt={t('common.state')}
+            className={clsx(
+              'absolute rounded border-2 border-white bg-neutral-200 object-cover shadow',
+              compact ? 'right-1.5 size-7' : 'right-3 size-10',
+            )}
+            src={getFileUrl(state.thumbnailFileId)}
+          />
+        </HoverCard.Trigger>
+        <HoverCard.Content align='center' hideWhenDetached side='top' size='1'>
+          <img
+            alt={t('common.state')}
+            className='size-48 cursor-pointer rounded-lg border-2 border-white bg-neutral-200 object-cover shadow'
+            src={getFileUrl(state.thumbnailFileId)}
+          />
+        </HoverCard.Content>
+      </HoverCard.Root>
+    </>
+  ) : null
+
+  function startContent(iconOnly: boolean) {
+    return (
+      <>
+        <span
+          className={clsx(
+            compact ? 'absolute left-3' : 'absolute left-10',
+            isPreparing || isDownloading
+              ? 'icon-[svg-spinners--180-ring]'
+              : ['size-6', mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--play]'],
+          )}
+        />
+        <span
+          className={clsx(
+            'flex-1 truncate font-semibold',
+            compact ? 'pl-6 text-base lg:text-lg' : 'text-2xl',
+            iconOnly && 'max-lg:sr-only',
+          )}
+        >
+          {t('emulator.start')}
+        </span>
+      </>
+    )
+  }
+
   const buttons = (
     <div
       ref={buttonsRef}
@@ -287,42 +373,7 @@ function GameButtonsContent({
           progress={pressed === 'continue' ? progress : undefined}
           {...warmUpHandlers}
         >
-          <span
-            className={clsx(
-              compact ? 'absolute left-3' : 'absolute left-10',
-              isPreparing || isDownloading
-                ? 'icon-[svg-spinners--180-ring]'
-                : [
-                    'size-6',
-                    mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--arrow-u-right-top-bold]',
-                  ],
-            )}
-          />
-          {/* Compact, the name is centred in the room between the icon and the save's picture, so it never runs under it */}
-          <span
-            className={clsx('flex-1 truncate font-semibold', compact ? 'pr-8 pl-6 text-base lg:text-lg' : 'text-2xl')}
-          >
-            {t('common.continue')}
-          </span>
-          <HoverCard.Root>
-            <HoverCard.Trigger>
-              <img
-                alt={t('common.state')}
-                className={clsx(
-                  'absolute rounded border-2 border-white bg-neutral-200 object-cover shadow',
-                  compact ? 'right-1.5 size-7' : 'right-3 size-10',
-                )}
-                src={getFileUrl(state.thumbnailFileId)}
-              />
-            </HoverCard.Trigger>
-            <HoverCard.Content align='center' hideWhenDetached side='top' size='1'>
-              <img
-                alt={t('common.state')}
-                className='size-48 cursor-pointer rounded-lg border-2 border-white bg-neutral-200 object-cover shadow'
-                src={getFileUrl(state.thumbnailFileId)}
-              />
-            </HoverCard.Content>
-          </HoverCard.Root>
+          {continueContent}
         </LaunchButton>
       ) : null}
 
@@ -337,33 +388,106 @@ function GameButtonsContent({
         variant={state ? 'outline' : 'solid'}
         {...warmUpHandlers}
       >
-        <span
-          className={clsx(
-            compact ? 'absolute left-3' : 'absolute left-10',
-            isPreparing || isDownloading
-              ? 'icon-[svg-spinners--180-ring]'
-              : ['size-6', mayNeedsUserInteraction ? 'icon-[mdi--gesture-touch]' : 'icon-[mdi--play]'],
-          )}
-        />
-        <span
-          className={clsx(
-            'flex-1 truncate font-semibold',
-            compact ? 'pl-6 text-base lg:text-lg' : 'text-2xl',
-            startIconOnly && 'max-lg:sr-only',
-          )}
-        >
-          {t('emulator.start')}
-        </span>
+        {startContent(startIconOnly)}
       </LaunchButton>
 
       <EmulatorPortal />
     </div>
   )
 
+  // On the game's page, one button: Continue, or Start for a game with no snapshot, with an arrow beside it for the
+  // other ways to play: starting fresh, and starting on the server
+  const ways = [
+    ...(state
+      ? [
+          {
+            detail: t('pauseMenu.onThisDevice'),
+            icon: 'icon-[mdi--play]',
+            label: t('emulator.startFresh'),
+            testId: 'play-start-fresh',
+          },
+        ]
+      : []),
+    ...(server.available
+      ? [
+          {
+            detail: t('nasGames.tooHeavy'),
+            icon: 'icon-[mdi--server]',
+            label: t('nasGames.startOnServer'),
+            testId: 'play-on-server',
+          },
+        ]
+      : []),
+  ]
+  const busy = isPreparing || server.starting
+
+  const split = (
+    <div className='flex w-full flex-col gap-1.5'>
+      <div className={clsx('flex w-full', stretch ? 'sm:max-w-96' : 'lg:w-96')} ref={buttonsRef}>
+        <LaunchButton
+          compact={compact}
+          data-testid={state ? 'play-continue' : 'play-start'}
+          disabled={busy}
+          joined={ways.length > 0}
+          onClick={state ? handleClickContinue : handleClickStart}
+          progress={pressed ? progress : undefined}
+          ref={mainButton}
+          {...warmUpHandlers}
+        >
+          {state ? continueContent : startContent(false)}
+        </LaunchButton>
+        {ways.length > 0 ? (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger disabled={busy}>
+              <button
+                aria-label={t('emulator.moreWaysToPlay')}
+                className={clsx(
+                  'flex w-12 shrink-0 items-center justify-center rounded-r-(--radius-4) border-l border-white/25 bg-(--accent-9) text-white transition-[filter] hover:brightness-110 disabled:opacity-50',
+                  compact ? 'h-12' : 'h-16',
+                )}
+                data-sn-enabled
+                data-testid='play-more'
+                type='button'
+              >
+                <span
+                  className={
+                    server.starting ? 'icon-[svg-spinners--180-ring] size-5' : 'icon-[mdi--chevron-down] size-6'
+                  }
+                />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align='end' size='2'>
+              {ways.map((way) => (
+                <DropdownMenu.Item
+                  className='h-auto! py-2'
+                  data-testid={way.testId}
+                  key={way.testId}
+                  onSelect={() => handleSelectWay(way.testId)}
+                >
+                  <span className={clsx('size-5 shrink-0', way.icon)} />
+                  <span className='flex flex-col leading-tight'>
+                    <span className='font-medium'>{way.label}</span>
+                    <span className='text-xs opacity-70'>{way.detail}</span>
+                  </span>
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        ) : null}
+        <EmulatorPortal />
+      </div>
+      {server.starting ? <p className='text-sm opacity-70'>{t('nasGames.starting')}</p> : null}
+      {server.failure ? (
+        <p className='text-sm text-(--red-11)' data-testid='play-on-server-failure'>
+          {t('nasGames.failed')} <span className='[overflow-wrap:anywhere] opacity-70'>{server.failure}</span>
+        </p>
+      ) : null}
+    </div>
+  )
+
   return (
     <>
-      {buttons}
-      {saves ? <PlayOnNAS rom={rom} /> : null}
+      {saves ? split : buttons}
       {savesShown}
     </>
   )

@@ -34,7 +34,8 @@ test('continue a game', async ({ page, pages: { library, login }, roms, user }) 
   await expectScreen(page)
 
   await page.keyboard.press('Escape')
-  await page.getByRole('button').filter({ hasText: 'save & exit' }).click()
+  await page.getByTestId('pause-exit').click()
+  await page.getByTestId('pause-save-exit').click()
   await page.locator('#canvas').waitFor({ state: 'detached' })
   await library.launchGame('continue')
   await expectScreen(page)
@@ -63,7 +64,8 @@ test('restart game during gameplay', async ({ page, pages: { library, login }, r
   await library.launchGame('start')
 
   await page.keyboard.press('Escape')
-  await page.getByText('restart').click()
+  await page.getByTestId('pause-exit').click()
+  await page.getByTestId('pause-restart').click()
 
   await page.keyboard.press('Escape')
   await expect(page.getByText('resume')).toBeVisible()
@@ -77,7 +79,8 @@ test('exit game without saving', async ({ page, pages: { library, login }, roms,
   await library.launchGame('start')
 
   await page.keyboard.press('Escape')
-  await page.getByText('Exit', { exact: true }).click()
+  await page.getByTestId('pause-exit').click()
+  await page.getByTestId('pause-exit-now').click()
 
   await expect(page.locator('#canvas')).not.toBeVisible()
 })

@@ -1,6 +1,6 @@
 import { Button, type ButtonProps } from '@radix-ui/themes'
 import { clsx } from 'clsx'
-import type { ButtonHTMLAttributes } from 'react'
+import type { ComponentProps } from 'react'
 
 /** What a Start button shows while its game loads */
 export interface LaunchButtonProgress {
@@ -12,11 +12,13 @@ export interface LaunchButtonProgress {
   detail?: string
 }
 
-interface LaunchButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface LaunchButtonProps extends ComponentProps<'button'> {
   /** Smaller, for buttons side by side, as on Home */
   compact?: boolean
   /** Until a wide screen, a square holding only the button's icon; its name is still read out */
   iconOnly?: boolean
+  /** The left part of a button split in two, the arrow beside it being the right: it fills the room the arrow leaves */
+  joined?: boolean
   /** On a phone, shares the row's whole width with the button beside it; from there it stops at its usual width */
   stretch?: boolean
   progress?: LaunchButtonProgress
@@ -28,6 +30,7 @@ export function LaunchButton({
   compact = false,
   disabled,
   iconOnly = false,
+  joined = false,
   stretch = false,
   progress,
   variant = 'solid',
@@ -37,14 +40,19 @@ export function LaunchButton({
     <button
       aria-busy={progress ? 'true' : undefined}
       aria-disabled={disabled ? 'true' : 'false'}
-      className={clsx('launch-button group block', {
-        'lg:max-w-56': compact && !stretch,
-        'max-lg:w-12 max-lg:flex-none!': iconOnly,
-        'min-w-0 flex-1': stretch || compact,
-        'opacity-50': disabled && !progress,
-        'sm:max-w-80': stretch,
-        'w-full lg:w-80': !stretch && !compact,
-      })}
+      className={clsx(
+        'launch-button group block',
+        joined
+          ? 'min-w-0 flex-1'
+          : {
+              'lg:max-w-56': compact && !stretch,
+              'max-lg:w-12 max-lg:flex-none!': iconOnly,
+              'min-w-0 flex-1': stretch || compact,
+              'sm:max-w-80': stretch,
+              'w-full lg:w-80': !stretch && !compact,
+            },
+        { 'opacity-50': disabled && !progress },
+      )}
       data-sn-enabled
       {...props}
       type='button'
@@ -54,6 +62,7 @@ export function LaunchButton({
           className={clsx(
             'relative w-full! overflow-hidden transition-[filter,background-color]',
             compact ? 'h-12!' : 'h-16!',
+            { 'rounded-r-none!': joined },
             {
               'border-2! bg-(--color-background)! shadow-none! group-hover:bg-(--accent-2)!': variant === 'outline',
               'group-hover:brightness-110': variant !== 'outline',
