@@ -58,7 +58,7 @@
   "auth.usernameExamples": "例：johnsmith、admin",
   "bios.description": "BIOS ファイルは、私たちがエミュレートしているハードウェアで使用されているオペレーティングシステムのコピーです。コンテンツの要件に応じて、ハードウェアやソフトウェアを正しくエミュレートするために BIOS ファイルが必要なエミュレーターもあります。{{title}} は著作権で保護されたシステムファイルやゲームコンテンツを共有しません。適用される現地法に従って、ご自身で BIOS とコンテンツを用意してください。",
   "bios.expectedFile": "必要なBIOSファイル: ",
-  "bios.expectedFile_other": "期待されるBIOSファイル: ",
+  "bios.expectedFile_other": "必要なBIOSファイル: ",
   "bios.fileNameNotExpected": "選択されたファイル名によると、これは期待されるBIOSファイルではありません。",
   "bios.managedByAdmin": "BIOSファイルは管理者が全員のために追加します。",
   "bios.requiredForLaunch": "必要な <tooltip/> がないとゲームを起動できません: <strong>{{biosList}}</strong>。",

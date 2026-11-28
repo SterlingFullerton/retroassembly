@@ -55,9 +55,9 @@ export default function LibraryROMsPage() {
                 i18nKey='stats.totalGames'
                 values={{
                   game: gameLabel,
-                  gameCount: pagination.total,
+                  gameCount: pagination.total.toLocaleString(i18n.language),
                   platform: platformLabel,
-                  platformCount,
+                  platformCount: platformCount.toLocaleString(i18n.language),
                 }}
               />
             </span>
