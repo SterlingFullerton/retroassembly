@@ -118,7 +118,7 @@ func (s *Server) findNASInvitation(w http.ResponseWriter, r *http.Request, scope
 	s.nasPlaces.Store(nasPlaceKey(code, scope), player)
 	invitation := together.Invitation{
 		Controls: game.Controls, Core: game.Core, Host: s.nasStarter(r.Context(), game), Linked: game.LinkedWith != "",
-		Offer: offer, Platform: game.Platform, Title: game.Title,
+		Offer: offer, Platform: game.Platform, StartedHere: game.StartedBy == scope.User.ID, Title: game.Title,
 	}
 	if game.Console == 1 && game.LinkedWith != "" {
 		invitation.FriendCode = nasCode(game.LinkedWith)

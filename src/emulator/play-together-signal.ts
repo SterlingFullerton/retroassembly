@@ -21,6 +21,8 @@ export interface Invitation {
   linked?: boolean
   /** For the starter's console of a linked pair, the code that joins the friend's */
   friendCode?: string
+  /** A game on the server that the player looking it up started, who can end it */
+  startedHere?: boolean
 }
 
 /**
