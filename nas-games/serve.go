@@ -43,6 +43,10 @@ import (
 //	DELETE /games/{id}
 //	POST   /games/{id}/players           -> {player, offer}
 //	POST   /games/{id}/players/{n}/answer {answer}
+//
+// With "linked": true, POST /games starts two consoles linked as by a DS's local wireless and answers with both, the
+// starter's first: each a game of its own with its console (1 or 2) and the other's id (linkedWith). The pair pauses,
+// resumes, restarts and ends together, stops when both are empty, and has no save states
 
 type runningGame struct {
 	Controls string `json:"controls"`
@@ -61,6 +65,9 @@ type runningGame struct {
 	Started   time.Time `json:"started"`
 	StartedBy string    `json:"startedBy"`
 	Title     string    `json:"title"`
+	// A console of a linked pair: which one, 1 for the starter's and 2 for a friend's, and the other's id
+	Console    int    `json:"console,omitempty"`
+	LinkedWith string `json:"linkedWith,omitempty"`
 
 	address string
 	command *exec.Cmd
@@ -83,14 +90,15 @@ var service = struct {
 }{games: map[string]*runningGame{}}
 
 var (
-	errFull       = errors.New("the NAS is running as many games as it may")
-	errNoCore     = errors.New("that emulator isn't on the NAS")
-	errNoGame     = errors.New("no such game")
-	errBadFile    = errors.New("no such game file")
-	validCore     = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
-	validPlayer   = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
-	validID       = regexp.MustCompile(`^[a-z0-9]{5}$`)
-	validSaveType = regexp.MustCompile(`^[a-z0-9]{1,8}$`)
+	errFull   = errors.New("the NAS is running as many games as it may")
+	errNoCore = errors.New("that emulator isn't on the NAS")
+	errNoGame = errors.New("no such game")
+	// Saving or loading a state of one console of a linked pair
+	errLinkedStates = errors.New("a linked game has no save states")
+	errBadFile      = errors.New("no such game file")
+	validCore       = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
+	validPlayer     = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+	validSaveType   = regexp.MustCompile(`^[a-z0-9]{1,8}$`)
 	// How long an ended game's last save waits to be collected
 	keepEnded   = time.Hour
 	idAlphabet  = "abcdefghjkmnpqrstuvwxyz23456789"
@@ -124,6 +132,9 @@ func serve() {
 	})
 	for _, method := range []string{http.MethodGet, http.MethodPost} {
 		mux.HandleFunc(method+" /games/{id}/states", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost && refuseLinked(w, r) {
+				return
+			}
 			forward(w, r, "/states")
 		})
 	}
@@ -131,6 +142,9 @@ func serve() {
 		forward(w, r, "/states/"+r.PathValue("state")+"/picture")
 	})
 	mux.HandleFunc("POST /games/{id}/states/{state}/load", func(w http.ResponseWriter, r *http.Request) {
+		if refuseLinked(w, r) {
+			return
+		}
 		forward(w, r, "/states/"+r.PathValue("state")+"/load")
 	})
 	keyed := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,51 +172,84 @@ func newID() string {
 	return string(id)
 }
 
+// startRequest is what the app asks a game to be started with
+type startRequest struct {
+	Controls     string            `json:"controls"`
+	Core         string            `json:"core"`
+	File         string            `json:"file"`
+	LibraryOwner string            `json:"libraryOwner"`
+	Options      map[string]string `json:"options"`
+	Platform     string            `json:"platform"`
+	Rom          string            `json:"rom"`
+	// The player's BIOS files for the console, put in the emulator's system folder as the browser does
+	Bioses []namedFile `json:"bioses"`
+	// The other discs of a game on several, in order, this one among them: played from a list of them all
+	Discs []discFile `json:"discs"`
+	// The game's own file name, which some emulators read its region or set from: arcade ones above all
+	FileName string `json:"fileName"`
+	// The player's latest save of the game, which it starts with: as bytes, so base64 in JSON
+	Save []byte `json:"save"`
+	// The kind of file the emulator keeps its own save in, beside the game's name: a DS's .dsv or .sav
+	SaveType  string `json:"saveType"`
+	StartedBy string `json:"startedBy"`
+	Title     string `json:"title"`
+	// Two consoles linked as by a DS's local wireless, each a game of its own with its own code, players and picture:
+	// the second for a friend, who joins it with its code
+	Linked bool `json:"linked"`
+}
+
 func startGame(w http.ResponseWriter, r *http.Request) {
-	var request struct {
-		Controls     string            `json:"controls"`
-		Core         string            `json:"core"`
-		File         string            `json:"file"`
-		LibraryOwner string            `json:"libraryOwner"`
-		Options      map[string]string `json:"options"`
-		Platform     string            `json:"platform"`
-		Rom          string            `json:"rom"`
-		// The player's BIOS files for the console, put in the emulator's system folder as the browser does
-		Bioses []namedFile `json:"bioses"`
-		// The other discs of a game on several, in order, this one among them: played from a list of them all
-		Discs []discFile `json:"discs"`
-		// The game's own file name, which some emulators read its region or set from: arcade ones above all
-		FileName string `json:"fileName"`
-		// The player's latest save of the game, which it starts with: as bytes, so base64 in JSON
-		Save []byte `json:"save"`
-		// The kind of file the emulator keeps its own save in, beside the game's name: a DS's .dsv or .sav
-		SaveType  string `json:"saveType"`
-		StartedBy string `json:"startedBy"`
-		Title     string `json:"title"`
-		// Two consoles linked as by a DS's local wireless: the first is started with linkHost, and the second with
-		// linkWith, the first's id. Each is a game of its own, with its own players and save
-		LinkHost bool   `json:"linkHost"`
-		LinkWith string `json:"linkWith"`
-	}
+	var request startRequest
 	if err := json.NewDecoder(io.LimitReader(r.Body, 128<<20)).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	corePath := filepath.Join("/cores", request.Core+"_libretro.so")
-	if !validCore.MatchString(request.Core) {
-		http.Error(w, errNoCore.Error(), http.StatusBadRequest)
+	if !request.Linked {
+		game, status, err := startConsole(request, newID(), nil)
+		if err != nil {
+			http.Error(w, err.Error(), status)
+			return
+		}
+		writeJSONTo(w, http.StatusOK, game)
 		return
 	}
-	if _, err := os.Stat(corePath); err != nil {
-		http.Error(w, errNoCore.Error(), http.StatusNotFound)
+	// A linked pair needs two slots, and starts both or neither
+	if freeSlots() < 2 {
+		http.Error(w, errFull.Error(), http.StatusServiceUnavailable)
 		return
+	}
+	first, second := newID(), newID()
+	host, status, err := startConsole(request, first, &consoleLink{console: 1, host: first, partner: second})
+	if err != nil {
+		http.Error(w, err.Error(), status)
+		return
+	}
+	// The friend's console keeps its save apart from the starter's: it's not theirs to have overwritten
+	friend := request
+	friend.Save = nil
+	guest, status, err := startConsole(friend, second, &consoleLink{console: 2, host: first, partner: first})
+	if err != nil {
+		stopGame(host)
+		http.Error(w, err.Error(), status)
+		return
+	}
+	writeJSONTo(w, http.StatusOK, []*runningGame{host, guest})
+}
+
+// startConsole starts one console of a game, linked to another if link says so, and answers once it's ready
+func startConsole(request startRequest, id string, link *consoleLink) (*runningGame, int, error) {
+	corePath := filepath.Join("/cores", request.Core+"_libretro.so")
+	if !validCore.MatchString(request.Core) {
+		return nil, http.StatusBadRequest, errNoCore
+	}
+	if _, err := os.Stat(corePath); err != nil {
+		return nil, http.StatusNotFound, errNoCore
 	}
 	// Only files in the games folder: a path that leaves it is refused
 	romsDir := envOr("ROMS_DIR", "/roms")
 	gamePath := filepath.Join(romsDir, filepath.Clean("/"+request.File))
 	if info, err := os.Stat(gamePath); err != nil || info.IsDir() {
-		http.Error(w, errBadFile.Error(), http.StatusNotFound)
-		return
+		return nil, http.StatusNotFound, errBadFile
 	}
 	// The game as the emulator sees it: under its own name, with its BIOS files, in a folder of the game's own
 	workDir := filepath.Join(os.TempDir(), "nas-game-"+newID())
@@ -215,16 +262,17 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, err
 	}
 	// Each player's saves in a folder of their own: the game's own save, which is the app's latest when it starts, and
 	// a PSP's memory stick, which stays here
 	if !validPlayer.MatchString(request.StartedBy) {
-		http.Error(w, "no such player", http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, errors.New("no such player")
 	}
 	saveDir := filepath.Join(envOr("SAVE_DIR", "/config/saves"), request.StartedBy)
+	if link != nil && link.console == 2 {
+		saveDir = filepath.Join(saveDir, "linked-console-2")
+	}
 	savePath := filepath.Join(saveDir, strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))+".srm")
 	// An emulator that keeps its save itself does so in the save folder, under the name it was started with
 	saveType := ""
@@ -241,8 +289,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		saveFolder = filepath.Join(gameSaveDir, "PSP", "SAVEDATA")
 	}
 	if err := os.MkdirAll(gameSaveDir, 0o755); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, err
 	}
 	collected := ""
 	if saveFolder != "" {
@@ -251,20 +298,17 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		if len(request.Save) > 0 {
 			unzipped, err := savezip.Unzip(request.Save, "SAVEDATA")
 			if err != nil {
-				http.Error(w, "the game's save couldn't be read: "+err.Error(), http.StatusBadRequest)
-				return
+				return nil, http.StatusBadRequest, errors.New("the game's save couldn't be read: " + err.Error())
 			}
 			files = unzipped
 			collected = checksum(savezip.Zip(files))
 		}
 		if err := savezip.Write(saveFolder, files); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, http.StatusInternalServerError, err
 		}
 	} else if len(request.Save) > 0 {
 		if err := os.WriteFile(savePath, request.Save, 0o644); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, http.StatusInternalServerError, err
 		}
 		collected = checksum(request.Save)
 	} else {
@@ -293,11 +337,10 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	}
 	if port < 0 {
 		service.Unlock()
-		http.Error(w, errFull.Error(), http.StatusServiceUnavailable)
-		return
+		return nil, http.StatusServiceUnavailable, errFull
 	}
 	game := &runningGame{
-		Controls: request.Controls, Core: request.Core, ID: newID(), LibraryOwner: request.LibraryOwner,
+		Controls: request.Controls, Core: request.Core, ID: id, LibraryOwner: request.LibraryOwner,
 		Platform: request.Platform, Rom: request.Rom, SaveType: saveType, Started: time.Now(), StartedBy: request.StartedBy,
 		Title: request.Title, collected: collected, saveFolder: saveFolder, savePath: savePath,
 		address: fmt.Sprintf("127.0.0.1:%d", port+1000), done: make(chan struct{}), idleSince: time.Now(), port: port,
@@ -309,20 +352,9 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		"SAVE_NAME="+strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath)), "CORE_PATH="+corePath, "CORE_OPTIONS="+strings.Join(options, ";"),
 		"HTTP_ADDRESS="+game.address, "MEDIA_PORT="+strconv.Itoa(port), "SAVE_DIR="+gameSaveDir,
 		"STATES_DIR="+filepath.Join(saveDir, "states", strings.TrimSuffix(filepath.Base(gamePath), filepath.Ext(gamePath))))
-	// The link's two sockets are named after the hosting game
-	switch {
-	case request.LinkHost:
-		command.Env = append(command.Env, "LINK_ID=0", "USERNAME=Player 1",
-			"LINK_SELF="+linkSocket(game.ID, 1), "LINK_PEER="+linkSocket(game.ID, 2))
-	case request.LinkWith != "":
-		host := strings.ToLower(request.LinkWith)
-		if !validID.MatchString(host) {
-			service.Unlock()
-			http.Error(w, errNoGame.Error(), http.StatusNotFound)
-			return
-		}
-		command.Env = append(command.Env, "LINK_ID=1", "USERNAME=Player 2",
-			"LINK_SELF="+linkSocket(host, 2), "LINK_PEER="+linkSocket(host, 1))
+	if link != nil {
+		game.Console, game.LinkedWith = link.console, link.partner
+		command.Env = append(command.Env, link.env()...)
 	}
 	prefix := fmt.Sprintf("[%s] ", game.ID)
 	command.Stdout = &prefixed{prefix: prefix, out: os.Stdout}
@@ -330,8 +362,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	game.command = command
 	if err := command.Start(); err != nil {
 		service.Unlock()
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, err
 	}
 	service.games[game.ID] = game
 	running = true
@@ -344,6 +375,10 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 		game.Ended, game.endedAt, game.Players = true, time.Now(), 0
 		service.Unlock()
 		log.Printf("game %s (%s) ended", game.ID, game.Title)
+		// One console of a linked pair can't play on alone: the other's wireless would wait on it
+		if partner := partnerOf(game); partner != nil {
+			stopGame(partner)
+		}
 	}()
 
 	// Ready once it answers; a game that never does is stopped
@@ -351,8 +386,7 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	for deadline := time.Now().Add(readyWithin); time.Now().Before(deadline) && !ready; {
 		select {
 		case <-game.done:
-			http.Error(w, "the game stopped as it started", http.StatusInternalServerError)
-			return
+			return nil, http.StatusInternalServerError, errors.New("the game stopped as it started")
 		case <-time.After(250 * time.Millisecond):
 		}
 		_, err := status(game)
@@ -360,11 +394,10 @@ func startGame(w http.ResponseWriter, r *http.Request) {
 	}
 	if !ready {
 		stopGame(game)
-		http.Error(w, "the game didn't start in time", http.StatusGatewayTimeout)
-		return
+		return nil, http.StatusGatewayTimeout, errors.New("the game didn't start in time")
 	}
 	log.Printf("game %s started: %s, %s, port %d", game.ID, game.Title, request.Core, port)
-	writeJSONTo(w, http.StatusOK, game)
+	return game, http.StatusOK, nil
 }
 
 // listCores is the emulators the NAS has, by the names the app gives them
@@ -391,6 +424,25 @@ func listGames(w http.ResponseWriter, r *http.Request) {
 }
 
 // findGame is a game still running
+// refuseLinked turns away saving or loading a state of a linked console: two consoles can't be put back in step, and
+// one put back alone would no longer match the other. Whether it was turned away
+func refuseLinked(w http.ResponseWriter, r *http.Request) bool {
+	game := findGame(r.PathValue("id"))
+	if game == nil || game.LinkedWith == "" {
+		return false
+	}
+	http.Error(w, errLinkedStates.Error(), http.StatusConflict)
+	return true
+}
+
+// partnerOf is the other console of a linked pair, while it runs
+func partnerOf(game *runningGame) *runningGame {
+	if game.LinkedWith == "" {
+		return nil
+	}
+	return findGame(game.LinkedWith)
+}
+
 func findGame(id string) *runningGame {
 	service.Lock()
 	defer service.Unlock()
@@ -472,13 +524,50 @@ func stopGameRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errNoGame.Error(), http.StatusNotFound)
 		return
 	}
+	// A linked pair ends together
+	partner := partnerOf(game)
 	stopGame(game)
+	if partner != nil {
+		stopGame(partner)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// linkSocket is where a console of a linked game, 1 or 2, takes the other's packets
-func linkSocket(host string, console int) string {
-	return filepath.Join(os.TempDir(), fmt.Sprintf("nas-link-%s-%d.sock", host, console))
+// consoleLink is one console's part in a linked pair: which console it is, the first console's id, which names the
+// pair's sockets, and the other console's id
+type consoleLink struct {
+	console       int
+	host, partner string
+}
+
+// env is what the console's process is given to find the other: the sockets for the DS's wireless packets
+// (frontend.c) and for pausing, resuming and restarting together (commands.go), and a username of its own, which the
+// emulator makes its wireless address from
+func (link consoleLink) env() []string {
+	other := 3 - link.console
+	return []string{
+		fmt.Sprintf("LINK_ID=%d", link.console-1), fmt.Sprintf("USERNAME=Player %d", link.console),
+		"LINK_SELF=" + linkSocket(link.host, link.console, "wireless"), "LINK_PEER=" + linkSocket(link.host, other, "wireless"),
+		"PARTNER_SELF=" + linkSocket(link.host, link.console, "control"), "PARTNER_PEER=" + linkSocket(link.host, other, "control"),
+	}
+}
+
+// linkSocket is where a console of a linked pair, 1 or 2, takes the other's messages of a kind
+func linkSocket(host string, console int, kind string) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("nas-link-%s-%d-%s.sock", host, console, kind))
+}
+
+// freeSlots is how many more games can start
+func freeSlots() int {
+	service.Lock()
+	defer service.Unlock()
+	free := gameSlots
+	for _, game := range service.games {
+		if !game.Ended {
+			free--
+		}
+	}
+	return free
 }
 
 // saveBeforeStopping keeps a save state of a game left with nobody in it, for whoever started it, as its pause menu's
@@ -579,15 +668,21 @@ func watchGames() {
 			}
 			idle := time.Since(game.idleSince)
 			stop := idle > idleFor && !game.stopping
+			// A linked pair stops only once both consoles are empty, and with no save state, which it can't have
+			linked := game.LinkedWith != ""
+			if partner := service.games[game.LinkedWith]; stop && linked && partner != nil && !partner.Ended {
+				stop = time.Since(partner.idleSince) > idleFor
+			}
 			if stop {
 				game.stopping = true
 			}
 			service.Unlock()
 			if stop {
-				log.Printf("game %s (%s): nobody in it for %v, saving and stopping", game.ID, game.Title,
-					idle.Round(time.Second))
+				log.Printf("game %s (%s): nobody in it for %v, stopping", game.ID, game.Title, idle.Round(time.Second))
 				go func() {
-					saveBeforeStopping(game)
+					if !linked {
+						saveBeforeStopping(game)
+					}
 					stopGame(game)
 				}()
 			}

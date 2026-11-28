@@ -12,62 +12,19 @@ index bb52319..f59f309 100644
  
          void WriteNdsSave(std::span<const std::byte> savedata, uint32_t writeoffset, uint32_t writelen) noexcept;
 diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
-index b56f23a..4e85cfd 100644
+index b56f23a..da7a6be 100644
 --- a/src/libretro/libretro.cpp
 +++ b/src/libretro/libretro.cpp
-@@ -1,3 +1,5 @@
-+#include <chrono>
-+#include <cstdio>
- /*
-     Copyright 2023 Jesse Talavera-Greenberg
- 
-@@ -382,8 +384,29 @@ int Platform::MP_SendAck(u8* data, int len, u64 timestamp, void*) {
-     return MelonDsDs::Core.MpSendPacket(MelonDsDs::Packet(data, len, timestamp, 0, MelonDsDs::Packet::Type::Cmd)) ? len : 0;
- }
- 
-+// Testing only: how often each wait gives up, logged each second
-+static struct {
-+    long hostWaits, hostTimeouts, replyWaits, replyTimeouts, staleReplies, otherInHost;
-+    std::chrono::steady_clock::time_point logged;
-+} mpStats;
-+
-+static void LogMpStats() {
-+    auto now = std::chrono::steady_clock::now();
-+    if (now - mpStats.logged < std::chrono::seconds(1)) return;
-+    mpStats.logged = now;
-+    fprintf(stderr, "[mp] host packet waits %ld (timeouts %ld, non-cmd %ld), reply waits %ld (timeouts %ld, stale %ld)\n",
-+            mpStats.hostWaits, mpStats.hostTimeouts, mpStats.otherInHost, mpStats.replyWaits, mpStats.replyTimeouts,
-+            mpStats.staleReplies);
-+    mpStats = {};
-+    mpStats.logged = now;
-+}
-+
- int Platform::MP_RecvHostPacket(u8* data, u64 * timestamp, void*) {
-     std::optional<MelonDsDs::Packet> o_p = MelonDsDs::Core.MpNextPacketBlock();
-+    mpStats.hostWaits++;
-+    if (!o_p.has_value()) mpStats.hostTimeouts++;
-+    else if (o_p->PacketType() != MelonDsDs::Packet::Type::Cmd) mpStats.otherInHost++;
-+    LogMpStats();
-     return DeconstructPacket(data, timestamp, o_p);
- }
- 
-@@ -394,20 +417,30 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
+@@ -394,7 +394,7 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
      u16 ret = 0;
      int loops = 0;
      while((ret & aidmask) != aidmask) {
 -        std::optional<MelonDsDs::Packet> o_p = MelonDsDs::Core.MpNextPacketBlock();
 +        std::optional<MelonDsDs::Packet> o_p = MelonDsDs::Core.MpNextPacketBlock(MelonDsDs::MpState::Kind::Reply);
-+        mpStats.replyWaits++;
          if(!o_p.has_value()) {
-+            mpStats.replyTimeouts++;
-+            LogMpStats();
              return ret;
          }
-         MelonDsDs::Packet p = std::move(o_p).value();
-         if(p.Timestamp() < (timestamp - 32)) {
-+            mpStats.staleReplies++;
-             continue;
-         }
+@@ -405,9 +405,15 @@ u16 Platform::MP_RecvReplies(u8* packets, u64 timestamp, u16 aidmask, void*) {
          if(p.PacketType() != MelonDsDs::Packet::Type::Reply) {
              continue;
          }
