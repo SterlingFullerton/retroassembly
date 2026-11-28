@@ -193,18 +193,28 @@ func TestUsernamesFollowTheRule(t *testing.T) {
 			url.Values{"libraryMode": {"1"}, "password": {"password-friend"}, "username": {username}})
 	}
 
-	for _, username := range []string{"", "   ", "a", "two words", "<b>bold</b>", "name@host", "abcdefghijklmnopqrstuvwxyz0123456"} {
+	// Letters from other alphabets look like these: "аdmin" has a Cyrillic а
+	for _, username := range []string{"", "   ", "a", "two words", "<b>bold</b>", "name@host", "abcdefghijklmnopqrstuvwxyz0123456",
+		"Zoë", "太郎", "аdmin", "Server", "s-e-r-v-e-r", "NAS", "5erver"} {
 		admin.expect(http.StatusBadRequest, add(username))
 	}
-	for _, username := range []string{"Friend", "jo", "anna.b-2_x", "Zoë", "太郎"} {
+	for _, username := range []string{"Friend", "jo", "anna.b-2_x", "Mila"} {
 		admin.expect(http.StatusOK, add(username))
 	}
-	// A name taken in other capitals is taken
-	admin.expect(http.StatusConflict, add("friend"))
-	admin.expect(http.StatusConflict, add("ADMIN"))
-	if count := api.count(t, `SELECT count(*) FROM users WHERE status = 1`); count != 6 {
-		t.Fatalf("%d accounts, not the admin and the 5 added", count)
+	// A name taken in other capitals is taken, and so is one that looks like another account's
+	for _, username := range []string{"friend", "ADMIN", "adm1n", "Fr1end", "fr_iend", "anna.b-2_x.", "MiIa", "rni1a"} {
+		admin.expect(http.StatusConflict, add(username))
 	}
+	if count := api.count(t, `SELECT count(*) FROM users WHERE status = 1`); count != 5 {
+		t.Fatalf("%d accounts, not the admin and the 4 added", count)
+	}
+	// Accounts from before the rule keep their names, and sign in with them
+	if _, err := api.database.Exec(`UPDATE users SET username = 'Zoë' WHERE username = 'Mila'`); err != nil {
+		t.Fatal(err)
+	}
+	zoe := api.browser(t)
+	zoe.expect(http.StatusOK, zoe.form(http.MethodPost, "/api/v1/auth/login",
+		url.Values{"password": {"password-friend"}, "username": {"Zoë"}}))
 
 	// And signs in whatever capitals it's typed with
 	friend := api.browser(t)

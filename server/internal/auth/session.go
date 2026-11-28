@@ -289,16 +289,16 @@ func createUser(ctx context.Context, database *sql.DB, username, password, role,
 		}
 	}
 	username = strings.TrimSpace(username)
-	if !ValidUsername(username) {
-		return nil, errInvalidUsername
-	}
 	// Taken whatever its capitals, so "Jack" can't be added beside "jack"
 	existing, err := usernameInUse(ctx, database, username)
 	if err != nil {
 		return nil, err
 	}
 	if existing != "" {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
+		return nil, errUsernameTaken
+	}
+	if err := checkNewUsername(ctx, database, username, ""); err != nil {
+		return nil, err
 	}
 	if authMode == "local" && password == "" {
 		return nil, failure.New(http.StatusBadRequest, "Password is required")
@@ -328,7 +328,10 @@ func createUser(ctx context.Context, database *sql.DB, username, password, role,
 		return nil, err
 	}
 	if existing != "" {
-		return nil, failure.New(http.StatusConflict, "Username already exists")
+		return nil, errUsernameTaken
+	}
+	if err := checkNewUsername(ctx, transaction, username, ""); err != nil {
+		return nil, err
 	}
 	if firstOnly {
 		if taken, err := hasAccounts(ctx, transaction); err != nil {

@@ -2,12 +2,13 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"strings"
 	"time"
-	"unicode"
 	"unicode/utf8"
 
 	"retroassembly/server/internal/db"
@@ -90,23 +91,86 @@ func assertIsAdmin(ctx context.Context, database *sql.DB, user *User) (string, e
 }
 
 var (
-	errInvalidUsername    = failure.New(http.StatusBadRequest, "Username must be 2 to 32 letters, digits, dots, dashes or underscores")
+	errInvalidUsername = failure.New(http.StatusBadRequest,
+		"Username must be 2 to 32 letters (a to z), digits, dots, dashes or underscores")
+	errReservedUsername   = failure.New(http.StatusBadRequest, "That username is reserved")
+	errUsernameTaken      = failure.New(http.StatusConflict, "Username already exists")
+	errUsernameLookAlike  = failure.New(http.StatusConflict, "Username is too like another account's")
 	errInvalidLibraryMode = failure.New(http.StatusBadRequest, "Library mode must be 0 (own library) or 1 (shared library)")
 )
 
-// ValidUsername tells whether a new account may have a name: 2 to 32 letters, digits, dots, dashes and underscores,
-// so there's no empty or look-alike name with spaces in it. Accounts made before the rule keep their names
+// ValidUsername tells whether a new account may have a name: 2 to 32 letters a to z, digits, dots, dashes and
+// underscores, so there's no empty name, none with spaces, and none with a letter from another alphabet that looks like
+// one of these. Accounts made before the rule keep their names
 func ValidUsername(username string) bool {
-	if length := utf8.RuneCountInString(username); length < 2 || length > 32 {
+	if length := len(username); length < 2 || length > 32 {
 		return false
 	}
 	for _, character := range username {
-		if !unicode.IsLetter(character) && !unicode.IsDigit(character) && !strings.ContainsRune("._-", character) {
+		if !(character >= 'a' && character <= 'z') && !(character >= 'A' && character <= 'Z') &&
+			!(character >= '0' && character <= '9') && !strings.ContainsRune("._-", character) {
 			return false
 		}
 	}
 	return true
 }
+
+// Names that stand for something other than a person where names are shown, as the server is in the list of games to
+// join. No new account has one, nor one that looks like one
+var reservedUsernames = []string{"anonymous", "deleted", "everyone", "nas", "retroassembly", "server", "system", "unknown"}
+
+// usernameSkeleton is what a name looks like at a glance: capitals, dots, dashes and underscores aside, with the
+// letters and digits that are easily taken for one another made the same
+func usernameSkeleton(username string) string {
+	skeleton := strings.ToLower(username)
+	skeleton = strings.NewReplacer(".", "", "-", "", "_", "").Replace(skeleton)
+	return strings.NewReplacer("rn", "m", "vv", "w", "0", "o", "1", "l", "i", "l", "5", "s").Replace(skeleton)
+}
+
+// checkNewUsername refuses a name a new account, or an account renamed, may not have: one that breaks the rule, is
+// reserved, or looks like another account's, a deleted one's among them (see deletedUsername). exceptID is the account
+// being renamed, which may keep looking like itself
+func checkNewUsername(ctx context.Context, query interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}, username, exceptID string) error {
+	if !ValidUsername(username) {
+		return errInvalidUsername
+	}
+	skeleton := usernameSkeleton(username)
+	for _, reserved := range reservedUsernames {
+		if skeleton == usernameSkeleton(reserved) {
+			return errReservedUsername
+		}
+	}
+	rows, err := query.QueryContext(ctx, `SELECT id, status, username FROM users WHERE id != ?`, exceptID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	deleted := deletedUsername(username)
+	for rows.Next() {
+		var (
+			id, existing string
+			status       int
+		)
+		if err := rows.Scan(&id, &status, &existing); err != nil {
+			return err
+		}
+		if (status == db.StatusNormal && usernameSkeleton(existing) == skeleton) || existing == deleted {
+			return errUsernameLookAlike
+		}
+	}
+	return rows.Err()
+}
+
+// deletedUsername is what a deleted account's name is replaced with: no name, but enough to tell that a new one looks
+// like it, so no one takes the name of someone who left
+func deletedUsername(username string) string {
+	digest := sha256.Sum256([]byte(usernameSkeleton(username)))
+	return deletedUsernamePrefix + hex.EncodeToString(digest[:])
+}
+
+const deletedUsernamePrefix = "deleted:"
 
 func validLibraryMode(libraryMode float64) bool {
 	return libraryMode == 0 || libraryMode == 1
@@ -258,16 +322,16 @@ func UpdateAccount(ctx context.Context, database *sql.DB, admin *User, id string
 	}
 	if changes.Username != nil {
 		username := strings.TrimSpace(*changes.Username)
-		if !ValidUsername(username) {
-			return nil, errInvalidUsername
-		}
 		// Taken by someone else, whatever its capitals; an account may change the capitals of its own
 		existing, err := usernameInUse(ctx, transaction, username)
 		if err != nil {
 			return nil, err
 		}
 		if existing != "" && existing != updated.Username {
-			return nil, failure.New(http.StatusConflict, "Username already exists")
+			return nil, errUsernameTaken
+		}
+		if err := checkNewUsername(ctx, transaction, username, id); err != nil {
+			return nil, err
 		}
 		updated.Username = username
 	}
