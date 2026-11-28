@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { getFileExtension } from '../game-media-dialog/utils.ts'
 import { CbzViewer } from './cbz-viewer.tsx'
 import type { MediaItem } from './game-media-carousel.tsx'
@@ -11,10 +12,11 @@ interface CarouselSlideProps {
 }
 
 export function CarouselSlide({ index, item, videoRefs, youtubeRefs }: Readonly<CarouselSlideProps>) {
+  const { t } = useTranslation()
   if (item.type === 'video') {
     return (
       <video
-        aria-label='Video player'
+        aria-label={t('game.media.video')}
         controls
         className='h-full w-full object-contain'
         ref={(el) => {
@@ -68,7 +70,7 @@ export function CarouselSlide({ index, item, videoRefs, youtubeRefs }: Readonly<
         referrerPolicy='strict-origin-when-cross-origin'
         sandbox='allow-same-origin allow-scripts allow-forms'
         src={convertYouTubeIframeURL(item.src)}
-        title='YouTube video player'
+        title={t('game.media.youtubeVideo')}
       />
     )
   }

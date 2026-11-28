@@ -5,9 +5,11 @@ import { GameListMain } from '../components/game-list-main.tsx'
 import { PageStats } from '../components/page-stats.tsx'
 
 export default function HistoryPage() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { page, pagination, roms, title } = useLoaderData<typeof loader>()
   const gameLabel = t('common.game', { count: pagination.total })
+  // Written as the language writes numbers; the count itself picks the word's form
+  const gameCount = pagination.total.toLocaleString(i18n.language)
 
   if (page > 1 && roms.length === 0) {
     return <>{t('error.notFoundCode')}</>
@@ -16,11 +18,7 @@ export default function HistoryPage() {
   return (
     <GameListMain
       phoneSummary={
-        <Trans
-          components={{ 1: <span /> }}
-          i18nKey='stats.playedGames'
-          values={{ game: gameLabel, gameCount: pagination.total }}
-        />
+        <Trans components={{ 1: <span /> }} i18nKey='stats.playedGames' values={{ game: gameLabel, gameCount }} />
       }
     >
       <h1 className='text-5xl font-semibold'>{title}</h1>
@@ -32,10 +30,7 @@ export default function HistoryPage() {
               1: <span className='font-bold text-(--accent-11)' />,
             }}
             i18nKey='stats.playedGames'
-            values={{
-              game: gameLabel,
-              gameCount: pagination.total,
-            }}
+            values={{ game: gameLabel, gameCount }}
           />
         </span>
       </PageStats>

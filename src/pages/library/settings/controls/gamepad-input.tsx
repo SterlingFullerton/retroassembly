@@ -1,6 +1,6 @@
 import { Button, Select, TextField } from '@radix-ui/themes'
 import { clsx } from 'clsx'
-import { type ReactNode, useEffect, useEffectEvent, useRef } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useEffectEvent, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useGamepadMapping } from '#@/pages/library/hooks/use-gamepad-mapping.ts'
 import { useGamepads } from '#@/pages/library/hooks/use-gamepads.ts'
@@ -11,6 +11,8 @@ interface GamepadInputProps {
   button: {
     iconClass?: string
     iconNode?: ReactNode
+    /** Its name for a screen reader, where it's drawn as an icon alone */
+    label?: string
     name: string
     options?: readonly string[]
     shortcutPart?: 'key' | 'prefix'
@@ -109,8 +111,9 @@ export function GamepadInput({ button }: Readonly<GamepadInputProps>) {
             onBeforeInput={(event) => event.preventDefault()}
             onChange={(event) => event.preventDefault()}
             onFocus={(event) => event.target.select()}
-            onKeyDown={(event) => event.preventDefault()}
+            onKeyDown={keepTextOut}
             readOnly={isLoading}
+            aria-label={button.label}
             ref={textField}
             size='2'
             value={value ?? ''}
@@ -118,7 +121,14 @@ export function GamepadInput({ button }: Readonly<GamepadInputProps>) {
             <TextField.Slot />
             <TextField.Slot>
               {clearable ? (
-                <Button className='-translate-x-1!' onClick={handleClickClear} size='1' title='Clear' variant='ghost'>
+                <Button
+                  className='-translate-x-1!'
+                  onClick={handleClickClear}
+                  size='1'
+                  aria-label={t('common.clear')}
+                  title={t('common.clear')}
+                  variant='ghost'
+                >
                   <span className='icon-[mdi--close]' />
                 </Button>
               ) : null}
@@ -129,6 +139,14 @@ export function GamepadInput({ button }: Readonly<GamepadInputProps>) {
       </div>
     </label>
   )
+}
+
+// The field takes a gamepad's button, not typing. Only the keys that would type are kept out: Tab, the arrows and
+// Escape still move on from it, so the keyboard isn't held there
+function keepTextOut(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+    event.preventDefault()
+  }
 }
 
 interface GamepadShortcutMapping {

@@ -1,6 +1,7 @@
 import useEmblaCarousel from 'embla-carousel-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RadixThemePortal } from '#@/pages/components/radix-theme-portal.tsx'
 import { CarouselSlide } from './carousel-slide.tsx'
 
@@ -46,6 +47,7 @@ export function GameMediaCarousel({
   onClose,
   onSlideChange,
 }: Readonly<GameMediaCarouselProps>) {
+  const { t } = useTranslation()
   const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex: initialIndex })
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
@@ -211,7 +213,7 @@ export function GameMediaCarousel({
             {canScrollPrev ? (
               <motion.button
                 animate={{ opacity: 1 }}
-                aria-label='Previous'
+                aria-label={t('game.media.previous')}
                 className='fixed top-1/2 left-[calc(1vw+0.75rem)] z-50 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white hover:bg-black/70'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -225,7 +227,7 @@ export function GameMediaCarousel({
             {canScrollNext ? (
               <motion.button
                 animate={{ opacity: 1 }}
-                aria-label='Next'
+                aria-label={t('game.media.next')}
                 className='fixed top-1/2 right-[calc(1vw+0.75rem)] z-50 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white hover:bg-black/70'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -238,7 +240,7 @@ export function GameMediaCarousel({
             {/* Close button */}
             <motion.button
               animate={{ opacity: 1 }}
-              aria-label='Close'
+              aria-label={t('common.close')}
               ref={closeRef}
               className='fixed top-4 right-4 z-50 cursor-pointer rounded-full bg-black/50 p-2 text-white hover:bg-black/70'
               exit={{ opacity: 0 }}

@@ -8,6 +8,7 @@ import { ColecoVisionControls } from './colecovision-controls.tsx'
 import { DSControls } from './game-overlay-virtual-gamepad.tsx'
 import { GbControls } from './gb-controls.tsx'
 import { GbaControls } from './gba-controls.tsx'
+import { GenericControls } from './generic-controls.tsx'
 import { GenesisControls } from './genesis-controls.tsx'
 import { GwControls } from './gw-controls.tsx'
 import { LynxControls } from './lynx-controls.tsx'
@@ -24,6 +25,8 @@ import { VbControls } from './vb-controls.tsx'
 import { WonderSwanControls } from './wonderswan-controls.tsx'
 
 interface ConsoleControlsProps {
+  /** Whether Select inserts a coin, on the generic controls of an arcade emulator */
+  coin?: boolean
   /** Which console's controls: the name its setup gives them */
   kind: string
   /** Whether the ColecoVision's or Atari 5200's keypad is open, and what closes it */
@@ -38,10 +41,11 @@ function ignore() {
 }
 
 /**
- * One console's on-screen controls, by name, wherever a session is: a game being played, or a stand-in for one. Nothing
- * for a name no console has
+ * One console's on-screen controls, by name, wherever a session is: a game being played, or a stand-in for one. The
+ * generic RetroPad for 'generic', and for a name no console has, so a game can always be played by touch
  */
 export function ConsoleControls({
+  coin = false,
   keypadOpen = false,
   kind,
   onKeypadClose = ignore,
@@ -77,7 +81,7 @@ export function ConsoleControls({
     vb: <VbControls visible />,
     wonderswan: <WonderSwanControls top={top} visible />,
   }
-  return all[kind] ?? null
+  return all[kind] ?? <GenericControls coin={coin} visible />
 }
 
 /** Whether a console's controls go by this name */
@@ -97,6 +101,7 @@ const consoleControlKinds = new Set([
   'gamegear',
   'gb',
   'gba',
+  'generic',
   'genesis',
   'gw',
   'lynx',

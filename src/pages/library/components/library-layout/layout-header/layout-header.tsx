@@ -81,7 +81,8 @@ export function LayoutHeader() {
 
   return (
     <>
-      <header className='px-safe-offset-2 fixed inset-x-0 top-0 z-2 flex items-center gap-1 bg-(--accent-9) py-1 lg:hidden'>
+      {/* Clear of the clock and the camera at the top of a phone, in the app added to its home screen */}
+      <header className='px-safe-offset-2 pt-safe-offset-1 fixed inset-x-0 top-0 z-2 flex items-center gap-1 bg-(--accent-9) pb-1 lg:hidden'>
         <UploadBadge className='absolute inset-x-0 top-full flex items-center justify-center gap-2 bg-(--accent-9) py-1 text-xs text-white' />
 
         {/* The logo's side is as wide as the buttons' side, so what's between them is centred on the screen */}
@@ -134,7 +135,7 @@ export function LayoutHeader() {
           <div className='size-10 shrink-0'>{isNotLargeScreen ? <LayoutMenu large /> : null}</div>
         </div>
       </header>
-      <div className='h-12 w-full bg-(--accent-9) lg:hidden' />
+      <div className='h-[calc(3rem+env(safe-area-inset-top))] w-full bg-(--accent-9) lg:hidden' />
     </>
   )
 }

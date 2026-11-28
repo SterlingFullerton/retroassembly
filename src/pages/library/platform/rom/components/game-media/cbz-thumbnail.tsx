@@ -1,4 +1,5 @@
 import { BlobReader, BlobWriter, HttpRangeReader, ZipReader } from '@zip.js/zip.js'
+import { useTranslation } from 'react-i18next'
 import useSWRImmutable from 'swr/immutable'
 
 const imageExtensions = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
@@ -8,6 +9,7 @@ interface CbzCoverProps {
 }
 
 export function CbzCover({ src }: Readonly<CbzCoverProps>) {
+  const { t } = useTranslation()
   const {
     data: coverUrl,
     error,
@@ -58,5 +60,5 @@ export function CbzCover({ src }: Readonly<CbzCoverProps>) {
     )
   }
 
-  return <img alt='Cover' className='size-full object-cover' src={coverUrl} />
+  return <img alt={t('game.media.cover')} className='size-full object-cover' src={coverUrl} />
 }

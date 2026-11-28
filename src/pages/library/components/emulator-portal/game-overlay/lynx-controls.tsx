@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import type { CSSProperties, RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
 import { Corner, pressedLook, SlantedPair } from './controls-kit.tsx'
@@ -20,6 +21,7 @@ const buttonStyle: CSSProperties = {
 const round = twMerge(pressed, 'absolute rounded-full font-extrabold text-[#e8e8ea]')
 
 export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDivElement | null>; visible: boolean }>) {
+  const { t } = useTranslation()
   const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 120 points wide in landscape; the Lynx's picture is wide (about 16:10), which leaves
   // little room beside it. On smaller screens they shrink towards their corner. Each group hangs off a point with no
@@ -62,7 +64,12 @@ export function LynxControls({ top, visible }: Readonly<{ top: RefObject<HTMLDiv
         <TopBarButton buttonName='start' title='Pause'>
           PAUSE
         </TopBarButton>
-        <TopBarButton buttonName='select' onVirtualPressEnd={refitGame} title='Rotate'>
+        <TopBarButton
+          buttonName='select'
+          onVirtualPressEnd={refitGame}
+          aria-label={t('onScreen.rotate')}
+          title={t('onScreen.rotate')}
+        >
           ROTATE
         </TopBarButton>
       </TopBarButtons>

@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { createContext, type ReactNode, useContext } from 'react'
+import { useTranslation } from 'react-i18next'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { getPadKeys, type PadDirections, type PadKey, type PadKeyGroup, type PadKeys } from '#@/input/pad.ts'
 import type { RetroPadInput } from '#@/input/retropad.ts'
@@ -176,6 +177,7 @@ function NamedKey({ below = false, button }: Readonly<{ below?: boolean; button:
  * A console's controller with its keys. With `edit`, each key is a button that picks it to be given another key
  */
 export function PadView({ edit, pad }: Readonly<{ edit?: PadEdit; pad: PadKeys }>) {
+  const { t } = useTranslation()
   const { center, face, keypad, leftGroup, moves, rightCluster, rightGroup, shoulders } = pad
   const hasShoulders = shoulders.left.length > 0 || shoulders.right.length > 0
 
@@ -211,7 +213,7 @@ export function PadView({ edit, pad }: Readonly<{ edit?: PadEdit; pad: PadKeys }
             {center.map((button) => (
               <NamedKey below button={button} key={button.label} />
             ))}
-            {keypad ? <NamedKey below button={{ key: keypad, label: 'Keypad' }} /> : null}
+            {keypad ? <NamedKey below button={{ key: keypad, label: t('onScreen.keypad') }} /> : null}
           </div>
 
           <div className='flex items-center gap-8'>

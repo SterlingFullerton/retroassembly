@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import { StickLook, useStick } from './controls-kit.tsx'
 
@@ -15,6 +16,7 @@ function setDirections(directions: Partial<Record<keyof typeof directionButtons,
  * directions, as the on-screen gamepad's d-pad, so the emulator must have it attached
  */
 export function Joystick() {
+  const { t } = useTranslation()
   const { handlers, knob } = useStick({
     // Near the middle nothing is pressed; elsewhere, each eighth of the circle presses its one or two directions
     onMove(x, y, distance) {
@@ -34,5 +36,5 @@ export function Joystick() {
     reach: (width) => width / 2 - 16,
   })
 
-  return <StickLook className='size-full' handlers={handlers} knob={knob} title='Joystick' />
+  return <StickLook className='size-full' handlers={handlers} knob={knob} title={t('onScreen.joystick')} />
 }

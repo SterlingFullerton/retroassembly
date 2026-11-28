@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { convertYouTubeIframeURL } from './youtube-utils.ts'
 
@@ -7,6 +8,7 @@ interface YouTubeEmbedProps {
 }
 
 export function YouTubeEmbed({ className, url }: Readonly<YouTubeEmbedProps>) {
+  const { t } = useTranslation()
   if (!url) {
     return
   }
@@ -24,7 +26,7 @@ export function YouTubeEmbed({ className, url }: Readonly<YouTubeEmbedProps>) {
       referrerPolicy='strict-origin-when-cross-origin'
       sandbox='allow-same-origin allow-scripts allow-forms'
       src={src}
-      title='YouTube video player'
+      title={t('game.media.youtubeVideo')}
     />
   )
 }

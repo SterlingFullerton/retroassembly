@@ -31,7 +31,7 @@ export default function FavoritesPage() {
             i18nKey='stats.favoriteGames'
             values={{
               game: gameLabel,
-              gameCount: pagination.total,
+              gameCount: pagination.total.toLocaleString(i18n.language),
             }}
           />
         </span>

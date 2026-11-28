@@ -32,10 +32,34 @@ export const locales = [
   { code: 'zh-TW', name: '繁體中文', translation: zhTW },
 ]
 
+// For translators: German and Czech address the player formally (Sie, vy), as do French and Russian (vous, вы); Spanish,
+// Italian and Portuguese informally (tú, tu, você)
+
 // Plural forms differ by language, so keys are compared without their plural suffix
 function getBaseKeys(translation: Record<string, string>) {
   const keys = Object.keys(translation).map((key) => key.replace(/_(?:zero|one|two|few|many|other)$/u, ''))
   return new Set(keys)
+}
+
+const pluralSuffix = /_(?:zero|one|two|few|many|other)$/u
+
+/**
+ * The plural forms a language is missing for text English counts: each form its language uses for a whole number up to
+ * a thousand, such as Russian's "few" and "many". A key without a suffix stands for "one", as i18next falls back to it
+ */
+export function getMissingPluralForms(code: string, translation: Record<string, string>) {
+  const counted = new Set(
+    Object.keys(en)
+      .filter((key) => pluralSuffix.test(key))
+      .map((key) => key.replace(pluralSuffix, '')),
+  )
+  const rules = new Intl.PluralRules(code)
+  const forms = new Set(Array.from({ length: 1001 }, (_, count) => rules.select(count)))
+  return [...counted].flatMap((key) =>
+    [...forms]
+      .filter((form) => !(`${key}_${form}` in translation) && !(form === 'one' && key in translation))
+      .map((form) => `${key}_${form}`),
+  )
 }
 
 if (import.meta.env?.DEV || import.meta.main) {
@@ -48,6 +72,10 @@ if (import.meta.env?.DEV || import.meta.main) {
       throw new Error(
         `Locale ${code} does not have the same keys as English. Missing: ${missing.join(', ') || 'none'}. Extra: ${extra.join(', ') || 'none'}`,
       )
+    }
+    const missingForms = getMissingPluralForms(code, translation)
+    if (missingForms.length > 0) {
+      throw new Error(`Locale ${code} is missing plural forms: ${missingForms.join(', ')}`)
     }
   }
 }

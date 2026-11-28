@@ -1,4 +1,5 @@
 import { Button, SegmentedControl } from '@radix-ui/themes'
+import { clsx } from 'clsx'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveConsole } from '#@/consoles/registry.ts'
@@ -98,9 +99,18 @@ export function ConsoleControls({ platform }: Readonly<{ platform: PlatformName 
     )
   }
 
+  // Clear and Cancel, which the keyboard reaches with Tab while a button waits
+  const actions = useRef<HTMLSpanElement>(null)
+
   // While a button waits for a key, the next key is its key: nothing else on the page sees it. Escape gives up, here
-  // and while it waits for a gamepad's button
+  // and while it waits for a gamepad's button. Tab isn't taken, so Clear and Cancel can be reached, and pressed there
   const handleKeyDown = useEffectEvent(async (event: KeyboardEvent) => {
+    if (event.key === 'Tab') {
+      return
+    }
+    if ((event.key === 'Enter' || event.key === ' ') && actions.current?.contains(document.activeElement)) {
+      return
+    }
     event.preventDefault()
     event.stopPropagation()
     if (event.key === 'Escape') {
@@ -146,6 +156,14 @@ export function ConsoleControls({ platform }: Readonly<{ platform: PlatformName 
       ? getPadKeys(console, shared, { edit: true, own: ownKeys })
       : getPadButtons(console, gamepadMapping, { edit: true, own: ownButtons })
   const waitingForGamepad = mode === 'gamepad' && !gamepadId
+
+  // What's said under the picture: what the waiting button wants, or what's been changed
+  let message = t(hasOwn ? messages[mode].changed : messages[mode].select)
+  if (listening) {
+    message = refused
+      ? t('settings.keyUsedFor', { action: t(hotkeyNames[refused.hotkey]), key: keyName(refused.key) })
+      : t(messages[mode].press, { button: listening.label })
+  }
 
   // The picture is drawn to fit the room it has
   const frame = useRef<HTMLDivElement>(null)
@@ -218,37 +236,34 @@ export function ConsoleControls({ platform }: Readonly<{ platform: PlatformName 
 
       {waitingForGamepad ? null : (
         <div className='mt-2 flex min-h-8 flex-wrap items-center justify-between gap-2 text-sm' data-sn-section=''>
+          {/* Always there, so a screen reader hears each message as it changes */}
+          <span
+            aria-live='polite'
+            className={clsx('flex items-center gap-2', {
+              'text-(--gray-11)': !listening,
+              'text-(--red-11)': listening && refused,
+            })}
+          >
+            {hasOwn && !listening ? <span className='size-3 shrink-0 rounded-full bg-(--accent-9)' /> : null}
+            {message}
+          </span>
           {listening ? (
-            <>
-              <span aria-live='polite' className={refused ? 'text-(--red-11)' : undefined}>
-                {refused
-                  ? t('settings.keyUsedFor', { action: t(hotkeyNames[refused.hotkey]), key: keyName(refused.key) })
-                  : t(messages[mode].press, { button: listening.label })}
-              </span>
-              <span className='flex gap-2'>
-                <Button disabled={isLoading} onClick={() => bind('')} size='1' type='button' variant='soft'>
-                  <span className='icon-[mdi--close]' />
-                  {t('common.clear')}
-                </Button>
-                <Button onClick={stopListening} size='1' type='button' variant='soft'>
-                  {t('common.cancel')}
-                </Button>
-              </span>
-            </>
-          ) : (
-            <>
-              <span className='flex items-center gap-2 text-(--gray-11)'>
-                {hasOwn ? <span className='size-3 shrink-0 rounded-full bg-(--accent-9)' /> : null}
-                {t(hasOwn ? messages[mode].changed : messages[mode].select)}
-              </span>
-              {hasOwn ? (
-                <Button disabled={isLoading} onClick={() => save({})} size='1' type='button' variant='soft'>
-                  <span className='icon-[mdi--undo]' />
-                  {t('common.reset')}
-                </Button>
-              ) : null}
-            </>
-          )}
+            <span className='flex gap-2' ref={actions}>
+              <Button disabled={isLoading} onClick={() => bind('')} size='1' type='button' variant='soft'>
+                <span className='icon-[mdi--close]' />
+                {t('common.clear')}
+              </Button>
+              <Button onClick={stopListening} size='1' type='button' variant='soft'>
+                {t('common.cancel')}
+              </Button>
+            </span>
+          ) : null}
+          {hasOwn && !listening ? (
+            <Button disabled={isLoading} onClick={() => save({})} size='1' type='button' variant='soft'>
+              <span className='icon-[mdi--undo]' />
+              {t('common.reset')}
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

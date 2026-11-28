@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis, setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import type { RetroPadButton } from '#@/input/retropad.ts'
@@ -58,6 +59,7 @@ export function Atari5200Controls({
   onKeypadClose,
   visible,
 }: Readonly<{ keypadOpen: boolean; onKeypadClose: () => void; visible: boolean }>) {
+  const { t } = useTranslation()
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
   const scale = useControlsScale()
@@ -102,12 +104,12 @@ export function Atari5200Controls({
             )}
           >
             <div className='col-span-3 -mt-1 flex items-center justify-between pl-1 text-xs font-semibold tracking-wide text-white/60 uppercase'>
-              Keypad
+              {t('onScreen.keypad')}
               <button
                 className='-mr-1 flex size-8 items-center justify-center rounded-full bg-white/10 text-white active:bg-white/30'
                 onClick={onKeypadClose}
-                aria-label='Close keypad'
-                title='Close keypad'
+                aria-label={t('onScreen.closeKeypad')}
+                title={t('onScreen.closeKeypad')}
                 type='button'
               >
                 <span className='icon-[mdi--close] size-5' />
@@ -125,7 +127,7 @@ export function Atari5200Controls({
                 onVirtualPressEnd={'handleEnd' in key ? key.handleEnd : undefined}
                 onVirtualPressStart={'handleStart' in key ? key.handleStart : undefined}
                 style={{ background: 'linear-gradient(#232325, #111)' }}
-                title={`Keypad ${label}`}
+                title={t('onScreen.keypadKey', { key: label })}
               >
                 {label}
               </VirtualGamepadButton>

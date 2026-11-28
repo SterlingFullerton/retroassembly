@@ -9,7 +9,7 @@ import { PlatformBackground } from './components/platform-background.tsx'
 import { UploadButton } from './components/upload-button.tsx'
 
 export default function PlatformPage() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { pagination, platform, roms, search } = useLoaderData<typeof loader>()
 
   if (!platformMap[platform]) {
@@ -28,7 +28,7 @@ export default function PlatformPage() {
     <>
       {search ? null : (
         <span className='mr-1 hidden text-sm whitespace-nowrap text-(--gray-11) lg:inline'>
-          {pagination.total} {t('common.game', { count: pagination.total })}
+          {t('home.gameCount', { count: pagination.total, formatted: pagination.total.toLocaleString(i18n.language) })}
         </span>
       )}
       <UploadButton platform={platform} />
