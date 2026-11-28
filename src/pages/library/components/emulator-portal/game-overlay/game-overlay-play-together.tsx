@@ -3,12 +3,12 @@ import { resolveConsole } from '#@/consoles/registry.ts'
 import { startSharing, stopSharing } from '#@/emulator/play-together-session.ts'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
-import { usePlayTogetherSwitch, useSharing } from '#@/pages/library/hooks/use-play-together.ts'
+import { useSharing } from '#@/pages/library/hooks/use-play-together.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { getRomGoodcodes } from '#@/utils/client/library.ts'
 
 // Playing together, from the host's side: in the pause menu's Play together page, a button that shares the running game and
-// shows the code a guest joins by. An experiment, shown only where its switch is on, with its words in English
+// shows the code a guest joins by. Its words are in English
 
 const button =
   'flex h-12 shrink-0 items-center gap-3 rounded-full border border-solid border-white bg-black/30 px-4 text-white transition-colors hover:bg-white/15'
@@ -26,11 +26,10 @@ export function PlayTogetherLifetime() {
 }
 
 export function GameOverlayPlayTogether() {
-  const [enabled] = usePlayTogetherSwitch()
   const sharing = useSharing()
   const { core, emulator } = useSession()
   const rom = useRom()
-  if (!enabled || !emulator || !rom) {
+  if (!emulator || !rom) {
     return null
   }
 

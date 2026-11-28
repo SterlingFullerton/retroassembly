@@ -6,9 +6,6 @@ import { hostGame } from './play-together.ts'
 // The game this device is sharing, if it is: one at a time, from the moment the host asks for a code until they stop
 // or leave the game. It outlives the pause menu that started it, so it's kept here and not in the menu
 
-/** Playing together is an experiment, shown only on devices where it's switched on */
-export const playTogetherSwitch = createDeviceSwitch('retroassembly-play-together')
-
 /**
  * Whether a guest must be told a code to join. Off, the game is shown to everyone signed in, which suits a household:
  * a code is awkward to type with a controller. It's this device's own choice

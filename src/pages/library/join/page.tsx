@@ -33,8 +33,7 @@ import { getRomGoodcodes } from '#@/utils/client/library.ts'
 import { ServerPauseMenu } from './server-pause-menu.tsx'
 
 // A guest's side of a game played together: the host's game, as a picture and sound sent from their device, with this
-// device's keys, controller or on-screen controls playing as the next player. An experiment, with its words in English
-// until it's decided whether to keep it.
+// device's keys, controller or on-screen controls playing as the next player. Its words are in English.
 //
 // A game on the NAS is played here too, by everyone in it: whoever starts it from its page arrives with its code, and
 // joins first. Such a game has a pause menu, which pauses it for everyone in it

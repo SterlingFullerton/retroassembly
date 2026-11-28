@@ -28,7 +28,7 @@ export default [
     route('consoles', 'routes/library-consoles.tsx'),
     route('favorites', 'routes/library-favorites.tsx'),
     route('history', 'routes/library-history.tsx'),
-    // A guest's side of a game played together: an experiment, reached only by its address
+    // A guest's side of a game played together
     route('join', 'routes/library-join.tsx'),
     route('platform/:platform', 'routes/library-platform.tsx'),
     route('platform/:platform/rom/:fileName', 'routes/library-platform-rom.tsx'),

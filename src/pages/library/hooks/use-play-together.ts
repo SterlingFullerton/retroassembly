@@ -3,7 +3,6 @@ import {
   getSharing,
   getSharingConnection,
   joinCodeSwitch,
-  playTogetherSwitch,
   type Sharing,
   subscribeSharing,
 } from '#@/emulator/play-together-session.ts'
@@ -16,12 +15,6 @@ function isEnabledOnServer() {
 
 function getSharingOnServer() {
   return notSharing
-}
-
-/** The experiment's switch, which is this device's own: whether it's on, and a way to set it */
-export function usePlayTogetherSwitch() {
-  const enabled = useSyncExternalStore(playTogetherSwitch.subscribe, playTogetherSwitch.isEnabled, isEnabledOnServer)
-  return [enabled, playTogetherSwitch.setEnabled] as const
 }
 
 /** Whether a guest must be told a code to join a game shared from this device, and a way to set it */

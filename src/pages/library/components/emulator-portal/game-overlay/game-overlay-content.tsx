@@ -10,7 +10,7 @@ import {
   type PauseMenuAction,
 } from '#@/pages/library/components/pause-menu/pause-menu.tsx'
 import { useNotice } from '#@/pages/library/hooks/use-notice.ts'
-import { usePlayTogetherSwitch, useSharing } from '#@/pages/library/hooks/use-play-together.ts'
+import { useSharing } from '#@/pages/library/hooks/use-play-together.ts'
 import { useRomCover } from '#@/pages/library/hooks/use-rom-cover.ts'
 import { useRom } from '#@/pages/library/hooks/use-rom.ts'
 import { offCancel, onCancel } from '#@/pages/library/utils/spatial-navigation.ts'
@@ -57,7 +57,6 @@ export function GameOverlayContent() {
   const { data: cover } = useRomCover(rom)
   const { emulator, exit } = useSession()
   const { saveManualState, states } = useGameStates()
-  const [playTogether] = usePlayTogetherSwitch()
   const sharing = useSharing()
   const onPage = page !== 'main'
 
@@ -169,7 +168,7 @@ export function GameOverlayContent() {
                 </>
               ),
               settings: <GameOverlaySettings />,
-              together: playTogether && emulator ? <GameOverlayPlayTogether /> : undefined,
+              together: emulator ? <GameOverlayPlayTogether /> : undefined,
             }}
             players={sharing.stage === 'connected' ? 2 : undefined}
             saveCount={states.length}
