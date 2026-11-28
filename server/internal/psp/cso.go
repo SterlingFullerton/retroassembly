@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"retroassembly/server/internal/ids"
 )
@@ -25,21 +27,30 @@ const (
 	plainFlag = 0x80000000
 	// Blocks read and written together (2 MB)
 	batchSize = 1024
-	// Blocks compressed or unpacked at the same time
-	parallel = 16
 )
 
-// inGroups runs work for each item, parallel at a time
-func inGroups[T any](count int, work func(index int) (T, error)) ([]T, error) {
+// workers is how many blocks are compressed or unpacked at the same time: half the processors, at most 4, so games
+// running on the server keep the rest
+var workers = max(1, min(4, runtime.NumCPU()/2))
+
+// inParallel runs work for each item, on a few workers that each take the next item when done with one
+func inParallel[T any](count int, work func(index int) (T, error)) ([]T, error) {
 	results := make([]T, count)
 	errs := make([]error, count)
-	for start := 0; start < count; start += parallel {
-		var group sync.WaitGroup
-		for index := start; index < min(start+parallel, count); index++ {
-			group.Go(func() { results[index], errs[index] = work(index) })
-		}
-		group.Wait()
+	var next atomic.Int64
+	var group sync.WaitGroup
+	for range min(workers, count) {
+		group.Go(func() {
+			for {
+				index := int(next.Add(1)) - 1
+				if index >= count {
+					return
+				}
+				results[index], errs[index] = work(index)
+			}
+		})
 	}
+	group.Wait()
 	return results, errors.Join(errs...)
 }
 
@@ -65,12 +76,21 @@ func header(totalBytes int64, align uint) []byte {
 	return head
 }
 
+// A deflate writer at its best compression holds most of a megabyte, so each is used again for block after block
+// rather than made anew for each 2 KB, and the same for readers
+var (
+	writers = sync.Pool{New: func() any {
+		writer, _ := flate.NewWriter(io.Discard, flate.BestCompression)
+		return writer
+	}}
+	readers = sync.Pool{New: func() any { return flate.NewReader(bytes.NewReader(nil)) }}
+)
+
 func deflate(block []byte) ([]byte, error) {
+	writer := writers.Get().(*flate.Writer)
+	defer writers.Put(writer)
 	var buffer bytes.Buffer
-	writer, err := flate.NewWriter(&buffer, flate.BestCompression)
-	if err != nil {
-		return nil, err
-	}
+	writer.Reset(&buffer)
 	if _, err := writer.Write(block); err != nil {
 		return nil, err
 	}
@@ -78,6 +98,15 @@ func deflate(block []byte) ([]byte, error) {
 		return nil, err
 	}
 	return buffer.Bytes(), nil
+}
+
+func inflate(content []byte) ([]byte, error) {
+	reader := readers.Get().(io.ReadCloser)
+	defer readers.Put(reader)
+	if err := reader.(flate.Resetter).Reset(bytes.NewReader(content), nil); err != nil {
+		return nil, err
+	}
+	return io.ReadAll(reader)
 }
 
 // Compress writes the ISO at isoPath as a CSO at csoPath, aligned at align, or the smallest alignment that fits when
@@ -127,7 +156,7 @@ func Compress(isoPath, csoPath string, align int) (size int64, err error) {
 		for i := range blocks {
 			blocks[i] = batch[i*blockSize : min((i+1)*blockSize, read)]
 		}
-		compressed, err := inGroups(count, func(i int) ([]byte, error) { return deflate(blocks[i]) })
+		compressed, err := inParallel(count, func(i int) ([]byte, error) { return deflate(blocks[i]) })
 		if err != nil {
 			return 0, err
 		}
@@ -250,7 +279,7 @@ func Check(csoPath, isoPath string) error {
 		if _, err := cso.ReadAt(stored, from); err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
-		blocks, err := inGroups(int(last-first), func(offset int) ([]byte, error) {
+		blocks, err := inParallel(int(last-first), func(offset int) ([]byte, error) {
 			number := first + int64(offset)
 			// The next block's start ends this one, with its padding, which raw deflate ignores
 			content := stored[start(number)-from : start(number+1)-from]
@@ -258,7 +287,7 @@ func Check(csoPath, isoPath string) error {
 			if entry(number)&plainFlag != 0 {
 				return content[:expected], nil
 			}
-			return io.ReadAll(flate.NewReader(bytes.NewReader(content)))
+			return inflate(content)
 		})
 		if err != nil {
 			return err
