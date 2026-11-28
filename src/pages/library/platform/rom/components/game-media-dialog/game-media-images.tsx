@@ -54,7 +54,7 @@ export function GameMediaImages() {
     if (isDeletingThumbnail) {
       return
     }
-    const confirmed = confirm('Are you sure you want to delete this thumbnail?')
+    const confirmed = confirm(t('game.media.deleteThumbnailConfirm'))
     if (!confirmed) {
       return
     }
@@ -83,7 +83,7 @@ export function GameMediaImages() {
           disabled={isDeletingThumbnail}
           loading={isUploadingThumbnail}
           onClick={handleClickUploadThumbnail}
-          title='Upload'
+          title={t('common.upload')}
           type='button'
           variant='soft'
         >

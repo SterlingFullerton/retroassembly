@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { sendKey } from '#@/emulator/adapter.ts'
 import { useSession } from '#@/pages/library/components/emulator-portal/emulator-session-provider.tsx'
@@ -52,6 +53,7 @@ function keepFocus(event: PointerEvent) {
 const resting = ' '
 
 export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
+  const { t } = useTranslation()
   const hidden = clsx({ hidden: !visible })
   // Each side's controls are about 160 points wide; on smaller screens they shrink towards their corner. Each group
   // hangs off a point with no size at its corner, which is where it shrinks towards
@@ -149,7 +151,7 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
   return (
     <>
       <input
-        aria-label='Odyssey² keyboard'
+        aria-label={t('common.keyboard')}
         autoCapitalize='none'
         autoComplete='off'
         autoCorrect='off'
@@ -203,7 +205,8 @@ export function Odyssey2Controls({ visible }: Readonly<{ visible: boolean }>) {
             onClick={toggleKeyboard}
             onPointerDown={keepFocus}
             style={plainStyle}
-            title='Keyboard'
+            aria-label={t('common.keyboard')}
+            title={t('common.keyboard')}
             type='button'
           >
             <span className='icon-[mdi--keyboard] size-3.5' />

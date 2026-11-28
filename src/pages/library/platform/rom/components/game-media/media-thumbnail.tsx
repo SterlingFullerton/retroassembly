@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileTypeBadge } from '../file-type-badge.tsx'
 import { CbzCover } from './cbz-thumbnail.tsx'
 import type { MediaItem } from './game-media-carousel.tsx'
@@ -13,6 +14,7 @@ interface MediaThumbnailProps {
 }
 
 export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonly<MediaThumbnailProps>) {
+  const { t } = useTranslation()
   function thumbRef(el: HTMLElement | null) {
     if (el) {
       thumbRefs.set(index, el)
@@ -22,14 +24,14 @@ export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonl
   if (item.type === 'video') {
     return (
       <button
-        aria-label='Open video'
+        aria-label={t('game.media.openVideo')}
         className='relative shrink-0 cursor-pointer border-none bg-transparent p-0'
         onClick={(e) => onClick(index, e)}
         ref={thumbRef}
         type='button'
       >
         <video
-          aria-label='Video thumbnail'
+          aria-label={t('game.media.video')}
           className='pointer-events-none h-auto w-full lg:h-48 lg:w-auto'
           muted
           preload='metadata'
@@ -51,7 +53,7 @@ export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonl
         type='button'
       >
         <img
-          alt='YouTube thumbnail'
+          alt={t('game.media.youtubeVideo')}
           className='pointer-events-none h-auto w-full lg:h-48 lg:w-auto'
           loading='lazy'
           src={getYouTubeThumbnailUrl(item.src)}
@@ -64,7 +66,7 @@ export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonl
   if (item.type === 'cbz') {
     return (
       <button
-        aria-label='Open comic'
+        aria-label={t('game.media.openComic')}
         className='relative flex aspect-square shrink-0 cursor-pointer overflow-hidden border-none bg-neutral-200 p-0 lg:h-48 lg:w-auto lg:min-w-32'
         onClick={(e) => onClick(index, e)}
         ref={thumbRef}
@@ -79,7 +81,7 @@ export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonl
   if (item.type === 'pdf') {
     return (
       <button
-        aria-label='Open PDF'
+        aria-label={t('game.media.openPdf')}
         className='flex aspect-square shrink-0 cursor-pointer items-center justify-center border-none bg-neutral-200 p-2 lg:h-48 lg:w-auto lg:min-w-32'
         onClick={(e) => onClick(index, e)}
         ref={thumbRef}
@@ -93,7 +95,7 @@ export function MediaThumbnail({ alt, index, item, onClick, thumbRefs }: Readonl
   if (item.type === 'file') {
     return (
       <button
-        aria-label='Open file'
+        aria-label={t('game.media.openFile')}
         className='flex aspect-square shrink-0 cursor-pointer items-center justify-center border-none bg-neutral-200 p-2 lg:h-48 lg:w-auto lg:min-w-32'
         onClick={(e) => onClick(index, e)}
         ref={thumbRef}

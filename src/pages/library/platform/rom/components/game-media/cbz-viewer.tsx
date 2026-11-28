@@ -1,5 +1,6 @@
 import { BlobReader, BlobWriter, HttpRangeReader, ZipReader } from '@zip.js/zip.js'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const imageExtensions = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
 
@@ -12,6 +13,7 @@ interface CbzViewerProps {
  * it's unpacked, so the first appears without waiting for the whole file; closing it stops the rest
  */
 export function CbzViewer({ src }: Readonly<CbzViewerProps>) {
+  const { t } = useTranslation()
   const [pages, setPages] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -94,7 +96,7 @@ export function CbzViewer({ src }: Readonly<CbzViewerProps>) {
   if (error || pages.length === 0) {
     return (
       <div className='flex h-full w-full items-center justify-center'>
-        <span className='text-neutral-400'>Unable to load comic</span>
+        <span className='text-neutral-400'>{t('game.media.loadComicFailed')}</span>
       </div>
     )
   }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { getFileUrl } from '#@/pages/library/utils/file.ts'
 import { FileTypeBadge } from '../file-type-badge.tsx'
 import { CbzCover } from '../game-media/cbz-thumbnail.tsx'
@@ -18,7 +19,7 @@ export function DialogThumbnail({ disabled, fileId, deleteLabel, onDelete }: Rea
         className='absolute top-0 right-0 z-1 flex items-center justify-center rounded bg-(--accent-9) p-0.5 text-white transition-opacity group-hover:opacity-100 focus:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:none)]:p-1.5'
         disabled={disabled}
         onClick={() => onDelete(fileId)}
-        title='Delete'
+        title={deleteLabel}
         type='button'
       >
         <span className='icon-[mdi--delete]' />
@@ -29,11 +30,12 @@ export function DialogThumbnail({ disabled, fileId, deleteLabel, onDelete }: Rea
 }
 
 function DialogThumbnailContent({ fileId }: { fileId: string }) {
+  const { t } = useTranslation()
   if (isVideoFile(fileId)) {
     return (
       <div className='relative size-20'>
         <video
-          aria-label='Video thumbnail'
+          aria-label={t('game.media.video')}
           className='size-20 object-cover'
           preload='metadata'
           src={getFileUrl(fileId)}
@@ -59,7 +61,7 @@ function DialogThumbnailContent({ fileId }: { fileId: string }) {
     const url = getFileUrl(fileId)
     return (
       <a className='size-20' href={url} rel='noreferrer noopener' target='_blank'>
-        <img alt='Thumbnail' className='size-20 object-contain' loading='lazy' src={url} />
+        <img alt={t('game.media.thumbnail')} className='size-20 object-contain' loading='lazy' src={url} />
       </a>
     )
   }
@@ -68,7 +70,7 @@ function DialogThumbnailContent({ fileId }: { fileId: string }) {
     const url = getFileUrl(fileId)
     return (
       <a
-        aria-label='Open PDF'
+        aria-label={t('game.media.openPdf')}
         className='flex size-20 items-center justify-center'
         href={url}
         rel='noreferrer noopener'
@@ -82,7 +84,7 @@ function DialogThumbnailContent({ fileId }: { fileId: string }) {
   const url = getFileUrl(fileId)
   return (
     <a
-      aria-label='Open file'
+      aria-label={t('game.media.openFile')}
       className='flex size-20 items-center justify-center'
       href={url}
       rel='noreferrer noopener'

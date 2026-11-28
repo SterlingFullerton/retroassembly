@@ -1,4 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import type { RetroPadButton } from '#@/input/retropad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
@@ -32,6 +33,7 @@ export function WonderSwanControls({
   top,
   visible,
 }: Readonly<{ top: RefObject<HTMLDivElement | null>; visible: boolean }>) {
+  const { t } = useTranslation()
   // Each side's controls are about 120 points wide in landscape; the WonderSwan's picture is wide (14:9), which leaves
   // little room beside it. On smaller screens they shrink towards their corner. Each group hangs off a point with no
   // size at its corner, which is where it shrinks towards
@@ -72,7 +74,12 @@ export function WonderSwanControls({
 
       <TopBarButtons visible={visible}>
         <TopBarButton buttonName='start'>START</TopBarButton>
-        <TopBarButton buttonName='select' title='Rotate' onVirtualPressEnd={refitGame}>
+        <TopBarButton
+          buttonName='select'
+          aria-label={t('onScreen.rotate')}
+          title={t('onScreen.rotate')}
+          onVirtualPressEnd={refitGame}
+        >
           ROTATE
         </TopBarButton>
       </TopBarButtons>

@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import type { CSSProperties, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadAxis } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
@@ -56,6 +57,7 @@ function CButton({
 
 // A stick that follows the thumb: how far it's pushed from the middle is how far the game's stick tilts
 function AnalogStick() {
+  const { t } = useTranslation()
   const { handlers, knob } = useStick({
     onMove(x, y) {
       setVirtualGamepadAxis(0, x)
@@ -68,7 +70,7 @@ function AnalogStick() {
     reach: (width) => width / 2 - 14,
   })
 
-  return <StickLook className='size-29' handlers={handlers} knob={knob} title='Analog stick' />
+  return <StickLook className='size-29' handlers={handlers} knob={knob} title={t('onScreen.analogStick')} />
 }
 
 export function N64Controls({ visible }: Readonly<{ visible: boolean }>) {

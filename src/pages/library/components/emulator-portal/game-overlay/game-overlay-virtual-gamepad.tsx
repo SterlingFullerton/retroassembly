@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { resolveConsole } from '#@/consoles/registry.ts'
 import { useEmulatorLaunched } from '#@/pages/library/atoms.ts'
@@ -165,6 +166,7 @@ export function DSControls({
   controls: RefObject<HTMLDivElement | null>
   visible: boolean
 }>) {
+  const { t } = useTranslation()
   return (
     <>
       <TopBarButtons visible={visible}>
@@ -208,7 +210,8 @@ export function DSControls({
             'touch-tall absolute bottom-4 left-1/2 h-8 w-15 -translate-x-1/2 rounded-full text-[11px] font-bold tracking-wider max-[359px]:portrait:w-8',
             'landscape:left-safe-offset-39 landscape:top-2.5 landscape:bottom-auto landscape:h-6 landscape:translate-x-0',
           )}
-          title='Mic'
+          aria-label={t('onScreen.mic')}
+          title={t('onScreen.mic')}
         >
           <span className='icon-[mdi--microphone] size-3.5' />
           {/* Phones narrower than 360 points leave room only for the icon between the d-pad and the face buttons */}
@@ -268,6 +271,7 @@ export function GameOverlayVirtualGamepad() {
   const rom = useRom()
   const { preference } = usePreference()
   const rewindEnabled = rom ? preference.emulator.platform[rom.platform].rewindEnabled : true
+  const { t } = useTranslation()
   const { core } = useSession()
   // Which controls this game gets, and whether Select inserts a coin, are set per console and emulator in the console
   // registry (src/consoles)
@@ -313,7 +317,7 @@ export function GameOverlayVirtualGamepad() {
               clsx({ 'bg-[#ff9a4a] text-[#3a1a00]': keypadOpen, hidden: !gamepadVisible }),
             )}
             onClick={() => setKeypadOpen(!keypadOpen)}
-            title='Keypad'
+            title={t('onScreen.keypad')}
           >
             <span className='icon-[mdi--dialpad]' />
           </VirtualGamepadButton>
@@ -326,7 +330,7 @@ export function GameOverlayVirtualGamepad() {
             <VirtualGamepadCommandButton
               className={twMerge(barIcon, clsx({ hidden: !gamepadVisible }))}
               command='REWIND'
-              title='Rewind'
+              title={t('emulator.rewind')}
             >
               <span className='icon-[mdi--rewind]' />
             </VirtualGamepadCommandButton>
@@ -334,14 +338,14 @@ export function GameOverlayVirtualGamepad() {
           <VirtualGamepadCommandButton
             className={twMerge(barIcon, clsx({ hidden: !gamepadVisible }))}
             command='FAST_FORWARD_HOLD'
-            title='Fast forward'
+            title={t('emulator.fastForward')}
           >
             <span className='icon-[mdi--fast-forward]' />
           </VirtualGamepadCommandButton>
           <VirtualGamepadButton
             className={barIcon}
             onClick={() => setGamepadVisible(!gamepadVisible)}
-            title='Toggle gamepad'
+            title={t('onScreen.toggleControls')}
           >
             <span className='icon-[mdi--gamepad-square]' />
           </VirtualGamepadButton>

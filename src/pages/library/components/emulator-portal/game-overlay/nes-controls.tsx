@@ -1,4 +1,5 @@
 import { type CSSProperties, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { twMerge } from 'tailwind-merge'
 import { setVirtualGamepadButton } from '#@/emulator/on-screen-gamepad.ts'
 import { useControlsScale } from '#@/pages/library/hooks/use-controls-scale.ts'
@@ -36,6 +37,7 @@ async function tap(index: number) {
 // with the disk in, and puts in the other disk with R, if there is one. So on Nestopia every other press turns the disk
 // over, back to side A, and puts in the other disk, which on a game with one disk leaves it on side A.
 function FlipDiskButton({ core }: Readonly<{ core: string }>) {
+  const { t } = useTranslation()
   const presses = useRef(0)
   const flipping = useRef(false)
 
@@ -59,7 +61,7 @@ function FlipDiskButton({ core }: Readonly<{ core: string }>) {
   }
 
   return (
-    <TopBarButton onVirtualPressStart={flip} title='Flip disk'>
+    <TopBarButton onVirtualPressStart={flip} aria-label={t('onScreen.flipDisk')} title={t('onScreen.flipDisk')}>
       FLIP
     </TopBarButton>
   )
