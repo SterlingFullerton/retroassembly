@@ -61,7 +61,7 @@ export function KeyboardShortcuts() {
     if (isLoading) {
       return
     }
-    if (!isNavigationKey(name) && playsGameButton(mapping, key)) {
+    if (!isNavigationKey(name) && playsGameButton(mapping, key, preference.input.consoleKeys)) {
       setRefused({ key, name })
       return
     }

@@ -44,11 +44,20 @@ export function bindNavigationKey(keys: NavigationKeys, name: NavigationKeyName,
   return changes
 }
 
-/** Whether the shared layout gives a key to a game button: such a key can't also pause, rewind or fast-forward */
-export function playsGameButton(mapping: KeyboardMapping, key: string) {
-  return Object.entries(mapping).some(
-    ([name, value]) => name.startsWith('input_player1_') && Boolean(key) && value === key,
-  )
+/**
+ * Whether the shared layout, or any console's own keys, give a key to a game button: such a key can't also pause,
+ * rewind or fast-forward
+ */
+export function playsGameButton(
+  mapping: KeyboardMapping,
+  key: string,
+  consoleKeys: Partial<Record<string, KeyboardMapping | null>> = {},
+) {
+  if (!key) {
+    return false
+  }
+  const shared = Object.entries(mapping).some(([name, value]) => name.startsWith('input_player1_') && value === key)
+  return shared || Object.values(consoleKeys).some((own) => Object.values(own ?? {}).includes(key))
 }
 
 /** The mapping's changes that give a shortcut a key, or none (''): another shortcut on it loses it */
