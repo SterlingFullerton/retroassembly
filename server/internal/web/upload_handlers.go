@@ -558,9 +558,13 @@ func (s *Server) BackfillGameInfo() {
 func (s *Server) StartBackgroundJobs() {
 	inBackground("Removing unfinished files", func() {
 		directories := s.config.Directories
-		for _, folder := range []string{directories.Storage, directories.Roms, directories.Cache, directories.Artwork} {
-			if removed := files.RemoveStaleTemporaries(folder, 24*time.Hour); removed > 0 {
-				log.Printf("Removed %d unfinished files from %s", removed, folder)
+		// The games folder may hold a whole collection; games are written only in its consoles' folders
+		for _, each := range []struct {
+			folder string
+			depth  int
+		}{{directories.Storage, 0}, {directories.Roms, 2}, {directories.Cache, 0}, {directories.Artwork, 0}} {
+			if removed := files.RemoveStaleTemporaries(each.folder, each.depth, 24*time.Hour); removed > 0 {
+				log.Printf("Removed %d unfinished files from %s", removed, each.folder)
 			}
 		}
 	})

@@ -146,19 +146,24 @@ func TestRemoveStaleTemporaries(t *testing.T) {
 	folder := t.TempDir()
 	old := time.Now().Add(-48 * time.Hour)
 	for name, modified := range map[string]time.Time{
-		"a/game.iso.x.partial": old, "b.webp.x.tmp": old, "c.partial": time.Now(), "d.iso": old,
+		"a/game.iso.3xYq9KdPmA.partial": old, "b.webp.x7Hk3NpQrT.tmp": old, "c.cbXq7TfPmA.partial": time.Now(),
+		"d.iso": old, "e.partial": old, "f.tmp": old, "g.iso.nope.partial": old, "a/b/deep.iso.3xYq9KdPmA.partial": old,
 	} {
 		path := filepath.Join(folder, name)
 		os.MkdirAll(filepath.Dir(path), 0o777)
 		os.WriteFile(path, nil, 0o666)
 		os.Chtimes(path, modified, modified)
 	}
-	if removed := RemoveStaleTemporaries(folder, 24*time.Hour); removed != 2 {
+	// Two levels: the folder itself and the folders in it
+	if removed := RemoveStaleTemporaries(folder, 2, 24*time.Hour); removed != 2 {
 		t.Errorf("removed %d, want 2", removed)
 	}
-	for _, name := range []string{"c.partial", "d.iso"} {
+	for _, name := range []string{"c.cbXq7TfPmA.partial", "d.iso", "e.partial", "f.tmp", "g.iso.nope.partial", "a/b/deep.iso.3xYq9KdPmA.partial"} {
 		if _, err := os.Stat(filepath.Join(folder, name)); err != nil {
 			t.Errorf("%s was removed", name)
 		}
+	}
+	if removed := RemoveStaleTemporaries(folder, 0, 24*time.Hour); removed != 1 {
+		t.Errorf("removed %d at any depth, want the deeper one", removed)
 	}
 }
