@@ -372,6 +372,8 @@
   "join.joinFailed": "K této hře se nepodařilo připojit.",
   "join.joinFailedServer": "Ke hře na serveru se nepodařilo připojit.",
   "join.gameFull": "Tato hra už má všechny hráče, které pojme.",
+  "join.someoneJoining": "K této hře se právě připojuje někdo jiný. Zkuste to znovu za minutu.",
+  "join.alreadyJoined": "K této hře se už někdo připojil.",
   "join.gameLimit": "Na serveru už máte hru. Nejprve ji ukončete.",
   "join.saveWaiting": "Uložení vaší poslední hry se ještě ukládá. Zkuste to za chvíli znovu.",
   "join.notYours": "To může jen hráč, který hru spustil.",

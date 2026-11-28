@@ -360,6 +360,8 @@
   "join.joinFailed": "Diesem Spiel konnte nicht beigetreten werden.",
   "join.joinFailedServer": "Keine Verbindung zum Spiel auf dem Server möglich.",
   "join.gameFull": "Dieses Spiel hat bereits alle Spieler, die es aufnehmen kann.",
+  "join.someoneJoining": "Jemand anderes tritt diesem Spiel gerade bei. Versuchen Sie es in einer Minute erneut.",
+  "join.alreadyJoined": "Jemand ist diesem Spiel bereits beigetreten.",
   "join.gameLimit": "Sie haben bereits ein Spiel auf dem Server. Beenden Sie es zuerst.",
   "join.saveWaiting": "Der Spielstand Ihres letzten Spiels wird noch gesichert. Versuchen Sie es gleich erneut.",
   "join.notYours": "Nur der Spieler, der das Spiel gestartet hat, kann das tun.",

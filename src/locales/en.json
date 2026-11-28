@@ -360,6 +360,8 @@
   "join.joinFailed": "Couldn’t join that game.",
   "join.joinFailedServer": "Couldn’t connect to the game on the server.",
   "join.gameFull": "That game has all the players it can take.",
+  "join.someoneJoining": "Someone else is joining that game. Try again in a minute.",
+  "join.alreadyJoined": "Someone has already joined that game.",
   "join.gameLimit": "You already have a game on the server. End it first.",
   "join.saveWaiting": "Your last game’s save is still being kept. Try again in a moment.",
   "join.notYours": "Only the player who started the game can do that.",

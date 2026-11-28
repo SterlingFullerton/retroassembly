@@ -504,9 +504,18 @@ export default function JoinPage() {
       sendNow.current = () => send(true)
       timer = setInterval(send, sendEvery)
     }
-    // A game that can't be joined after all is one that couldn't be reached
+    // A game that can't be joined after all is one that couldn't be reached, unless the server said why: someone else
+    // joining it first, say
     // oxlint-disable-next-line promise/prefer-await-to-then -- an effect can't wait
-    connect(found).catch(() => setStage('unreachable'))
+    connect(found).catch((error: unknown) => {
+      const words = failureWordsFor(error)
+      if (words && !closed) {
+        setFailure({ typed: false, words })
+        setStage('choosing')
+      } else {
+        setStage('unreachable')
+      }
+    })
     return () => {
       closed = true
       clearTimeout(giveUp)

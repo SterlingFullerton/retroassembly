@@ -360,6 +360,8 @@
   "join.joinFailed": "Não foi possível entrar nessa partida.",
   "join.joinFailedServer": "Não foi possível conectar à partida no servidor.",
   "join.gameFull": "Essa partida já tem todos os jogadores que comporta.",
+  "join.someoneJoining": "Outra pessoa está entrando nessa partida. Tente de novo em um minuto.",
+  "join.alreadyJoined": "Alguém já entrou nessa partida.",
   "join.gameLimit": "Você já tem uma partida no servidor. Encerre-a primeiro.",
   "join.saveWaiting": "O salvamento da sua última partida ainda está sendo guardado. Tente de novo em um momento.",
   "join.notYours": "Só quem iniciou a partida pode fazer isso.",

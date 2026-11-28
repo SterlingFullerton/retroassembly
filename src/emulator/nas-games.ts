@@ -119,7 +119,18 @@ export function failureWordsFor(error: unknown) {
   if (code) {
     return failureWords[code]
   }
+  // A person's shared game is turned down with a message and no code: by someone else joining it, or having joined it
+  const { message } = (error ?? {}) as { message?: unknown }
+  if (typeof message === 'string' && sharedGameTaken[message]) {
+    return sharedGameTaken[message]
+  }
   return isGameGone(error) ? 'playTogether.notFound' : undefined
+}
+
+// The app server's words for a person's game someone else is joining, or has joined (409)
+const sharedGameTaken: Record<string, string> = {
+  'Someone else is joining that game': 'join.someoneJoining',
+  'Someone has already joined that game': 'join.alreadyJoined',
 }
 
 /** A save state of a game on the NAS */

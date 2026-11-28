@@ -354,6 +354,8 @@
   "join.joinFailed": "そのゲームに参加できませんでした。",
   "join.joinFailedServer": "サーバーのゲームに接続できませんでした。",
   "join.gameFull": "そのゲームはすでに満員です。",
+  "join.someoneJoining": "別のプレイヤーがそのゲームに参加中です。1分後にもう一度お試しください。",
+  "join.alreadyJoined": "そのゲームにはすでに誰かが参加しています。",
   "join.gameLimit": "サーバーですでにゲームを実行中です。先に終了してください。",
   "join.saveWaiting": "前回のゲームのセーブデータを保存中です。少し待ってからもう一度お試しください。",
   "join.notYours": "ゲームを開始したプレイヤーのみ実行できます。",

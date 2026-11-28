@@ -29,6 +29,8 @@ await describe('the join page', async () => {
     assert.equal(failureWordsFor({ code: 'server_game_not_found' }), 'playTogether.notFound')
     assert.ok(isGameGone({ code: 'server_game_not_found' }))
     assert.equal(failureWordsFor(new TypeError('Failed to fetch')), 'join.serverUnreachable')
+    assert.equal(failureWordsFor({ message: 'Someone else is joining that game' }), 'join.someoneJoining')
+    assert.equal(failureWordsFor({ message: 'Someone has already joined that game' }), 'join.alreadyJoined')
     assert.equal(failureWordsFor({ message: 'something new' }), undefined)
     assert.equal(failureWordsFor({ code: 'something_new' }), undefined)
   })

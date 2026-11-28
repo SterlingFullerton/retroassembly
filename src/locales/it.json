@@ -360,6 +360,8 @@
   "join.joinFailed": "Impossibile unirsi a quella partita.",
   "join.joinFailedServer": "Impossibile connettersi alla partita sul server.",
   "join.gameFull": "Quella partita ha già tutti i giocatori che può accogliere.",
+  "join.someoneJoining": "Qualcun altro si sta unendo a quella partita. Riprova tra un minuto.",
+  "join.alreadyJoined": "Qualcuno si è già unito a quella partita.",
   "join.gameLimit": "Hai già una partita sul server. Terminala prima.",
   "join.saveWaiting": "Il salvataggio della tua ultima partita è ancora in corso. Riprova tra un momento.",
   "join.notYours": "Solo chi ha avviato la partita può farlo.",

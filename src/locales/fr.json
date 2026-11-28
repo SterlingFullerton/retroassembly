@@ -360,6 +360,8 @@
   "join.joinFailed": "Impossible de rejoindre cette partie.",
   "join.joinFailedServer": "Impossible de se connecter à la partie sur le serveur.",
   "join.gameFull": "Cette partie a déjà tous les joueurs qu’elle peut accueillir.",
+  "join.someoneJoining": "Quelqu’un d’autre rejoint cette partie. Réessayez dans une minute.",
+  "join.alreadyJoined": "Quelqu’un a déjà rejoint cette partie.",
   "join.gameLimit": "Vous avez déjà une partie sur le serveur. Terminez-la d’abord.",
   "join.saveWaiting": "La sauvegarde de votre dernière partie est encore en cours de conservation. Réessayez dans un instant.",
   "join.notYours": "Seul le joueur qui a lancé la partie peut faire cela.",

@@ -354,6 +354,8 @@
   "join.joinFailed": "無法加入該遊戲。",
   "join.joinFailedServer": "無法連線到伺服器上的遊戲。",
   "join.gameFull": "該遊戲的玩家已滿。",
+  "join.someoneJoining": "其他人正在加入該遊戲。請一分鐘後再試。",
+  "join.alreadyJoined": "已有人加入該遊戲。",
   "join.gameLimit": "你在伺服器上已有一個遊戲。請先結束它。",
   "join.saveWaiting": "你上一局遊戲的存檔仍在儲存中。請稍後再試。",
   "join.notYours": "只有開始遊戲的玩家才能這樣做。",
